@@ -46,12 +46,12 @@ The OAuth provider issues Gisul tokens, validates their audience and PKCE, and s
 
 ## Provision and deploy (no Mac mini)
 
-Canonical endpoint: `https://historical-6.example.test/mcp`.
+Canonical endpoint: `https://deployment-9.example.test/mcp`.
 
 The runtime repository is `Ark-Point/gisul`; content is independently configured by `GISUL_SKILLS_REPOSITORY`, initially `Ark-Point/gisul-skills`. The personal catalog is not automatically exposed to the organization. The team bucket must receive a verified initial release before content reads work.
 
 1. In the intended Cloudflare account, create private R2 bucket `example-private-bucket-3` and one Workers KV namespace for OAuth.
-2. Register an organization-owned GitHub OAuth application with callback `https://historical-6.example.test/callback`. Configure its organization access policy. The login requests `read:org`, not repository access.
+2. Register an organization-owned GitHub OAuth application with callback `https://deployment-9.example.test/callback`. Configure its organization access policy. The login requests `read:org`, not repository access.
 3. Configure the `arkpoint-production` GitHub environment:
    - Variables: `CLOUDFLARE_ACCOUNT_ID`, `GISUL_OAUTH_KV_ID`, `GITHUB_CLIENT_ID`.
    - Optional variables: `GISUL_WRITER_IDS`, `GISUL_BLOCKED_IDS`.

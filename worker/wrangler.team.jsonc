@@ -3,14 +3,30 @@
   "name": "gisul-arkpoint",
   "main": "src/team.ts",
   "compatibility_date": "2026-09-03",
-  "compatibility_flags": ["global_fetch_strictly_public"],
-  "workers_dev": true,
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": false,
   "preview_urls": false,
-  "observability": { "enabled": true, "head_sampling_rate": 1 },
-  "r2_buckets": [{ "binding": "SKILLS_BUCKET", "bucket_name": "example-private-bucket-3" }],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "r2_buckets": [
+    {
+      "binding": "SKILLS_BUCKET",
+      "bucket_name": "example-private-bucket-3"
+    }
+  ],
   "vars": {
-    "GISUL_PUBLIC_URL": "https://historical-6.example.test",
+    "GISUL_PUBLIC_URL": "https://deployment-9.example.test",
     "GISUL_GITHUB_ORG": "Ark-Point",
     "GISUL_SKILLS_REPOSITORY": "Ark-Point/gisul-skills"
-  }
+  },
+  "routes": [
+    {
+      "pattern": "deployment-9.example.test",
+      "custom_domain": true
+    }
+  ]
 }

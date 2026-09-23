@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-const origin = "https://historical-6.example.test";
+const origin = "https://deployment-9.example.test";
 async function get(path) {
   const response = await fetch(origin + path, { redirect: "error", signal: AbortSignal.timeout(15000) });
   assert.equal(response.status, 200, `${path} failed (${response.status})`);
