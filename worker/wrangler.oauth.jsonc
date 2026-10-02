@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gisul-mcp",
+  "account_id": "00000000000000000000000000000000",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-03",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "r2_buckets": [
+    {
+      "binding": "SKILLS_BUCKET",
+      "bucket_name": "example-skills-releases"
+    }
+  ],
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ],
+  "vars": {
+    "GISUL_PUBLIC_URL": "https://deployment-1.example.test",
+    "GISUL_GITHUB_USER_IDS": "123456",
+    "GITHUB_CLIENT_ID": "example-github-client-id"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "11111111111111111111111111111111"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "deployment-1.example.test",
+      "custom_domain": true
+    }
+  ]
+}
