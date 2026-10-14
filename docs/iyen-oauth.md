@@ -12,10 +12,6 @@ comma-separated allowlist of stable numeric GitHub IDs; account access is
 checked at login, MCP requests and refresh. The initial deployment permits
 `changeroa` (`123456`). Changing a username does not transfer access.
 
-The OAuth entrypoint and native read tools were adapted from the existing
-ARKPOINT implementation at `a64e376`. IYEN uses its own OAuth app, KV namespace,
-Cloudflare account and existing skill bucket. It does not use ARKPOINT grants,
-credentials, membership rules or skill releases.
 
 ## Compatibility
 
