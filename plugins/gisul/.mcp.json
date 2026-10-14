@@ -2,7 +2,7 @@
   "mcpServers": {
     "gisul": {
       "type": "http",
-      "url": "https://deployment-9.example.test/mcp",
+      "url": "https://gisul.example.invalid/mcp",
       "scopes": [
         "skills:read",
         "skills:write"
