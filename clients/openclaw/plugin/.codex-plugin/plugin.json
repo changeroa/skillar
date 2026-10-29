@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "Discover and read remote Skillar workflow skills and native skill packs in OpenClaw.",
   "author": {
-    "name": "Gisul"
+    "name": "Skillar"
   },
   "skills": "./skills/",
   "hooks": "./hooks/",
