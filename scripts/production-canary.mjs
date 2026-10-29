@@ -92,7 +92,7 @@ export async function runCanary(env = process.env, fetcher = fetch) {
     const discovered = await rpc("server/discover");
     assert.ok(discovered.supportedVersions.includes("2026-07-28"));
     await catalog();
-    const pin = { "io.skillar/commit": identity.commit };
+    const pin = { "app.skillar/commit": identity.commit };
     for (const skill of inventory.skills) {
       const loaded = await rpc("skills/get", { uri: skill.uri, _meta: pin });
       checkIdentity(loaded._meta);
