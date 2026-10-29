@@ -69,7 +69,7 @@ export const FINDING_TITLE: Record<FindingLabel, string> = {
   found_top1: "found_top1: the skill the turn used was the first search result",
   found_lower: "found_lower: the skill the turn used was a lower search result",
   loaded_outside_results: "loaded_outside_results: the skill the turn used was not among the search results",
-  native_without_search: "native_without_search: the runtime activated a skill of its own without searching gisool",
+  native_without_search: "native_without_search: the runtime activated a skill of its own without searching skillar",
   searched_none_used: "searched_none_used: the turn searched but used none of the results",
   no_search: "no_search: the turn neither searched nor used a skill",
 };

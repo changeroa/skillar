@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "gisool": {
+    "skillar": {
       "url": "http://127.0.0.1:8799/mcp",
       "headers": { "Authorization": "Bearer <token>" }
     }

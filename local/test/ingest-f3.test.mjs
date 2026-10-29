@@ -30,8 +30,8 @@ function toolLog(runtime, tool, args, ts = T + 2, key = "current", extra = {}) {
 }
 
 for (const [runtime, tools] of [
-  ["claude-code", ["ReadMcpResourceTool", "ListMcpResourcesTool", "mcp__gisool__search_skills"]],
-  ["codex", ["read_mcp_resource", "list_mcp_resources", "mcp__gisool__search_skills", "mcp_tool"]],
+  ["claude-code", ["ReadMcpResourceTool", "ListMcpResourcesTool", "mcp__skillar__search_skills"]],
+  ["codex", ["read_mcp_resource", "list_mcp_resources", "mcp__skillar__search_skills", "mcp_tool"]],
 ]) {
   for (const tool of tools) test(`D2 ${runtime} ${tool} is a skill call, not follow-through`, () => {
     // Given an activated span and the captured resource-read argument shape.
@@ -44,25 +44,25 @@ for (const [runtime, tools] of [
       store.append(event("load", T + 1, ref, { skillUri: URI }), attribution);
       const deps = createIngestDeps(store, { now: () => T + 3 });
       // When the resource call and an ordinary action arrive through OTLP.
-      ingestOtlp(toolLog(runtime, tool, { server: "gisool", uri: URI }), deps);
+      ingestOtlp(toolLog(runtime, tool, { server: "skillar", uri: URI }), deps);
       ingestOtlp(toolLog(runtime, runtime === "codex" ? "exec_command" : "Bash", { command: "ls" }, T + 3), deps);
       // Then only the ordinary action is follow-through.
       const usage = sessionUsage(sessionTree(store, id)).spans[0];
       assert.deepEqual([usage.followThrough, usage.skillToolCalls], [1, 1]);
-      assert.equal(JSON.parse(db.prepare("SELECT data_json FROM events WHERE kind = 'tool_call' ORDER BY ts").get().data_json).gisoolMcp, true);
+      assert.equal(JSON.parse(db.prepare("SELECT data_json FROM events WHERE kind = 'tool_call' ORDER BY ts").get().data_json).skillarMcp, true);
     } finally { store.close(); }
   });
 }
 
-test("D2 other MCP servers and ordinary URI mentions stay non-gisool", () => {
+test("D2 other MCP servers and ordinary URI mentions stay non-skillar", () => {
   const { db, store } = openStore();
   try {
     const deps = createIngestDeps(store);
     for (const runtime of ["claude-code", "codex"]) {
-      ingestOtlp(toolLog(runtime, "read_mcp_resource", { server: "not-gisool", uri: URI }), deps);
+      ingestOtlp(toolLog(runtime, "read_mcp_resource", { server: "not-skillar", uri: URI }), deps);
       ingestOtlp(toolLog(runtime, "Bash", { command: `echo ${URI}` }, T + 3), deps);
     }
-    assert.ok(db.prepare("SELECT data_json FROM events").all().every((row) => JSON.parse(row.data_json).gisoolMcp === undefined));
+    assert.ok(db.prepare("SELECT data_json FROM events").all().every((row) => JSON.parse(row.data_json).skillarMcp === undefined));
   } finally { store.close(); }
 });
 
@@ -83,7 +83,7 @@ for (const order of ["load-first", "tool-first"]) test(`D3 resolves a unique can
   const { db, store } = openStore();
   try {
     const { ids, deps, load } = ambiguousFixture(store);
-    const tool = toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 2);
+    const tool = toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 2);
     // When the load and exact captured OTLP URI evidence arrive in either order.
     if (order === "tool-first") ingestOtlp(tool, deps);
     const initial = ingest(load, deps);
@@ -105,9 +105,9 @@ test("D3 retracts a URI resolution when another candidate later supplies matchin
   try {
     const { ids, deps, load } = ambiguousFixture(store);
     ingest(load, deps);
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 2), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 2), deps);
     // When a second candidate's matching event arrives later, even through fresh ingest state.
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 3, "previous"),
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 3, "previous"),
       createIngestDeps(store, { now: () => T + 3 }));
     // Then neither session gets credit, and both report the unresolved URI.
     const row = db.prepare("SELECT session_id, attribution_reason, data_json FROM events WHERE id = ?").get(load.id);
@@ -124,11 +124,11 @@ test("D3 retracts a URI resolution when another candidate later supplies matchin
 });
 
 for (const [label, args, ts, key, extra] of [
-  ["different URI", { server: "gisool", uri: `${URI}.backup` }, T + 2, "current", {}],
-  ["outside window", { server: "gisool", uri: URI }, T + 10001, "current", {}],
-  ["noncandidate session", { server: "gisool", uri: URI }, T + 2, "unrelated", {}],
+  ["different URI", { server: "skillar", uri: `${URI}.backup` }, T + 2, "current", {}],
+  ["outside window", { server: "skillar", uri: URI }, T + 10001, "current", {}],
+  ["noncandidate session", { server: "skillar", uri: URI }, T + 2, "unrelated", {}],
   ["other server", { server: "other", uri: URI }, T + 2, "current", {}],
-  ["failed call", { server: "gisool", uri: URI }, T + 2, "current", { success: "false" }],
+  ["failed call", { server: "skillar", uri: URI }, T + 2, "current", { success: "false" }],
 ]) test(`D3 keeps a load unattributed for ${label}`, () => {
   const { db, store } = openStore();
   try {
@@ -143,24 +143,24 @@ for (const [label, args, ts, key, extra] of [
 });
 
 test("D3 recovers after closing and reopening the database without in-memory join state", () => {
-  const dir = makeTempDir("gisool-f3-restart-");
+  const dir = makeTempDir("skillar-f3-restart-");
   let store;
   try {
-    const path = join(dir, "gisool.db");
+    const path = join(dir, "skillar.db");
     ({ store } = openStore({ path }));
     const { ids, deps, load } = ambiguousFixture(store);
     ingest(load, deps);
     store.close();
     ({ store } = openStore({ path }));
     // When delayed telemetry arrives after a daemon restart.
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 2),
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 2),
       createIngestDeps(store, { now: () => T + 2 }));
     // Then persisted candidates suffice to recover the load.
     assert.equal(sessionUsage(sessionTree(store, ids[1])).spans[0].uri, URI);
   } finally { store?.close(); removeDir(dir); }
 });
 
-test("D3 recovers historical F3 rows lacking candidate snapshots and gisoolMcp flags", () => {
+test("D3 recovers historical F3 rows lacking candidate snapshots and skillarMcp flags", () => {
   const { db, store } = openStore();
   try {
     const { refs, ids, load } = ambiguousFixture(store);
@@ -168,7 +168,7 @@ test("D3 recovers historical F3 rows lacking candidate snapshots and gisoolMcp f
     store.append(load, { sessionId: "unattributed", method: "none", reason: "ambiguous" });
     for (const ts of [T - 10000, T + 10000]) {
       store.append(event("tool_call", ts, refs[1], { source: "otel",
-        text: JSON.stringify({ server: "gisool", uri: URI }), data: { toolName: "read_mcp_resource", success: true } }),
+        text: JSON.stringify({ server: "skillar", uri: URI }), data: { toolName: "read_mcp_resource", success: true } }),
       { sessionId: ids[1], method: "runtime_id" });
     }
     // When report-time reconciliation reads the persisted evidence.
@@ -185,7 +185,7 @@ test("D3 never uses a different runtime's matching resource call", () => {
   try {
     const { deps, load } = ambiguousFixture(store);
     ingest(load, deps);
-    ingestOtlp(toolLog("claude-code", "ReadMcpResourceTool", { server: "gisool", uri: URI }, T + 2), deps);
+    ingestOtlp(toolLog("claude-code", "ReadMcpResourceTool", { server: "skillar", uri: URI }, T + 2), deps);
     assert.deepEqual(store.reconcileLoads(), { count: 1, uris: [URI] });
   } finally { store.close(); }
 });
@@ -195,7 +195,7 @@ test("D3 reconciliation preserves a later authoritative vendor binding", () => {
   try {
     const { ids, deps, load } = ambiguousFixture(store);
     ingest(load, deps);
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 2), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 2), deps);
     // Given a later hook/vendor binding superseding the recovered URI association.
     store.reattribute(load.id, ids[0], "vendor_meta");
     // When reconciliation runs again, it must not override authoritative identity.
@@ -211,7 +211,7 @@ test("D3 retention preserves proven linkage but later conflicting evidence retra
   try {
     const { ids, deps, load } = ambiguousFixture(store);
     ingest(load, deps);
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 2), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 2), deps);
     clock += 40 * 86_400_000;
     // When retention expires the tool text, explicit reconciliation must not erase its proven match.
     store.retention(30);
@@ -219,7 +219,7 @@ test("D3 retention preserves proven linkage but later conflicting evidence retra
     assert.equal(db.prepare("SELECT text FROM events WHERE kind = 'tool_call'").get().text, null);
     assert.equal(db.prepare("SELECT session_id FROM events WHERE id = ?").get(load.id).session_id, ids[1]);
     // A delayed record still has its original event time, not the time it was received.
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, T + 3, "previous"),
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, T + 3, "previous"),
       createIngestDeps(store, { now: () => clock }));
     assert.deepEqual(store.reconcileLoads({ sessionIds: ids, readOnly: true }), { count: 1, uris: [URI] });
     assert.equal(db.prepare("SELECT session_id FROM events WHERE id = ?").get(load.id).session_id, "unattributed");
@@ -231,7 +231,7 @@ for (const order of ["load-first", "tool-first"]) test(`D3 metadata capture stor
   try {
     const { deps, load } = ambiguousFixture(store);
     deps.captureLevel = "metadata";
-    const tool = toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI, token: "secret-probe-token" }, T + 2);
+    const tool = toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI, token: "secret-probe-token" }, T + 2);
     if (order === "tool-first") ingestOtlp(tool, deps);
     ingest(load, deps);
     if (order === "load-first") ingestOtlp(tool, deps);
@@ -252,7 +252,7 @@ test("D3 redacted capture retains only session proof after retention, never secr
     const { ids, deps, load } = ambiguousFixture(store);
     deps.captureLevel = "redacted";
     ingest(load, deps);
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI, token: secret }, T + 2), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI, token: secret }, T + 2), deps);
     assert.equal(db.prepare("SELECT text FROM events WHERE kind = 'tool_call'").get().text.includes(secret), false);
     store.retention(30);
     const row = db.prepare("SELECT session_id, data_json FROM events WHERE id = ?").get(load.id);
@@ -268,7 +268,7 @@ test("D3 unresolved loads are exposed by real session and flow report endpoints"
   try {
     const at = Date.UTC(2026, 9, 14);
     let clock = at - 2000;
-    const opened = openStore({ path: join(server.gisoolHome, "gisool.db"), storeOpts: { now: () => clock } });
+    const opened = openStore({ path: join(server.skillarHome, "skillar.db"), storeOpts: { now: () => clock } });
     store = opened.store;
     const { db } = opened;
     const { ids, deps, load } = ambiguousFixture(store, at);
@@ -292,13 +292,13 @@ test("D3 unresolved loads are exposed by real session and flow report endpoints"
       assert.deepEqual(response.json.unattributedLoads, { count: 1, uris: [URI] });
       assert.equal(db.prepare("PRAGMA data_version").get().data_version, version, "GET must not commit writes");
     }
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, at + 2), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, at + 2), deps);
     const recovered = await http(server.port, { path: `/api/flows/${flow.id}`, headers: bearer(server.token) });
     assert.deepEqual(recovered.json.unattributedLoads, { count: 0, uris: [] });
     assert.equal(recovered.json.comparison.steps[0].status, "matched");
     assert.deepEqual(recovered.json.usage.skills.map((skill) => [skill.followThrough, skill.skillToolCalls]), [[0, 1]]);
     // A second candidate match retracts that credit and must remain visible.
-    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "gisool", uri: URI }, at + 3, "previous"), deps);
+    ingestOtlp(toolLog("codex", "read_mcp_resource", { server: "skillar", uri: URI }, at + 3, "previous"), deps);
     const tied = await http(server.port, { path: `/api/flows/${flow.id}`, headers: bearer(server.token) });
     assert.deepEqual(tied.json.unattributedLoads, { count: 1, uris: [URI] });
     assert.equal(tied.json.comparison.steps[0].status, "no_skill_used");

@@ -10,7 +10,7 @@ const toolParams = z.object({ name: z.string(), arguments: z.record(z.string(), 
 
 export function createDispatcher(deps: ToolDeps) {
   const search = createSearchTool(deps);
-  const serverInfo = { name: "gisool", version: packageVersion() };
+  const serverInfo = { name: "skillar", version: packageVersion() };
   return async (request: Message, params: RequestParams) => {
     const clientInfo = params._meta[CLIENT_INFO_KEY];
     const ctx = { ...(clientInfo ? { clientName: clientInfo.name } : {}), meta: params._meta };

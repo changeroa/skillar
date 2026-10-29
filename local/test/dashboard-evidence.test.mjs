@@ -36,8 +36,8 @@ export const mutations = {
   uncertainStep: ["uncertain && step.panes.length > 0", "false"],
 };
 
-const mutation = process.env.GISOOL_DASHBOARD_MUTATION;
-const reword = process.env.GISOOL_DASHBOARD_REWORD === "1";
+const mutation = process.env.SKILLAR_DASHBOARD_MUTATION;
+const reword = process.env.SKILLAR_DASHBOARD_REWORD === "1";
 const bundled = await build({
   stdin: {
     contents: 'export * from "./dashboard/views/workspaces.tsx"; export * from "./dashboard/components/skill-evidence.tsx"; export {h, render} from "preact";',
@@ -72,7 +72,7 @@ const reports = {};
 const costReports = {};
 before(async () => {
   server = await startTestServer();
-  fixture = seedEvidence(server.gisoolHome);
+  fixture = seedEvidence(server.skillarHome);
   const get = async (path) => {
     const response = await http(server.port, { path, headers: bearer(server.token) });
     assert.equal(response.status, 200);
@@ -118,7 +118,7 @@ test("a real scoped report still renders a genuinely observed session end", asyn
   // Given a real termination event strictly inside the execution, delivered late.
   const { openDb } = await distImport("store/db.js");
   const { createStore } = await distImport("store/index.js");
-  const store = createStore(openDb(join(server.gisoolHome, "gisool.db")));
+  const store = createStore(openDb(join(server.skillarHome, "skillar.db")));
   const endedAt = report.flow.endedMs - 1;
   try {
     store.append({ id: "observed-end-control", kind: "session_end", source: "hook", ts: endedAt,

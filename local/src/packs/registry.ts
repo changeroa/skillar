@@ -7,7 +7,7 @@ import { geminiPack } from "./gemini.js";
 import { omoPack } from "./omo.js";
 import { openclawPack } from "./openclaw.js";
 
-/** Every runtime pack gisool ships, in the order init plans and doctor reports them. */
+/** Every runtime pack skillar ships, in the order init plans and doctor reports them. */
 export const PACKS: readonly RuntimePack[] = [claudeCodePack, codexPack, geminiPack, cursorPack, omoPack, gajaePack, openclawPack];
 
 export const PACK_IDS: readonly RuntimeId[] = PACKS.map((p) => p.id);

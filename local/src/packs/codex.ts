@@ -1,10 +1,11 @@
 import { accessSync, constants, existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join, delimiter, resolve } from "node:path";
+import { resolveSkillarHome } from "../config.js";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
 
 type Env = NodeJS.ProcessEnv;
-const BEGIN = "# >>> gisool managed";
-const END = "# <<< gisool managed";
+const BEGIN = "# >>> skillar managed";
+const END = "# <<< skillar managed";
 const tomlEsc = (v: string) => JSON.stringify(v).slice(1, -1);
 
 function onPath(bin: string, env: Env): string | undefined {
@@ -28,20 +29,22 @@ function realOrResolved(p: string): string {
 
 /** Splits text into the managed block (if any) and the rest. */
 function splitManaged(text: string): { outside: string; start: number; end: number } | null {
-  const s = text.indexOf(BEGIN);
+  const begin = text.includes(BEGIN) ? BEGIN : "# >>> gisool managed";
+  const finish = begin === BEGIN ? END : "# <<< gisool managed";
+  const s = text.indexOf(begin);
   if (s < 0) return null;
-  const e = text.indexOf(END, s);
+  const e = text.indexOf(finish, s);
   if (e < 0) return null;
-  let end = e + END.length;
+  let end = e + finish.length;
   if (text[end] === "\n") end++;
   return { outside: text.slice(0, s) + text.slice(end), start: s, end };
 }
 
 const OTEL_RE = /^\s*(\[\[?\s*otel\s*(\]|\.)|otel\s*\.)/m;
-const GISOOL_TABLE_RE = /^\s*\[\s*mcp_servers\.gisool\s*\]/m;
+const SKILLAR_TABLE_RE = /^\s*\[\s*mcp_servers\.(?:skillar|gisool)\s*\]/m;
 
-/** Returns the body of the [mcp_servers.gisul] table, or null. */
-function gisulTable(text: string): { start: number; end: number; body: string } | null {
+/** Returns the retired hosted [mcp_servers.gisul] table, distinct from the local daemon. */
+function legacyRemoteTable(text: string): { start: number; end: number; body: string } | null {
   const m = /^\[\s*mcp_servers\.gisul\s*\][^\n]*\n?/m.exec(text);
   if (!m) return null;
   const start = m.index + m[0].length;
@@ -52,16 +55,16 @@ function gisulTable(text: string): { start: number; end: number; body: string } 
 
 function remoteRegistered(text: string | null): boolean {
   if (text === null) return false;
-  const t = gisulTable(text);
+  const t = legacyRemoteTable(text);
   if (!t) return false;
   const url = /^\s*url\s*=\s*"([^"]*)"/m.exec(t.body)?.[1];
   if (url) return !/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:|\/|$)/.test(url);
   return /mcp-remote/.test(t.body);
 }
 
-// Newest applied gisool init that touched Codex, from the init manifests under $GISOOL_HOME/backups.
+// Newest applied skillar init that touched Codex, from the init manifests under $SKILLAR_HOME/backups.
 function lastCodexInit(c: { home: string; env: Env }): number | undefined {
-  const backups = join(c.env.GISOOL_HOME || join(c.home, ".gisool"), "backups");
+  const backups = join(resolveSkillarHome({ ...c.env, HOME: c.home }), "backups");
   let newest: number | undefined;
   let dirs: string[] = [];
   try { dirs = readdirSync(backups); } catch { return undefined; }
@@ -78,7 +81,7 @@ function lastCodexInit(c: { home: string; env: Env }): number | undefined {
 }
 
 // The shared app-server daemon Codex TUIs attach to; OTel is set up once per process, so a daemon older than the
-// gisool [otel] block never exports.
+// skillar [otel] block never exports.
 function runningDaemon(c: { home: string; env: Env }): { pid: number; startedAt: number } | undefined {
   const text = readText(join(codexDir(c), "app-server-daemon", "app-server.pid"));
   if (text === null) return undefined;
@@ -105,7 +108,7 @@ export const codexPack: RuntimePack = {
     if (existsSync(dir)) evidence.push(dir);
     const bin = onPath("codex", ctx.env);
     if (bin) evidence.push(bin);
-    return { installed: evidence.length > 0, evidence, remoteGisulRegistered: remoteRegistered(readText(configPath(ctx))) };
+    return { installed: evidence.length > 0, evidence, remoteSkillarRegistered: remoteRegistered(readText(configPath(ctx))) };
   },
   async plan(ctx): Promise<PackPlan> {
     const plan: PackPlan = { files: [], commands: [], notes: [], conflicts: [] };
@@ -117,8 +120,8 @@ export const codexPack: RuntimePack = {
     if (OTEL_RE.test(outside)) {
       plan.conflicts.push({ path, code: "unmanaged_otel", detail: "config.toml already has an unmanaged [otel] table or otel.* keys; refusing to edit" });
     }
-    if (GISOOL_TABLE_RE.test(outside)) {
-      plan.conflicts.push({ path, code: "unmanaged_gisool_mcp", detail: "config.toml already has an unmanaged [mcp_servers.gisool] table" });
+    if (SKILLAR_TABLE_RE.test(outside)) {
+      plan.conflicts.push({ path, code: "unmanaged_skillar_mcp", detail: "config.toml already has an unmanaged [mcp_servers.skillar] table" });
     }
     if (plan.conflicts.length) return plan;
 
@@ -132,18 +135,18 @@ export const codexPack: RuntimePack = {
     }
 
     if (ctx.disableRemote) {
-      const t = gisulTable(after);
+      const t = legacyRemoteTable(after);
       if (t && remoteRegistered(after)) {
         const body = /^\s*enabled\s*=.*$/m.test(t.body)
           ? t.body.replace(/^(\s*)enabled\s*=.*$/m, "$1enabled = false")
           : "enabled = false\n" + t.body;
         after = after.slice(0, t.start) + body + after.slice(t.end);
-        plan.notes.push("remote gisul MCP entry disabled with enabled = false");
+        plan.notes.push("remote skillar MCP entry disabled with enabled = false");
       }
     }
     if (after !== before) plan.files.push({ path, before, after, mode: 0o600 });
     plan.notes.push("codex exec exports OTel events only partially; no Codex hooks are installed (they require trust review)");
-    plan.notes.push("gisool serves both MCP 2026-07-28 and legacy initialize; Codex connects with or without the mcp_2026_07_28 feature.");
+    plan.notes.push("skillar serves both MCP 2026-07-28 and legacy initialize; Codex connects with or without the mcp_2026_07_28 feature.");
     if (runningDaemon(ctx)) plan.notes.push("a Codex app-server daemon is running; restart it so attached TUIs export OTel: codex app-server daemon restart");
     return plan;
   },
@@ -154,7 +157,7 @@ export const codexPack: RuntimePack = {
     const inner = managed && text ? text.slice(managed.start, managed.end) : "";
     const endpoint = `http://127.0.0.1:${ctx.port}/ingest/otlp/v1/logs`;
     // A project-local .codex/config.toml counts only when it is a different file from the user-level config (doctor run
-    // from $HOME reads the same file), and gisool's own managed block there is not a conflict.
+    // from $HOME reads the same file), and skillar's own managed block there is not a conflict.
     const localPath = join(process.cwd(), ".codex", "config.toml");
     const local = realOrResolved(localPath) === realOrResolved(path) ? null : readText(localPath);
     const localOutside = local === null ? null : (splitManaged(local)?.outside ?? local);
@@ -165,12 +168,12 @@ export const codexPack: RuntimePack = {
     if (daemon) {
       staleDaemon = initAt !== undefined && daemon.startedAt < initAt;
       daemonDetail = staleDaemon
-        ? `daemon pid ${daemon.pid} started ${new Date(daemon.startedAt).toISOString()}, before gisool init at ${new Date(initAt!).toISOString()}; TUIs attached to it send no prompts. Run: codex app-server daemon restart`
-        : `daemon pid ${daemon.pid} started after the last gisool init`;
+        ? `daemon pid ${daemon.pid} started ${new Date(daemon.startedAt).toISOString()}, before skillar init at ${new Date(initAt!).toISOString()}; TUIs attached to it send no prompts. Run: codex app-server daemon restart`
+        : `daemon pid ${daemon.pid} started after the last skillar init`;
     }
     return [
       { name: "codex OTel block present", ok: inner.includes("[otel]") && inner.includes(endpoint), detail: managed ? path : `no managed block in ${path}` },
-      { name: "codex MCP entry present", ok: inner.includes("[mcp_servers.gisool]") && inner.includes(`http://127.0.0.1:${ctx.port}/mcp`), detail: path },
+      { name: "codex MCP entry present", ok: (inner.includes("[mcp_servers.skillar]") || inner.includes("[mcp_servers.gisool]")) && inner.includes(`http://127.0.0.1:${ctx.port}/mcp`), detail: path },
       { name: "codex [otel] not in project-local config", ok: localOutside === null || !OTEL_RE.test(localOutside),
         detail: local === null ? "no project-local config" : "project-local .codex/config.toml defines otel" },
       { name: "codex app-server daemon loaded the OTel block", ok: !staleDaemon, detail: daemonDetail },

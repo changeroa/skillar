@@ -92,7 +92,7 @@ const gates = {
 const report = {
   catalog_size: entries.length, mode, cases: cases.length, paraphrase_cases: paraphrases.length, real_log_cases: realLog.length,
   metrics, gates, negative_best_scores: negativeBest, cases_results: rows, paraphrase_results: paraRows, real_log_smoke: realRows, exact, policy,
-  limitations: 'Maintainer-authored regression cases over hand-authored aliases, not an independent holdout. The paraphrase gate measures alias coverage, not ranker quality; use `gisool eval` on captured prompts for real quality. Local latency excludes MCP and agent overhead.',
+  limitations: 'Maintainer-authored regression cases over hand-authored aliases, not an independent holdout. The paraphrase gate measures alias coverage, not ranker quality; use `skillar eval` on captured prompts for real quality. Local latency excludes MCP and agent overhead.',
 };
 db.close();
 if (arg('--output')) await writeFile(arg('--output'), JSON.stringify(report, null, 2) + '\n');

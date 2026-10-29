@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { loadConfig, ensureToken, resolveGisoolHome } from "../config.js";
+import { loadConfig, ensureToken, resolveSkillarHome } from "../config.js";
 import type { Io } from "./serve.js";
 
 export function dashboardUrl(port: number, token: string): string {
@@ -8,9 +8,9 @@ export function dashboardUrl(port: number, token: string): string {
 
 export async function runOpen(opts: { print?: boolean }, env: NodeJS.ProcessEnv, io: Io): Promise<number> {
   const config = loadConfig(env);
-  const url = dashboardUrl(config.port, ensureToken(resolveGisoolHome(env)));
+  const url = dashboardUrl(config.port, ensureToken(resolveSkillarHome(env)));
   io.out(url + "\n");
-  if (opts.print || env.GISOOL_NO_CLI) return 0;
+  if (opts.print || (env.SKILLAR_NO_CLI ?? env.GISOOL_NO_CLI)) return 0;
   const opener = process.platform === "darwin" ? "open" : "xdg-open";
   return new Promise((resolve) => {
     const child = spawn(opener, [url], { env, stdio: "ignore", detached: true });

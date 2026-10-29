@@ -16,7 +16,7 @@ async function listen(handler) {
   return { port: server.address().port, close: () => new Promise((resolve) => server.close(resolve)) };
 }
 
-const fakeGisool = () => listen((req, res) => {
+const fakeSkillar = () => listen((req, res) => {
   res.writeHead(req.url === "/healthz" || req.url === "/api/stats" ? 200 : 404, { "content-type": "application/json" });
   res.end(JSON.stringify({ ok: true, version: VERSION }));
 });
@@ -46,14 +46,14 @@ async function listenHerdr(socketPath, onSocket) {
 async function fakeHerdr(sb) {
   const socketPath = join(sb.home, "herdr.sock");
   const herdr = await listenHerdr(socketPath, (socket) => socket.on("data", () => socket.end('{"id":"1","result":{"type":"pong","protocol":"1"}}\n')));
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   return herdr;
 }
 
 function prepareHome(sb, port) {
-  mkdirSync(sb.env.GISOOL_HOME, { recursive: true, mode: 0o700 });
-  writeFileSync(join(sb.env.GISOOL_HOME, "config.json"), JSON.stringify({ port }) + "\n");
-  openDb(join(sb.env.GISOOL_HOME, "gisool.db")).close();
+  mkdirSync(sb.env.SKILLAR_HOME, { recursive: true, mode: 0o700 });
+  writeFileSync(join(sb.env.SKILLAR_HOME, "config.json"), JSON.stringify({ port }) + "\n");
+  openDb(join(sb.env.SKILLAR_HOME, "skillar.db")).close();
 }
 
 const check = (report, name) => report.checks.find((c) => c.name === name);
@@ -68,7 +68,7 @@ function assertSchema(report) {
     assert.equal(typeof c.detail, "string");
     if ("code" in c) assert.equal(typeof c.code, "string");
   }
-  for (const name of ["service", "daemon", "remote_gisul", "token_mode", "fts5", "roots", "duplicates", "index_freshness", "hook_timeouts", "last_backup"]) {
+  for (const name of ["service", "daemon", "remote_skillar", "token_mode", "fts5", "roots", "duplicates", "index_freshness", "hook_timeouts", "last_backup"]) {
     assert.ok(check(report, name), `missing check ${name}`);
   }
 }
@@ -88,7 +88,7 @@ test("doctor --json with the daemon down exits 1 and reports daemon_unreachable"
 
 test("doctor --json with the daemon up exits 0; no backups reports last_backup: none without failing", async (t) => {
   const sb = cliSandbox({ runtimes: [] });
-  const daemon = await fakeGisool();
+  const daemon = await fakeSkillar();
   const herdr = await fakeHerdr(sb);
   t.after(async () => { await daemon.close(); await herdr.close(); sb.cleanup(); });
   prepareHome(sb, daemon.port);
@@ -109,7 +109,7 @@ test("doctor --json with the daemon up exits 0; no backups reports last_backup: 
 
 test("doctor lists sibling skill families in text and --json", async (t) => {
   const sb = cliSandbox({ runtimes: [] });
-  const daemon = await fakeGisool();
+  const daemon = await fakeSkillar();
   t.after(async () => { await daemon.close(); sb.cleanup(); });
   prepareHome(sb, daemon.port);
   const skills = join(sb.home, "skills");
@@ -117,7 +117,7 @@ test("doctor lists sibling skill families in text and --json", async (t) => {
     mkdirSync(join(skills, name), { recursive: true });
     writeFileSync(join(skills, name, "SKILL.md"), `---\nname: ${name}\ndescription: test skill ${name}\n---\nbody\n`);
   }
-  writeFileSync(join(sb.env.GISOOL_HOME, "config.json"), JSON.stringify({ port: daemon.port, roots: [{ id: "t", path: skills }] }) + "\n");
+  writeFileSync(join(sb.env.SKILLAR_HOME, "config.json"), JSON.stringify({ port: daemon.port, roots: [{ id: "t", path: skills }] }) + "\n");
   const r = await runCli(["doctor", "--json"], sb.env);
   const report = JSON.parse(r.stdout);
   assert.deepEqual(report.families, [{ id: "re0", members: ["re0", "re0-loop", "re0-work"] }]);
@@ -126,19 +126,19 @@ test("doctor lists sibling skill families in text and --json", async (t) => {
   assert.match(text.stdout, /skill_families: re0: re0, re0-loop, re0-work/);
 });
 
-test("doctor reports a listener that is not gisool", async (t) => {
+test("doctor reports a listener that is not skillar", async (t) => {
   const sb = cliSandbox({ runtimes: [] });
   const other = await listen((req, res) => { res.writeHead(200); res.end("hello"); });
   t.after(async () => { await other.close(); sb.cleanup(); });
   prepareHome(sb, other.port);
   const r = await runCli(["doctor", "--json"], sb.env);
   assert.equal(r.code, 1);
-  assert.equal(check(JSON.parse(r.stdout), "daemon").code, "not_gisool");
+  assert.equal(check(JSON.parse(r.stdout), "daemon").code, "not_skillar");
 });
 
-test("doctor flags a gisool hook timeout above 5 s as hook_timeout_too_long", async (t) => {
+test("doctor flags a skillar hook timeout above 5 s as hook_timeout_too_long", async (t) => {
   const sb = cliSandbox({ runtimes: [".claude"] });
-  const daemon = await fakeGisool();
+  const daemon = await fakeSkillar();
   t.after(async () => { await daemon.close(); sb.cleanup(); });
   prepareHome(sb, daemon.port);
   const hook = { type: "command", command: '"/usr/bin/node" "/x/packs/hook-post.mjs" claude-code', timeout: 600 };
@@ -151,9 +151,9 @@ test("doctor flags a gisool hook timeout above 5 s as hook_timeout_too_long", as
   assert.match(c.detail, /600s/);
 });
 
-test("a remote gisul registration is a warning, not a failure", async (t) => {
+test("a remote skillar registration is a warning, not a failure", async (t) => {
   const sb = cliSandbox({ runtimes: [".gemini"] });
-  const daemon = await fakeGisool();
+  const daemon = await fakeSkillar();
   const herdr = await fakeHerdr(sb);
   t.after(async () => { await daemon.close(); await herdr.close(); sb.cleanup(); });
   prepareHome(sb, daemon.port);
@@ -167,9 +167,9 @@ test("a remote gisul registration is a warning, not a failure", async (t) => {
   const r = await runCli(["doctor", "--json"], sb.env);
   const report = JSON.parse(r.stdout);
   assert.equal(r.code, 0, JSON.stringify(report.checks.filter((c) => c.status === "fail")));
-  const remote = check(report, "remote_gisul");
+  const remote = check(report, "remote_skillar");
   assert.equal(remote.status, "warn");
-  assert.equal(remote.code, "remote_gisul_registered");
+  assert.equal(remote.code, "remote_skillar_registered");
   assert.match(remote.detail, /gemini/);
   assert.notEqual(check(report, "last_backup").detail, "none");
 });
@@ -190,7 +190,7 @@ test("doctor fails with token_mismatch when /api/stats rejects this install's to
   const c = check(JSON.parse(r.stdout), "daemon");
   assert.equal(c.status, "fail");
   assert.equal(c.code, "token_mismatch");
-  assert.match(c.detail, /another gisool instance|rotated/);
+  assert.match(c.detail, /another skillar instance|rotated/);
   assert.deepEqual(seen, ["/healthz", "/api/stats"]);
 });
 
@@ -208,14 +208,14 @@ test("doctor sends this install's bearer token to /api/stats and reports ok on 2
   const r = await runCli(["doctor", "--json"], sb.env);
   assert.equal(r.code, 0, r.output);
   assert.equal(check(JSON.parse(r.stdout), "daemon").status, "ok");
-  const token = readFileSync(join(sb.env.GISOOL_HOME, "token"), "utf8").trim();
+  const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   assert.ok(token.length > 0);
   assert.equal(auth, "Bearer " + token);
 });
 
 test("doctor herdr check accepts a pong from the configured unix socket", async (t) => {
   const sb = cliSandbox({ runtimes: [] });
-  const daemon = await fakeGisool();
+  const daemon = await fakeSkillar();
   const socketPath = join(sb.home, "herdr.sock");
   const herdr = await listenHerdr(socketPath, (socket) => {
     let request = "";
@@ -226,7 +226,7 @@ test("doctor herdr check accepts a pong from the configured unix socket", async 
   });
   t.after(async () => { await daemon.close(); await herdr.close(); sb.cleanup(); });
   prepareHome(sb, daemon.port);
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   const r = await runCli(["doctor", "--json"], sb.env);
   assert.equal(r.code, 0, r.output);
   const c = check(JSON.parse(r.stdout), "herdr");
@@ -238,7 +238,7 @@ test("doctor herdr check fails for an unreachable configured socket", async (t) 
   const sb = cliSandbox({ runtimes: [] });
   t.after(sb.cleanup);
   prepareHome(sb, await freePort());
-  sb.env.GISOOL_HERDR_SOCKET = "/nonexistent";
+  sb.env.SKILLAR_HERDR_SOCKET = "/nonexistent";
   const r = await runCli(["doctor"], sb.env);
   assert.equal(r.code, 1, r.output);
   assert.match(r.stdout, /\[fail\] herdr: install herdr and start it: herdr/);
@@ -252,7 +252,7 @@ test("doctor herdr check rejects a malformed socket reply", async (t) => {
   });
   t.after(async () => { await herdr.close(); sb.cleanup(); });
   prepareHome(sb, await freePort());
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   const r = await runCli(["doctor"], sb.env);
   assert.equal(r.code, 1, r.output);
   assert.match(r.stdout, /\[fail\] herdr: install herdr and start it: herdr/);
@@ -266,7 +266,7 @@ test("doctor herdr check rejects a truncated reply followed by EOF", async (t) =
   });
   t.after(async () => { await herdr.close(); sb.cleanup(); });
   prepareHome(sb, await freePort());
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   const r = await runCli(["doctor"], sb.env);
   assert.equal(r.code, 1, r.output);
   assert.match(r.stdout, /\[fail\] herdr: install herdr and start it: herdr \(herdr closed the socket before replying\)/);
@@ -280,7 +280,7 @@ test("doctor herdr check rejects an empty socket close", async (t) => {
   });
   t.after(async () => { await herdr.close(); sb.cleanup(); });
   prepareHome(sb, await freePort());
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   const r = await runCli(["doctor"], sb.env);
   assert.equal(r.code, 1, r.output);
   assert.match(r.stdout, /\[fail\] herdr: install herdr and start it: herdr \(herdr closed the socket before replying\)/);
@@ -292,7 +292,7 @@ test("doctor herdr check fails when the socket never replies", async (t) => {
   const herdr = await listenHerdr(socketPath, () => {});
   t.after(async () => { await herdr.close(); sb.cleanup(); });
   prepareHome(sb, await freePort());
-  sb.env.GISOOL_HERDR_SOCKET = socketPath;
+  sb.env.SKILLAR_HERDR_SOCKET = socketPath;
   const started = Date.now();
   const r = await runCli(["doctor"], sb.env);
   assert.equal(r.code, 1, r.output);

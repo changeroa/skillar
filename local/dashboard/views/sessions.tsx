@@ -20,7 +20,7 @@ const USAGE_CSS = `
 installStyles("sessions-usage", USAGE_CSS);
 
 export const ATTRIBUTION_EXPLAINER =
-  "gisool links each MCP search and load to a runtime session by the runtime's session id, vendor metadata, the search trace handle, or a recent-activity window. These matched no session, so they are stored but appear in no session row.";
+  "skillar links each MCP search and load to a runtime session by the runtime's session id, vendor metadata, the search trace handle, or a recent-activity window. These matched no session, so they are stored but appear in no session row.";
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
@@ -159,7 +159,7 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
       <h2>Waiting for the first event</h2>
       <p>
         No runtime has sent an event yet. Start a session in a connected runtime, or run
-        {" "}<code class="cmd">gisool doctor</code> to check each connection.
+        {" "}<code class="cmd">skillar doctor</code> to check each connection.
       </p>
       <dl class="checklist">
         {RUNTIME_IDS.filter((id) => id !== "unknown").map((id) => {
@@ -200,7 +200,7 @@ function NoSessionsEmpty() {
   return (
     <section class="empty">
       <h2>No sessions recorded yet</h2>
-      <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">gisool doctor</code>.</p>
+      <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>
     </section>
   );
 }

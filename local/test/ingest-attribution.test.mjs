@@ -93,7 +93,7 @@ test("late binding: MCP search with toolUseId tu1 then PostToolUse hook -> vendo
   const { store, deps } = lateBindingStore();
   const first = ingest(searchEvent({ clientName: "claude-code", meta: { "claudecode/toolUseId": "tu1" } }, outcome, { total: 0 }, NOW), deps);
   assert.equal(first.sessionId, "unattributed");
-  ingestHook("claude-code", fixture("claude-hook-post-tool-use-gisool.json"), deps);
+  ingestHook("claude-code", fixture("claude-hook-post-tool-use-skillar.json"), deps);
   const s1 = store.upsertSession({ runtime: "claude-code", runtimeSessionId: "s1" }, NOW);
   assert.equal(store.events.length, 1);
   assert.deepEqual(store.events[0].attribution, { sessionId: s1, method: "vendor_meta" });
@@ -101,7 +101,7 @@ test("late binding: MCP search with toolUseId tu1 then PostToolUse hook -> vendo
 
 test("late binding: hook first, then MCP search -> same result", () => {
   const { store, deps } = lateBindingStore();
-  ingestHook("claude-code", fixture("claude-hook-post-tool-use-gisool.json"), deps);
+  ingestHook("claude-code", fixture("claude-hook-post-tool-use-skillar.json"), deps);
   ingest(searchEvent({ clientName: "claude-code", meta: { "claudecode/toolUseId": "tu1" } }, outcome, { total: 0 }, NOW), deps);
   const s1 = store.upsertSession({ runtime: "claude-code", runtimeSessionId: "s1" }, NOW);
   assert.equal(store.events.length, 1);

@@ -11,7 +11,7 @@ test("modern discovery advertises only the Skills extension, resources and searc
   const result = await client.request("server/discover");
   assert.deepEqual(result.supportedVersions, ["2026-07-28"]);
   assert.deepEqual(result.capabilities, { tools: {}, resources: {}, extensions: { "io.modelcontextprotocol/skills": {} } });
-  assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "gisool");
+  assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "skillar");
   assert.equal(typeof result.instructions, "string");
   assert.deepEqual((await client.listTools()).tools.map((t) => t.name), ["search_skills"]);
 }));
@@ -26,7 +26,7 @@ test("modern search and resource reads record load/read_file observations and su
   assert.ok(search.body.candidates.length >= 2);
   assert.equal(search.body.candidates[0].uri, uriOf("pr-review"));
   assert.deepEqual(search.body.candidates.map((c) => c.rank), search.body.candidates.map((_, i) => i + 1));
-  const meta = { threadId: "t1", "app.gisool/traceId": search.body.trace_id };
+  const meta = { threadId: "t1", "app.skillar/traceId": search.body.trace_id };
   const entry = (await client.request("skills/get", { uri: uriOf("pr-review") })).skill;
   const load = await client.readResource({ uri: entry.uri, _meta: meta });
   const bytes = Buffer.from(load.contents[0].text);
@@ -103,7 +103,7 @@ test("all cacheable results carry complete, TTL, private scope and server identi
     assert.equal(result.resultType, "complete", method);
     assert.equal(result.ttlMs, 60000, method);
     assert.equal(result.cacheScope, "private", method);
-    assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "gisool", method);
+    assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "skillar", method);
   }
 }));
 

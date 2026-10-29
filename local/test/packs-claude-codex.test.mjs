@@ -22,7 +22,7 @@ test("claude detect true/false", async () => {
     mkdirSync(join(sb.home, ".claude"));
     const d = await claudeCodePack.detect(mkCtx(sb));
     assert.equal(d.installed, true);
-    assert.equal(d.remoteGisulRegistered, false);
+    assert.equal(d.remoteSkillarRegistered, false);
   } finally { sb.cleanup(); }
 });
 
@@ -44,7 +44,7 @@ test("claude plan keeps unrelated keys, exact blocks, idempotent, commands exist
     assert.equal(JSON.stringify(out.hooks.PostToolUse[0]), JSON.stringify(foreign[0]));
     assert.equal(out.hooks.PostToolUse.length, 2);
     const g = out.hooks.PostToolUse[1];
-    assert.equal(g.matcher, "Skill|mcp__gisool__.*");
+    assert.equal(g.matcher, "Skill|mcp__(skillar|gisool)__.*");
     assert.equal(g.hooks[0].timeout, 5);
     assert.equal(out.hooks.UserPromptExpansion.length, 1);
     assert.equal(out.hooks.SessionStart.length, 1);
@@ -80,29 +80,29 @@ test("claude conflicts: env value, unparseable json", async () => {
   } finally { sb.cleanup(); }
 });
 
-test("claude mcp command only with claude on PATH and no GISOOL_NO_CLI", async () => {
+test("claude mcp command only with claude on PATH and no SKILLAR_NO_CLI", async () => {
   const sb = makeSandbox();
   try {
     const dir = fakeBin(sb, "claude");
     const env = { ...sb.env, PATH: dir };
-    delete env.GISOOL_NO_CLI;
+    delete env.SKILLAR_NO_CLI;
     const plan = await claudeCodePack.plan(mkCtx(sb, { env }));
     assert.equal(plan.commands.length, 1);
-    assert.deepEqual(plan.commands[0].argv, ["claude", "mcp", "add", "--transport", "http", "--scope", "user", "gisool",
+    assert.deepEqual(plan.commands[0].argv, ["claude", "mcp", "add", "--transport", "http", "--scope", "user", "skillar",
       "http://127.0.0.1:47123/mcp", "--header", "Authorization: Bearer tok123"]);
-    assert.deepEqual(plan.commands[0].undo.argv, ["claude", "mcp", "remove", "--scope", "user", "gisool"]);
-    const noCli = await claudeCodePack.plan(mkCtx(sb, { env: { ...env, GISOOL_NO_CLI: "1" } }));
+    assert.deepEqual(plan.commands[0].undo.argv, ["claude", "mcp", "remove", "--scope", "user", "skillar"]);
+    const noCli = await claudeCodePack.plan(mkCtx(sb, { env: { ...env, SKILLAR_NO_CLI: "1" } }));
     assert.equal(noCli.commands.length, 0);
-    assert.ok(noCli.notes.some(n => n.includes("manual step") && n.includes("claude mcp add --transport http --scope user gisool http://127.0.0.1:47123/mcp --header")));
+    assert.ok(noCli.notes.some(n => n.includes("manual step") && n.includes("claude mcp add --transport http --scope user skillar http://127.0.0.1:47123/mcp --header")));
   } finally { sb.cleanup(); }
 });
 
-test("claude remote gisul detected; disableRemote adds manual note", async () => {
+test("claude remote skillar detected; disableRemote adds manual note", async () => {
   const sb = makeSandbox();
   try {
-    put(join(sb.home, ".claude.json"), JSON.stringify({ mcpServers: { gisul: { type: "http", url: "https://gisul.example/mcp" } } }));
+    put(join(sb.home, ".claude.json"), JSON.stringify({ mcpServers: { gisul: { type: "http", url: "https://skillar.example/mcp" } } }));
     const d = await claudeCodePack.detect(mkCtx(sb));
-    assert.equal(d.remoteGisulRegistered, true);
+    assert.equal(d.remoteSkillarRegistered, true);
     const plan = await claudeCodePack.plan(mkCtx(sb, { disableRemote: true }));
     assert.ok(plan.notes.some(n => n.includes("claude mcp remove --scope user gisul")));
     assert.ok(plan.files.every(f => !f.path.endsWith(".claude.json")));
@@ -122,35 +122,35 @@ test("codex detect, plan block, idempotent, preserves content", async () => {
     assert.deepEqual(plan.conflicts, []);
     const after = plan.files[0].after;
     assert.ok(after.startsWith(orig));
-    assert.ok(after.includes('[mcp_servers.gisool]\nurl = "http://127.0.0.1:47123/mcp"\nhttp_headers = { Authorization = "Bearer tok123" }'));
+    assert.ok(after.includes('[mcp_servers.skillar]\nurl = "http://127.0.0.1:47123/mcp"\nhttp_headers = { Authorization = "Bearer tok123" }'));
     assert.ok(after.includes('[otel]\nlog_user_prompt = true\nexporter = { otlp-http = { endpoint = "http://127.0.0.1:47123/ingest/otlp/v1/logs", protocol = "json", headers = { Authorization = "Bearer tok123" } } }'));
     assert.ok(after.includes('metrics_exporter = "none"'));
     assert.ok(after.includes('trace_exporter = { otlp-http = { endpoint = "http://127.0.0.1:47123/ingest/otlp/v1/traces", protocol = "json", headers = { Authorization = "Bearer tok123" } } }'));
-    assert.ok(after.includes("# >>> gisool managed") && after.includes("# <<< gisool managed"));
+    assert.ok(after.includes("# >>> skillar managed") && after.includes("# <<< skillar managed"));
     put(p, after);
     assert.deepEqual((await codexPack.plan(ctx)).files, []);
     const moved = await codexPack.plan({ ...ctx, port: 50000 });
     assert.ok(moved.files[0].after.startsWith(orig));
-    assert.equal(moved.files[0].after.match(/>>> gisool managed/g).length, 1);
+    assert.equal(moved.files[0].after.match(/>>> skillar managed/g).length, 1);
     const checks = await codexPack.doctorChecks({ home: sb.home, env: ctx.env, port: 47123 });
     assert.ok(checks.every(c => c.ok), JSON.stringify(checks));
   } finally { sb.cleanup(); }
 });
 
-test("codex doctor: an app-server daemon started before the last gisool init fails with the restart command", async () => {
+test("codex doctor: an app-server daemon started before the last skillar init fails with the restart command", async () => {
   const sb = makeSandbox();
   try {
-    const env = { ...mkCtx(sb).env, GISOOL_HOME: join(sb.home, ".gisool") };
+    const env = { ...mkCtx(sb).env, SKILLAR_HOME: join(sb.home, ".skillar") };
     const check = async () => (await codexPack.doctorChecks({ home: sb.home, env, port: 47123 })).find(c => c.name === "codex app-server daemon loaded the OTel block");
     assert.deepEqual(await check(), { name: "codex app-server daemon loaded the OTel block", ok: true, detail: "no running Codex app-server daemon" });
     const initAt = Date.parse("2026-10-13T07:38:33.279Z");
-    put(join(sb.home, ".gisool", "backups", "20261013T073833273Z", "manifest.json"), JSON.stringify({ status: "applied", createdAt: new Date(initAt).toISOString(), runtimes: ["codex"] }));
-    put(join(sb.home, ".gisool", "backups", "20261014T000000000Z", "manifest.json"), JSON.stringify({ status: "rolled_back", createdAt: "2026-10-14T00:00:00.000Z", runtimes: ["codex"] }));
+    put(join(sb.home, ".skillar", "backups", "20261013T073833273Z", "manifest.json"), JSON.stringify({ status: "applied", createdAt: new Date(initAt).toISOString(), runtimes: ["codex"] }));
+    put(join(sb.home, ".skillar", "backups", "20261014T000000000Z", "manifest.json"), JSON.stringify({ status: "rolled_back", createdAt: "2026-10-14T00:00:00.000Z", runtimes: ["codex"] }));
     const pidFile = join(sb.home, ".codex", "app-server-daemon", "app-server.pid");
     put(pidFile, JSON.stringify({ pid: process.pid, processIdentity: { startSeconds: initAt / 1000 - 3 * 86400 } }));
     const stale = await check();
     assert.equal(stale.ok, false);
-    assert.match(stale.detail, new RegExp(`daemon pid ${process.pid} started .* before gisool init at 2026-10-13T07:38:33.279Z.*codex app-server daemon restart`));
+    assert.match(stale.detail, new RegExp(`daemon pid ${process.pid} started .* before skillar init at 2026-10-13T07:38:33.279Z.*codex app-server daemon restart`));
     put(pidFile, JSON.stringify({ pid: process.pid, processIdentity: { startSeconds: initAt / 1000 + 60 } }));
     assert.equal((await check()).ok, true, "a daemon restarted after init is fine; the rolled-back run does not count");
   } finally { sb.cleanup(); }
@@ -169,7 +169,7 @@ test("codex doctor: project-local otel check ignores the user config read via cw
     const project = join(sb.home, "project");
     put(join(project, ".codex", "config.toml"), readFileSync(p, "utf8"));
     process.chdir(project);
-    assert.equal((await check()).ok, true, "gisool's own managed block in a project-local config is not a conflict");
+    assert.equal((await check()).ok, true, "skillar's own managed block in a project-local config is not a conflict");
     put(join(project, ".codex", "config.toml"), '[otel]\nlog_user_prompt = false\n');
     assert.deepEqual(await check(), { name: "codex [otel] not in project-local config", ok: false, detail: "project-local .codex/config.toml defines otel" });
   } finally {
@@ -196,14 +196,14 @@ test("codex respects CODEX_HOME; unmanaged otel forms are conflicts with no file
   } finally { sb.cleanup(); }
 });
 
-test("codex disableRemote sets enabled = false on remote gisul", async () => {
+test("codex disableRemote sets enabled = false on remote skillar", async () => {
   const sb = makeSandbox();
   try {
-    put(join(sb.home, ".codex", "config.toml"), '[mcp_servers.gisul]\nurl = "https://gisul.example/mcp"\n');
+    put(join(sb.home, ".codex", "config.toml"), '[mcp_servers.gisul]\nurl = "https://skillar.example/mcp"\n');
     const ctx = mkCtx(sb, { disableRemote: true });
-    assert.equal((await codexPack.detect(ctx)).remoteGisulRegistered, true);
+    assert.equal((await codexPack.detect(ctx)).remoteSkillarRegistered, true);
     const plan = await codexPack.plan(ctx);
-    assert.ok(plan.files[0].after.includes('[mcp_servers.gisul]\nenabled = false\nurl = "https://gisul.example/mcp"'));
+    assert.ok(plan.files[0].after.includes('[mcp_servers.gisul]\nenabled = false\nurl = "https://skillar.example/mcp"'));
   } finally { sb.cleanup(); }
 });
 
@@ -214,8 +214,8 @@ const hookRun = (sb) => new Promise(resolve => {
   c.on("close", code => resolve({ code, ms: Date.now() - t0 }));
 });
 const seedDaemon = (sb, port) => {
-  put(join(sb.home, ".gisool", "token"), "tok123\n");
-  put(join(sb.home, ".gisool", "config.json"), JSON.stringify({ port }));
+  put(join(sb.home, ".skillar", "token"), "tok123\n");
+  put(join(sb.home, ".skillar", "config.json"), JSON.stringify({ port }));
 };
 
 test("hook-post exits 0 fast when daemon is down or unconfigured", async () => {

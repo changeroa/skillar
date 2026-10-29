@@ -4,7 +4,7 @@ export const PROTOCOL_VERSION = "2026-07-28";
 export const VERSION_KEY = "io.modelcontextprotocol/protocolVersion";
 export const CLIENT_INFO_KEY = "io.modelcontextprotocol/clientInfo";
 export const CLIENT_CAPABILITIES_KEY = "io.modelcontextprotocol/clientCapabilities";
-export const TRACE_KEY = "app.gisool/traceId";
+export const TRACE_KEY = "app.skillar/traceId";
 export const CACHE = { ttlMs: 60_000, cacheScope: "private" } as const;
 
 export class RpcError extends Error {
@@ -42,6 +42,7 @@ export const metaSchema = z.object({
   }).passthrough(),
   [CLIENT_INFO_KEY]: z.object({ name: z.string(), version: z.string() }).passthrough().optional(),
   [TRACE_KEY]: z.string().max(128).optional(),
+  "app.gisool/traceId": z.string().max(128).optional(),
   "io.modelcontextprotocol/logLevel": z.enum(["debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"]).optional(),
   progressToken: idSchema.optional(),
 }).catchall(z.unknown()).refine((meta) => Object.keys(meta).every((key) => metaKey.test(key)), "Invalid _meta key");
@@ -58,7 +59,7 @@ export function parseParams(message: Message): RequestParams {
 export function checkVersion(meta: RequestMeta): void {
   const requested = meta[VERSION_KEY];
   if (requested !== PROTOCOL_VERSION) {
-    throw new RpcError(-32022, `Unsupported protocol version; gisool supports only ${PROTOCOL_VERSION}`, { supported: [PROTOCOL_VERSION], requested });
+    throw new RpcError(-32022, `Unsupported protocol version; skillar supports only ${PROTOCOL_VERSION}`, { supported: [PROTOCOL_VERSION], requested });
   }
 }
 

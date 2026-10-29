@@ -10,10 +10,10 @@ const TOKEN = "tok-123";
 let n = 0;
 
 async function loadExt(runtime, sb, port) {
-  mkdirSync(sb.env.GISOOL_HOME, { recursive: true });
-  writeFileSync(join(sb.env.GISOOL_HOME, "token"), TOKEN);
-  process.env.GISOOL_HOME = sb.env.GISOOL_HOME;
-  process.env.GISOOL_PORT = String(port);
+  mkdirSync(sb.env.SKILLAR_HOME, { recursive: true });
+  writeFileSync(join(sb.env.SKILLAR_HOME, "token"), TOKEN);
+  process.env.SKILLAR_HOME = sb.env.SKILLAR_HOME;
+  process.env.SKILLAR_PORT = String(port);
   const mod = await import(new URL(`packs/${runtime}/extension/index.js?n=${n++}`, PACKAGE_ROOT).href);
   const handlers = [];
   mod.default({ on: (...a) => handlers.push(a) });
@@ -66,7 +66,7 @@ for (const runtime of ["omo", "gajae"]) {
       const out = handlers[0][1](event, ctx);
       assert.equal(out, event);
       assert.ok(out.systemPrompt.startsWith("base"));
-      assert.ok(out.systemPrompt.trimEnd().endsWith("</gisool-discovery>"));
+      assert.ok(out.systemPrompt.trimEnd().endsWith("</skillar-discovery>"));
       assert.match(out.systemPrompt, /search_skills/);
       const first = await within(l.nth(0), 5000, "first POST");
       assert.equal(first.url, `/ingest/hook/${runtime}`);
@@ -139,7 +139,7 @@ function ctxFor(sb, extra = {}) {
   return { home: sb.home, env: sb.env, port: 8799, token: TOKEN, nodePath: process.execPath, packageRoot, disableRemote: false, ...extra };
 }
 
-test("omo pack plan: mcp.json + extension files, merges existing, disables remote gisul", async () => {
+test("omo pack plan: mcp.json + extension files, merges existing, disables remote skillar", async () => {
   const { omoPack } = await distImport("packs/omo.js");
   const sb = makeSandbox();
   try {
@@ -149,19 +149,19 @@ test("omo pack plan: mcp.json + extension files, merges existing, disables remot
     writeFileSync(join(agent, "mcp.json"), JSON.stringify({ mcpServers: { gisul: remote, other: { command: "x" } } }));
     const det = await omoPack.detect({ home: sb.home, env: sb.env });
     assert.equal(det.installed, true);
-    assert.equal(det.remoteGisulRegistered, true);
+    assert.equal(det.remoteSkillarRegistered, true);
     const plan = await omoPack.plan(ctxFor(sb, { disableRemote: true }));
     assert.deepEqual(plan.conflicts, []);
     const mcp = plan.files.find(f => f.path === join(agent, "mcp.json"));
     const cfg = JSON.parse(mcp.after);
-    assert.deepEqual(cfg.mcpServers.gisool, { type: "http", url: "http://127.0.0.1:8799/mcp", headers: { Authorization: `Bearer ${TOKEN}` } });
+    assert.deepEqual(cfg.mcpServers.skillar, { type: "http", url: "http://127.0.0.1:8799/mcp", headers: { Authorization: `Bearer ${TOKEN}` } });
     assert.equal(cfg.mcpServers.gisul.enabled, false);
     assert.equal(cfg.mcpServers.gisul.command, "npx");
     assert.deepEqual(cfg.mcpServers.other, { command: "x" });
     assert.equal(mcp.mode, 0o600);
-    const idx = plan.files.find(f => f.path === join(agent, "extensions", "gisool", "index.js"));
+    const idx = plan.files.find(f => f.path === join(agent, "extensions", "skillar", "index.js"));
     assert.equal(idx.after, readFileSync(join(packageRoot, "packs/omo/extension/index.js"), "utf8"));
-    assert.ok(plan.files.some(f => f.path === join(agent, "extensions", "gisool", "discovery.md")));
+    assert.ok(plan.files.some(f => f.path === join(agent, "extensions", "skillar", "discovery.md")));
     const kept = await omoPack.plan(ctxFor(sb));
     assert.equal(JSON.parse(kept.files[0].after).mcpServers.gisul.enabled, undefined);
     const checks = await omoPack.doctorChecks({ home: sb.home, env: sb.env, port: 8799 });
@@ -177,7 +177,7 @@ test("gajae pack plan honours GJC env and detects nothing when absent", async ()
     const plan = await gajaePack.plan(ctxFor(sb));
     const agent = join(sb.home, ".gjc", "agent");
     assert.ok(plan.files.some(f => f.path === join(agent, "mcp.json") && f.before === null));
-    assert.ok(plan.files.some(f => f.path === join(agent, "extensions", "gisool", "index.js")));
+    assert.ok(plan.files.some(f => f.path === join(agent, "extensions", "skillar", "index.js")));
     const custom = await gajaePack.plan(ctxFor(sb, { env: { ...sb.env, GJC_CONFIG_DIR: "../x" } }));
     assert.equal(custom.conflicts[0].code, "agent_dir_unresolved");
     mkdirSync(agent, { recursive: true });

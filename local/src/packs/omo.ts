@@ -1,5 +1,6 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+import { localServerName } from "./json-config.js";
 import type { PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 
 export type PiPackSpec = {
@@ -53,7 +54,7 @@ function isLoopbackUrl(raw: string): boolean {
   }
 }
 
-function isRemoteGisul(server: unknown): boolean {
+function isRemoteSkillar(server: unknown): boolean {
   if (!isObject(server)) return false;
   if (typeof server.url === "string") return !isLoopbackUrl(server.url);
   const argv = [server.command, ...(Array.isArray(server.args) ? server.args : [])];
@@ -71,16 +72,16 @@ function parseConfig(text: string | null): Record<string, unknown> | undefined {
 }
 
 export function createPiPack(spec: PiPackSpec): RuntimePack {
-  const extDir = (agentDir: string) => join(agentDir, "extensions", spec.extensionName);
+  const extDir = (agentDir: string) => join(agentDir, "extensions", existsSync(join(agentDir, "extensions", "gisool")) ? "gisool" : spec.extensionName);
   return {
     id: spec.id as RuntimeId,
     async detect({ home, env }) {
       let agentDir: string;
-      try { agentDir = spec.agentDir(home, env); } catch { return { installed: false, evidence: [], remoteGisulRegistered: false }; }
+      try { agentDir = spec.agentDir(home, env); } catch { return { installed: false, evidence: [], remoteSkillarRegistered: false }; }
       const evidence = [agentDir, join(home, spec.installMarker)].filter(p => existsSync(p));
       const cfg = parseConfig(readOrNull(join(agentDir, "mcp.json")));
       const servers = isObject(cfg?.mcpServers) ? cfg.mcpServers : {};
-      return { installed: evidence.length > 0, evidence, remoteGisulRegistered: isRemoteGisul(servers.gisul) };
+      return { installed: evidence.length > 0, evidence, remoteSkillarRegistered: isRemoteSkillar(servers.gisul) || isRemoteSkillar(servers.skillar) };
     },
     async plan(ctx: PackCtx): Promise<PackPlan> {
       const plan: PackPlan = { files: [], commands: [], notes: [], conflicts: [] };
@@ -97,10 +98,14 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
         return plan;
       }
       const servers: Record<string, unknown> = { ...(isObject(cfg.mcpServers) ? cfg.mcpServers : {}) };
-      servers.gisool = { type: "http", url: `http://127.0.0.1:${ctx.port}/mcp`, headers: { Authorization: `Bearer ${ctx.token}` } };
-      if (ctx.disableRemote && isRemoteGisul(servers.gisul)) {
+      if (isRemoteSkillar(servers.skillar)) {
+        plan.conflicts.push({ path: mcpPath, code: "remote_name_conflict", detail: "The skillar entry is remote; resolve it before installing the local daemon" });
+        return plan;
+      }
+      servers[localServerName(servers)] = { type: "http", url: `http://127.0.0.1:${ctx.port}/mcp`, headers: { Authorization: `Bearer ${ctx.token}` } };
+      if (ctx.disableRemote && isRemoteSkillar(servers.gisul)) {
         servers.gisul = { ...(servers.gisul as Record<string, unknown>), enabled: false };
-        plan.notes.push("remote gisul entry set to enabled:false (original definition kept)");
+        plan.notes.push("legacy remote gisul entry set to enabled:false (original definition kept)");
       }
       const mcpAfter = JSON.stringify({ ...cfg, mcpServers: servers }, null, 2) + "\n";
       plan.files.push({ path: mcpPath, before, after: mcpAfter, mode: 0o600 });
@@ -113,7 +118,7 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
       };
       for (const name of EXT_FILES) add(join(dir, name), readFileSync(join(source, name), "utf8"));
       add(join(dir, "config.json"), JSON.stringify({ port: ctx.port }, null, 2) + "\n");
-      plan.notes.push(`extension forwarder installed at ${dir}; it reads the token from $GISOOL_HOME/token at load`);
+      plan.notes.push(`extension forwarder installed at ${dir}; it reads the token from $SKILLAR_HOME/token at load`);
       return plan;
     },
     async doctorChecks({ home, env, port }) {
@@ -123,10 +128,10 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
         return [{ name: `${spec.id} agent dir`, ok: false, detail: (e as Error).message }];
       }
       const cfg = parseConfig(readOrNull(join(agentDir, "mcp.json")));
-      const entry = isObject(cfg?.mcpServers) ? cfg.mcpServers.gisool : undefined;
+      const entry = isObject(cfg?.mcpServers) ? cfg.mcpServers[localServerName(cfg.mcpServers)] : undefined;
       const want = `http://127.0.0.1:${port}/mcp`;
       const url = isObject(entry) ? entry.url : undefined;
-      checks.push({ name: `${spec.id} mcp.json gisool`, ok: url === want, detail: url === want ? want : `expected ${want}, found ${String(url)}` });
+      checks.push({ name: `${spec.id} mcp.json skillar`, ok: url === want, detail: url === want ? want : `expected ${want}, found ${String(url)}` });
       const idx = join(extDir(agentDir), "index.js");
       checks.push({ name: `${spec.id} extension forwarder`, ok: existsSync(idx), detail: idx });
       const cfgPath = join(extDir(agentDir), "config.json");
@@ -141,6 +146,6 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
 export const omoPack: RuntimePack = createPiPack({
   id: "omo",
   agentDir: resolveOmoAgentDir,
-  extensionName: "gisool",
+  extensionName: "skillar",
   installMarker: ".omo",
 });

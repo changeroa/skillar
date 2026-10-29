@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { type JsonObject, isObject, isRemoteEntry, noop, planJsonFile, readJsonConfig, refuse } from "./json-config.js";
+import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse } from "./json-config.js";
 
 // Hook shape confirmed against https://cursor.com/docs/agent/hooks : hooks.json is { "version": 1, "hooks": { <event>: [{ "command": ... }] } }
 // and Cursor reloads hooks config files automatically. MCP servers live in ~/.cursor/mcp.json under mcpServers.
@@ -30,7 +30,7 @@ export const cursorPack: RuntimePack = {
     return {
       installed,
       evidence: installed ? [dir] : [],
-      remoteGisulRegistered: isObject(servers) && isRemoteEntry(servers.gisul, URL_KEYS),
+      remoteSkillarRegistered: isObject(servers) && (isRemoteEntry(servers.gisul, URL_KEYS) || isRemoteEntry(servers.skillar, URL_KEYS)),
     };
   },
 
@@ -53,9 +53,10 @@ export const cursorPack: RuntimePack = {
     if (!isObject(servers)) return refuse(mcpPath, "invalid_shape", "mcpServers must be a JSON object");
     const notes: string[] = [];
     if (ctx.disableRemote && isRemoteEntry(servers.gisul, URL_KEYS)) {
-      notes.push("Remote gisul MCP entry left enabled: Cursor's disable key is unverified, so disable it manually.");
+      notes.push("Remote skillar MCP entry left enabled: Cursor's disable key is unverified, so disable it manually.");
     }
-    servers.gisool = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
+    if (isRemoteEntry(servers.skillar, URL_KEYS)) return refuse(mcpPath, "remote_name_conflict", "The skillar entry is remote; resolve its registration before installing the local daemon");
+    servers[localServerName(servers)] = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
     nextMcp.mcpServers = servers;
 
     if (hooksFile.obj.version !== undefined && hooksFile.obj.version !== 1) {
@@ -74,7 +75,7 @@ export const cursorPack: RuntimePack = {
     const files = [planJsonFile(mcpPath, mcp, nextMcp), planJsonFile(hooksPath, hooksFile, nextHooks)].filter(
       (f) => f !== null,
     );
-    notes.push("Restart Cursor or reload MCP servers to load the gisool MCP entry; Cursor reloads hooks.json on change.");
+    notes.push("Restart Cursor or reload MCP servers to load the skillar MCP entry; Cursor reloads hooks.json on change.");
     return { files, commands: [], notes, conflicts: [] };
   },
 
@@ -84,18 +85,18 @@ export const cursorPack: RuntimePack = {
     const hooksFile = readJsonConfig(join(home, ".cursor", "hooks.json"));
     if (hooksFile.error) return [{ name: "cursor hooks.json", ok: false, detail: hooksFile.error }];
     const servers: JsonObject = isObject(mcp.obj.mcpServers) ? mcp.obj.mcpServers : {};
-    const entry: JsonObject = isObject(servers.gisool) ? servers.gisool : {};
+    const entry: JsonObject = isObject(servers[localServerName(servers)]) ? servers[localServerName(servers)] as JsonObject : {};
     const hooks: JsonObject = isObject(hooksFile.obj.hooks) ? hooksFile.obj.hooks : {};
     const hooksPresent = HOOK_EVENTS.every((event) => {
       const entries = hooks[event];
       return Array.isArray(entries) && entries.some(isOurHook);
     });
     return [
-      { name: "cursor MCP gisool", ok: entry.url === localMcpUrl(port), detail: `url ${String(entry.url ?? "missing")}` },
+      { name: "cursor MCP skillar", ok: entry.url === localMcpUrl(port), detail: `url ${String(entry.url ?? "missing")}` },
       {
         name: "cursor capture hooks",
         ok: hooksPresent,
-        detail: hooksPresent ? "beforeSubmitPrompt, sessionStart, sessionEnd present" : "capture hooks missing; rerun gisool init",
+        detail: hooksPresent ? "beforeSubmitPrompt, sessionStart, sessionEnd present" : "capture hooks missing; rerun skillar init",
       },
     ];
   },

@@ -21,7 +21,7 @@ test("binds 127.0.0.1 only and /healthz answers without auth", async () => {
   const res = await http(s.port, { path: "/healthz" });
   assert.equal(res.status, 200);
   assert.equal(res.json.ok, true);
-  assert.equal(res.json.name, "gisool");
+  assert.equal(res.json.name, "skillar");
   assert.equal(typeof res.json.version, "string");
   assert.equal((await http(s.port, { path: "/healthz", headers: { Host: `localhost:${s.port}` } })).status, 200);
 });
@@ -101,16 +101,16 @@ test("GET /?token= sets an HttpOnly SameSite=Strict cookie that works for /api o
   assert.equal(res.status, 302);
   assert.equal(res.headers.location, "/");
   const setCookie = res.headers["set-cookie"][0];
-  assert.match(setCookie, /^gisool_dash=[0-9a-f]{64};/);
+  assert.match(setCookie, /^skillar_dash=[0-9a-f]{64};/);
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /SameSite=Strict/);
   assert.match(setCookie, /Path=\//);
   assert.match(setCookie, /Max-Age=34560000/, "persists across browser restarts");
   const cookie = setCookie.split(";")[0];
-  assert.equal(cookie, `gisool_dash=${dashCookieValue(s.token)}`);
+  assert.equal(cookie, `skillar_dash=${dashCookieValue(s.token)}`);
 
   assert.equal((await http(s.port, { path: "/api/stats", headers: { Cookie: cookie } })).status, 200);
-  assert.equal((await http(s.port, { path: "/api/stats", headers: { Cookie: "gisool_dash=forged" } })).status, 401);
+  assert.equal((await http(s.port, { path: "/api/stats", headers: { Cookie: "skillar_dash=forged" } })).status, 401);
   const mcp = await http(s.port, { method: "POST", path: "/mcp", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: "{}" });
   assert.equal(mcp.status, 401);
   const ingest = await http(s.port, { method: "POST", path: "/ingest/hook/claude-code", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: "{}" });
@@ -173,7 +173,7 @@ test("a second server on the same port fails with port_in_use", async () => {
   const sandbox = makeSandbox();
   try {
     await assert.rejects(
-      startServer({ port: s.port, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} }, { gisoolHome: sandbox.env.GISOOL_HOME, handleSignals: false }),
+      startServer({ port: s.port, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} }, { skillarHome: sandbox.env.SKILLAR_HOME, handleSignals: false }),
       (error) => error.code === "port_in_use",
     );
   } finally {
@@ -197,8 +197,8 @@ test("the CLI exits 1 with port_in_use when the port is taken", { skip: !existsS
   }
 });
 
-test("daemon log is written under GISOOL_HOME/logs and rotates with one backup", () => {
-  const log = join(s.gisoolHome, "logs", "daemon.log");
+test("daemon log is written under SKILLAR_HOME/logs and rotates with one backup", () => {
+  const log = join(s.skillarHome, "logs", "daemon.log");
   assert.match(readFileSync(log, "utf8"), /listening on http:\/\/127\.0\.0\.1:/);
   const path = join(s.home, "rot", "daemon.log");
   const write = createFileLogger(path, 64);

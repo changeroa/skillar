@@ -41,9 +41,9 @@ let seq = 0;
 const candidate = (name, rank) => ({ uri: uri(name), name, description: "", score: 10 - rank, rank, invocation: "automatic", digest: `sha256:${name}`, matched: [] });
 
 /** One registered flow over two panes: a Claude session that searched and loaded, a Codex session that went native. */
-function seedStore(gisoolHome) {
+function seedStore(skillarHome) {
   let clock = T;
-  const db = openDb(join(gisoolHome, "gisool.db"));
+  const db = openDb(join(skillarHome, "skillar.db"));
   const store = createStore(db, { now: () => clock });
   const ids = {};
   try {
@@ -116,7 +116,7 @@ let sessionSteps;
 
 before(async () => {
   server = await startTestServer();
-  fixture = seedStore(server.gisoolHome);
+  fixture = seedStore(server.skillarHome);
   const get = (path) => http(server.port, { path, headers: bearer(server.token) });
   list = (await get(`/api/flows?from=${T - DAY}&to=${T + DAY}`)).json;
   report = (await get(`/api/flows/${fixture.flowId}`)).json;

@@ -74,11 +74,11 @@ test("tool_result Bash whose command touches SKILL.md -> tool_call plus native_s
   assert.equal(events[1].data.via, "file_read");
 });
 
-test("tool_result for the gisool MCP server -> one tool_call marked gisoolMcp and no skill reads", () => {
-  for (const name of ["claude-otlp-tool-result-gisool-mcp.json", "claude-otlp-tool-result-gisool-search.json"]) {
+test("tool_result for the skillar MCP server -> one tool_call marked skillarMcp and no skill reads", () => {
+  for (const name of ["claude-otlp-tool-result-skillar-mcp.json", "claude-otlp-tool-result-skillar-search.json"]) {
     const result = parse(name);
     assert.deepEqual(result.events.map((e) => e.kind), ["tool_call"], name);
-    assert.equal(result.events[0].data.gisoolMcp, true, name);
+    assert.equal(result.events[0].data.skillarMcp, true, name);
     assert.equal(result.ignored, 0, name);
     assert.equal(result.unknown, 0, name);
   }
