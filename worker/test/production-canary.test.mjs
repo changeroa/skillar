@@ -111,7 +111,7 @@ test("canary verifies actual Worker runtime, complete skill bytes and native pac
   const rpc = f.requests.filter(request => request.body).map(request => request.body);
   assert.ok(rpc.every(message => ["server/discover", "skills/list", "skills/get", "resources/read", "tools/call"].includes(message.method)));
   assert.ok(rpc.filter(message => message.method === "tools/call").every(message => ["search_packs", "load_pack"].includes(message.params.name)));
-  assert.ok(rpc.filter(message => message.method === "resources/read").every(message => message.params._meta["io.skillar/commit"] === commit));
+  assert.ok(rpc.filter(message => message.method === "resources/read").every(message => message.params._meta["app.skillar/commit"] === commit));
   assert.equal((await (await f.bucket.get("current.json")).json()).revision, 1);
   const child = spawn(process.execPath, [fileURLToPath(new URL("../../scripts/production-canary.mjs", import.meta.url))],
     { env: { ...process.env, ...f.env }, stdio: ["ignore", "pipe", "pipe"] });
