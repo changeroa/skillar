@@ -135,14 +135,16 @@ is retained so old/new registry processes coordinate on the same lock.
 
 ## External identities retained deliberately
 
-These names identify existing infrastructure or another organization's resources,
-not a new deployment requested by the repository rename:
+The former personal Cloudflare deployment was retired on 2026-10-29. Its names
+remain in historical deployment examples and compatibility tests; they do not
+identify a currently maintained endpoint. Organization resources are separate.
+The rename does not recreate or deploy any of these resources:
 
 | Identity | Where / reason |
 | --- | --- |
-| `gisul-mcp`, `gisul-arkpoint` | Existing Cloudflare Workers in `worker/wrangler*.jsonc` |
+| `gisul-mcp`, `gisul-arkpoint` | Retired personal / separate organization Cloudflare Workers in `worker/wrangler*.jsonc` |
 | `gisul-skills-releases`, `gisul-arkpoint-releases` | Existing R2 bucket names; immutable releases stay in place |
-| `gisul-mcp.changeroa.workers.dev` | Existing production machine endpoint in deployment documentation |
+| `gisul-mcp.changeroa.workers.dev` | Retired personal machine endpoint in deployment documentation |
 | `gisul.iyendev.com`, `gisul.arkpoint.dev` | Existing custom domains and OAuth callback hosts |
 | `gisul-arkpoint-production` | Existing workflow concurrency identity, preserving serialization |
 | `Ark-Point/gisul`, `Ark-Point/gisul-skills` | Existing organization deployment/fork identities, separate from the renamed changeroa repositories |
