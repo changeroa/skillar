@@ -128,6 +128,10 @@ Worker는 `SKILLS_BUCKET`, 읽기용 `SKILLAR_BEARER_TOKEN`, 별도의 게시용
 
 </details>
 
+## 기여
+
+Node.js 24와 npm을 설치한 뒤 체크아웃에서 `node scripts/verify.mjs`를 실행하면 CI와 같은 잠금 의존성 설치, 빌드, 테스트, 검색·플러그인 검사, Worker dry-run을 수행한다. 배포하거나 콘텐츠를 발행하지는 않는다.
+
 ## 라이선스
 
 [MIT](LICENSE). 이름은 **기술**(skill, craft, technique)에서 왔습니다.
