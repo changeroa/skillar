@@ -19,7 +19,8 @@ export type HerdrClient = {
 
 /** Every connection attempt discovers the current socket with a bounded command. */
 export function resolveHerdrSocket(env: NodeJS.ProcessEnv = process.env, signal?: AbortSignal): Promise<string> {
-  if (env.GISOOL_HERDR_SOCKET) return Promise.resolve(env.GISOOL_HERDR_SOCKET);
+  const configured = env.SKILLAR_HERDR_SOCKET ?? env.GISOOL_HERDR_SOCKET;
+  if (configured) return Promise.resolve(configured);
   return new Promise((resolve, reject) => {
     execFile("herdr", ["status", "server"], { env, timeout: 5_000, signal }, (error, stdout) => {
       if (error) return reject(error);

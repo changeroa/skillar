@@ -1,12 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { resolveSkillarHome } from "../config.js";
 import type { PackCtx, PackPlan, PackPlanFile, RuntimePack } from "../types.js";
 
-const CONFIG_NOTE = "Set plugins.entries.gisool.hooks.allowConversationAccess: true in the OpenClaw config (openclaw.json); without it before_agent_run is not delivered.";
-const TEMPLATES = new Set([".mcp.json", "openclaw.plugin.json", "gisool.json"]);
+const CONFIG_NOTE = "Set plugins.entries.skillar.hooks.allowConversationAccess: true in the OpenClaw config (openclaw.json); without it before_agent_run is not delivered.";
+const TEMPLATES = new Set([".mcp.json", "openclaw.plugin.json", "skillar.json"]);
 
-function gisoolHome(env: NodeJS.ProcessEnv, home: string): string {
-  return env.GISOOL_HOME || join(home, ".gisool");
+function skillarHome(env: NodeJS.ProcessEnv, home: string): string {
+  return resolveSkillarHome({ ...env, HOME: home });
 }
 
 function openclawConfigPath(env: NodeJS.ProcessEnv, home: string): string {
@@ -48,12 +49,12 @@ const pluginEntries = (cfg: Rec): Rec | undefined => (isRecord(cfg.plugins) && i
 
 function hasConversationAccess(text: string): boolean {
   const cfg = parseConfig(text);
-  if (isRecord(cfg)) return pluginEntries(cfg)?.gisool?.hooks?.allowConversationAccess === true;
+  if (isRecord(cfg)) return (pluginEntries(cfg)?.skillar?.hooks?.allowConversationAccess === true || pluginEntries(cfg)?.gisool?.hooks?.allowConversationAccess === true);
   return /allowConversationAccess["']?\s*:\s*true/.test(text);
 }
 
 export function bundleDir(env: NodeJS.ProcessEnv, home: string): string {
-  return join(gisoolHome(env, home), "packs", "openclaw");
+  return join(skillarHome(env, home), "packs", "openclaw");
 }
 
 export const openclawPack: RuntimePack = {
@@ -64,47 +65,58 @@ export const openclawPack: RuntimePack = {
     const evidence: string[] = [];
     if (existsSync(state)) evidence.push(state);
     if (existsSync(openclawConfigPath(env, home))) evidence.push(openclawConfigPath(env, home));
-    const remote = [join(state, "gisul"), join(state, "plugins", "gisul"), join(state, "extensions", "gisul")].find(existsSync);
+    const remote = ["gisul", "skillar"].flatMap(name => [join(state, name), join(state, "plugins", name), join(state, "extensions", name)]).find(existsSync);
     const cfgText = readOrNull(openclawConfigPath(env, home));
     const cfg = cfgText ? parseConfig(cfgText) : null;
     const entries = isRecord(cfg) ? pluginEntries(cfg) : undefined;
-    const remoteGisulRegistered = Boolean(remote) || Boolean(entries?.gisul || entries?.["gisul-openclaw"]);
+    const remoteSkillarRegistered = Boolean(remote) || Boolean(entries?.gisul || entries?.["gisul-openclaw"] || entries?.["skillar-openclaw"]);
     if (remote) evidence.push(remote);
-    return { installed: evidence.length > 0, evidence, remoteGisulRegistered };
+    return { installed: evidence.length > 0, evidence, remoteSkillarRegistered };
   },
 
   async plan(ctx: PackCtx): Promise<PackPlan> {
     const src = join(ctx.packageRoot, "packs", "openclaw");
     const dest = bundleDir(ctx.env, ctx.home);
+    const cfg = parseConfig(readOrNull(openclawConfigPath(ctx.env, ctx.home)) ?? "{}");
+    const prior = readOrNull(join(dest, "openclaw.plugin.json"));
+    const legacy = (isRecord(cfg) && Boolean(pluginEntries(cfg)?.gisool)) || (prior !== null && /"id"\s*:\s*"gisool"/.test(prior));
+    const pluginName = legacy ? "gisool" : "skillar";
     const vars = {
       __COMMAND__: ctx.nodePath,
       __ARGS__: [join(ctx.packageRoot, "dist", "cli", "main.js"), "mcp-stdio"],
-      __GISOOL_HOME__: gisoolHome(ctx.env, ctx.home),
+      __SKILLAR_HOME__: skillarHome(ctx.env, ctx.home),
       __PORT__: ctx.port,
     };
     const files: PackPlanFile[] = walk(src)
       .sort()
       .map((abs) => {
-        const rel = relative(src, abs);
+        let rel = relative(src, abs);
         const raw = readFileSync(abs, "utf8");
-        const after = TEMPLATES.has(rel) ? JSON.stringify(fill(JSON.parse(raw), vars), null, 2) + "\n" : raw;
+        let after = TEMPLATES.has(rel) ? JSON.stringify(fill(JSON.parse(raw), vars), null, 2) + "\n" : raw;
+        if (legacy) {
+          // Preserve the installed plugin and hook identities while replacing their implementation.
+          after = after.replaceAll('"id": "skillar"', '"id": "gisool"').replaceAll('"name": "skillar"', '"name": "gisool"')
+            .replaceAll('id: "skillar"', 'id: "gisool"').replaceAll('name: "skillar"', 'name: "gisool"')
+            .replaceAll('"skillar": {', '"gisool": {').replaceAll('skillar-discovery', 'gisool-discovery');
+          rel = rel.replaceAll("skillar-discovery", "gisool-discovery");
+        }
         const path = join(dest, rel);
         return { path, before: readOrNull(path), after, mode: statSync(abs).mode & 0o777 };
       });
 
     const notes = [
       `Bundle files: ${files.map((f) => relative(dest, f.path)).join(", ")}`,
-      CONFIG_NOTE,
+      CONFIG_NOTE.replace("entries.skillar", `entries.${pluginName}`),
       "Restart the OpenClaw Gateway after installing so the plugin and its hooks load.",
     ];
     const commands: PackPlan["commands"] = [];
-    // gisool writes this bundle itself, so the local-path trust prompt ("rerun with --force") is expected and answered here.
+    // skillar writes this bundle itself, so the local-path trust prompt ("rerun with --force") is expected and answered here.
     const install = ["openclaw", "plugins", "install", "--force", dest];
-    const uninstall = ["openclaw", "plugins", "uninstall", "gisool"];
-    if (ctx.env.GISOOL_NO_CLI) notes.push(`GISOOL_NO_CLI set: run manually: ${install.join(" ")} (undo: ${uninstall.join(" ")})`);
-    else commands.push({ argv: install, description: "Install the gisool capture plugin into OpenClaw (restart the OpenClaw Gateway afterwards)", undo: { argv: uninstall, description: "Uninstall the gisool OpenClaw plugin" } });
+    const uninstall = ["openclaw", "plugins", "uninstall", pluginName];
+    if ((ctx.env.SKILLAR_NO_CLI ?? ctx.env.GISOOL_NO_CLI)) notes.push(`SKILLAR_NO_CLI set: run manually: ${install.join(" ")} (undo: ${uninstall.join(" ")})`);
+    else commands.push({ argv: install, description: "Install the skillar capture plugin into OpenClaw (restart the OpenClaw Gateway afterwards)", undo: { argv: uninstall, description: "Uninstall the skillar OpenClaw plugin" } });
 
-    if (ctx.disableRemote) notes.push("Remote gisul OpenClaw bundle is not removed automatically. To disable it run: openclaw plugins disable gisul-openclaw; to remove it run: openclaw plugins uninstall gisul-openclaw");
+    if (ctx.disableRemote) notes.push("Remote skillar OpenClaw bundle is not removed automatically. To disable it run: openclaw plugins disable gisul-openclaw; to remove it run: openclaw plugins uninstall gisul-openclaw");
     return { files, commands, notes, conflicts: [] };
   },
 
@@ -112,12 +124,12 @@ export const openclawPack: RuntimePack = {
     const checks: { name: string; ok: boolean; detail: string }[] = [];
     const bundle = bundleDir(env, home);
     const bundled = existsSync(join(bundle, "openclaw.plugin.json"));
-    checks.push({ name: "openclaw bundle", ok: bundled, detail: bundled ? bundle : `bundle missing at ${bundle}; run gisool init` });
+    checks.push({ name: "openclaw bundle", ok: bundled, detail: bundled ? bundle : `bundle missing at ${bundle}; run skillar init` });
     const cfgPath = openclawConfigPath(env, home);
     const text = readOrNull(cfgPath);
     if (text === null) checks.push({ name: "allowConversationAccess", ok: false, detail: `allowConversationAccess missing: no OpenClaw config at ${cfgPath}` });
     else if (hasConversationAccess(text)) checks.push({ name: "allowConversationAccess", ok: true, detail: cfgPath });
-    else checks.push({ name: "allowConversationAccess", ok: false, detail: `allowConversationAccess missing: set plugins.entries.gisool.hooks.allowConversationAccess: true in ${cfgPath}` });
+    else checks.push({ name: "allowConversationAccess", ok: false, detail: `allowConversationAccess missing: set plugins.entries.skillar.hooks.allowConversationAccess: true in ${cfgPath}` });
     return checks;
   },
 };

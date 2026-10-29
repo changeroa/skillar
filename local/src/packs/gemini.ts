@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { type JsonObject, isObject, isRemoteEntry, noop, planJsonFile, readJsonConfig, refuse } from "./json-config.js";
+import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse } from "./json-config.js";
 
 // Hook shape confirmed against https://geminicli.com/docs/hooks/ : settings.json "hooks" maps an event name to groups
 // of { matcher?, hooks: [{ type: "command", name, command, timeout }] }; timeout is in milliseconds. BeforeAgent is a
 // lifecycle event (exact-string matcher, so none is written); AfterTool matchers are regular expressions over tool names.
-const HOOK_NAME = "gisool-capture";
+const HOOK_NAME = "skillar-capture";
 const HOOK_TIMEOUT_MS = 5000;
 const HOOK_EVENTS: { event: string; matcher?: string }[] = [{ event: "BeforeAgent" }, { event: "AfterTool", matcher: "activate_skill" }];
 const URL_KEYS = ["httpUrl", "url"];
@@ -37,7 +37,7 @@ export const geminiPack: RuntimePack = {
     return {
       installed,
       evidence: installed ? [dir] : [],
-      remoteGisulRegistered: isObject(servers) && isRemoteEntry(servers.gisul, URL_KEYS),
+      remoteSkillarRegistered: isObject(servers) && (isRemoteEntry(servers.gisul, URL_KEYS) || isRemoteEntry(servers.skillar, URL_KEYS)),
     };
   },
 
@@ -55,9 +55,10 @@ export const geminiPack: RuntimePack = {
 
     const notes: string[] = [];
     if (ctx.disableRemote && isRemoteEntry(servers.gisul, URL_KEYS)) {
-      notes.push("Remote gisul MCP entry left enabled: Gemini's disable key is unverified, so disable it manually.");
+      notes.push("Remote skillar MCP entry left enabled: Gemini's disable key is unverified, so disable it manually.");
     }
-    servers.gisool = { httpUrl: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
+    if (isRemoteEntry(servers.skillar, URL_KEYS)) return refuse(path, "remote_name_conflict", "The skillar entry is remote; resolve its registration before installing the local daemon");
+    servers[localServerName(servers)] = { httpUrl: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
     next.mcpServers = servers;
 
     for (const { event, matcher } of HOOK_EVENTS) {
@@ -72,7 +73,7 @@ export const geminiPack: RuntimePack = {
     next.hooks = hooks;
 
     const file = planJsonFile(path, current, next);
-    notes.push("Restart Gemini CLI to load the gisool MCP server and capture hooks.");
+    notes.push("Restart Gemini CLI to load the skillar MCP server and capture hooks.");
     return { files: file ? [file] : [], commands: [], notes, conflicts: [] };
   },
 
@@ -80,18 +81,18 @@ export const geminiPack: RuntimePack = {
     const current = readJsonConfig(join(home, ".gemini", "settings.json"));
     if (current.error) return [{ name: "gemini settings.json", ok: false, detail: current.error }];
     const servers: JsonObject = isObject(current.obj.mcpServers) ? current.obj.mcpServers : {};
-    const entry: JsonObject = isObject(servers.gisool) ? servers.gisool : {};
+    const entry: JsonObject = isObject(servers[localServerName(servers)]) ? servers[localServerName(servers)] as JsonObject : {};
     const hooks: JsonObject = isObject(current.obj.hooks) ? current.obj.hooks : {};
     const hooksPresent = HOOK_EVENTS.every(({ event }) => {
       const groups = hooks[event];
       return Array.isArray(groups) && groups.some(isOurHookGroup);
     });
     return [
-      { name: "gemini MCP gisool", ok: entry.httpUrl === localMcpUrl(port), detail: `httpUrl ${String(entry.httpUrl ?? "missing")}` },
+      { name: "gemini MCP skillar", ok: entry.httpUrl === localMcpUrl(port), detail: `httpUrl ${String(entry.httpUrl ?? "missing")}` },
       {
         name: "gemini capture hooks",
         ok: hooksPresent,
-        detail: hooksPresent ? "BeforeAgent and AfterTool present" : "capture hooks missing; rerun gisool init",
+        detail: hooksPresent ? "BeforeAgent and AfterTool present" : "capture hooks missing; rerun skillar init",
       },
     ];
   },

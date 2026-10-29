@@ -16,14 +16,14 @@ test("v1 out-of-order history reconstructs candidates after all imported events 
   t.after(() => removeDir(dir));
   mkdirSync(join(dir, "export"));
   const out = join(dir, "export");
-  writeFileSync(join(out, "gisool-export.json"), JSON.stringify({ version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {} }));
+  writeFileSync(join(out, "skillar-export.json"), JSON.stringify({ version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {} }));
   const old = new DatabaseSync(join(out, "history.db"));
   old.exec(readFileSync(new URL("dist/store/schema.sql", PACKAGE_ROOT), "utf8"));
   old.exec(`INSERT INTO sessions (id,runtime,started_at) VALUES ('a','codex',${T - 1000000}), ('b','codex',${T - 1000000});
     INSERT INTO events (id,ts,kind,source,session_id,attribution_method,attribution_reason,runtime,skill_uri)
     VALUES ('load',${T},'load','mcp','unattributed','none','ambiguous','codex','${URI}');
     INSERT INTO events (id,ts,kind,source,session_id,attribution_method,runtime,text)
-    VALUES ('tool',${T + 1},'tool_call','otel','a','runtime_id','codex','{"server":"gisool","uri":"${URI}"}'),
+    VALUES ('tool',${T + 1},'tool_call','otel','a','runtime_id','codex','{"server":"skillar","uri":"${URI}"}'),
       ('prompt-a',${T - 20},'prompt','hook','a','runtime_id','codex','inventory'),
       ('prompt-b',${T - 20},'prompt','hook','b','runtime_id','codex','inventory');`);
   old.close();
@@ -71,7 +71,7 @@ test("v3 retained URI proof survives upgrade, reopen, export and import with reb
     .map((row) => [row.load_id, row.session_id]), [["pending", "a"], ["pending", "b"], ["resolved", "a"], ["resolved", "b"]]);
   // A contradictory proof arriving after upgrade still removes the historical unique attribution.
   const tool = event("tool_call", T + 3, { runtime: "codex" }, { source: "otel",
-    text: JSON.stringify({ server: "gisool", uri: URI }), data: { success: true } });
+    text: JSON.stringify({ server: "skillar", uri: URI }), data: { success: true } });
   target.store.append(tool, { sessionId: "b", method: "runtime_id" });
   target.store.reconcileLoads({ eventId: tool.id });
   assert.equal(target.db.prepare("SELECT session_id FROM events WHERE id = 'resolved'").get().session_id, "unattributed");
@@ -87,7 +87,7 @@ test("retained multiple-candidate proof stays ambiguous through export and impor
   store.append(event("load", T, refs[0], { skillUri: URI, data: { attributionCandidates: ids } }),
     { sessionId: "unattributed", method: "none", reason: "ambiguous" });
   for (const [i, ref] of refs.entries()) store.append(event("tool_call", T + 1, ref, {
-    source: "otel", text: JSON.stringify({ server: "gisool", uri: URI }), data: { success: true },
+    source: "otel", text: JSON.stringify({ server: "skillar", uri: URI }), data: { success: true },
   }), { sessionId: ids[i], method: "runtime_id" });
   store.reconcileLoads();
   store.retention(30);

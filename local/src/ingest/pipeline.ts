@@ -29,7 +29,7 @@ function nowOf(deps: IngestDeps): number {
 
 function logError(deps: IngestDeps, message: string, error: unknown): void {
   if (deps.log) deps.log(message, error);
-  else console.error(`[gisool ingest] ${message}`, error);
+  else console.error(`[skillar ingest] ${message}`, error);
 }
 
 function count(deps: IngestDeps, kind: "accepted" | "rejected" | "dropped", code?: string): void {

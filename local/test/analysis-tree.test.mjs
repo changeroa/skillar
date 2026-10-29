@@ -34,7 +34,7 @@ test("ingestion fixtures join MCP and prompts by time, Claude by reported key, a
   t.after(() => store.close());
   const deps = createIngestDeps(store, { now: () => T + 10000 });
   for (const name of ["claude-otlp-user-prompt.json", "claude-otlp-skill-activated.json",
-    "claude-otlp-tool-result-bash-two-skills.json", "claude-otlp-api-request.json", "claude-otlp-tool-result-gisool-search.json",
+    "claude-otlp-tool-result-bash-two-skills.json", "claude-otlp-api-request.json", "claude-otlp-tool-result-skillar-search.json",
     "codex-otlp-user-prompt.json", "codex-otlp-skill-invocation.json", "codex-otlp-tool-result.json", "codex-otlp-sse-event.json"]) {
     assert.equal(ingestOtlp(fixture(name), deps).status, 200);
   }
@@ -78,7 +78,7 @@ test("ingestion fixtures join MCP and prompts by time, Claude by reported key, a
   const claudeCalls = claude.turns[0].events.filter((e) => e.kind === "tool_call");
   assert.equal(claudeCalls.length, 2);
   assert.ok(claudeCalls.every((e) => e.basis === "reported"));
-  assert.deepEqual(claudeCalls.map((e) => e.data.toolName), ["Bash", "mcp__gisool__search_skills"]);
+  assert.deepEqual(claudeCalls.map((e) => e.data.toolName), ["Bash", "mcp__skillar__search_skills"]);
   assert.equal(codex.unassignedEvents.length, 0);
   assert.equal(claude.unassignedEvents.length, 0);
 });

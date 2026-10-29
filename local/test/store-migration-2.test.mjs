@@ -13,7 +13,7 @@ const V1_SCHEMA = readFileSync(new URL("dist/store/schema.sql", PACKAGE_ROOT), "
 const NEW_TABLES = ["otel_spans", "herdr_workspaces", "herdr_tabs", "herdr_panes", "pane_sessions", "workflow_specs", "flows", "flow_steps"];
 const count = (db, table) => db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
 
-/** A database as gisool 0.1.0 wrote it: schema.sql alone, user_version 1, no tracing columns. */
+/** A database as skillar 0.1.0 wrote it: schema.sql alone, user_version 1, no tracing columns. */
 function makeV1Db(path) {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA foreign_keys = ON");
@@ -46,7 +46,7 @@ function seedTracingRows(db, sessionId) {
 test("a v1 database upgrades to user_version 6, keeping its rows and gaining the tracing columns, indexes and tables", () => {
   const dir = makeTempDir();
   try {
-    const path = join(dir, "gisool.db");
+    const path = join(dir, "skillar.db");
     const v1 = makeV1Db(path);
     assert.equal(v1.prepare("PRAGMA user_version").get().user_version, 1);
     assert.ok(!v1.prepare("PRAGMA table_info(events)").all().some((c) => c.name === "source_key"));
@@ -163,7 +163,7 @@ test("a v1 history.db imports into a v2 store, reporting only the tables it carr
   try {
     const out = join(base, "out");
     mkdirSync(out, { recursive: true });
-    writeFileSync(join(out, "gisool-export.json"), JSON.stringify({ version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {} }));
+    writeFileSync(join(out, "skillar-export.json"), JSON.stringify({ version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {} }));
     const hist = makeV1Db(join(out, "history.db"));
     assert.equal(hist.prepare("PRAGMA user_version").get().user_version, 1);
     hist.close();

@@ -1,15 +1,23 @@
-// gisool capture plugin: forwards each agent run's prompt to the local gisool daemon.
-// Needs plugins.entries.gisool.hooks.allowConversationAccess: true in the OpenClaw config.
-import { readFileSync } from "node:fs";
+// skillar capture plugin: forwards each agent run's prompt to the local skillar daemon.
+// Needs plugins.entries.skillar.hooks.allowConversationAccess: true in the OpenClaw config.
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+function resolveStateHome(env) {
+  const home = env.HOME || homedir();
+  const preferred = join(home, ".skillar"), legacy = join(home, ".gisool");
+  if (["config.json", "token", "skillar.db", "gisool.db"].some(file => existsSync(join(preferred, file)))) return preferred;
+  return existsSync(legacy) ? legacy : preferred;
+}
+
 
 const here = new URL(".", import.meta.url);
 
 function loadPort(env) {
-  if (env.GISOOL_PORT) return Number(env.GISOOL_PORT);
+  if ((env.SKILLAR_PORT ?? env.GISOOL_PORT)) return Number((env.SKILLAR_PORT ?? env.GISOOL_PORT));
   try {
-    return Number(JSON.parse(readFileSync(new URL("gisool.json", here), "utf8")).port);
+    return Number(JSON.parse(readFileSync(new URL("skillar.json", here), "utf8")).port);
   } catch {
     return NaN;
   }
@@ -19,7 +27,7 @@ function loadPort(env) {
 export function forward(payload, env = process.env) {
   try {
     const port = loadPort(env);
-    const token = readFileSync(join(env.GISOOL_HOME || join(homedir(), ".gisool"), "token"), "utf8").trim();
+    const token = readFileSync(join((env.SKILLAR_HOME || env.GISOOL_HOME) || resolveStateHome(env), "token"), "utf8").trim();
     if (!Number.isInteger(port) || !token) return;
     fetch(`http://127.0.0.1:${port}/ingest/hook/openclaw`, {
       method: "POST",
@@ -44,4 +52,4 @@ export function register(api, env = process.env) {
   }
 }
 
-export default { id: "gisool", name: "gisool", description: "Capture prompts for the local gisool skill router.", register };
+export default { id: "skillar", name: "skillar", description: "Capture prompts for the local skillar skill router.", register };

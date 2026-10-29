@@ -4,10 +4,10 @@ import { createConnection } from "node:net";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createCatalog } from "../catalog/index.js";
-import { loadConfig, resolveGisoolHome, resolveHome } from "../config.js";
+import { loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
 import { PACKS } from "../packs/registry.js";
 import { selfCheck } from "../store/db.js";
-import type { GisoolConfig } from "../types.js";
+import type { SkillarConfig } from "../types.js";
 import { listBackupSets } from "./init.js";
 import { type Io, currentServicePlatform, dbPath, packageVersion, serviceLoaded, servicePath } from "./serve.js";
 
@@ -62,7 +62,7 @@ function herdrPing(socketPath: string): Promise<{ protocol?: unknown }> {
 }
 
 async function herdrCheck(env: NodeJS.ProcessEnv): Promise<DoctorCheck> {
-  let socketPath = env.GISOOL_HERDR_SOCKET;
+  let socketPath = (env.SKILLAR_HERDR_SOCKET ?? env.GISOOL_HERDR_SOCKET);
   let version = "";
   if (!socketPath) {
     const versionResult = herdrCommand(["--version"]);
@@ -95,7 +95,7 @@ function readJson(path: string): Obj | undefined {
   }
 }
 
-function gisoolHookTimeouts(cfg: Obj | undefined, unitSeconds: number): { event: string; seconds: number }[] {
+function skillarHookTimeouts(cfg: Obj | undefined, unitSeconds: number): { event: string; seconds: number }[] {
   const out: { event: string; seconds: number }[] = [];
   const hooks = cfg && isObj(cfg.hooks) ? cfg.hooks : {};
   const visit = (event: string, h: unknown) => {
@@ -121,50 +121,50 @@ function hookTimeoutCheck(home: string, env: NodeJS.ProcessEnv): DoctorCheck {
   ];
   const tooLong: string[] = [];
   for (const [path, unit] of sources) {
-    for (const t of gisoolHookTimeouts(readJson(path), unit)) if (t.seconds > HOOK_LIMIT_S) tooLong.push(`${path} ${t.event} ${t.seconds}s`);
+    for (const t of skillarHookTimeouts(readJson(path), unit)) if (t.seconds > HOOK_LIMIT_S) tooLong.push(`${path} ${t.event} ${t.seconds}s`);
   }
   return tooLong.length
-    ? { name: "hook_timeouts", status: "fail", code: "hook_timeout_too_long", detail: `gisool hooks must time out within ${HOOK_LIMIT_S}s: ${tooLong.join("; ")}` }
-    : { name: "hook_timeouts", status: "ok", detail: `all gisool hook timeouts <= ${HOOK_LIMIT_S}s` };
+    ? { name: "hook_timeouts", status: "fail", code: "hook_timeout_too_long", detail: `skillar hooks must time out within ${HOOK_LIMIT_S}s: ${tooLong.join("; ")}` }
+    : { name: "hook_timeouts", status: "ok", detail: `all skillar hook timeouts <= ${HOOK_LIMIT_S}s` };
 }
 
-async function healthCheck(port: number, gisoolHome: string): Promise<DoctorCheck> {
+async function healthCheck(port: number, skillarHome: string): Promise<DoctorCheck> {
   try {
     const res = await fetch(`http://127.0.0.1:${port}/healthz`, { signal: AbortSignal.timeout(1500) });
     const body = (await res.json().catch(() => undefined)) as { ok?: unknown; version?: unknown } | undefined;
     if (res.status !== 200 || body?.ok !== true || typeof body.version !== "string") {
-      return { name: "daemon", status: "fail", code: "not_gisool", detail: `port ${port} answered /healthz with ${res.status} but it is not gisool` };
+      return { name: "daemon", status: "fail", code: "not_skillar", detail: `port ${port} answered /healthz with ${res.status} but it is not skillar` };
     }
     const mine = packageVersion();
     if (body.version !== mine) return { name: "daemon", status: "warn", code: "version_mismatch", detail: `daemon ${body.version}, CLI ${mine}` };
-    const tokenPath = join(gisoolHome, "token");
+    const tokenPath = join(skillarHome, "token");
     if (existsSync(tokenPath)) {
       const stats = await fetch(`http://127.0.0.1:${port}/api/stats`, {
         headers: { authorization: `Bearer ${readFileSync(tokenPath, "utf8").trim()}` },
         signal: AbortSignal.timeout(1500),
       });
       if (stats.status === 401) {
-        return { name: "daemon", status: "fail", code: "token_mismatch", detail: `gisool ${body.version} on 127.0.0.1:${port} rejected this install's token: the port is held by another gisool instance, or the token was rotated; restart the daemon` };
+        return { name: "daemon", status: "fail", code: "token_mismatch", detail: `skillar ${body.version} on 127.0.0.1:${port} rejected this install's token: the port is held by another skillar instance, or the token was rotated; restart the daemon` };
       }
     }
-    return { name: "daemon", status: "ok", detail: `gisool ${body.version} on 127.0.0.1:${port}` };
+    return { name: "daemon", status: "ok", detail: `skillar ${body.version} on 127.0.0.1:${port}` };
   } catch (error) {
     return { name: "daemon", status: "fail", code: "daemon_unreachable", detail: `no response from http://127.0.0.1:${port}/healthz (${(error as Error).message})` };
   }
 }
 
 function serviceCheck(home: string, env: NodeJS.ProcessEnv): DoctorCheck {
-  if (env.GISOOL_NO_CLI) return { name: "service", status: "skip", detail: "GISOOL_NO_CLI set" };
+  if ((env.SKILLAR_NO_CLI ?? env.GISOOL_NO_CLI)) return { name: "service", status: "skip", detail: "SKILLAR_NO_CLI set" };
   const platform = currentServicePlatform();
   const path = servicePath(home, platform);
-  if (!existsSync(path)) return { name: "service", status: "warn", code: "service_not_installed", detail: `${path} missing; run gisool service install` };
+  if (!existsSync(path)) return { name: "service", status: "warn", code: "service_not_installed", detail: `${path} missing; run skillar service install` };
   return serviceLoaded(platform, process.getuid?.() ?? 0, env)
     ? { name: "service", status: "ok", detail: `${path} loaded` }
     : { name: "service", status: "fail", code: "service_not_loaded", detail: `${path} exists but the service is not loaded` };
 }
 
-function tokenCheck(gisoolHome: string): DoctorCheck {
-  const path = join(gisoolHome, "token");
+function tokenCheck(skillarHome: string): DoctorCheck {
+  const path = join(skillarHome, "token");
   if (!existsSync(path)) return { name: "token_mode", status: "fail", code: "token_missing", detail: path };
   const mode = statSync(path).mode & 0o777;
   return mode === 0o600
@@ -181,7 +181,7 @@ function ftsCheck(): DoctorCheck {
   }
 }
 
-async function catalogChecks(config: GisoolConfig, gisoolHome: string): Promise<{ checks: DoctorCheck[]; families: SkillFamily[] }> {
+async function catalogChecks(config: SkillarConfig, skillarHome: string): Promise<{ checks: DoctorCheck[]; families: SkillFamily[] }> {
   const catalog = createCatalog({ roots: config.roots, log: () => undefined });
   try {
     await catalog.refresh();
@@ -196,7 +196,7 @@ async function catalogChecks(config: GisoolConfig, gisoolHome: string): Promise<
       { name: "duplicates", status: report.duplicates.length ? "warn" : "ok", detail: `${report.duplicates.length} duplicate skill name(s)${report.duplicates.length ? `: ${report.duplicates.map((d) => d.name).join(", ")}` : ""}` },
       { name: "skill_families", status: "ok", detail: families.length ? families.map((f) => `${f.id}: ${f.members.join(", ")}`).join("; ") : "none" },
     ];
-    const path = dbPath(gisoolHome);
+    const path = dbPath(skillarHome);
     if (!existsSync(path)) {
       checks.push({ name: "index_freshness", status: "warn", code: "index_missing", detail: `${path} not created yet; start the daemon` });
       return { checks, families };
@@ -219,8 +219,8 @@ async function catalogChecks(config: GisoolConfig, gisoolHome: string): Promise<
   }
 }
 
-function lastBackupCheck(gisoolHome: string, now: number): DoctorCheck {
-  const latest = listBackupSets(gisoolHome)[0];
+function lastBackupCheck(skillarHome: string, now: number): DoctorCheck {
+  const latest = listBackupSets(skillarHome)[0];
   if (!latest) return { name: "last_backup", status: "ok", detail: "none" };
   const ageH = Math.round((now - Date.parse(latest.manifest.createdAt)) / 3_600_000);
   return { name: "last_backup", status: "ok", detail: `${latest.dir} (${ageH} h ago)` };
@@ -228,26 +228,26 @@ function lastBackupCheck(gisoolHome: string, now: number): DoctorCheck {
 
 export async function collectDoctor(env: NodeJS.ProcessEnv): Promise<DoctorReport> {
   const home = resolveHome(env);
-  const gisoolHome = resolveGisoolHome(env);
+  const skillarHome = resolveSkillarHome(env);
   const config = loadConfig(env);
-  const checks: DoctorCheck[] = [serviceCheck(home, env), await healthCheck(config.port, gisoolHome)];
+  const checks: DoctorCheck[] = [serviceCheck(home, env), await healthCheck(config.port, skillarHome)];
   checks.push(await herdrCheck(env));
 
   const remote: string[] = [];
   const packChecks: DoctorCheck[] = [];
   for (const pack of PACKS) {
     const d = await pack.detect({ home, env });
-    if (d.remoteGisulRegistered) remote.push(pack.id);
+    if (d.remoteSkillarRegistered) remote.push(pack.id);
     if (!d.installed || config.runtimes[pack.id]?.enabled === false) continue;
     for (const c of await pack.doctorChecks({ home, env, port: config.port })) {
       packChecks.push({ name: `${pack.id}: ${c.name}`, status: c.ok ? "ok" : "fail", detail: c.detail });
     }
   }
   checks.push(remote.length
-    ? { name: "remote_gisul", status: "warn", code: "remote_gisul_registered", detail: `remote gisul is also registered in: ${remote.join(", ")} (gisool init --disable-remote turns it off)` }
-    : { name: "remote_gisul", status: "ok", detail: "no remote gisul registration found" });
-  const catalogResult = await catalogChecks(config, gisoolHome);
-  checks.push(tokenCheck(gisoolHome), ftsCheck(), ...catalogResult.checks, ...packChecks, hookTimeoutCheck(home, env), lastBackupCheck(gisoolHome, Date.now()));
+    ? { name: "remote_skillar", status: "warn", code: "remote_skillar_registered", detail: `remote skillar is also registered in: ${remote.join(", ")} (skillar init --disable-remote turns it off)` }
+    : { name: "remote_skillar", status: "ok", detail: "no remote skillar registration found" });
+  const catalogResult = await catalogChecks(config, skillarHome);
+  checks.push(tokenCheck(skillarHome), ftsCheck(), ...catalogResult.checks, ...packChecks, hookTimeoutCheck(home, env), lastBackupCheck(skillarHome, Date.now()));
   return { ok: checks.every((c) => c.status !== "fail"), version: packageVersion(), checks, families: catalogResult.families };
 }
 

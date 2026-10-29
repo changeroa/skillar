@@ -32,7 +32,7 @@ export const changedFiles = (files: PackPlanFile[]): PackPlanFile[] => files.fil
 
 export function maskSecrets(text: string, secrets: string[]): string {
   let out = text;
-  for (const s of secrets) if (s.length >= 8) out = out.replaceAll(s, "<gisool-token>");
+  for (const s of secrets) if (s.length >= 8) out = out.replaceAll(s, "<skillar-token>");
   return out;
 }
 
@@ -141,7 +141,7 @@ function mkdirTracked(dir: string, created: string[]): void {
 }
 
 function atomicWrite(path: string, content: string, mode: number, expected: ReturnType<typeof snapshot> | null): void {
-  const tmp = `${path}.gisool-${randomUUID()}.tmp`;
+  const tmp = `${path}.skillar-${randomUUID()}.tmp`;
   try {
     writeFileSync(tmp, content, { flag: "wx", mode });
     chmodSync(tmp, mode);
@@ -224,7 +224,7 @@ export function removeEmptyDirs(dirs: string[]): void {
 
 export type RestoreOutcome = { path: string; action: "restored" | "removed" | "skipped_modified" | "unchanged" };
 
-/** Restores files recorded by applyFiles from backupDir; files edited since gisool wrote them are left alone. */
+/** Restores files recorded by applyFiles from backupDir; files edited since skillar wrote them are left alone. */
 export function restoreFiles(files: AppliedFile[], backupDir: string): RestoreOutcome[] {
   const out: RestoreOutcome[] = [];
   for (const f of [...files].reverse()) {

@@ -1,5 +1,6 @@
 import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
 import { join, delimiter } from "node:path";
+import { localServerName } from "./json-config.js";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
 
 type Env = NodeJS.ProcessEnv;
@@ -29,14 +30,14 @@ function remoteRegistered(home: string): boolean {
   if (text === null) return false;
   try {
     const servers = (JSON.parse(text) as Obj).mcpServers;
-    const g = isObj(servers) ? servers.gisul : undefined;
+    const g = isObj(servers) ? (servers.gisul ?? servers.skillar) : undefined;
     if (!isObj(g)) return false;
     if (typeof g.url === "string") return !isLoopback(g.url);
     return JSON.stringify(g).includes("mcp-remote");
   } catch { return false; }
 }
 
-const hasGisoolHook = (groups: unknown): boolean =>
+const hasSkillarHook = (groups: unknown): boolean =>
   Array.isArray(groups) && groups.some(g => isObj(g) && Array.isArray(g.hooks) &&
     g.hooks.some(h => isObj(h) && typeof h.command === "string" && h.command.includes("hook-post.mjs")));
 
@@ -55,7 +56,7 @@ export const claudeCodePack: RuntimePack = {
     if (existsSync(dir)) evidence.push(dir);
     const bin = onPath("claude", ctx.env);
     if (bin) evidence.push(bin);
-    return { installed: evidence.length > 0, evidence, remoteGisulRegistered: remoteRegistered(ctx.home) };
+    return { installed: evidence.length > 0, evidence, remoteSkillarRegistered: remoteRegistered(ctx.home) };
   },
   async plan(ctx): Promise<PackPlan> {
     const plan: PackPlan = { files: [], commands: [], notes: [], conflicts: [] };
@@ -94,7 +95,12 @@ export const claudeCodePack: RuntimePack = {
       const nextHooks: Obj = { ...hooks };
       for (const [ev, groups] of Object.entries(wantHooks)) {
         const existing = (hooks[ev] as unknown[] | undefined) ?? [];
-        nextHooks[ev] = hasGisoolHook(existing) ? existing : [...existing, ...groups];
+        const kept = existing.flatMap(g => {
+          if (!isObj(g) || !Array.isArray(g.hooks)) return [g];
+          const hooks = g.hooks.filter(h => !(isObj(h) && typeof h.command === "string" && h.command.includes("hook-post.mjs")));
+          return hooks.length ? [{ ...g, hooks }] : [];
+        });
+        nextHooks[ev] = [...kept, ...groups];
       }
       const next = { ...cfg, env: nextEnv, hooks: nextHooks };
       const after = JSON.stringify(next, null, 2) + "\n";
@@ -102,12 +108,23 @@ export const claudeCodePack: RuntimePack = {
       if (!same) plan.files.push({ path, before, after, mode: 0o600 });
     }
 
-    const argv = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", "gisool",
+    let name: "skillar" | "gisool" = "skillar";
+    try {
+      const servers = JSON.parse(readText(join(ctx.home, ".claude.json")) ?? "{}").mcpServers;
+      if (isObj(servers)) {
+        name = localServerName(servers);
+        if (isObj(servers.skillar) && typeof servers.skillar.url === "string" && !isLoopback(servers.skillar.url)) {
+          plan.conflicts.push({ path: join(ctx.home, ".claude.json"), code: "remote_name_conflict", detail: "Resolve the remote skillar registration before installing the local daemon" });
+          return plan;
+        }
+      }
+    } catch { /* Claude owns its registration file; the CLI will validate it. */ }
+    const argv = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", name,
       `http://127.0.0.1:${ctx.port}/mcp`, "--header", `Authorization: Bearer ${ctx.token}`];
-    const shown = `claude mcp add --transport http --scope user gisool http://127.0.0.1:${ctx.port}/mcp --header "Authorization: Bearer ${ctx.token}"`;
-    if (onPath("claude", ctx.env) && !ctx.env.GISOOL_NO_CLI) {
-      plan.commands.push({ argv, description: "Register the gisool MCP server with Claude Code (user scope)",
-        undo: { argv: ["claude", "mcp", "remove", "--scope", "user", "gisool"], description: "Remove the gisool MCP server" } });
+    const shown = `claude mcp add --transport http --scope user ${name} http://127.0.0.1:${ctx.port}/mcp --header "Authorization: Bearer ${ctx.token}"`;
+    if (onPath("claude", ctx.env) && !(ctx.env.SKILLAR_NO_CLI ?? ctx.env.GISOOL_NO_CLI)) {
+      plan.commands.push({ argv, description: "Register the skillar MCP server with Claude Code (user scope)",
+        undo: { argv: ["claude", "mcp", "remove", "--scope", "user", name], description: "Remove the skillar MCP server" } });
     } else {
       plan.notes.push(`manual step: run ${shown}`);
     }
@@ -129,7 +146,7 @@ export const claudeCodePack: RuntimePack = {
       { name: "claude-code settings.json parses", ok: parsed, detail: text === null ? `missing: ${path}` : parsed ? path : "invalid JSON" },
       { name: "claude-code OTel env present", ok: env.CLAUDE_CODE_ENABLE_TELEMETRY === "1" && env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT === endpoint,
         detail: String(env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ?? "not set") },
-      { name: "claude-code hooks present", ok: hasGisoolHook(hooks.PostToolUse) && hasGisoolHook(hooks.UserPromptExpansion),
+      { name: "claude-code hooks present", ok: hasSkillarHook(hooks.PostToolUse) && hasSkillarHook(hooks.UserPromptExpansion),
         detail: "PostToolUse and UserPromptExpansion run hook-post.mjs" },
     ];
   },

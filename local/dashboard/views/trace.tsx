@@ -1,3 +1,4 @@
+import { isSkillarMcpData } from "../../src/ingest/identity.js";
 import { useEffect, useState } from "preact/hooks";
 import type { AbstainReason, EventKind, FindingLabel, RuntimeId, SearchMode, SessionSkillReportDto, SkillSpan, SkillUri,
   TraceStep } from "../../src/types.js";
@@ -24,7 +25,7 @@ type LoadDetail = { kind: "load"; uri: SkillUri; loadId: string; manifestDigest:
 type ReadDetail = { kind: "read_file"; skillUri: SkillUri; uri: SkillUri; bytes: number };
 type NativeDetail = { kind: "native_skill"; name: string; via: string };
 type LlmDetail = { kind: "llm_call"; model?: string; costUsd?: number; durationMs?: number; ttftMs?: number };
-type ToolDetail = { kind: "tool_call"; toolName?: string; success?: boolean; durationMs?: number; gisoolMcp?: boolean; args?: string; argsLength?: number; resultBytes?: number };
+type ToolDetail = { kind: "tool_call"; toolName?: string; success?: boolean; durationMs?: number; skillarMcp?: boolean; gisoolMcp?: boolean; args?: string; argsLength?: number; resultBytes?: number };
 type ErrorDetail = { kind: "error"; code: string; message: string };
 
 export const PROMPT_FOLD_CHARS = 600;
@@ -36,7 +37,7 @@ const COST_UNKNOWN = "cost unknown";
 export const KIND_LABEL: Record<EventKind, string> = {
   session_start: "Session started",
   prompt: "Prompt",
-  search: "Searched gisool",
+  search: "Searched skillar",
   load: "Loaded skill",
   read_file: "Read resource",
   native_skill: "Native skill",
@@ -49,7 +50,7 @@ export const MODE_LABEL: Record<SearchMode, string> = { discovery: "discovery", 
 export const ABSTAIN_LABEL: Record<AbstainReason, string> = {
   empty_query: "empty query", no_overlap: "no overlap", below_threshold: "below threshold", explicit_only: "explicit only",
 };
-export const NEVER_CONSULTED = "This session never consulted gisool";
+export const NEVER_CONSULTED = "This session never consulted skillar";
 export const SPAN_KIND_LABEL = "Skill active";
 
 /** One timeline row: a recorded step, or a skill span holding the model and tool calls made while it was active. */
@@ -468,15 +469,15 @@ function StepBody({ step, bounds }: { step: TraceStep; bounds: ReturnType<typeof
 function Step({ step, bounds }: { step: TraceStep; bounds: ReturnType<typeof sessionBounds> }) {
   const search = step.kind === "search" ? searchDetail(step) : undefined;
   const failedTool = step.kind === "tool_call" && (step.detail as ToolDetail).success === false;
-  const gisoolTool = step.kind === "tool_call" && (step.detail as ToolDetail).gisoolMcp === true;
+  const skillarTool = step.kind === "tool_call" && isSkillarMcpData(step.detail as ToolDetail);
   const hollow = step.kind === "read_file" || step.kind === "native_skill" || step.kind === "llm_call" || step.kind === "tool_call";
   return (
     <li class={`tl__step tl__step--${step.kind}`} data-kind={step.kind}>
       <span class={hollow ? "tl__dot tl__dot--hollow" : "tl__dot"} aria-hidden="true" />
       <div class="tl__head">
         <span class="tl__kind">{KIND_LABEL[step.kind] ?? step.kind}</span>
-        {step.kind === "native_skill" && <span class="tl__tag" title="handled by the runtime's own skill mechanism, not gisool">native</span>}
-        {gisoolTool && <span class="tl__tag" title="a call to gisool's own MCP server">gisool</span>}
+        {step.kind === "native_skill" && <span class="tl__tag" title="handled by the runtime's own skill mechanism, not skillar">native</span>}
+        {skillarTool && <span class="tl__tag" title="a call to skillar's own MCP server">skillar</span>}
         {failedTool && <span class="tl__tag tl__tag--bad">failed</span>}
         {search?.abstained && <span class="tl__tag tl__tag--bad">abstained</span>}
         <StepTime ts={step.ts} startedAt={bounds.startedAt} />
@@ -528,7 +529,7 @@ function NeverConsulted({ counts }: { counts: TraceCounts }) {
   );
 }
 
-const STYLE_ID = "gisool-trace-style";
+const STYLE_ID = "skillar-trace-style";
 
 function ensureStyles() {
   if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;

@@ -18,13 +18,13 @@ function listen(handler) {
 }
 
 test("bootstrap hook appends discovery block and keeps existing content", async () => {
-  const { default: handler, marker } = await bundle("hooks/gisool-discovery/handler.js");
+  const { default: handler, marker } = await bundle("hooks/skillar-discovery/handler.js");
   const event = { type: "agent", action: "bootstrap", context: { workspaceDir: "/w", bootstrapFiles: [{ name: "AGENTS.md", path: "/w/AGENTS.md", content: "existing rules" }] } };
   handler(event);
   const content = event.context.bootstrapFiles[0].content;
   assert.ok(content.startsWith("existing rules"));
   assert.ok(content.includes(marker));
-  const { guidance } = await bundle("hooks/gisool-discovery/handler.js");
+  const { guidance } = await bundle("hooks/skillar-discovery/handler.js");
   assert.equal(content, `existing rules\n\n${guidance}`);
   handler(event);
   assert.equal(event.context.bootstrapFiles[0].content.split(marker).length, 2, "idempotent");
@@ -34,22 +34,22 @@ test("plan lists bundle files, absolute mcp command, notes, and commands", async
   const sb = makeSandbox();
   try {
     const env = { ...sb.env };
-    delete env.GISOOL_NO_CLI;
+    delete env.SKILLAR_NO_CLI;
     const ctx = { home: sb.home, env, port: 4321, token: "t", nodePath: process.execPath, packageRoot: root.replace(/\/$/, ""), disableRemote: false };
     const plan = await openclawPack.plan(ctx);
-    const rels = plan.files.map((f) => f.path.slice(join(sb.home, ".gisool", "packs", "openclaw").length + 1));
-    for (const want of [".codex-plugin/plugin.json", ".mcp.json", "openclaw.plugin.json", "index.mjs", "hooks/gisool-discovery/HOOK.md", "hooks/gisool-discovery/handler.js"]) assert.ok(rels.includes(want), want);
+    const rels = plan.files.map((f) => f.path.slice(join(sb.home, ".skillar", "packs", "openclaw").length + 1));
+    for (const want of [".codex-plugin/plugin.json", ".mcp.json", "openclaw.plugin.json", "index.mjs", "hooks/skillar-discovery/HOOK.md", "hooks/skillar-discovery/handler.js"]) assert.ok(rels.includes(want), want);
     const mcp = JSON.parse(plan.files.find((f) => f.path.endsWith("/.mcp.json")).after);
-    assert.equal(mcp.mcpServers.gisool.command, process.execPath);
-    assert.deepEqual(mcp.mcpServers.gisool.args.slice(1), ["mcp-stdio"]);
-    assert.ok(mcp.mcpServers.gisool.args[0].startsWith("/"));
+    assert.equal(mcp.mcpServers.skillar.command, process.execPath);
+    assert.deepEqual(mcp.mcpServers.skillar.args.slice(1), ["mcp-stdio"]);
+    assert.ok(mcp.mcpServers.skillar.args[0].startsWith("/"));
     const manifest = JSON.parse(plan.files.find((f) => f.path.endsWith("openclaw.plugin.json")).after);
-    assert.equal(manifest.mcpServers.gisool.command, process.execPath);
-    assert.equal(JSON.parse(plan.files.find((f) => f.path.endsWith("gisool.json")).after).port, 4321);
+    assert.equal(manifest.mcpServers.skillar.command, process.execPath);
+    assert.equal(JSON.parse(plan.files.find((f) => f.path.endsWith("skillar.json")).after).port, 4321);
     assert.ok(plan.notes.some((n) => n.includes("allowConversationAccess: true")));
     assert.ok(plan.notes.some((n) => n.includes("restart the OpenClaw Gateway") || n.includes("Restart the OpenClaw Gateway")));
     assert.equal(plan.commands[0].argv.slice(0, 3).join(" "), "openclaw plugins install");
-    assert.equal(plan.commands[0].undo.argv.join(" "), "openclaw plugins uninstall gisool");
+    assert.equal(plan.commands[0].undo.argv.join(" "), "openclaw plugins uninstall skillar");
 
     const noCli = await openclawPack.plan({ ...ctx, env: sb.env, disableRemote: true });
     assert.deepEqual(noCli.commands, []);
@@ -69,11 +69,11 @@ test("hook module registers before_agent_run and POSTs once with bearer token", 
     req.on("end", () => { got.push({ url: req.url, auth: req.headers.authorization, body: JSON.parse(body) }); res.end("{}"); done.resolve(); });
   });
   try {
-    mkdirSync(join(sb.home, ".gisool"), { recursive: true });
-    writeFileSync(join(sb.home, ".gisool", "token"), "secret-token\n");
+    mkdirSync(join(sb.home, ".skillar"), { recursive: true });
+    writeFileSync(join(sb.home, ".skillar", "token"), "secret-token\n");
     const { register } = await bundle("index.mjs");
     const handlers = {};
-    register({ on: (name, fn) => (handlers[name] = fn) }, { ...sb.env, GISOOL_PORT: String(port) });
+    register({ on: (name, fn) => (handlers[name] = fn) }, { ...sb.env, SKILLAR_PORT: String(port) });
     assert.deepEqual(Object.keys(handlers), ["before_agent_run"]);
     const result = handlers.before_agent_run({ prompt: "hello" }, { sessionKey: "k", sessionId: "s" });
     assert.equal(result, undefined);
@@ -92,11 +92,11 @@ test("hook returns immediately when the daemon hangs", async () => {
   const sb = makeSandbox();
   const { server, port } = await listen(() => {});
   try {
-    mkdirSync(join(sb.home, ".gisool"), { recursive: true });
-    writeFileSync(join(sb.home, ".gisool", "token"), "tok");
+    mkdirSync(join(sb.home, ".skillar"), { recursive: true });
+    writeFileSync(join(sb.home, ".skillar", "token"), "tok");
     const { register } = await bundle("index.mjs");
     const handlers = {};
-    register({ on: (n, fn) => (handlers[n] = fn) }, { ...sb.env, GISOOL_PORT: String(port) });
+    register({ on: (n, fn) => (handlers[n] = fn) }, { ...sb.env, SKILLAR_PORT: String(port) });
     const t0 = performance.now();
     handlers.before_agent_run({ prompt: "p" }, {});
     assert.ok(performance.now() - t0 < 100);
@@ -112,12 +112,12 @@ test("doctor reports allowConversationAccess missing, then ok when set", async (
   try {
     const dir = join(sb.home, ".openclaw");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "openclaw.json"), JSON.stringify({ plugins: { entries: { gisool: { enabled: true } } } }));
+    writeFileSync(join(dir, "openclaw.json"), JSON.stringify({ plugins: { entries: { skillar: { enabled: true } } } }));
     let checks = await openclawPack.doctorChecks({ home: sb.home, env: sb.env, port: 1 });
     const flag = checks.find((c) => c.name === "allowConversationAccess");
     assert.equal(flag.ok, false);
     assert.ok(flag.detail.includes("allowConversationAccess missing"));
-    writeFileSync(join(dir, "openclaw.json"), '{ // json5-ish\n plugins: {}, "plugins": { "entries": { "gisool": { "hooks": { "allowConversationAccess": true, }, }, }, }, }');
+    writeFileSync(join(dir, "openclaw.json"), '{ // json5-ish\n plugins: {}, "plugins": { "entries": { "skillar": { "hooks": { "allowConversationAccess": true, }, }, }, }, }');
     checks = await openclawPack.doctorChecks({ home: sb.home, env: sb.env, port: 1 });
     assert.equal(checks.find((c) => c.name === "allowConversationAccess").ok, true);
   } finally {
@@ -125,13 +125,13 @@ test("doctor reports allowConversationAccess missing, then ok when set", async (
   }
 });
 
-test("detect flags an existing remote gisul bundle", async () => {
+test("detect flags an existing remote skillar bundle", async () => {
   const sb = makeSandbox();
   try {
-    mkdirSync(join(sb.home, ".openclaw", "gisul"), { recursive: true });
+    mkdirSync(join(sb.home, ".openclaw", "skillar"), { recursive: true });
     const d = await openclawPack.detect({ home: sb.home, env: sb.env });
     assert.equal(d.installed, true);
-    assert.equal(d.remoteGisulRegistered, true);
+    assert.equal(d.remoteSkillarRegistered, true);
   } finally {
     sb.cleanup();
   }

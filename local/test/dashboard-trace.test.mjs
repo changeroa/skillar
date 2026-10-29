@@ -50,7 +50,7 @@ test("fixtures cover every step kind, one abstained search, and one session with
 test("every kind has a label and the never-consulted copy is the shipped sentence", () => {
   assert.deepEqual(Object.keys(trace.KIND_LABEL).sort(), [...EVENT_KINDS].sort());
   for (const kind of EVENT_KINDS) assert.ok(trace.KIND_LABEL[kind].length > 0, kind);
-  assert.equal(trace.NEVER_CONSULTED, "This session never consulted gisool");
+  assert.equal(trace.NEVER_CONSULTED, "This session never consulted skillar");
   assert.deepEqual(Object.keys(trace.ABSTAIN_LABEL).sort(), ["below_threshold", "empty_query", "explicit_only", "no_overlap"]);
   assert.deepEqual(Object.keys(trace.MODE_LABEL).sort(), ["automatic", "discovery", "explicit"]);
 });

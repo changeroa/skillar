@@ -7,7 +7,7 @@ import { distImport, makeTempDir, removeDir, writeFixtureSkill } from "./_helper
 
 const { createCatalog, skillUri } = await distImport("catalog/index.js");
 async function catalogCase(fn) {
-  const root = makeTempDir("gisool-manifest-");
+  const root = makeTempDir("skillar-manifest-");
   const logs = [];
   const catalog = createCatalog({ roots: [{ id: "test", path: root }], log: (s) => logs.push(s) });
   try { await fn({ root, catalog, logs }); } finally { catalog.close(); removeDir(root); }

@@ -12,14 +12,14 @@ export function fixtureText(name) {
 /** Starts the real composition root on an ephemeral port inside a sandbox HOME. */
 export async function startTestServer(overrides = {}, serverDeps = {}) {
   const sandbox = makeSandbox();
-  const gisoolHome = sandbox.env.GISOOL_HOME;
+  const skillarHome = sandbox.env.SKILLAR_HOME;
   const skills = join(sandbox.home, "skills");
   writeFixtureSkill(skills, "pr-review", { description: "Review pull request code changes" });
   const config = { port: 0, captureLevel: "full", retentionDays: null, roots: [{ id: "agents", path: skills }], runtimes: {}, ...overrides };
-  const server = await startServer(config, { gisoolHome, handleSignals: false, ...serverDeps });
-  const token = readFileSync(join(gisoolHome, "token"), "utf8").trim();
+  const server = await startServer(config, { skillarHome, handleSignals: false, ...serverDeps });
+  const token = readFileSync(join(skillarHome, "token"), "utf8").trim();
   return {
-    ...server, token, gisoolHome, home: sandbox.home, env: sandbox.env,
+    ...server, token, skillarHome, home: sandbox.home, env: sandbox.env,
     async stop() {
       await server.close();
       sandbox.cleanup();

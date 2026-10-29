@@ -25,9 +25,9 @@ let seq = 0;
 const candidate = (name, rank) => ({ uri: uri(name), name, description: "", score: 10 - rank, rank, invocation: "automatic", digest: `sha256:${name}`, matched: [] });
 
 /** Seeds the running daemon's database through a second connection: WAL lets both read and write the same file. */
-function seedStore(gisoolHome) {
+function seedStore(skillarHome) {
   let clock = T;
-  const db = openDb(join(gisoolHome, "gisool.db"));
+  const db = openDb(join(skillarHome, "skillar.db"));
   const store = createStore(db, { now: () => clock });
   const ids = {};
   try {
@@ -108,9 +108,9 @@ function seedStore(gisoolHome) {
  * about their own data: a flow registered for one tab of a workspace whose other tab runs an automated session, a
  * step mapped to a pane herdr placed on that other tab, and a model call that reports only two of its measurements.
  */
-function seedGateFixture(gisoolHome) {
+function seedGateFixture(skillarHome) {
   let clock = G;
-  const db = openDb(join(gisoolHome, "gisool.db"));
+  const db = openDb(join(skillarHome, "skillar.db"));
   const store = createStore(db, { now: () => clock });
   const ids = {};
   try {
@@ -173,8 +173,8 @@ let fixture;
 let gate;
 before(async () => {
   s = await startTestServer();
-  fixture = seedStore(s.gisoolHome);
-  gate = seedGateFixture(s.gisoolHome);
+  fixture = seedStore(s.skillarHome);
+  gate = seedGateFixture(s.skillarHome);
 });
 after(async () => { await s.stop(); });
 

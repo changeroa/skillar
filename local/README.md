@@ -1,6 +1,7 @@
-# gisool
+# skillar
 
-gisool is a local skill router. One daemon on `127.0.0.1` indexes the `SKILL.md` folders already on your machine,
+[Upgrade and compatibility notes](https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md).
+skillar is a local skill router. One daemon on `127.0.0.1` indexes the `SKILL.md` folders already on your machine,
 serves them over MCP through `search_skills` and standard `resources/read`, records which skills
 each agent session searched, loaded, and read, and shows that history in a local dashboard.
 
@@ -50,16 +51,16 @@ hosts can disambiguate their configured roots.
 A `resources/read` of a published `SKILL.md` is recorded as a dashboard `load` observation; other files
 produce `read_file` observations. These do **not** activate skills, confer approval, or grant execution permissions.
 Hosts own origin binding, integrity verification, consent, and activation. To join reads to a search, send
-its `trace_id` as `_meta["app.gisool/traceId"]`; ordinary vendor session metadata also preserves attribution.
+its `trace_id` as `_meta["app.skillar/traceId"]`; ordinary vendor session metadata also preserves attribution.
 No prior read or connection is required. A changed file fails closed until the catalog refreshes; the host
 refreshes `skills/get` and verifies against the new manifest before use.
 
 For Codex builds with gated modern support, enable `features.mcp_2026_07_28` for third-party HTTP servers;
-the separate hosted Apps flag does not apply to gisool. Client-wide experimental flags are not edited by the pack.
+the separate hosted Apps flag does not apply to skillar. Client-wide experimental flags are not edited by the pack.
 
 **Privacy: everything stays on this machine.** The daemon listens on `127.0.0.1` only, every MCP, ingest, and API
 request needs the local bearer token, and nothing is sent to any remote service. Prompts, search queries, and skill
-usage are stored in a SQLite database under `~/.gisool/`.
+usage are stored in a SQLite database under `~/.skillar/`.
 
 ## Install
 
@@ -69,85 +70,85 @@ Requires Node.js 24.15 or newer on macOS or Linux.
 npm --prefix local ci && npm --prefix local run build && npm link ./local
 ```
 
-This puts the `gisool` command on your `PATH`.
+This puts the `skillar` command on your `PATH`.
 
 ## Connect your agents
 
 Preview what would change, without writing anything:
 
 ```sh
-gisool init --dry-run
+skillar init --dry-run
 ```
 
-The dry run prints a diff for every runtime config gisool would touch (MCP registration, OpenTelemetry export to the
+The dry run prints a diff for every runtime config skillar would touch (MCP registration, OpenTelemetry export to the
 daemon, capture hooks) and the service it would install. Then apply it:
 
 ```sh
-gisool init                          # every detected runtime
-gisool init --runtime codex,claude-code
-gisool init --no-service             # do not install the LaunchAgent / systemd user unit
+skillar init                          # every detected runtime
+skillar init --runtime codex,claude-code
+skillar init --no-service             # do not install the LaunchAgent / systemd user unit
 ```
 
-Every run backs up the files it changes under `~/.gisool/backups/`. Undo with:
+Every run backs up the files it changes under `~/.skillar/backups/`. Undo with:
 
 ```sh
-gisool init --rollback               # newest run
-gisool init --rollback --all         # every run
+skillar init --rollback               # newest run
+skillar init --rollback --all         # every run
 ```
 
 ## Run
 
-`gisool init` installs a LaunchAgent (macOS) or systemd user unit (Linux) that keeps the daemon running. To run it in
+`skillar init` installs a LaunchAgent (macOS) or systemd user unit (Linux) that keeps the daemon running. To run it in
 the foreground instead:
 
 ```sh
-gisool serve                         # default port 8799
-gisool serve --port 8800
+skillar serve                         # default port 8799
+skillar serve --port 8800
 ```
 
 Open the dashboard (sessions, per-session trace, flow, and weekday-by-hour heatmap):
 
 ```sh
-gisool open                          # opens the browser
-gisool open --print                  # prints the URL only
+skillar open                          # opens the browser
+skillar open --print                  # prints the URL only
 ```
 
 Check the installation:
 
 ```sh
-gisool doctor                        # service, daemon, token mode, FTS5, roots, index freshness, hooks, backups
-gisool doctor --json
+skillar doctor                        # service, daemon, token mode, FTS5, roots, index freshness, hooks, backups
+skillar doctor --json
 ```
 
 Measure search quality against recorded or hand-written cases:
 
 ```sh
-gisool eval
-gisool eval --cases cases.json --json
+skillar eval
+skillar eval --cases cases.json --json
 ```
 
 ## Skill tracing
 
-herdr is required for skill tracing; `gisool doctor` checks its socket connection. gisool joins agent sessions
+herdr is required for skill tracing; `skillar doctor` checks its socket connection. skillar joins agent sessions
 to panes and compares observed skill use with registered workflows without restricting agents.
 See [Skill tracing](docs/skill-tracing.md) for capture details, attribution limits, and the orchestrator protocol.
 
 ## Export and import
 
-Move your gisool setup (skill roots, config, eval cases, aliases) to another machine:
+Move your skillar setup (skill roots, config, eval cases, aliases) to another machine:
 
 ```sh
-gisool export ~/gisool-backup                  # settings only
-gisool export ~/gisool-backup --with-history   # also sessions, events, and loads
-gisool import ~/gisool-backup --dry-run        # preview what would be added
-gisool import ~/gisool-backup                  # merge; existing keys are kept
+skillar export ~/skillar-backup                  # settings only
+skillar export ~/skillar-backup --with-history   # also sessions, events, and loads
+skillar import ~/skillar-backup --dry-run        # preview what would be added
+skillar import ~/skillar-backup                  # merge; existing keys are kept
 ```
 
-Import never overwrites existing settings. Run `gisool init` afterwards to connect the runtimes on the new machine.
+Import never overwrites existing settings. Run `skillar init` afterwards to connect the runtimes on the new machine.
 
 ## Settings
 
-`~/.gisool/config.json` (created on first run, mode 0600; `GISOOL_HOME` moves the whole directory):
+`~/.skillar/config.json` (created on first run, mode 0600; `SKILLAR_HOME` moves the whole directory):
 
 ```json
 {
@@ -166,8 +167,8 @@ Import never overwrites existing settings. Run `gisool init` afterwards to conne
 - `retentionDays`: `null` keeps history forever; a number deletes sessions older than that many days at startup and
   once a day.
 - `roots`: skill folders to index in place. Defaults cover `~/.agents/skills`, `~/.claude/skills`, `~/.codex/skills`,
-  `~/.gemini/skills`, `~/.omo/agent/skills`, `~/.gjc/agent/skills`, `~/.openclaw/skills`, and `~/gisul/skills`.
-  gisool never copies or edits skill files.
+  `~/.gemini/skills`, `~/.omo/agent/skills`, `~/.gjc/agent/skills`, `~/.openclaw/skills`, and `~/iyen-skills/skills`.
+  skillar never copies or edits skill files.
 
 Restart the daemon after editing the config.
 
@@ -175,11 +176,11 @@ Restart the daemon after editing the config.
 
 | Path | Purpose |
 | --- | --- |
-| `~/.gisool/config.json` | settings above |
-| `~/.gisool/token` | bearer token (0600) shared with the runtime configs |
-| `~/.gisool/gisool.db` | SQLite store: skills index, sessions, events, loads |
-| `~/.gisool/logs/daemon.log` | daemon log, rotated at 5 MB |
-| `~/.gisool/backups/` | per-run backups used by `gisool init --rollback` |
+| `~/.skillar/config.json` | settings above |
+| `~/.skillar/token` | bearer token (0600) shared with the runtime configs |
+| `~/.skillar/skillar.db` | SQLite store: skills index, sessions, events, loads |
+| `~/.skillar/logs/daemon.log` | daemon log, rotated at 5 MB |
+| `~/.skillar/backups/` | per-run backups used by `skillar init --rollback` |
 
 ## Develop
 
@@ -191,4 +192,4 @@ node local/bench/search.mjs --check
 node local/bench/mcp-mutations.mjs  # each regression is injected in memory; files stay unchanged
 ```
 
-Architecture: [docs/gisool.md](../docs/gisool.md).
+Architecture: [docs/skillar.md](../docs/skillar.md).

@@ -162,7 +162,7 @@ async function withDaemon(run) {
         return stats.json.ingest;
       },
       spans() {
-        const db = new DatabaseSync(join(s.gisoolHome, "gisool.db"));
+        const db = new DatabaseSync(join(s.skillarHome, "skillar.db"));
         try {
           db.exec("PRAGMA busy_timeout = 5000");
           return spanRows(db);

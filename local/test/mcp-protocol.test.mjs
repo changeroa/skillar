@@ -68,7 +68,7 @@ test("legacy initialize opens a session served with legacy result shapes and cli
   const init = await legacyPost(daemon.port, { jsonrpc: "2.0", id: 77, method: "initialize", params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "openclaw-mcp", version: "1" } } });
   assert.equal(init.body.id, 77);
   assert.deepEqual(Object.keys(init.body.result).sort(), ["capabilities", "instructions", "protocolVersion", "serverInfo"]);
-  assert.equal(init.body.result.serverInfo.name, "gisool");
+  assert.equal(init.body.result.serverInfo.name, "skillar");
   assert.ok(init.body.result.capabilities.tools && init.body.result.capabilities.resources);
   const session = init.headers.get("mcp-session-id");
   assert.ok(session);

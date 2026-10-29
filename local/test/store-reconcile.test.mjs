@@ -15,7 +15,7 @@ test("reconciliation SQL work is restricted by URI, candidate session and time b
     db.exec("BEGIN");
     // Large irrelevant history, including same URI/time in a different session and old loads in our session.
     for (let i = 0; i < 20000; i++) seed.append(event("tool_call", T - 1000000 + i, refs[2], {
-      source: "otel", text: JSON.stringify({ server: "gisool", uri: URI }), data: { success: true },
+      source: "otel", text: JSON.stringify({ server: "skillar", uri: URI }), data: { success: true },
     }), { sessionId: ids[2], method: "runtime_id" });
     for (let i = 0; i < 2000; i++) seed.append(event("load", i % 2 ? T : T - 1000000, refs[0], {
       skillUri: i % 2 ? `${URI}.other` : URI,
@@ -23,7 +23,7 @@ test("reconciliation SQL work is restricted by URI, candidate session and time b
     }), { sessionId: "unattributed", method: "none", reason: "ambiguous" });
     const load = event("load", T, refs[0], { skillUri: URI, data: { attributionCandidates: ids.slice(0, 2) } });
     seed.append(load, { sessionId: "unattributed", method: "none", reason: "ambiguous" });
-    const tool = event("tool_call", T + 1, refs[0], { source: "otel", text: JSON.stringify({ server: "gisool", uri: URI }), data: { success: true } });
+    const tool = event("tool_call", T + 1, refs[0], { source: "otel", text: JSON.stringify({ server: "skillar", uri: URI }), data: { success: true } });
     seed.append(tool, { sessionId: ids[0], method: "runtime_id" });
     db.exec("COMMIT");
     const prepare = db.prepare.bind(db);

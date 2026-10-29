@@ -1,7 +1,7 @@
 # MCP 2026-07-28 and Skills conformance
 
 Audit date: October 14, 2026. Paths below are relative to `local/`.
-Implementation revision: `3318fb1` - Serve gisool over modern MCP with standard skill resources.
+Implementation revision: `3318fb1` - Serve skillar over modern MCP with standard skill resources.
 
 Understood scope: replace the initialization-based MCP implementation, serve skill bytes only through
 standard resources, retain search and dashboard observations, and leave installed agents and the running
@@ -108,9 +108,9 @@ The stable page's host MUST/SHOULD rules remain host responsibilities: server-sc
 origin labels, collisions across origins, URI rather than name identity, no DNS interpretation of authorities,
 frontmatter/digest/size verification, held-manifest membership, lazy retrieval, relative reference resolution,
 consent and nested-skill reapproval, permission gating, code-execution approval, and cache isolation.
-gisool does not impersonate a host or claim a resource read activates a skill. Its `load` event is dashboard
+skillar does not impersonate a host or claim a resource read activates a skill. Its `load` event is dashboard
 terminology for an observed published SKILL.md read, not a host acting window. `allowed-tools` is never executed
-or granted by gisool.
+or granted by skillar.
 
 Directory reading, dynamic manifests, list-change subscriptions, MRTR, remote-reference schema validation,
 and custom tool-parameter headers are not advertised or used. They are not missing declared capabilities.
@@ -150,7 +150,7 @@ Compatibility evidence retrieved on the audit date, not claims of launching thes
 - `test/e2e/daemon.test.mjs` starts the real CLI daemon on an ephemeral non-8799 port, drives
   discover -> sole tool -> search -> SKILL.md read -> supporting read, verifies the manifest digest,
   queries load/read_file events and dashboard trace/flow/heatmap, accepts a legacy initialize, and tears down.
-  Sandbox HOME is created before deriving GISOOL_HOME; GISOOL_NO_CLI disables runtime registration.
+  Sandbox HOME is created before deriving SKILLAR_HOME; SKILLAR_NO_CLI disables runtime registration.
 - A separate isolated-HOME run passed all three daemon tests; `npm ci --ignore-scripts --dry-run`
   also accepted the pruned lockfile without installing or changing dependencies.
 - The user daemon on 8799, installed packages, and user configurations were not modified or restarted.

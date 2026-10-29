@@ -1,13 +1,21 @@
 #!/usr/bin/env node
-// Forwards a runtime hook payload (stdin JSON) to the local gisool daemon. Always exits 0.
-import { readFileSync } from "node:fs";
+// Forwards a runtime hook payload (stdin JSON) to the local skillar daemon. Always exits 0.
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+function resolveStateHome(env) {
+  const home = env.HOME || homedir();
+  const preferred = join(home, ".skillar"), legacy = join(home, ".gisool");
+  if (["config.json", "token", "skillar.db", "gisool.db"].some(file => existsSync(join(preferred, file)))) return preferred;
+  return existsSync(legacy) ? legacy : preferred;
+}
+
 
 const done = () => process.exit(0);
 try {
   const runtime = process.argv[2] ?? "unknown";
-  const home = process.env.GISOOL_HOME || join(homedir(), ".gisool");
+  const home = (process.env.SKILLAR_HOME || process.env.GISOOL_HOME) || resolveStateHome(process.env);
   const body = await new Promise(resolve => {
     const chunks = [];
     const timer = setTimeout(() => resolve(Buffer.concat(chunks).toString("utf8")), 1000);

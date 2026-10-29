@@ -74,9 +74,9 @@ function seedRoots(home) {
 }
 
 function writeConfig(env, port, roots, extra = {}) {
-  mkdirSync(env.GISOOL_HOME, { recursive: true, mode: 0o700 });
+  mkdirSync(env.SKILLAR_HOME, { recursive: true, mode: 0o700 });
   const config = { port, captureLevel: "full", retentionDays: null, roots, runtimes: {}, ...extra };
-  writeFileSync(join(env.GISOOL_HOME, "config.json"), JSON.stringify(config, null, 2), { mode: 0o600 });
+  writeFileSync(join(env.SKILLAR_HOME, "config.json"), JSON.stringify(config, null, 2), { mode: 0o600 });
 }
 
 function httpReq(port, { method = "GET", path = "/", headers = {}, body } = {}) {
@@ -97,7 +97,7 @@ function httpReq(port, { method = "GET", path = "/", headers = {}, body } = {}) 
   });
 }
 
-/** Spawns `gisool serve` and subscribes to its readiness line before checking health. */
+/** Spawns `skillar serve` and subscribes to its readiness line before checking health. */
 async function startDaemon(env, port) {
   const child = spawn(process.execPath, [MAIN, "serve", "--port", String(port)], { env, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
@@ -192,7 +192,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
   const tokenEnv = sb.env;
   writeConfig(tokenEnv, port, sb.roots);
   let daemon = await startDaemon(tokenEnv, port);
-  const token = readFileSync(join(tokenEnv.GISOOL_HOME, "token"), "utf8").trim();
+  const token = readFileSync(join(tokenEnv.SKILLAR_HOME, "token"), "utf8").trim();
   t.after(() => daemon.stop());
 
   const skills = (await api(port, token, "/api/skills")).json;
@@ -215,7 +215,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
   const top = search.body.candidates[0];
   assert.equal(top.name, "database-query");
   assert.ok(top.score > 0);
-  const readMeta = { ...meta, "app.gisool/traceId": search.body.trace_id };
+  const readMeta = { ...meta, "app.skillar/traceId": search.body.trace_id };
   const entry = (await client.request("skills/get", { uri: top.uri })).skill;
   const load = await client.readResource({ uri: top.uri, _meta: readMeta });
   assert.equal(`sha256:${createHash("sha256").update(load.contents[0].text).digest("hex")}`, entry.resources.find((r) => r.uri === top.uri).digest);
@@ -286,7 +286,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
 
   await daemon.stop();
   assert.equal(await portIsFree(port), true);
-  const db = new DatabaseSync(join(tokenEnv.GISOOL_HOME, "gisool.db"), { readOnly: true });
+  const db = new DatabaseSync(join(tokenEnv.SKILLAR_HOME, "skillar.db"), { readOnly: true });
   try {
     assert.deepEqual(db.prepare("SELECT kind FROM events WHERE source = 'mcp' ORDER BY ts, rowid").all().map((r) => r.kind), ["search", "load", "read_file", "read_file"]);
   } finally { db.close(); }
@@ -301,7 +301,7 @@ test("captureLevel metadata stores the prompt digest without text", async (t) =>
   const port = await freePort();
   writeConfig(sb.env, port, sb.roots, { captureLevel: "metadata" });
   const daemon = await startDaemon(sb.env, port);
-  const token = readFileSync(join(sb.env.GISOOL_HOME, "token"), "utf8").trim();
+  const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   t.after(() => daemon.stop());
   const stream = await openStream(port, token);
   t.after(() => stream.close());
@@ -312,7 +312,7 @@ test("captureLevel metadata stores the prompt digest without text", async (t) =>
   stream.close();
   await daemon.stop();
 
-  const db = new DatabaseSync(join(sb.env.GISOOL_HOME, "gisool.db"), { readOnly: true });
+  const db = new DatabaseSync(join(sb.env.SKILLAR_HOME, "skillar.db"), { readOnly: true });
   try {
     const rows = db.prepare("SELECT text, text_digest, text_length FROM events WHERE kind = 'prompt'").all();
     assert.equal(rows.length, 1);
@@ -329,7 +329,7 @@ test("a wrong bearer token gets 401 on /ingest and records no session", async (t
   const port = await freePort();
   writeConfig(sb.env, port, sb.roots);
   const daemon = await startDaemon(sb.env, port);
-  const token = readFileSync(join(sb.env.GISOOL_HOME, "token"), "utf8").trim();
+  const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   t.after(() => daemon.stop());
 
   const wrong = "0".repeat(64);

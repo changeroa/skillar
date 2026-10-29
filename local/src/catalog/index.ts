@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import type { Catalog, CatalogDelta, GisoolConfig, SkillEntry, SkillUri } from "../types.js";
+import type { Catalog, CatalogDelta, SkillarConfig, SkillEntry, SkillUri } from "../types.js";
 import { applyFamilies } from "./fields.js";
 import { assertRegularSkillPath, CatalogError, scanRoot, sha256 } from "./scanner.js";
 import { parseSkillUri, skillUri } from "./uri.js";
@@ -8,7 +8,7 @@ import { watchRoots } from "./watcher.js";
 export { CatalogError } from "./scanner.js";
 export { parseSkillUri, skillUri } from "./uri.js";
 
-export type CatalogOptions = Pick<GisoolConfig, "roots"> & {
+export type CatalogOptions = Pick<SkillarConfig, "roots"> & {
   /** Start a recursive fs.watch on every root that refreshes after a debounce (default false). */
   watch?: boolean;
   watchDebounceMs?: number;

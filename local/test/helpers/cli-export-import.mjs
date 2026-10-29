@@ -4,12 +4,12 @@ import { distImport } from "../_helpers.mjs";
 const { openDb } = await distImport("store/db.js");
 const { createStore } = await distImport("store/index.js");
 
-/** CliDeps over a sandbox HOME; openStore opens <gisoolHome>/gisool.db with the real store wiring. */
+/** CliDeps over a sandbox HOME; openStore opens <skillarHome>/skillar.db with the real store wiring. */
 export function makeDeps(home, env, config = { port: 8799, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} }) {
-  const gisoolHome = join(home, ".gisool");
+  const skillarHome = join(home, ".skillar");
   return {
-    config, home, gisoolHome, env,
-    openStore: () => createStore(openDb(join(gisoolHome, "gisool.db")), { home, gisoolHome, config }),
+    config, home, skillarHome, env,
+    openStore: () => createStore(openDb(join(skillarHome, "skillar.db")), { home, skillarHome, config }),
   };
 }
 

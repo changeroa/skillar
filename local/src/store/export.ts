@@ -5,7 +5,7 @@ import { DEFAULT_ROOTS, expandHome } from "../config.js";
 import { parseJson, readAliasesOverrides, storeError, writeAliasesOverrides, type StoreCtx } from "./writes.js";
 import type { Store } from "../types.js";
 
-export const EXPORT_FILE = "gisool-export.json";
+export const EXPORT_FILE = "skillar-export.json";
 export const HISTORY_FILE = "history.db";
 /**
  * Tables that export --with-history carries, in foreign-key order, each with the columns identifying a row.
@@ -48,9 +48,9 @@ function tildify(path: string, home: string): string {
   return path;
 }
 
-function readConfigFile(gisoolHome: string | undefined): Record<string, unknown> | undefined {
-  if (!gisoolHome) return undefined;
-  const p = join(gisoolHome, "config.json");
+function readConfigFile(skillarHome: string | undefined): Record<string, unknown> | undefined {
+  if (!skillarHome) return undefined;
+  const p = join(skillarHome, "config.json");
   return existsSync(p) ? parseJson<Record<string, unknown>>(readFileSync(p, "utf8"), {}) : undefined;
 }
 
@@ -143,7 +143,7 @@ export function createPortable(ctx: StoreCtx): Portable {
   return {
     exportTo(dir: string, opts: { withHistory: boolean }): void {
       mkdirSync(dir, { recursive: true });
-      const raw = readConfigFile(ctx.opts.gisoolHome);
+      const raw = readConfigFile(ctx.opts.skillarHome);
       const source: Record<string, unknown> = raw ?? (ctx.opts.config ? { ...ctx.opts.config } : {});
       const { token: _token, roots: rawRoots, ...config } = source;
       void _token;
@@ -171,7 +171,7 @@ export function createPortable(ctx: StoreCtx): Portable {
     },
 
     importFrom(dir: string, opts: { merge: boolean }): ImportResult {
-      const file = join(dir, EXPORT_FILE);
+      const file = existsSync(join(dir, EXPORT_FILE)) ? join(dir, EXPORT_FILE) : join(dir, "gisool-export.json");
       if (!existsSync(file)) throw storeError("no_export_found", `no ${EXPORT_FILE} in ${dir}`);
       const doc = parseJson<Partial<ExportDoc> & { version?: unknown }>(readFileSync(file, "utf8"), {});
       if (doc.version !== 1) throw storeError("unsupported_export_version", `unsupported export version: ${String(doc.version)}`);
@@ -190,15 +190,15 @@ export function createPortable(ctx: StoreCtx): Portable {
       const aliasAdded = Object.keys(doc.aliasesOverrides ?? {}).filter((k) => !(k in currentAliases));
       const aliasSkipped = Object.keys(doc.aliasesOverrides ?? {}).filter((k) => k in currentAliases);
 
-      const gisoolHome = ctx.opts.gisoolHome;
-      const existingRaw = readConfigFile(gisoolHome);
+      const skillarHome = ctx.opts.skillarHome;
+      const existingRaw = readConfigFile(skillarHome);
       const configBase: Record<string, unknown> = existingRaw ?? {};
       const existingRoots = (Array.isArray(configBase.roots) ? configBase.roots : existingRaw ? [] : DEFAULT_ROOTS) as { id: string; path: string }[];
       const rootsAdded: { id: string; path: string }[] = [];
       const rootsSkipped: string[] = [];
       const configAdded: string[] = [];
       const configKept: string[] = [];
-      if (gisoolHome) {
+      if (skillarHome) {
         const knownPaths = new Set(existingRoots.map((r) => expandHome(r.path, home())));
         const knownIds = new Set(existingRoots.map((r) => r.id));
         for (const r of doc.roots ?? []) {
@@ -251,12 +251,12 @@ export function createPortable(ctx: StoreCtx): Portable {
           db.exec("ROLLBACK");
           throw error;
         }
-        if (gisoolHome && (rootsAdded.length > 0 || configAdded.length > 0)) {
+        if (skillarHome && (rootsAdded.length > 0 || configAdded.length > 0)) {
           const next: Record<string, unknown> = { ...configBase };
           for (const k of configAdded) next[k] = doc.config![k];
           next.roots = [...existingRoots, ...rootsAdded];
-          mkdirSync(gisoolHome, { recursive: true, mode: 0o700 });
-          const p = join(gisoolHome, "config.json");
+          mkdirSync(skillarHome, { recursive: true, mode: 0o700 });
+          const p = join(skillarHome, "config.json");
           writeFileSync(p, JSON.stringify(next, null, 2) + "\n", { mode: 0o600 });
           chmodSync(p, 0o600);
         }
