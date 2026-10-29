@@ -117,7 +117,7 @@ skillar eval                                    # 검색 품질 측정
 
 | 런타임 | 연동 |
 | --- | --- |
-| Codex | [ARKPOINT 네이티브 HTTPS + OAuth 플러그인](docs/team-plugin.md) · [Codex 클라이언트](clients/codex/README.md) |
+| Codex | [팀 자체 호스팅 HTTPS + OAuth 플러그인](docs/team-plugin.md) · [Codex 클라이언트](clients/codex/README.md) |
 | oh-my-openagent / OmO 5 (`omo-ai`) | [OAuth stdio 브리지와 탐색 확장](clients/oh-my-openagent/README.md) |
 | Gajae Code (`gjc`) | [OAuth stdio 브리지와 워크플로 연동](clients/gajae-code/README.md) |
 | OpenClaw | [OAuth stdio 브리지와 부트스트랩 탐색 훅](clients/openclaw/README.md) |

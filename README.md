@@ -117,7 +117,7 @@ The local CLI needs no hosted registry. This repository also contains a separate
 
 | Runtime | Integration |
 | --- | --- |
-| Codex | [ARKPOINT native HTTPS + OAuth plugin](docs/team-plugin.md) · [Codex client](clients/codex/README.md) |
+| Codex | [Self-hosted team HTTPS + OAuth plugin](docs/team-plugin.md) · [Codex client](clients/codex/README.md) |
 | oh-my-openagent / OmO 5 (`omo-ai`) | [OAuth stdio bridge and discovery extension](clients/oh-my-openagent/README.md) |
 | Gajae Code (`gjc`) | [OAuth stdio bridge and workflow integration](clients/gajae-code/README.md) |
 | OpenClaw | [OAuth stdio bridge and bootstrap discovery hook](clients/openclaw/README.md) |
