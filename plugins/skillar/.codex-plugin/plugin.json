@@ -1,7 +1,7 @@
 {
   "name": "skillar",
   "version": "0.5.0",
-  "description": "Search and maintain skills and native packs through a configured team Gisul Worker",
+  "description": "Search and maintain skills and native packs through a configured team Skillar Worker",
   "author": {
     "name": "Skillar contributors",
     "url": "https://github.com/changeroa/skillar"

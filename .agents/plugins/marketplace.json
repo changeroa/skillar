@@ -1,7 +1,7 @@
 {
   "name": "skillar",
   "interface": {
-    "displayName": "Gisul"
+    "displayName": "Skillar"
   },
   "plugins": [
     {
