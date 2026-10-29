@@ -35,7 +35,7 @@ async function fixture(t, packCount = 1) {
   const bucket = await runtime.getR2Bucket("SKILLS_BUCKET");
   const skills = [], files = [];
   for (const name of ["scope", "inspect", "verify"]) {
-    const uri = `skill://skillar/skillar/${name}/SKILL.md`;
+    const uri = `skill://skillar/iyen/${name}/SKILL.md`;
     const frontmatter = { name, description: `${name} fixture` };
     const resources = [];
     for (const [relative, bytes] of [
@@ -58,7 +58,7 @@ async function fixture(t, packCount = 1) {
     const name = i === 0 ? "review" : `review-${i}`;
     const packDefinition = { ...definition, name };
     const packBytes = JSON.stringify(packDefinition);
-    const pack = { uri: `pack://skillar/skillar/${name}`, definition: packDefinition,
+    const pack = { uri: `pack://skillar/iyen/${name}`, definition: packDefinition,
       digest: digest(packBytes), size: Buffer.byteLength(packBytes) };
     packs.push(pack);
     files.push({ path: `packs/${name}.json`, digest: pack.digest, size: pack.size });
@@ -125,6 +125,15 @@ test("canary verifies actual Worker runtime, complete skill bytes and native pac
   assert.equal(cliReceipt.state, "complete");
   assert.deepEqual(cliReceipt.checked, receipt.checked);
   assert.deepEqual(JSON.parse(await readFile(f.env.SKILLAR_CANARY_RECEIPT, "utf8")), cliReceipt);
+});
+
+test("canary retains old deployment variables and gives new variables precedence", { timeout: 30000 }, async t => {
+  const f = await fixture(t);
+  const legacy = Object.fromEntries(Object.entries(f.env).map(([key, value]) => [key.replace("SKILLAR_", "GISUL_"), value]));
+  const receipt = await runCanary({ ...legacy, SKILLAR_CANARY_READER_TOKEN: reader,
+    GISUL_CANARY_READER_TOKEN: "obsolete-token" }, f.fetcher);
+  assert.equal(receipt.state, "complete", JSON.stringify(receipt));
+  assert.deepEqual(receipt.checked, { skills: 3, resources: 6, packs: 1 });
 });
 
 test("canary checks every native pack across the 50-entry page boundary", { timeout: 30000 }, async t => {
