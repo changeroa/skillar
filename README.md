@@ -128,6 +128,10 @@ The Worker uses `SKILLS_BUCKET`, a reader `SKILLAR_BEARER_TOKEN`, and a separate
 
 </details>
 
+## Contributing
+
+With Node.js 24 and npm, run `node scripts/verify.mjs` from the checkout to perform the same locked installs, builds, tests, search and plugin checks, and Worker dry-runs as CI. It does not deploy or publish content.
+
 ## License
 
 [MIT](LICENSE). The name comes from **기술** — Korean for skill, craft, or technique.
