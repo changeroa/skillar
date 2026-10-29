@@ -1,28 +1,51 @@
+<h1 align="center">skillar</h1>
+<p align="center"><strong>Your skills. Your agents. One local workspace.</strong></p>
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
+<p align="center">
+  <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
+</p>
+<p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
 
-[Upgrade and compatibility notes](docs/migration-skillar.md).
-# skillar
+Connect the `SKILL.md` folders already on your machine to your coding agents. skillar searches them over MCP, records what each session searched and read, and makes that history visible in a local dashboard.
 
-skillar is a local skill router. One daemon on `127.0.0.1` serves the `SKILL.md` folders already on your machine to your coding agents over MCP. It records which skills each session searched, loaded, and read, and shows that in a local dashboard. Nothing leaves the machine.
+**Index in place · Read on demand · Keep history local**
 
-The name comes from 기술, Korean for "skill", "craft", or "technique".
+[Quick start](#quick-start) · [Supported runtimes](#supported-runtimes) · [Privacy](#privacy-and-storage) · [CLI & configuration](local/README.md)
 
-## Start in 30 seconds
+## Quick start
 
-Requires Node.js 24.15 or newer on macOS or Linux.
+macOS or Linux · **Node.js 24.15+**
+
+> **Upgrading from gisool?** Read the [migration guide](docs/migration-skillar.md) **before installing**. Both packages own the `gisool` command; a direct global install collides. Follow the stop, backup, and package-handoff steps rather than using `--force`.
+
+For a fresh installation:
 
 ```sh
-npm --prefix local ci && npm --prefix local run build && npm link ./local
-skillar init --dry-run    # preview every config change; writes nothing
+npm install -g skillar
+skillar init --dry-run    # preview config and service changes; write nothing
 skillar init              # connect detected runtimes and install the background service
-skillar open              # open the dashboard
+skillar open              # open the local dashboard
 ```
 
-`skillar init` installs a LaunchAgent (macOS) or systemd user unit (Linux) that keeps the daemon running on port `8799`. Use `skillar init --no-service` and `skillar serve` to run it in the foreground instead.
+`init` installs a LaunchAgent on macOS or a systemd user unit on Linux. The daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
+
+Already using skillar? `skillar doctor` checks your installation. For a source checkout, see [development setup](local/README.md#develop).
+
+## From a skill folder to a session trace
+
+| Step | What happens |
+| --- | --- |
+| **Discover** | Index existing skill roots without copying or editing their files. Agents search with `search_skills` and receive ranked candidates. |
+| **Read** | The host reads the chosen `SKILL.md` and supporting files through standard MCP `resources/read`. Reading is evidence, not permission to execute. |
+| **Trace** | Inspect sessions, search candidates, skill reads, task → skill → outcome flows, and activity by weekday and hour in the dashboard. |
+
+Capture can also observe skills used natively when runtime hooks or telemetry report them. [Skill tracing](local/docs/skill-tracing.md) explains attribution, evidence limits, and the **herdr requirement for pane/session tracing**. Core MCP serving and session collection continue if herdr is unavailable.
 
 ## Supported runtimes
 
-| Runtime | `--runtime` id |
+| Runtime | `--runtime` ID |
 | --- | --- |
 | Claude Code | `claude-code` |
 | Codex | `codex` |
@@ -32,79 +55,79 @@ skillar open              # open the dashboard
 | Gajae Code | `gajae` |
 | OpenClaw | `openclaw` |
 
-`skillar init` detects which are installed. Connect only some with `skillar init --runtime codex,claude-code`. Each runtime gets an MCP entry, OpenTelemetry log export to the daemon, and capture hooks.
+`init` detects installed runtimes. Select a subset with `skillar init --runtime codex,claude-code`. Packs configure MCP and runtime-specific telemetry or capture hooks; capture coverage varies by runtime.
 
-MCP connections require protocol revision 2026-07-28 and a host resource reader. Clients that use the legacy `initialize` handshake cannot connect. Details: [local/README.md](local/README.md).
+Both MCP revision **2026-07-28** and the legacy `initialize` handshake are supported. Skill bodies require a host resource reader. See [protocol and compatibility](local/README.md#skills-over-mcp) for headers, stdio, and legacy transport limits.
 
-## What is recorded, and where
+## Privacy and storage
 
-- Prompts, skill searches (query and ranked candidates), skill loads, and supporting-file reads, per agent session.
-- Skills a runtime used natively, without skillar, when its hooks or telemetry report it.
+The local daemon stores prompts, searches, loads, and supporting-file reads in SQLite. It listens on loopback only, protects MCP, ingest, and API requests with a local bearer token, and does not upload captured telemetry. The dashboard uses a local authenticated cookie. Connected agents and their model providers handle data separately.
 
-Everything is stored in SQLite under `~/.skillar/` (`SKILLAR_HOME` moves it). The daemon listens on `127.0.0.1` only, every request needs the local bearer token, and nothing is sent to a remote service. Skill folders are indexed in place; skillar never copies or edits them.
+Choose what to retain in `~/.skillar/config.json`:
 
-Set `captureLevel` in `~/.skillar/config.json` to `full` (default), `redacted` (secrets masked, text cut to 2048 characters), or `metadata` (no text, only digest and length). `retentionDays` deletes old sessions.
-
-| Path | Purpose |
+| Setting | Behavior |
 | --- | --- |
-| `~/.skillar/config.json` | settings: port, capture level, retention, skill roots |
-| `~/.skillar/token` | bearer token (0600) |
-| `~/.skillar/skillar.db` | skills index, sessions, events, loads |
-| `~/.skillar/logs/daemon.log` | daemon log |
-| `~/.skillar/backups/` | per-run config backups for rollback |
+| `captureLevel: "full"` | Store captured text as sent (default). |
+| `captureLevel: "redacted"` | Mask recognized secrets and truncate text to 2,048 characters; this does not guarantee every secret is removed. |
+| `captureLevel: "metadata"` | Keep text digests and lengths, without the text. |
+| `retentionDays` | Delete old sessions; `null` keeps history. |
 
-## Dashboard
+Fresh installs use `~/.skillar/`; `SKILLAR_HOME` selects another home. Existing legacy homes and databases are reused according to the [migration rules](docs/migration-skillar.md#local-state-and-configuration).
+
+| Path in the selected home | Purpose |
+| --- | --- |
+| `config.json` | Port, capture level, retention, and skill roots |
+| `token` | Local bearer token, mode `0600` |
+| `skillar.db` | Skill index, sessions, events, and loads; existing `gisool.db` stays in place |
+| `logs/daemon.log` | Daemon log |
+| `backups/` | Per-run configuration backups for rollback |
+
+## Keep your setup portable
 
 ```sh
-skillar open              # opens the browser
-skillar open --print      # prints the URL only
-```
-
-Sessions, a per-session trace with search candidates, a task -> skill -> outcome flow, and a weekday-by-hour heatmap.
-
-## Check, undo, move
-
-```sh
-skillar doctor                                  # service, daemon, token, FTS5, roots, index, hooks, backups
+skillar doctor                                  # check daemon, service, index, capture, and herdr
 skillar doctor --json
 skillar init --rollback                         # undo the newest init run
-skillar init --rollback --all                   # undo every run
+skillar init --rollback --all                    # undo every run
 skillar export ~/skillar-backup                  # settings only
-skillar export ~/skillar-backup --with-history   # also sessions and events
-skillar import ~/skillar-backup --dry-run        # preview; import never overwrites existing keys
+skillar export ~/skillar-backup --with-history   # include sessions, events, and loads
+skillar import ~/skillar-backup --dry-run        # preview; existing keys are kept
 skillar eval                                    # measure search quality
 ```
 
-Full CLI, settings, and protocol notes: [local/README.md](local/README.md). Architecture: [docs/skillar.md](docs/skillar.md).
+Use `skillar open --print` to print the dashboard URL without opening a browser. See the [CLI guide](local/README.md) for import, service management, settings, and protocol details.
 
-## Remote registry (optional)
+## Documentation
 
-This repo also contains skillar, an authenticated remote registry for team distribution. Use it only when skills must be shared across machines; skillar does not need it. `skillar init --disable-remote` turns off a remote skillar registration in connected runtimes.
+| Guide | Use it for |
+| --- | --- |
+| [Local CLI & MCP](local/README.md) | Installation, commands, settings, and protocol reference |
+| [Upgrade & compatibility](docs/migration-skillar.md) | Safe package handoff, legacy homes, commands, and identities |
+| [Skill tracing](local/docs/skill-tracing.md) | Capture coverage, herdr joins, attribution, and evidence limits |
+| [Architecture](docs/skillar.md) | Daemon, storage, ingest, and API design |
 
-- `server/`: a Node.js MCP server that exposes skill directories over stdio or Streamable HTTP (default `http://127.0.0.1:8788/mcp`).
-- `worker/`: an authenticated Cloudflare Worker that serves immutable releases from a private R2 bucket.
+## Remote registry and team distribution
 
-```text
-Git main -> GitHub Actions validation/evaluation -> immutable R2 release
-                                                       ^
-Codex plugin / MCP client -> authenticated Worker -------+
-```
+The local CLI needs no hosted registry. This repository also contains a separate [Node.js registry](server/README.md) (`server/`, stdio or Streamable HTTP) and a Cloudflare Worker (`worker/`) for authenticated distribution from private R2 immutable releases. They implement the [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640).
 
-| Runtime | Client | Connection |
-| --- | --- | --- |
-| Codex | [ARKPOINT plugin](docs/arkpoint-plugin.md) | Native HTTPS + OAuth |
-| oh-my-openagent / OmO 5 (`omo-ai`) | [Installer and loader](clients/oh-my-openagent/README.md) | OAuth stdio bridge, discovery extension |
-| Gajae Code (`gjc`) | [Installer and workflow integration](clients/gajae-code/README.md) | OAuth stdio bridge |
-| OpenClaw | [Bundle and loader](clients/openclaw/README.md) | OAuth stdio bridge, bootstrap discovery hook |
+**The former personal Cloudflare deployment was retired on 2026-10-29.** Historical addresses are not maintained endpoints; organization deployments are separate external resources. Self-hosting requires your own configuration and release validation. `skillar init --disable-remote` can disable a remote registration in connected runtimes.
 
-Both servers implement the [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640). The Worker uses `SKILLS_BUCKET`, `SKILLAR_BEARER_TOKEN` for readers, and a separate `SKILLAR_PUBLISH_TOKEN` for publication. No real secrets are in this repository; `server/ops/` holds templates.
+<details>
+<summary>Registry clients, deployment, and historical context</summary>
 
-- Deployment, release format, rollback, production gates: [docs/deployment.md](docs/deployment.md)
-- Codex plugin: [clients/codex/README.md](clients/codex/README.md)
-- Session handoff context: [docs/SESSION_CONTEXT.md](docs/SESSION_CONTEXT.md)
+| Runtime | Integration |
+| --- | --- |
+| Codex | [ARKPOINT native HTTPS + OAuth plugin](docs/team-plugin.md) · [Codex client](clients/codex/README.md) |
+| oh-my-openagent / OmO 5 (`omo-ai`) | [OAuth stdio bridge and discovery extension](clients/oh-my-openagent/README.md) |
+| Gajae Code (`gjc`) | [OAuth stdio bridge and workflow integration](clients/gajae-code/README.md) |
+| OpenClaw | [OAuth stdio bridge and bootstrap discovery hook](clients/openclaw/README.md) |
 
-The remote registry is a personal prototype. Production acceptance needs a successful GitHub Actions publication, installed-plugin reads, and matching release evidence.
+The Worker uses `SKILLS_BUCKET`, a reader `SKILLAR_BEARER_TOKEN`, and a separate `SKILLAR_PUBLISH_TOKEN` for publication. `server/ops/` contains new-install templates, not live credentials or proof of an active deployment.
+
+[Deployment, immutable release format, rollback, and production gates](docs/deployment.md) · [Self-hosted team setup](docs/team-plugin.md) · [Historical session handoff](docs/SESSION_CONTEXT.md)
+
+</details>
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The name comes from **기술** — Korean for skill, craft, or technique.
