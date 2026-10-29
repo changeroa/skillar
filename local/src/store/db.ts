@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { GisoolStartupError } from "../version.js";
+import { SkillarStartupError } from "../version.js";
 
 export type Db = DatabaseSync;
 
@@ -113,21 +113,21 @@ export function selfCheck(db?: Pick<DatabaseSync, "exec" | "prepare">): void {
   let ok = false;
   let detail = "";
   try {
-    conn.exec("DROP TABLE IF EXISTS temp.gisool_selfcheck");
-    conn.exec("CREATE VIRTUAL TABLE temp.gisool_selfcheck USING fts5(body, tokenize = 'trigram')");
-    conn.prepare("INSERT INTO temp.gisool_selfcheck(body) VALUES (?)").run("커밋 메시지 작성해줘");
-    const row = conn.prepare("SELECT count(*) AS n FROM temp.gisool_selfcheck WHERE gisool_selfcheck MATCH ?").get('"메시지"') as { n: number } | undefined;
+    conn.exec("DROP TABLE IF EXISTS temp.skillar_selfcheck");
+    conn.exec("CREATE VIRTUAL TABLE temp.skillar_selfcheck USING fts5(body, tokenize = 'trigram')");
+    conn.prepare("INSERT INTO temp.skillar_selfcheck(body) VALUES (?)").run("커밋 메시지 작성해줘");
+    const row = conn.prepare("SELECT count(*) AS n FROM temp.skillar_selfcheck WHERE skillar_selfcheck MATCH ?").get('"메시지"') as { n: number } | undefined;
     ok = (row?.n ?? 0) === 1;
     if (!ok) detail = "trigram match for '메시지' returned no rows";
   } catch (error) {
     detail = error instanceof Error ? error.message : String(error);
   } finally {
     try {
-      conn.exec("DROP TABLE IF EXISTS temp.gisool_selfcheck");
+      conn.exec("DROP TABLE IF EXISTS temp.skillar_selfcheck");
     } catch {
       // Cleanup failure is irrelevant once the outcome is known; the original failure is reported below.
     }
     if (!db) (conn as DatabaseSync).close();
   }
-  if (!ok) throw new GisoolStartupError("fts5_trigram_unavailable", detail);
+  if (!ok) throw new SkillarStartupError("fts5_trigram_unavailable", detail);
 }

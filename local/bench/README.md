@@ -21,10 +21,10 @@ Hit@1 >= 0.9 and Hit@5 >= 0.98 on the ported cases, negative abstention == 1, ex
 
 ## Threshold calibration
 
-`calibrate()` sets the abstention threshold T just above the best fused score of any negative case, so that every negative abstains (T = 0 when no negative produces any hit; those abstain as `no_overlap`). A run without `--check` writes the calibrated value into `DEFAULT_THRESHOLD` in `local/src/search/fusion.ts`; rebuild afterwards. `--check` fails if the constant is stale. At runtime, `meta.search_threshold` in the store overrides the constant, so a fresh `~/.gisool` works without running the bench.
+`calibrate()` sets the abstention threshold T just above the best fused score of any negative case, so that every negative abstains (T = 0 when no negative produces any hit; those abstain as `no_overlap`). A run without `--check` writes the calibrated value into `DEFAULT_THRESHOLD` in `local/src/search/fusion.ts`; rebuild afterwards. `--check` fails if the constant is stale. At runtime, `meta.search_threshold` in the store overrides the constant, so a fresh `~/.skillar` works without running the bench.
 
 ## What this does and does not measure
 
-The paraphrase gate is a regression gate over hand-authored aliases: the aliases and the queries were written by the same maintainers, so it measures alias coverage, not ranker quality. Real quality comes from `gisool eval` on prompts captured from your own sessions. All cases are maintainer-authored, not an independent holdout, and local timings exclude MCP and agent overhead.
+The paraphrase gate is a regression gate over hand-authored aliases: the aliases and the queries were written by the same maintainers, so it measures alias coverage, not ranker quality. Real quality comes from `skillar eval` on prompts captured from your own sessions. All cases are maintainer-authored, not an independent holdout, and local timings exclude MCP and agent overhead.
 
 Options: `--output report.json` saves detailed results (per-case ranks, scores, negative best scores, smoke results); `--mode automatic|explicit|discovery` changes the search mode (default `discovery`).

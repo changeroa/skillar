@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 
-export const DASH_COOKIE = "gisool_dash";
+export const DASH_COOKIE = "skillar_dash";
 
 export function deny(res: Response, status: number, error: string, extra: Record<string, unknown> = {}): void {
   res.status(status).json({ error, ...extra });
@@ -66,7 +66,7 @@ export function authGate(token: string): RequestHandler {
     if (!bearerOnly && !api) return next();
     if (safeEqual(bearerOf(req), token)) return next();
     if (api) {
-      const presented = cookieOf(req, DASH_COOKIE);
+      const presented = cookieOf(req, DASH_COOKIE) ?? cookieOf(req, "gisool_dash");
       if (presented !== undefined && safeEqual(presented, cookie)) return next();
     }
     deny(res, 401, "unauthorized");
@@ -82,7 +82,7 @@ export function requireJson(onReject?: (req: Request) => void): RequestHandler {
     onReject?.(req);
     const protobuf = req.path.startsWith("/ingest/otlp/") && /protobuf/i.test(req.header("content-type") ?? "");
     deny(res, 415, "unsupported_media_type", protobuf
-      ? { hint: "gisool accepts OTLP/HTTP JSON only; set OTEL_EXPORTER_OTLP_PROTOCOL=http/json (or OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/json)" }
+      ? { hint: "skillar accepts OTLP/HTTP JSON only; set OTEL_EXPORTER_OTLP_PROTOCOL=http/json (or OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/json)" }
       : { hint: "send Content-Type: application/json" });
   };
 }

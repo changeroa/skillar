@@ -9,7 +9,7 @@ import { UNKNOWN, formatCostUsd, formatLapse } from "./calls";
 export type Fact =
   | { key: "workspace" | "tab"; value: string }
   | { key: "panes" | "sessions" | "inferred" | "unlinked" | "turns" | "found" | "abstained"; value: number }
-  | { key: "calls" | "callsAfter" | "commands" | "unresolvedExec" | "gisoolCalls" | "failed" | "reads"; value: number }
+  | { key: "calls" | "callsAfter" | "commands" | "unresolvedExec" | "skillarCalls" | "failed" | "reads"; value: number }
   | { key: "spans"; withCalls: number; total: number }
   /** A measurement the runtime never reported is null here and reads "unknown", never 0. */
   | { key: "cost" | "active"; value: number | null }
@@ -34,7 +34,7 @@ export function factText(fact: Fact): string {
     case "callsAfter": return `${plural(fact.value, "call", "calls")} after activation`;
     case "commands": return plural(fact.value, "shell command", "shell commands");
     case "unresolvedExec": return `${plural(fact.value, "exec wrapper", "exec wrappers")}, role unknown`;
-    case "gisoolCalls": return `${plural(fact.value, "call", "calls")} to gisool`;
+    case "skillarCalls": return `${plural(fact.value, "call", "calls")} to skillar`;
     case "failed": return `${fact.value} failed`;
     case "reads": return `${plural(fact.value, "read", "reads")} of its resources`;
     case "spans": return `${fact.withCalls}/${fact.total} ${fact.total === 1 ? "span" : "spans"} with calls after activation`;
@@ -51,7 +51,7 @@ export function factText(fact: Fact): string {
 export function factTitle(fact: Fact): string | undefined {
   switch (fact.key) {
     case "finding": return FINDING_TITLE[fact.value];
-    case "spans": return "Spans followed by at least one non-gisool tool call: activity, not proof the skill was applied or helped.";
+    case "spans": return "Spans followed by at least one non-skillar tool call: activity, not proof the skill was applied or helped.";
     case "unresolvedExec": return "Codex exec runs code that may only dispatch the other calls or also do work of its own, so the exact work count stays unknown.";
     default: return undefined;
   }

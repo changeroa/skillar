@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const self = fileURLToPath(import.meta.url);
 export const endpoint = "https://gisul.arkpoint.dev/mcp";
 export const remotePackage = "mcp-remote@0.14.3";
-const metadata = JSON.stringify({ client_name: "Gisul for OpenClaw", scope: "skills:read" });
+const metadata = JSON.stringify({ client_name: "Skillar for OpenClaw", scope: "skills:read" });
 
 export function parseArgs(args) {
   const options = {};
@@ -41,10 +41,11 @@ export function resolveStateDir(options = {}, env = process.env, home = homedir(
 
 export function bridgePlan(options = {}, env = process.env) {
   let configured;
-  try { configured = JSON.parse(readFileSync(new URL("../gisul-client.json", import.meta.url), "utf8")).endpoint; }
+  try { configured = JSON.parse(readFileSync(new URL("../skillar-client.json", import.meta.url), "utf8")).endpoint; }
   catch (error) { if (error.code !== "ENOENT") throw error; }
   const target = validateEndpoint(options.endpoint ?? configured ?? endpoint);
-  const authDir = join(resolveStateDir(options, env), "gisul", "auth");
+  const state = resolveStateDir(options, env);
+  const authDir = join(state, existsSync(join(state, "gisul", "auth")) ? "gisul" : "skillar", "auth");
   const prefix = options.login
     ? ["--yes", `--package=${remotePackage}`, "mcp-remote-client"]
     : ["--yes", remotePackage];
@@ -84,5 +85,5 @@ if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(resolve(proce
     const options = parseArgs(process.argv.slice(2));
     if (options.help) console.log("Usage: node bridge.mjs [--login] [--endpoint HTTPS_MCP_URL] [--state-dir PATH] [--dry-run]\nNo flags: serve MCP over stdio. --login: sign in and list tools. Use the same OpenClaw profile and endpoint for login and runtime.");
     else process.exitCode = await run(options);
-  } catch (error) { console.error(`Gisul OpenClaw: ${error.message}`); process.exitCode = 1; }
+  } catch (error) { console.error(`Skillar OpenClaw: ${error.message}`); process.exitCode = 1; }
 }

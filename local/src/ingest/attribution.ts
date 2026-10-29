@@ -33,7 +33,7 @@ function attributed(sessionId: string | undefined): sessionId is string {
 }
 
 /** Exact JSON string values only: a URI mentioned in shell/exec source is not a resource-read argument. */
-export function toolCallReferencesUri(text: string | null, uri: string, gisoolMcp: boolean): boolean {
+export function toolCallReferencesUri(text: string | null, uri: string, skillarMcp: boolean): boolean {
   if (text === null) return false;
   let args: unknown;
   try {
@@ -41,9 +41,9 @@ export function toolCallReferencesUri(text: string | null, uri: string, gisoolMc
   } catch {
     return false; // Truncated or non-JSON arguments cannot prove a URI match.
   }
-  // Historical OTLP resource calls predate gisoolMcp; their explicit server argument is equally strong evidence.
+  // Historical OTLP resource calls predate skillarMcp; their explicit server argument is equally strong evidence.
   const server = args !== null && typeof args === "object" && "server" in args ? args.server : undefined;
-  if (!gisoolMcp && !(typeof server === "string" && server.toLowerCase() === "gisool")) return false;
+  if (!skillarMcp && !(typeof server === "string" && ["skillar", "gisool"].includes(server.toLowerCase()))) return false;
   const references = (value: unknown): boolean => {
     if (typeof value === "string") return value === uri;
     if (Array.isArray(value)) return value.some(references);

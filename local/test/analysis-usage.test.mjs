@@ -34,12 +34,12 @@ function seeded(t, runtime = "claude-code", key = "session") {
   return { db, store, ref, id, append };
 }
 
-test("Claude gisool calls count as skill tool calls while the Bash call is the follow-through", (t) => {
-  // Given: one successful and one failed gisool search plus one successful Bash call, all in the reported turn.
+test("Claude skillar calls count as skill tool calls while the Bash call is the follow-through", (t) => {
+  // Given: one successful and one failed skillar search plus one successful Bash call, all in the reported turn.
   const { db, store } = openStore();
   t.after(() => store.close());
   const deps = createIngestDeps(store, { now: () => T + 10_000 });
-  const failed = fixture("claude-otlp-tool-result-gisool-search.json");
+  const failed = fixture("claude-otlp-tool-result-skillar-search.json");
   record(failed).timeUnixNano = "1760320005000000000";
   attr(record(failed), "success").stringValue = "false";
   attr(record(failed), "tool_use_id").stringValue = "toolu_mcp_3";
@@ -48,13 +48,13 @@ test("Claude gisool calls count as skill tool calls while the Bash call is the f
   attr(record(bash), "tool_parameters").stringValue = JSON.stringify({ bash_command: "npm", full_command: "npm test --silent", timeout: 120_000 });
   attr(record(bash), "tool_input").stringValue = JSON.stringify({ command: "npm test --silent", description: "run the suite" });
   for (const body of [fixture("claude-otlp-user-prompt.json"), fixture("claude-otlp-skill-activated.json"), bash,
-    fixture("claude-otlp-tool-result-gisool-search.json"), failed]) {
+    fixture("claude-otlp-tool-result-skillar-search.json"), failed]) {
     assert.equal(ingestOtlp(body, deps).status, 200);
   }
   // When: the stored rows are read back through tree + usage analysis.
   assert.deepEqual(db.prepare("SELECT kind, count(*) AS n FROM events GROUP BY kind ORDER BY kind").all().map((r) => [r.kind, r.n]),
     [["native_skill", 1], ["prompt", 1], ["tool_call", 3]]);
-  assert.equal(db.prepare("SELECT count(*) AS n FROM events WHERE kind = 'tool_call' AND json_extract(data_json, '$.gisoolMcp') = 1").get().n, 2);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM events WHERE kind = 'tool_call' AND json_extract(data_json, '$.skillarMcp') = 1").get().n, 2);
   const id = db.prepare("SELECT id FROM sessions WHERE runtime_session_id = 'claude-sess-1'").get().id;
   const usage = sessionUsage(sessionTree(store, id));
   // Then: discovery calls are reported apart from the work the skill led to.
@@ -191,12 +191,12 @@ test("two skills active together share the same follow-through with a co-active 
 });
 
 test("activity separates Codex exec wrappers from shell commands and leaves the work count unknown", (t) => {
-  // Given: a Codex span with an exec wrapper, a gisool read and two shell commands (one failed), then a turn with one command.
+  // Given: a Codex span with an exec wrapper, a skillar read and two shell commands (one failed), then a turn with one command.
   const { store, append, id } = seeded(t, "codex");
   append("prompt", 0, { turnKey: "t1", text: "Review the tests" });
   append("load", 1000, { turnKey: "t1", skillUri: uri("review-tests"), data: { uri: uri("review-tests") } });
   append("tool_call", 2000, { turnKey: "t1", data: { toolName: "exec", success: true } });
-  append("tool_call", 2100, { turnKey: "t1", data: { toolName: "read_mcp_resource", gisoolMcp: true, success: true } });
+  append("tool_call", 2100, { turnKey: "t1", data: { toolName: "read_mcp_resource", skillarMcp: true, success: true } });
   append("tool_call", 2200, { turnKey: "t1", data: { toolName: "exec_command", success: true } });
   append("tool_call", 2300, { turnKey: "t1", data: { toolName: "exec_command", success: false } });
   append("prompt", 3000, { turnKey: "t2", text: "Run them again" });
@@ -235,7 +235,7 @@ test("activity keeps a failed call a failure, a missing status unknown, and exec
     results: { success: 1, failure: 0, unknown: 1 }, workExecutions: 2 });
 });
 
-test("supporting reads come from gisool read_file events and, for native skills, from tool argument paths", (t) => {
+test("supporting reads come from skillar read_file events and, for native skills, from tool argument paths", (t) => {
   const { store, id, ref } = seeded(t);
   const deps = createIngestDeps(store, { now: () => T + 10_000 });
   const append = (kind, offset, extra = {}) => {
@@ -267,7 +267,7 @@ const WINDOWS_SKILL = "C:\\skills\\db-query\\SKILL.md";
 const posixArg = (suffix) => JSON.stringify({ file_path: `/skills/db-query${suffix}` });
 const windowsArg = (suffix) => JSON.stringify({ file_path: `C:\\skills\\db-query${suffix}` });
 
-// The 24 gate-review probes (R3, .omo/evidence/gisool-skill-tracing-todo-8-73e0eff-gate-review.md) first,
+// The 24 gate-review probes (R3, .omo/evidence/skillar-skill-tracing-todo-8-73e0eff-gate-review.md) first,
 // then the executor's own rows: command lines, a quoted path with a space, raw text and Codex array arguments.
 const PROBES = [
   ["posix +backup", POSIX_SKILL, posixArg("+backup/reference.md"), 0],
@@ -395,4 +395,21 @@ test("flow and range usage report the same spans for a herdr-linked session", (t
   assert.deepEqual([range.sessionCount, range.truncated], [1, false]);
   assert.deepEqual(range.skills.map((s) => s.skill), [uri("pr-review-ko")]);
   assert.equal(flowUsage(store, "does-not-exist"), undefined);
+});
+
+
+test("persisted gisoolMcp events retain skill tool usage and are excluded from work and supporting-read heuristics", t => {
+  const { db, store, append, id } = seeded(t, "claude-code", "legacy-history");
+  append("prompt", 0, { text: "Use the review skill" });
+  append("native_skill", 100, { data: { name: "review", via: "tool", path: "/skills/review/SKILL.md" } });
+  const oldId = append("tool_call", 200, { text: JSON.stringify({ path: "/skills/review/guide.md" }), data: { toolName: "read_mcp_resource", gisoolMcp: true, success: true } });
+  append("tool_call", 300, { data: { toolName: "Bash", success: true } });
+  const before = db.prepare("SELECT data_json FROM events WHERE id=?").get(oldId).data_json;
+  const [span] = sessionUsage(sessionTree(store, id)).spans;
+  assert.equal(span.skillToolCalls, 1);
+  assert.equal(span.followThrough, 1);
+  assert.equal(span.activity.commands, 1);
+  assert.equal(span.supportingReads.some(read => read.eventId === oldId), false);
+  assert.equal(db.prepare("SELECT data_json FROM events WHERE id=?").get(oldId).data_json, before, "analysis leaves historical evidence unchanged");
+  assert.equal(JSON.parse(before).skillarMcp, undefined);
 });

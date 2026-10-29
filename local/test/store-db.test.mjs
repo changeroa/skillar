@@ -70,7 +70,7 @@ test("fresh database migrates to user_version 6 with every table", () => {
 test("file database uses WAL, busy_timeout 5000, foreign keys, and reopens without re-migrating", () => {
   const dir = makeTempDir();
   try {
-    const path = join(dir, "nested", "gisool.db");
+    const path = join(dir, "nested", "skillar.db");
     const db = openDb(path);
     assert.equal(db.prepare("PRAGMA journal_mode").get().journal_mode, "wal");
     assert.equal(db.prepare("PRAGMA busy_timeout").get().timeout, 5000);
@@ -103,7 +103,7 @@ test("selfCheck passes on a real connection and standalone, leaving no temp tabl
   try {
     selfCheck(db);
     selfCheck();
-    assert.equal(db.prepare("SELECT count(*) AS n FROM temp.sqlite_master WHERE name = 'gisool_selfcheck'").get().n, 0);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM temp.sqlite_master WHERE name = 'skillar_selfcheck'").get().n, 0);
   } finally {
     db.close();
   }
@@ -117,7 +117,7 @@ test("selfCheck throws fts5_trigram_unavailable when FTS5 is rejected", () => {
     return realExec(sql);
   };
   try {
-    assert.throws(() => selfCheck(db), (error) => error.name === "GisoolStartupError" && error.code === "fts5_trigram_unavailable");
+    assert.throws(() => selfCheck(db), (error) => error.name === "SkillarStartupError" && error.code === "fts5_trigram_unavailable");
   } finally {
     db.exec = realExec;
     db.close();

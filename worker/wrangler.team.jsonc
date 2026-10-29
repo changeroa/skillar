@@ -19,11 +19,11 @@
     }
   ],
   "vars": {
-    "GISUL_PUBLIC_URL": "https://gisul.arkpoint.dev",
-    "GISUL_GITHUB_ORG": "Ark-Point",
+    "SKILLAR_PUBLIC_URL": "https://gisul.arkpoint.dev",
+    "SKILLAR_GITHUB_ORG": "Ark-Point",
     "GITHUB_AUTH_MODE": "oauth",
-    "GISUL_SKILLS_REPOSITORY": "Ark-Point/gisul-skills",
-    "GISUL_PUBLISH_WORKFLOW": "publish.yml"
+    "SKILLAR_SKILLS_REPOSITORY": "Ark-Point/gisul-skills",
+    "SKILLAR_PUBLISH_WORKFLOW": "publish.yml"
   },
   "routes": [
     {

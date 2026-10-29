@@ -1,27 +1,27 @@
-# ARKPOINT Gisul
+# ARKPOINT Skillar
 
 ## Install
 
-Use a current Codex desktop app or CLI with plugin support. A shared OpenAI team workspace is not required for this Git-backed marketplace. Private repository access and Gisul server authorization are separate.
+Use a current Codex desktop app or CLI with plugin support. A shared OpenAI team workspace is not required for this Git-backed marketplace. Private repository access and Skillar server authorization are separate.
 
 ```sh
 codex plugin marketplace add Ark-Point/gisul
-codex plugin add gisul@arkpoint
+codex plugin add skillar@arkpoint
 ```
 
-Connect Gisul from the plugin's connection UI and sign in with the GitHub account that belongs to `Ark-Point`. If the client does not open login during installation:
+Connect Skillar from the plugin's connection UI and sign in with the GitHub account that belongs to `Ark-Point`. If the client does not open login during installation:
 
 ```sh
-codex mcp login gisul --scopes skills:read,skills:write
+codex mcp login skillar --scopes skills:read,skills:write
 ```
 
 Start a new conversation and ask:
 
-> Gisul에서 이 작업에 맞는 스킬을 찾아 적용해줘.
+> Skillar에서 이 작업에 맞는 스킬을 찾아 적용해줘.
 
 The plugin contains a small loader and a native HTTPS MCP configuration. No Node installation, checkout, SSH configuration, token file, or Mac mini server is needed on a client. Mac mini clients use exactly the same installation. Skills remain remote.
 
-If another Gisul plugin or standalone MCP server is already enabled, resolve the duplicate before enabling this one. Keep the existing connection until team login and reads have been verified. This task does not stop or uninstall an existing server on another machine.
+If another Skillar plugin or standalone MCP server is already enabled, resolve the duplicate before enabling this one. Keep the existing connection until team login and reads have been verified. This task does not stop or uninstall an existing server on another machine.
 
 Update the marketplace with `codex plugin marketplace upgrade arkpoint`, install the new plugin version, and start a new conversation. Content publication does not require a plugin upgrade; new searches and loads see the active content release.
 
@@ -40,23 +40,23 @@ Skill-content main ── GitHub Actions ── verified immutable R2 publicatio
 
 The first login registers a provider grant for the user's immutable GitHub ID. Active `Ark-Point` membership is checked on login, token refresh, and every authenticated MCP request. Removing GitHub organization access or revoking the GitHub grant denies subsequent requests. Prior content already received by a client cannot be recalled.
 
-Approve the GitHub connection once. The requested read/edit consent is stored in the encrypted OAuth grant and preserved on refresh; there is no separate Gisul editor list, personal writer token, or recurring repository-role synchronization. Writes use the connected member’s GitHub access token, so GitHub still enforces repository access and branch protection. A deliberately read-only client grant remains read-only. The deployed OAuth app requests `read:org repo` for editing (`read:org` for explicitly read-only connections). GitHub’s OAuth `repo` consent includes private repositories; the Worker fixes its write target to `Ark-Point/gisul-skills`. A repository-limited GitHub App mode is supported but is not deployed because its installation route currently returns 404. Existing read-only connections need one reconnection for the new editing approval; ordinary renewals do not require repeated permission setup.
+Approve the GitHub connection once. The requested read/edit consent is stored in the encrypted OAuth grant and preserved on refresh; there is no separate Skillar editor list, personal writer token, or recurring repository-role synchronization. Writes use the connected member’s GitHub access token, so GitHub still enforces repository access and branch protection. A deliberately read-only client grant remains read-only. The deployed OAuth app requests `read:org repo` for editing (`read:org` for explicitly read-only connections). GitHub’s OAuth `repo` consent includes private repositories; the Worker fixes its write target to `Ark-Point/gisul-skills`. A repository-limited GitHub App mode is supported but is not deployed because its installation route currently returns 404. Existing read-only connections need one reconnection for the new editing approval; ordinary renewals do not require repeated permission setup.
 
-The OAuth provider issues Gisul tokens, validates their audience and PKCE, and stores encrypted upstream-token properties. Codex manages its own OAuth credentials. OAuth access tokens expire after 15 minutes, refresh grants after 30 days. `GISUL_CI_TOKEN` is a separate read-only machine credential used only by content CI to verify staged releases. No credential is distributed in the plugin.
+The OAuth provider issues Skillar tokens, validates their audience and PKCE, and stores encrypted upstream-token properties. Codex manages its own OAuth credentials. OAuth access tokens expire after 15 minutes, refresh grants after 30 days. `SKILLAR_CI_TOKEN` is a separate read-only machine credential used only by content CI to verify staged releases. No credential is distributed in the plugin.
 
 ## Provision and deploy (no Mac mini)
 
 Canonical endpoint: `https://gisul.arkpoint.dev/mcp`.
 
-The runtime repository is `Ark-Point/gisul`; content is independently configured by `GISUL_SKILLS_REPOSITORY`, initially `Ark-Point/gisul-skills`. The personal catalog is not automatically exposed to the organization. The team bucket must receive a verified initial release before content reads work.
+The runtime repository is `Ark-Point/gisul`; content is independently configured by `SKILLAR_SKILLS_REPOSITORY`, initially `Ark-Point/gisul-skills`. The personal catalog is not automatically exposed to the organization. The team bucket must receive a verified initial release before content reads work.
 
 1. In the intended Cloudflare account, create private R2 bucket `gisul-arkpoint-releases` and one Workers KV namespace for OAuth.
 2. Use the organization-owned OAuth App with callback `https://gisul.arkpoint.dev/callback`; set `GITHUB_AUTH_MODE=oauth`. Editing requests `read:org repo` during GitHub approval and uses each member’s token, without a separate writer credential. Alternatively, set `GITHUB_AUTH_MODE=app` after a GitHub App with Contents write, Actions read, Metadata read and organization Members read is installed on `Ark-Point/gisul-skills`. That mode does not request OAuth `repo` scope.
 3. Configure the `arkpoint-production` GitHub environment:
-   - Variables: `CLOUDFLARE_ACCOUNT_ID`, `GISUL_OAUTH_KV_ID`, `GITHUB_CLIENT_ID`.
+   - Variables: `CLOUDFLARE_ACCOUNT_ID`, `SKILLAR_OAUTH_KV_ID`, `GITHUB_CLIENT_ID`.
    - Secret: `CLOUDFLARE_API_TOKEN`, scoped to the account and required Worker deployment resources.
-4. Provision Worker secrets outside the repository: `GITHUB_CLIENT_SECRET`, distinct `GISUL_PUBLISH_TOKEN` and `GISUL_CI_TOKEN`. User write credentials come from the GitHub connection and are stored encrypted by the provider; no `GISUL_GITHUB_TOKEN` server secret is needed for the team entrypoint.
-5. Set repository variable `GISUL_DEPLOY_ENABLED=true` after its Cloudflare API token is configured, then run `Deploy ARKPOINT Worker`. It builds and tests, generates only nonsecret config, deploys through GitHub Actions, then verifies source identity and OAuth discovery. It never runs SSH.
+4. Provision Worker secrets outside the repository: `GITHUB_CLIENT_SECRET`, distinct `SKILLAR_PUBLISH_TOKEN` and `SKILLAR_CI_TOKEN`. User write credentials come from the GitHub connection and are stored encrypted by the provider; no `SKILLAR_GITHUB_TOKEN` server secret is needed for the team entrypoint.
+5. Set repository variable `SKILLAR_DEPLOY_ENABLED=true` after its Cloudflare API token is configured, then run `Deploy ARKPOINT Worker`. It builds and tests, generates only nonsecret config, deploys through GitHub Actions, then verifies source identity and OAuth discovery. It never runs SSH.
 6. Connect the content repository's gated publication workflow to the new origin. Set its publication secret and use the CI reader token for staged/live read verification. Preserve main ancestry, latest-main, inventory integrity, immutable bytes, conditional promotion and sequence fencing. Keep model evaluations and human ratings optional.
 7. Complete an actual member login and search/load/read before announcing availability. A build or `/healthz` alone is not this acceptance check.
 

@@ -1,3 +1,4 @@
+import { dbPath } from "./config.js";
 import { appendFileSync, mkdirSync, renameSync, statSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -9,7 +10,7 @@ import { authGate, deny, localOnly, requireJson } from "./api/security.js";
 import { createSseHub } from "./api/sse.js";
 import { registerStatic } from "./api/static.js";
 import { createCatalog } from "./catalog/index.js";
-import { ensureGisoolHome, ensureToken, resolveGisoolHome, resolveHome } from "./config.js";
+import { ensureSkillarHome, ensureToken, resolveSkillarHome, resolveHome } from "./config.js";
 import { createFsWatchdog } from "./fs-watchdog.js";
 import { startHerdrSync } from "./herdr/sync.js";
 import { createIngestDeps } from "./ingest/pipeline.js";
@@ -18,17 +19,17 @@ import { packageVersion } from "./mcp/tools.js";
 import { createSearchIndex } from "./search/index.js";
 import { openDb, selfCheck } from "./store/db.js";
 import { createStore } from "./store/index.js";
-import type { GisoolConfig, SessionRow, Store } from "./types.js";
-import { assertNodeVersion, assertPlatform, GisoolStartupError } from "./version.js";
+import type { SkillarConfig, SessionRow, Store } from "./types.js";
+import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
 export type ServerDeps = {
-  gisoolHome?: string;
+  skillarHome?: string;
   openStore?: () => Store;
   /** Install SIGINT/SIGTERM handlers that close the daemon and exit (default true). */
   handleSignals?: boolean;
   dashboardDir?: string;
   log?: (msg: string) => void;
-  /** Filesystem-stall watchdog; defaults probe GISOOL_HOME every 15 s and SIGKILL after 30 s so launchd restarts. */
+  /** Filesystem-stall watchdog; defaults probe SKILLAR_HOME every 15 s and SIGKILL after 30 s so launchd restarts. */
   fsWatchdog?: { probe?: () => Promise<unknown>; intervalMs?: number; timeoutMs?: number; onStall?: (stalledMs: number) => void };
 };
 export type RunningServer = { port: number; host: "127.0.0.1"; close(): Promise<void> };
@@ -44,7 +45,7 @@ export function createFileLogger(path: string, maxBytes = LOG_MAX_BYTES): (msg: 
       if ((statSync(path, { throwIfNoEntry: false })?.size ?? 0) >= maxBytes) renameSync(path, `${path}.1`);
       appendFileSync(path, `${new Date().toISOString()} ${msg}\n`);
     } catch (error) {
-      process.stderr.write(`gisool: cannot write ${path}: ${(error as Error).message}\n${msg}\n`);
+      process.stderr.write(`skillar: cannot write ${path}: ${(error as Error).message}\n${msg}\n`);
     }
   };
 }
@@ -53,7 +54,7 @@ function listen(server: Server, port: number): Promise<number> {
   return new Promise((resolve, reject) => {
     const onError = (error: NodeJS.ErrnoException) => {
       server.off("listening", onListening);
-      reject(error.code === "EADDRINUSE" ? new GisoolStartupError("port_in_use", `${HOST}:${port} is already in use`) : error);
+      reject(error.code === "EADDRINUSE" ? new SkillarStartupError("port_in_use", `${HOST}:${port} is already in use`) : error);
     };
     const onListening = () => {
       server.off("error", onError);
@@ -65,27 +66,27 @@ function listen(server: Server, port: number): Promise<number> {
   });
 }
 
-export async function startServer(config: GisoolConfig, deps: ServerDeps = {}): Promise<RunningServer> {
+export async function startServer(config: SkillarConfig, deps: ServerDeps = {}): Promise<RunningServer> {
   assertNodeVersion();
   assertPlatform();
-  const gisoolHome = deps.gisoolHome ?? resolveGisoolHome(process.env);
-  if (deps.gisoolHome === undefined) ensureGisoolHome(process.env);
-  else mkdirSync(gisoolHome, { recursive: true, mode: 0o700 });
-  const log = deps.log ?? createFileLogger(join(gisoolHome, "logs", "daemon.log"));
-  const token = ensureToken(gisoolHome);
+  const skillarHome = deps.skillarHome ?? resolveSkillarHome(process.env);
+  if (deps.skillarHome === undefined) ensureSkillarHome(process.env);
+  else mkdirSync(skillarHome, { recursive: true, mode: 0o700 });
+  const log = deps.log ?? createFileLogger(join(skillarHome, "logs", "daemon.log"));
+  const token = ensureToken(skillarHome);
   const version = packageVersion();
 
-  const db = openDb(join(gisoolHome, "gisool.db"));
+  const db = openDb(dbPath(skillarHome));
   const cleanup: (() => void)[] = [];
   let store: Store | undefined;
   try {
     selfCheck(db);
-    store = deps.openStore ? deps.openStore() : createStore(db, { config, gisoolHome, home: resolveHome(process.env) });
+    store = deps.openStore ? deps.openStore() : createStore(db, { config, skillarHome, home: resolveHome(process.env) });
     const ownStore = store;
     cleanup.push(() => ownStore.close());
     if (deps.openStore) cleanup.push(() => db.close());
 
-    const herdr = process.env.GISOOL_HERDR === "off" ? undefined : startHerdrSync(db, { log });
+    const herdr = (process.env.SKILLAR_HERDR ?? process.env.GISOOL_HERDR) === "off" ? undefined : startHerdrSync(db, { log });
     if (herdr) cleanup.push(() => herdr.close());
     let linkQueued = false;
     const linkSessions = new Set<string>();
@@ -147,11 +148,11 @@ export async function startServer(config: GisoolConfig, deps: ServerDeps = {}): 
 
     const wd = deps.fsWatchdog ?? {};
     const watchdog = createFsWatchdog({
-      probe: wd.probe ?? (() => stat(gisoolHome)),
+      probe: wd.probe ?? (() => stat(skillarHome)),
       intervalMs: wd.intervalMs ?? 15_000,
       timeoutMs: wd.timeoutMs ?? 30_000,
       onStall: wd.onStall ?? ((stalledMs) => {
-        log(`filesystem requests stalled for ${stalledMs} ms; exiting so the service manager restarts gisool`);
+        log(`filesystem requests stalled for ${stalledMs} ms; exiting so the service manager restarts skillar`);
         // process.exit() can hang joining libuv workers during native cleanup after an fs stall.
         process.kill(process.pid, "SIGKILL");
       }),
@@ -246,12 +247,12 @@ export async function startServer(config: GisoolConfig, deps: ServerDeps = {}): 
             log(`shutdown step failed: ${(error as Error).message}`);
           }
         }
-        log("gisool stopped");
+        log("skillar stopped");
       })();
       return closing;
     };
 
-    log(`gisool ${version} listening on http://${HOST}:${boundPort}`);
+    log(`skillar ${version} listening on http://${HOST}:${boundPort}`);
     return { port: boundPort, host: HOST, close };
   } catch (error) {
     for (const fn of cleanup.reverse()) {

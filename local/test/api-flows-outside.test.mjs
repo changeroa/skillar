@@ -10,11 +10,11 @@ const { createStore } = await distImport("store/index.js");
 const AUTO = "Generate a concise, single-line task title for this conversation.";
 let server;
 let ids;
-const socket = process.env.GISOOL_HERDR_SOCKET;
+const socket = process.env.SKILLAR_HERDR_SOCKET;
 before(async () => {
-  process.env.GISOOL_HERDR_SOCKET = "/nonexistent";
+  process.env.SKILLAR_HERDR_SOCKET = "/nonexistent";
   server = await startTestServer();
-  const db = openDb(join(server.gisoolHome, "gisool.db"));
+  const db = openDb(join(server.skillarHome, "skillar.db"));
   const store = createStore(db, { now: () => T });
   ids = {};
   try {
@@ -44,8 +44,8 @@ before(async () => {
 });
 after(async () => {
   await server?.stop();
-  if (socket === undefined) delete process.env.GISOOL_HERDR_SOCKET;
-  else process.env.GISOOL_HERDR_SOCKET = socket;
+  if (socket === undefined) delete process.env.SKILLAR_HERDR_SOCKET;
+  else process.env.SKILLAR_HERDR_SOCKET = socket;
 });
 const get = (path) => http(server.port, { path, headers: bearer(server.token) });
 const range = `from=${T - DAY}&to=${T + DAY}`;

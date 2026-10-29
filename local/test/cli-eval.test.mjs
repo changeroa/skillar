@@ -16,7 +16,7 @@ test("eval metrics on a 4-case set match hand-computed values", async () => {
     writeFixtureSkill(root, "beta", { description: "walrus topaz invoice exporter" });
     writeFixtureSkill(root, "gamma", { description: "walrus topaz zebra lantern" });
     const deps = makeDeps(sb.home, sb.env, { port: 1, captureLevel: "full", retentionDays: null, roots: [{ id: "t", path: root }], runtimes: {} });
-    mkdirSync(deps.gisoolHome, { recursive: true });
+    mkdirSync(deps.skillarHome, { recursive: true });
     const s = deps.openStore();
     s.addEvalCase({ query: "zebra quartz migration", expectedUri: U("alpha") });   // rank 1
     s.addEvalCase({ query: "walrus topaz invoice", expectedUri: U("beta") });      // rank 1

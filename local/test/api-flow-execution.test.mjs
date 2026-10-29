@@ -10,7 +10,7 @@ const { createStore } = await distImport("store/index.js");
 
 async function fixture(t) {
   const server = await startTestServer();
-  const db = openDb(join(server.gisoolHome, "gisool.db"));
+  const db = openDb(join(server.skillarHome, "skillar.db"));
   let clock = 1000, sequence = 0;
   const store = createStore(db, { now: () => clock });
   t.after(async () => { store.close(); await server.stop(); });
@@ -339,7 +339,7 @@ test("read-only flow warnings combine indexed legacy candidates with recorded bo
   // A matching tool is deliberately stored without ingest repair: GET must not perform that repair.
   f.store.append({
     id: "unreconciled-tool", kind: "tool_call", ts: 1100, ref: s.ref, source: "otel",
-    text: JSON.stringify({ server: "gisool", uri: "skill://local/fixture/legacy-a/SKILL.md" }),
+    text: JSON.stringify({ server: "skillar", uri: "skill://local/fixture/legacy-a/SKILL.md" }),
     data: { success: true },
   }, { sessionId: s.id, method: "runtime_id" });
   f.db.exec("INSERT INTO herdr_workspaces (id, created_ms) VALUES ('empty', 0)");

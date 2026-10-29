@@ -1,15 +1,15 @@
 {
-  "name": "gisool",
-  "version": "0.1.3",
+  "name": "skillar",
+  "version": "0.2.0",
   "private": false,
   "description": "Local skill router for coding agents: search your skills, trace how agents use them, and see the flow.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/changeroa/gisool.git",
+    "url": "git+https://github.com/changeroa/skillar.git",
     "directory": "local"
   },
-  "homepage": "https://github.com/changeroa/gisool/tree/main/local#readme",
+  "homepage": "https://github.com/changeroa/skillar/tree/main/local#readme",
   "files": [
     "dist",
     "packs",
@@ -21,6 +21,7 @@
   ],
   "type": "module",
   "bin": {
+    "skillar": "dist/cli/main.js",
     "gisool": "dist/cli/main.js"
   },
   "engines": {

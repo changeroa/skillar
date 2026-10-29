@@ -9,7 +9,7 @@ import { install as installGajae } from "../../clients/gajae-code/install.mjs";
 import { applyFiles, gajaeTransport, omoTransport, planMcp, resolveAgentDir } from "../../clients/runtime-install.mjs";
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), "gisul-runtime-"));
+  const root = await mkdtemp(join(tmpdir(), "skillar-runtime-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
@@ -33,7 +33,7 @@ test("OmO preserves other servers and discovers guidance; reruns do not rewrite 
   const config = JSON.parse(await readFile(configPath, "utf8"));
   assert.deepEqual(config.mcpServers.mine, JSON.parse(previous).mcpServers.mine);
   assert.equal(config.settings.searchThreshold, 7);
-  assert.deepEqual(config.mcpServers.gisul, omoTransport(agentDir));
+  assert.deepEqual(config.mcpServers.skillar, omoTransport(agentDir));
   assert.equal(await readFile(installed.backups[0], "utf8"), previous);
   assert.equal((await stat(installed.backups[0])).mode & 0o777, 0o600);
   assert.ok(!JSON.stringify(installed).includes("fixture-secret"));
@@ -44,7 +44,7 @@ test("OmO preserves other servers and discovers guidance; reruns do not rewrite 
   assert.equal((await stat(configPath)).mtimeMs, timestamp);
 
   const handlers = [];
-  const extension = await import(pathToFileURL(join(agentDir, "extensions/gisul/index.js")));
+  const extension = await import(pathToFileURL(join(agentDir, "extensions/skillar/index.js")));
   extension.default({ on: (...args) => handlers.push(args) });
   assert.equal(handlers.length, 1);
   const [event, handler, options] = handlers[0];
@@ -54,20 +54,20 @@ test("OmO preserves other servers and discovers guidance; reruns do not rewrite 
   assert.ok(result.systemPrompt.startsWith("Existing OmO instructions\n\n"));
   assert.match(result.systemPrompt, /search_skills/);
   assert.equal(handler({ systemPrompt: result.systemPrompt }), undefined);
-  assert.equal(handler({ systemPrompt: "Fresh turn" }).systemPrompt.split("<gisul-discovery>").length, 2);
+  assert.equal(handler({ systemPrompt: "Fresh turn" }).systemPrompt.split("<skillar-discovery>").length, 2);
 });
 
 test("a conflicting loader or registration prevents all installation writes", async t => {
   const agentDir = await fixture(t);
-  const skill = join(agentDir, "skills/gisul");
+  const skill = join(agentDir, "skills/skillar");
   await mkdir(skill, { recursive: true });
   await writeFile(join(skill, "SKILL.md"), "user-owned skill");
   await assert.rejects(installOmo({ agentDir }), /different file/);
   await assert.rejects(access(join(agentDir, "mcp.json")), { code: "ENOENT" });
   await rm(join(agentDir, "skills"), { recursive: true });
-  const previous = JSON.stringify({ mcpServers: { gisul: { command: "my-existing-adapter" } } });
+  const previous = JSON.stringify({ mcpServers: { skillar: { command: "my-existing-adapter" } } });
   await writeFile(join(agentDir, "mcp.json"), previous);
-  for (const install of [installOmo, installGajae]) await assert.rejects(install({ agentDir }), /different gisul registration/);
+  for (const install of [installOmo, installGajae]) await assert.rejects(install({ agentDir }), /different skillar registration/);
   assert.equal(await readFile(join(agentDir, "mcp.json"), "utf8"), previous);
   assert.deepEqual(await readdir(agentDir), ["mcp.json"]);
 });
@@ -75,7 +75,7 @@ test("a conflicting loader or registration prevents all installation writes", as
 test("malformed, disabled, and symlinked MCP configs are preserved", async t => {
   const root = await fixture(t);
   const file = join(root, "mcp.json");
-  for (const value of ["{bad", "null", '{"mcpServers":[]}', '{"disabledServers":["gisul"]}']) {
+  for (const value of ["{bad", "null", '{"mcpServers":[]}', '{"disabledServers":["skillar"]}']) {
     await writeFile(file, value);
     await assert.rejects(planMcp(file, gajaeTransport(root)));
     assert.equal(await readFile(file, "utf8"), value);
@@ -108,9 +108,20 @@ test("profile selection and OAuth caches follow runtime-owned directories", () =
   }
   for (const transport of [gajaeTransport, omoTransport]) {
     const config = transport("/profile with spaces");
-    assert.equal(config.env.MCP_REMOTE_CONFIG_DIR, "/profile with spaces/gisul/auth");
+    assert.equal(config.env.MCP_REMOTE_CONFIG_DIR, "/profile with spaces/skillar/auth");
     assert.equal(config.timeout ?? config.connectTimeoutMs, 120000);
     assert.equal(JSON.parse(config.args[config.args.indexOf("--static-oauth-client-metadata") + 1]).scope, "skills:read");
     assert.ok(!JSON.stringify(config).includes("Bearer"));
   }
+});
+
+
+test("hosted installers refuse old provider names before creating a duplicate loader or registration", async t => {
+  const agentDir = await fixture(t), path = join(agentDir, "mcp.json");
+  const before = JSON.stringify({ mcpServers: { gisul: { command: "existing-private-bridge", env: { TOKEN: "keep" } } } });
+  await writeFile(path, before);
+  await assert.rejects(installOmo({ agentDir }), /legacy.*registration.*duplicate providers/);
+  await assert.rejects(installGajae({ agentDir }), /legacy.*registration.*duplicate providers/);
+  assert.equal(await readFile(path, "utf8"), before);
+  await assert.rejects(access(join(agentDir, "extensions/skillar")), { code: "ENOENT" });
 });

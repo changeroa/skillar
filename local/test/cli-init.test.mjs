@@ -25,10 +25,10 @@ test("init --dry-run writes nothing and prints diffs for seeded runtimes", async
   assert.equal(r.code, 0, r.output);
   assert.match(r.stdout, /^\+\+\+ b.*\.claude\/settings\.json$/m);
   assert.match(r.stdout, /^\+\+\+ b.*\.codex\/config\.toml$/m);
-  assert.match(r.stdout, /dev\.gisool\.daemon\.plist/);
+  assert.match(r.stdout, /dev\.skillar\.daemon\.plist/);
   assert.doesNotMatch(r.stdout, /[0-9a-f]{64}/, "token must be masked in printed diffs");
   assert.deepEqual(snapshotTree(sb.home), before);
-  assert.equal(existsSync(sb.env.GISOOL_HOME), false);
+  assert.equal(existsSync(sb.env.SKILLAR_HOME), false);
 });
 
 test("apply writes planned files with 0600 backups, re-apply is a no-op, rollback restores byte-equal originals", async (t) => {
@@ -45,29 +45,29 @@ test("apply writes planned files with 0600 backups, re-apply is a no-op, rollbac
   assert.ok(claude.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT);
   const codex = readFileSync(join(sb.home, ".codex", "config.toml"), "utf8");
   assert.match(codex, /\[mcp_servers\.other\]/, "unrelated servers are kept");
-  assert.match(codex, /\[mcp_servers\.gisool\]/);
-  for (const p of [".gemini/settings.json", ".cursor/mcp.json", ".cursor/hooks.json", ".omo/agent/mcp.json", ".gjc/agent/mcp.json", ".gisool/packs/openclaw/openclaw.plugin.json"]) {
+  assert.match(codex, /\[mcp_servers\.skillar\]/);
+  for (const p of [".gemini/settings.json", ".cursor/mcp.json", ".cursor/hooks.json", ".omo/agent/mcp.json", ".gjc/agent/mcp.json", ".skillar/packs/openclaw/openclaw.plugin.json"]) {
     assert.ok(existsSync(join(sb.home, p)), p);
   }
-  const sets = readdirSync(join(sb.env.GISOOL_HOME, "backups"));
+  const sets = readdirSync(join(sb.env.SKILLAR_HOME, "backups"));
   assert.equal(sets.length, 1);
-  const setDir = join(sb.env.GISOOL_HOME, "backups", sets[0]);
+  const setDir = join(sb.env.SKILLAR_HOME, "backups", sets[0]);
   const manifest = JSON.parse(readFileSync(join(setDir, "manifest.json"), "utf8"));
   assert.equal(statSync(join(setDir, "manifest.json")).mode & 0o777, 0o600);
   const backedUp = manifest.files.filter((f) => f.backup);
   assert.equal(backedUp.length, 2, "the two pre-existing files are backed up");
   for (const f of backedUp) assert.equal(statSync(join(setDir, f.backup)).mode & 0o777, 0o600);
-  assert.equal(statSync(join(sb.env.GISOOL_HOME, "token")).mode & 0o777, 0o600);
+  assert.equal(statSync(join(sb.env.SKILLAR_HOME, "token")).mode & 0o777, 0o600);
 
-  const applied = snapshotTree(sb.home, { exclude: [".gisool"] });
+  const applied = snapshotTree(sb.home, { exclude: [".skillar"] });
   const second = await runCli(["init"], sb.env);
   assert.equal(second.code, 0, second.output);
   assert.match(second.stdout, /applied 0 file\(s\) and 0 command\(s\)/);
-  assert.deepEqual(snapshotTree(sb.home, { exclude: [".gisool"] }), applied);
+  assert.deepEqual(snapshotTree(sb.home, { exclude: [".skillar"] }), applied);
 
   const rb = await runCli(["init", "--rollback"], sb.env);
   assert.equal(rb.code, 0, rb.output);
-  const strip = (tree) => Object.fromEntries(Object.entries(tree).filter(([k]) => !k.startsWith(".gisool")));
+  const strip = (tree) => Object.fromEntries(Object.entries(tree).filter(([k]) => !k.startsWith(".skillar")));
   assert.deepEqual(strip(snapshotTree(sb.home)), strip(original));
   const again = await runCli(["init", "--rollback"], sb.env);
   assert.match(again.stdout, /nothing to roll back/);
@@ -87,7 +87,7 @@ test("a file modified between plan and apply aborts all writes", async (t) => {
   assert.match(io.text, /\.claude\/settings\.json/);
   assert.equal(readFileSync(settings, "utf8"), '{"theme":"light"}\n');
   for (const p of [".gemini/settings.json", ".cursor/mcp.json", ".omo/agent/mcp.json", ".codex/config.toml"]) assert.equal(existsSync(join(sb.home, p)), false, p);
-  assert.deepEqual(readdirSync(join(sb.env.GISOOL_HOME, "backups")), []);
+  assert.deepEqual(readdirSync(join(sb.env.SKILLAR_HOME, "backups")), []);
 });
 
 test("with CLI enabled, init runs and rollback undoes the claude mcp registration through stubs only", async (t) => {
@@ -95,20 +95,20 @@ test("with CLI enabled, init runs and rollback undoes the claude mcp registratio
   t.after(sb.cleanup);
   const log = join(sb.home, "argv.log");
   for (const name of ["claude", "launchctl", "systemctl", "openclaw"]) writeStub(sb.bin, name, log);
-  delete sb.env.GISOOL_NO_CLI;
+  delete sb.env.SKILLAR_NO_CLI;
 
   const init = await runCli(["init", "--no-service", "--runtime", "claude-code"], sb.env);
   assert.equal(init.code, 0, init.output);
   const afterInit = readFileSync(log, "utf8");
-  assert.match(afterInit, /^claude mcp add --transport http --scope user gisool http:\/\/127\.0\.0\.1:8799\/mcp --header Authorization: Bearer [0-9a-f]{64}$/m);
+  assert.match(afterInit, /^claude mcp add --transport http --scope user skillar http:\/\/127\.0\.0\.1:8799\/mcp --header Authorization: Bearer [0-9a-f]{64}$/m);
   assert.doesNotMatch(afterInit, /launchctl|systemctl|openclaw/);
-  const set = readdirSync(join(sb.env.GISOOL_HOME, "backups"))[0];
-  const manifest = JSON.parse(readFileSync(join(sb.env.GISOOL_HOME, "backups", set, "manifest.json"), "utf8"));
-  assert.deepEqual(manifest.commands.map((c) => [c.argv.slice(0, 3), c.undo.argv, c.exitCode]), [[["claude", "mcp", "add"], ["claude", "mcp", "remove", "--scope", "user", "gisool"], 0]]);
+  const set = readdirSync(join(sb.env.SKILLAR_HOME, "backups"))[0];
+  const manifest = JSON.parse(readFileSync(join(sb.env.SKILLAR_HOME, "backups", set, "manifest.json"), "utf8"));
+  assert.deepEqual(manifest.commands.map((c) => [c.argv.slice(0, 3), c.undo.argv, c.exitCode]), [[["claude", "mcp", "add"], ["claude", "mcp", "remove", "--scope", "user", "skillar"], 0]]);
 
   const rb = await runCli(["init", "--rollback"], sb.env);
   assert.equal(rb.code, 0, rb.output);
-  assert.match(readFileSync(log, "utf8"), /^claude mcp remove --scope user gisool$/m);
+  assert.match(readFileSync(log, "utf8"), /^claude mcp remove --scope user skillar$/m);
 });
 
 test("pre-existing unmanaged OTel settings abort dry run and apply, naming both files and changing nothing", async (t) => {
@@ -143,7 +143,7 @@ test("init --disable-remote --dry-run shows the planned Codex disable edit", asy
   writeFileSync(join(sb.home, ".codex", "config.toml"), '[mcp_servers.gisul]\nurl = "https://gisul.arkpoint.dev/mcp"\n');
   const r = await runCli(["init", "--dry-run", "--disable-remote", "--no-service"], sb.env);
   assert.equal(r.code, 0, r.output);
-  assert.match(r.stdout, /runtime codex: detected .*remoteGisulRegistered=true/);
+  assert.match(r.stdout, /runtime codex: detected .*remoteSkillarRegistered=true/);
   assert.match(r.stdout, /^ \[mcp_servers\.gisul\]\n\+enabled = false$/m);
 });
 
@@ -157,8 +157,8 @@ test("init on win32 exits unsupported_platform", async (t) => {
 });
 
 test("the planned LaunchAgent plist runs absolute paths that exist", () => {
-  const plan = planService({ home: "/tmp/h", gisoolHome: "/tmp/h/.gisool", env: { GISOOL_NO_CLI: "1" }, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
-  assert.equal(plan.file.path, "/tmp/h/Library/LaunchAgents/dev.gisool.daemon.plist");
+  const plan = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: { SKILLAR_NO_CLI: "1" }, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
+  assert.equal(plan.file.path, "/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist");
   const args = [...plan.file.after.match(/<key>ProgramArguments<\/key>\s*<array>([\s\S]*?)<\/array>/)[1].matchAll(/<string>([^<]*)<\/string>/g)].map((m) => m[1]);
   assert.equal(args.length, 3);
   assert.equal(args[2], "serve");
@@ -168,9 +168,9 @@ test("the planned LaunchAgent plist runs absolute paths that exist", () => {
   }
   assert.match(args[1], /dist\/cli\/main\.js$/);
   assert.match(plan.file.after, /<key>KeepAlive<\/key>\s*<true\/>/);
-  assert.match(plan.file.after, /<string>\/tmp\/h\/\.gisool\/logs\/daemon\.log<\/string>/);
-  assert.deepEqual(plan.commands, [], "GISOOL_NO_CLI plans no launchctl call");
-  const live = planService({ home: "/tmp/h", gisoolHome: "/tmp/h/.gisool", env: {}, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
+  assert.match(plan.file.after, /<string>\/tmp\/h\/\.skillar\/logs\/daemon\.log<\/string>/);
+  assert.deepEqual(plan.commands, [], "SKILLAR_NO_CLI plans no launchctl call");
+  const live = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: {}, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
   assert.deepEqual(live.commands.map((c) => c.argv), [["launchctl", "bootstrap", "gui/501", plan.file.path]]);
 });
 

@@ -8,7 +8,7 @@ import { quietLog, snapshotTree } from "./helpers/catalog.mjs";
 const { createCatalog } = await distImport("catalog/index.js");
 
 function setup() {
-  const base = makeTempDir("gisool-catalog-");
+  const base = makeTempDir("skillar-catalog-");
   const a = join(base, "agents");
   const b = join(base, "claude");
   mkdirSync(a, { recursive: true });
@@ -132,7 +132,7 @@ test("traversal and foreign URIs are refused", async () => {
       "skill://local/agents/../secret.md",
       "skill://local/agents/ok/%2e%2e/%2e%2e/secret.md",
       "skill://local/agents/ok/..%2F..%2Fsecret.md",
-      "skill://gisul/agents/ok/SKILL.md",
+      "skill://skillar/agents/ok/SKILL.md",
       "file:///etc/hosts",
     ]) {
       await assert.rejects(c.readResource(uri), (e) => e.code === "invalid_uri", uri);

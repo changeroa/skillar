@@ -102,7 +102,7 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
 
   app.get("/healthz", (_req, res) => {
     const fs = deps.fsHealth?.() ?? { ok: true };
-    res.status(fs.ok ? 200 : 503).json({ ok: fs.ok, version: deps.version, name: "gisool", fs });
+    res.status(fs.ok ? 200 : 503).json({ ok: fs.ok, version: deps.version, name: "skillar", fs });
   });
 
   app.post("/ingest/otlp/v1/logs", (req, res) => {

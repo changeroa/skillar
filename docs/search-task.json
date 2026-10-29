@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "task_id": "gisul-search-quality-20260928",
+  "task_id": "skillar-search-quality-20260928",
   "objective": "Improve subject-first skill discovery, relevance, abstention, policy visibility and measured latency; publish verified runtime/content and validate fresh Codex sessions.",
   "status": "complete",
   "requirements": [
@@ -42,7 +42,7 @@
   "checks": [
     {
       "id": "benchmark",
-      "cwd": "/Users/victor/projects/gisul",
+      "cwd": "/Users/victor/projects/skillar",
       "command": [
         "node",
         "server/bench/search.mjs",
@@ -59,7 +59,7 @@
     },
     {
       "id": "server",
-      "cwd": "/Users/victor/projects/gisul",
+      "cwd": "/Users/victor/projects/skillar",
       "command": [
         "npm",
         "--prefix",
@@ -75,7 +75,7 @@
     },
     {
       "id": "worker",
-      "cwd": "/Users/victor/projects/gisul",
+      "cwd": "/Users/victor/projects/skillar",
       "command": [
         "npm",
         "--prefix",
@@ -92,7 +92,7 @@
     },
     {
       "id": "content",
-      "cwd": "/Users/victor/projects/arkpoint-gisul-skills",
+      "cwd": "/Users/victor/projects/arkpoint-iyen-skills",
       "command": [
         "npm",
         "run",
@@ -106,12 +106,12 @@
     },
     {
       "id": "live",
-      "cwd": "/Users/victor/projects/gisul",
+      "cwd": "/Users/victor/projects/skillar",
       "command": [
         "node",
         "scripts/check-search-live.mjs",
         "--token-file",
-        "/Users/victor/.config/gisul-arkpoint/machine-secrets.json",
+        "/Users/victor/.config/skillar-arkpoint/machine-secrets.json",
         "--output",
         "docs/evidence/search-20260928/live.json"
       ],
@@ -157,7 +157,7 @@
     },
     {
       "id": "sessions",
-      "cwd": "/Users/victor/projects/gisul",
+      "cwd": "/Users/victor/projects/skillar",
       "command": [
         "python3",
         "scripts/check-search-sessions.py"

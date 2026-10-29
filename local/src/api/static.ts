@@ -26,7 +26,7 @@ export function registerStatic(app: Express, opts: { token: string; dir?: string
       return res.redirect(302, "/");
     }
     const index = join(dir, "index.html");
-    if (!existsSync(index)) return deny(res, 503, "dashboard_not_built", { hint: "run npm run build in the gisool package" });
+    if (!existsSync(index)) return deny(res, 503, "dashboard_not_built", { hint: "run npm run build in the skillar package" });
     res.setHeader("Cache-Control", "no-store");
     res.sendFile(index);
   });

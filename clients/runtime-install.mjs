@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -5,8 +6,8 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 
 export const endpoint = "https://gisul.arkpoint.dev/mcp";
 export const remotePackage = "mcp-remote@0.14.3";
-export const oauthMetadata = JSON.stringify({ client_name: "Gisul for Gajae Code", scope: "skills:read" });
-export const omoOauthMetadata = JSON.stringify({ client_name: "Gisul for OmO", scope: "skills:read" });
+export const oauthMetadata = JSON.stringify({ client_name: "Skillar for Gajae Code", scope: "skills:read" });
+export const omoOauthMetadata = JSON.stringify({ client_name: "Skillar for OmO", scope: "skills:read" });
 
 export function parseArgs(args) {
   const options = {};
@@ -48,7 +49,7 @@ function oauthBridgeTransport(agentDir, metadata) {
     type: "stdio",
     command: "npx",
     args: ["--yes", remotePackage, endpoint, "--transport", "http-only", "--static-oauth-client-metadata", metadata],
-    env: { MCP_REMOTE_CONFIG_DIR: join(agentDir, "gisul", "auth") },
+    env: { MCP_REMOTE_CONFIG_DIR: join(agentDir, existsSync(join(agentDir, "gisul", "auth")) ? "gisul" : "skillar", "auth") },
     // GJC's ordinary startup only keeps slow registrations connecting in the
     // background when they declare a positive timeout. Login is done beforehand.
     timeout: 120000,
@@ -79,25 +80,28 @@ export async function planMcp(path, desired) {
   if (!object(config) || (config.mcpServers !== undefined && !object(config.mcpServers))) {
     throw new Error(`Expected an object and mcpServers map at ${path}`);
   }
-  if (config.disabledServers?.includes("gisul")) throw new Error(`Gisul is disabled in ${path}; resolve that policy before installing`);
+  if (config.disabledServers?.includes("skillar")) throw new Error(`Skillar is disabled in ${path}; resolve that policy before installing`);
   const servers = config.mcpServers ?? {};
-  if (Object.hasOwn(servers, "gisul")) {
-    if (!equal(servers.gisul, desired)) throw new Error(`A different gisul registration exists at ${path}; refusing to overwrite it`);
+  if (Object.hasOwn(servers, "gisul") || Object.hasOwn(servers, "gisool")) {
+    throw new Error(`A legacy gisul/gisool MCP registration exists at ${path}; preserve and migrate that registration before installing Skillar to avoid duplicate providers`);
+  }
+  if (Object.hasOwn(servers, "skillar")) {
+    if (!equal(servers.skillar, desired)) throw new Error(`A different skillar registration exists at ${path}; refusing to overwrite it`);
     return { path, before, after: before };
   }
-  return { path, before, after: JSON.stringify({ ...config, mcpServers: { ...servers, gisul: desired } }, null, 2) + "\n" };
+  return { path, before, after: JSON.stringify({ ...config, mcpServers: { ...servers, skillar: desired } }, null, 2) + "\n" };
 }
 
 export async function planFile(path, source) {
   const before = await readTarget(path);
   const after = await readFile(source, "utf8");
-  if (before !== null && before !== after) throw new Error(`A different file exists at ${path}; preserve it before updating Gisul`);
+  if (before !== null && before !== after) throw new Error(`A different file exists at ${path}; preserve it before updating Skillar`);
   return { path, before, after };
 }
 
 async function atomicWrite(path, content) {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-  const temporary = `${path}.gisul-${randomUUID()}.tmp`;
+  const temporary = `${path}.skillar-${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, content, { flag: "wx", mode: 0o600 });
     await rename(temporary, path);
@@ -115,7 +119,7 @@ export async function applyFiles(files) {
     for (const file of changed) {
       if (await readTarget(file.path) !== file.before) throw new Error(`File changed during installation: ${file.path}`);
       if (file.before !== null) {
-        const backup = `${file.path}.gisul-backup-${randomUUID()}`;
+        const backup = `${file.path}.skillar-backup-${randomUUID()}`;
         await writeFile(backup, file.before, { flag: "wx", mode: 0o600 });
         backups.push(backup);
       }

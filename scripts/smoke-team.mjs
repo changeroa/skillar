@@ -6,7 +6,7 @@ async function get(path) {
   return response.json();
 }
 const health = await get("/healthz");
-if (process.env.GISUL_EXPECTED_COMMIT) assert.equal(health.server_version, process.env.GISUL_EXPECTED_COMMIT);
+if ((process.env.SKILLAR_EXPECTED_COMMIT ?? process.env.GISUL_EXPECTED_COMMIT)) assert.equal(health.server_version, (process.env.SKILLAR_EXPECTED_COMMIT ?? process.env.GISUL_EXPECTED_COMMIT));
 const metadata = await get("/.well-known/oauth-protected-resource/mcp");
 assert.equal(metadata.resource, origin + "/mcp");
 assert.deepEqual(metadata.authorization_servers, [origin]);

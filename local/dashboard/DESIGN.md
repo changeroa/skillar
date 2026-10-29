@@ -1,6 +1,6 @@
-# gisool Dashboard Design System
+# skillar Dashboard Design System
 
-Scope: `local/dashboard/**` (the Preact app served by the gisool daemon at `http://127.0.0.1:8799`).
+Scope: `local/dashboard/**` (the Preact app served by the skillar daemon at `http://127.0.0.1:8799`).
 Every color, size, and spacing value used by dashboard code must trace to a token here; the tokens
 live as CSS custom properties in `styles.css` under the same names.
 
@@ -8,8 +8,8 @@ live as CSS custom properties in `styles.css` under the same names.
 
 - Embedded refs: shortlisted `linear.app`, `sentry`, `posthog` (data-dense dashboards) -> picked
   `taste-skill` (operational brief) + `layout-skill` (app shell) + `linear.app` as the Layer B token
-  source, because the plan's mockups (`.senpi/html-pages/gisul 대시보드 목업*.html`,
-  `gisul 라이브 활동 화면 목업*.html`) are near-black, card-based, achromatic with one accent and
+  source, because the plan's mockups (`.senpi/html-pages/skillar 대시보드 목업*.html`,
+  `skillar 라이브 활동 화면 목업*.html`) are near-black, card-based, achromatic with one accent and
   semantic status chips, which is Linear's luminance-stepping model. The mockups set visual
   direction only; the celebration ("처음 쓰임") card is dropped on purpose (user decision).
 - Lazyweb: skipped - the plan supplies concrete mockups as the visual contract; no external
@@ -196,7 +196,7 @@ Layout
 
 ### EmptyState
 - Structure: `section.empty` > title (`--t-title`) + copy + checklist (`dl`) + command `<code>`.
-- Variants: `waiting` (no events yet: per-runtime last-seen list, ingest counters, `gisool doctor`)
+- Variants: `waiting` (no events yet: per-runtime last-seen list, ingest counters, `skillar doctor`)
   and `filtered` (events exist, filter matches nothing: "Clear filters" ghost button).
 
 ### GhostButton
@@ -227,7 +227,7 @@ Layout
 - Layout: under 640px the row is one column and every part gets its own line, `"title" / "tag" /
   "when" / "meta" / "sum"`: at 390px a 64-character spec name and a flow label cannot share a line
   without one of them collapsing to one-character rows.
-- Empty: `section.empty` "No herdr workspaces recorded" (with `gisool doctor`) or "No workspaces in
+- Empty: `section.empty` "No herdr workspaces recorded" (with `skillar doctor`) or "No workspaces in
   this range" with a Clear filters GhostButton when the time filter is set.
 
 ### FlowHeader / Steps / PaneTree (`views/workspaces.tsx`)
@@ -257,11 +257,11 @@ Layout
   `details.turn` > `ul.spans` > `li.span` > CallList. Disclosure is native `details`/`summary` so
   every level is keyboard reachable; the chevron rotates 90 degrees over `--t-micro` and is the only
   motion in the view. Turns start open while a session has at most `TURNS_OPEN_MAX` (3) of them.
-- A pane link herdr reported and one gisool inferred both show a Tag with the basis; a pane session
-  gisool has not matched yet is a dim line naming the agent session, never a silent omission.
+- A pane link herdr reported and one skillar inferred both show a Tag with the basis; a pane session
+  skillar has not matched yet is a dim line naming the agent session, never a silent omission.
 
 ### CallList / Tokens (`components/calls.tsx`)
-- Structure: `ul.calls` > `li.call` = mono name + optional `tag` (gisool) + outcome Tag (tool calls
+- Structure: `ul.calls` > `li.call` = mono name + optional `tag` (skillar) + outcome Tag (tool calls
   only) + duration + cost (model calls only) + `span.tok` token buckets. Over `MAX_CALL_ROWS` (12)
   rows a TextFold-style `foldbtn` reveals the rest.
 - Rule: every figure is a reported measurement. An absent duration, cost or token bucket reads
@@ -281,7 +281,7 @@ Layout
   resource path relative to the skill dir + bytes + `from <skill>`; native_skill = name + `via`;
   error = mono code in `--bad` + message; session_end = `after <duration>`.
 - Empty states: `section.empty` "Session not found" (stale id) and `div.callout` "This session
-  never consulted gisool" above the timeline when no search step exists.
+  never consulted skillar" above the timeline when no search step exists.
 - Motion: none; live updates refetch the trace and keyed steps keep their DOM nodes.
 - Skill span rows (`tl__step--span`, dot `--ok` hollow): when the session's skill report is readable,
   each span is folded into the timeline right after the step that activated it, the tool and model
@@ -354,7 +354,7 @@ Constraints: WCAG 2.2 AA; body contrast >= 4.5:1 in both schemes (`--ink-2` on `
 |------|----------|--------------|--------------|
 | Trace / Flow / Heatmap views render "Coming soon" | `views/{trace,flow,heatmap}.tsx` | Stubs owned by todos 15-17 | Replaced in Wave 2 |
 | Attribution reason tooltip depends on an optional `attributionReason` field the API may omit | `views/sessions.tsx` | `SessionRow` is frozen without a reason field; the dashboard tolerates its absence ("reason not reported") | Todo 5/12 may add the field; no contract change needed here |
-| Trace view CSS ships as a `<style id="gisool-trace-style">` injected by `views/trace.tsx` instead of living in `styles.css` | `views/trace.tsx` | `styles.css` is owned by todo 6 in this wave; the block uses only tokens from this file | Fold into `styles.css` once the ledger allows (todo 18/19 cleanup) |
+| Trace view CSS ships as a `<style id="skillar-trace-style">` injected by `views/trace.tsx` instead of living in `styles.css` | `views/trace.tsx` | `styles.css` is owned by todo 6 in this wave; the block uses only tokens from this file | Fold into `styles.css` once the ledger allows (todo 18/19 cleanup) |
 | Trace header fetches `/api/sessions` unfiltered and picks the row client-side | `views/trace.tsx` | The HTTP surface has no `GET /api/sessions/:id`; the list is local and small | Add a by-id endpoint if the list grows past retention defaults |
 | The Workspaces list reads one flow report per row to fill its found/used summary | `views/workspaces.tsx` | `GET /api/flows` carries structure only; the analysis is computed on read. The list paints first and enriches at most `SUMMARY_CONCURRENCY` (2) rows at a time, and a row that fails says so | Fold a summary into the list DTO if a page ever feels slow |
 | A flow detail does not follow the live stream | `views/workspaces.tsx` | A full report is far heavier than a session row, and the SSE contract only carries `session` rows; the header states the snapshot time and offers Refresh | Refetch on a flow-scoped event if the stream ever carries one |

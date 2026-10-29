@@ -40,7 +40,7 @@ export type TraceStepDetail =
       cacheWriteTokens?: number; reasoningTokens?: number; totalTokens?: number; inputIncludesCache: boolean; costUsd?: number; durationMs?: number;
       ttftMs?: number; requestId?: string }
   | { kind: "tool_call"; toolName: string; success?: boolean; durationMs?: number; toolUseId?: string; callId?: string; inputBytes?: number;
-      resultBytes?: number; gisoolMcp?: boolean; args?: string; argsLength?: number }
+      resultBytes?: number; skillarMcp?: boolean; /** Historical persisted flag. */ gisoolMcp?: boolean; args?: string; argsLength?: number }
   | { kind: "session_start" | "session_end" }
   | { kind: "error"; code: string; message: string };
 export type HookPayload =
@@ -133,17 +133,17 @@ export type FlowRow = { id: string; workspaceId: string; tabId?: string; label?:
 export type FlowStepRow = { paneId: string; stepId: string; registeredMs: number };
 // Skills and tools the sessions linked to one pane showed within one flow (window rule in store/workflow.ts).
 export type PaneUsageRow = { paneId: string; skills: string[]; tools: string[] };
-export type GisoolConfig = { port: number; captureLevel: CaptureLevel; retentionDays: number | null;
+export type SkillarConfig = { port: number; captureLevel: CaptureLevel; retentionDays: number | null;
   roots: { id: string; path: string }[]; runtimes: Partial<Record<RuntimeId, { enabled: boolean }>> };
 export type PackPlanFile = { path: string; before: string | null; after: string; mode: number };
 export type PackPlan = { files: PackPlanFile[]; commands: { argv: string[]; env?: Record<string, string>; description: string; undo?: { argv: string[]; description: string } }[];
   notes: string[]; conflicts: { path: string; code: string; detail: string }[] };
 export type PackCtx = { home: string; env: NodeJS.ProcessEnv; port: number; token: string; nodePath: string; packageRoot: string; disableRemote: boolean };
-export interface RuntimePack { id: RuntimeId; detect(ctx: { home: string; env: NodeJS.ProcessEnv }): Promise<{ installed: boolean; evidence: string[]; remoteGisulRegistered: boolean }>;
+export interface RuntimePack { id: RuntimeId; detect(ctx: { home: string; env: NodeJS.ProcessEnv }): Promise<{ installed: boolean; evidence: string[]; remoteSkillarRegistered: boolean }>;
   plan(ctx: PackCtx): Promise<PackPlan>;
   doctorChecks(ctx: { home: string; env: NodeJS.ProcessEnv; port: number }): Promise<{ name: string; ok: boolean; detail: string }[]> }
 // nodePath = realpath(process.execPath) captured at init; packageRoot = realpath of the installed local/ package; every planned command uses absolute paths
-export type CliDeps = { config: GisoolConfig; home: string; gisoolHome: string; env: NodeJS.ProcessEnv; openStore(): Store };
+export type CliDeps = { config: SkillarConfig; home: string; skillarHome: string; env: NodeJS.ProcessEnv; openStore(): Store };
 export type ExportImportApi = { runExport(dir: string, opts: { withHistory: boolean }, deps: CliDeps): Promise<number>;
   runImport(dir: string, opts: { dryRun: boolean }, deps: CliDeps): Promise<number> };
 
@@ -187,7 +187,7 @@ export type FlowTree = { readonly id: string; readonly workspaceId: string; read
 export type FindingLabel = "found_top1" | "found_lower" | "loaded_outside_results" | "native_without_search" | "searched_none_used" | "no_search";
 // rank collapses candidates that are identical copies (same SKILL.md digest) into one rank; rawRank is the rank the search reported.
 export type FindingCandidate = { readonly uri: SkillUri; readonly name: string; readonly rank: number; readonly rawRank: number; readonly copies: number };
-// One skill a turn put to work: a gisool load ("load") or a native skill activation ("native", whose uri is unknown unless reported).
+// One skill a turn put to work: a skillar load ("load") or a native skill activation ("native", whose uri is unknown unless reported).
 // rankInSearch is the collapsed rank in the latest search before that use, null when no search preceded it or it was not among the candidates.
 export type FindingUsedSkill = { readonly uri: SkillUri | null; readonly name: string; readonly via: "load" | "native"; readonly ts: number;
   readonly rankInSearch: number | null };
@@ -227,8 +227,8 @@ export type FlowListQuery = { readonly from?: number; readonly to?: number; read
   readonly automated?: AutomatedMode;
   readonly cursor?: { readonly orderMs: number; readonly id: string } };
 // id addresses the entry in GET /api/flows/:id: a registered flow by its own id, an implicit workspace as "ws:<id>".
-// attribution counts the pane-to-session links behind `sessionIds`: herdr reported them, gisool inferred them from
-// cwd and time, or the pane has an agent session gisool has not matched to a session yet (unlinked).
+// attribution counts the pane-to-session links behind `sessionIds`: herdr reported them, skillar inferred them from
+// cwd and time, or the pane has an agent session skillar has not matched to a session yet (unlinked).
 export type FlowListEntry = { readonly id: string; readonly kind: "flow" | "workspace" | "outside_herdr"; readonly workspaceId: string;
   readonly tabId: string | null; readonly label: string | null; readonly registered: boolean;
   readonly spec: FlowSpecRef | null; readonly startedMs: number | null; readonly endedMs: number | null;
@@ -239,7 +239,7 @@ export type FlowListDto = { readonly generatedAt: number; readonly from: number 
   readonly limit: number; readonly automated: AutomatedMode; readonly flows: readonly FlowListEntry[];
   // The cursor that returns the next page, or null when this page ended the list.
   readonly nextCursor: string | null };
-// The API name of TurnFinding.loadedSkills: a turn's skill uses, each one a gisool load or a native activation
+// The API name of TurnFinding.loadedSkills: a turn's skill uses, each one a skillar load or a native activation
 // (via "native"), so a natively used skill is never reported as a loaded one.
 export type TurnFindingDto = Omit<TurnFinding, "loadedSkills"> & { readonly usedSkills: readonly FindingUsedSkill[] };
 export type SessionFindingDto = { readonly sessionId: string; readonly turns: readonly TurnFindingDto[]; readonly aggregate: FindingAggregate };

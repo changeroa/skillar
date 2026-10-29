@@ -1,7 +1,7 @@
 {
-  "name": "gisool",
+  "name": "skillar",
   "version": "0.1.0",
-  "description": "Capture OpenClaw prompts and expose the local gisool skill router.",
+  "description": "Capture OpenClaw prompts and expose the local skillar skill router.",
   "author": {
     "name": "ARKPOINT"
   },

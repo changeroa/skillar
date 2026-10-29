@@ -1,26 +1,26 @@
 # Skill tracing
 
-gisool joins agent telemetry to herdr panes and compares observed skill use with an orchestrator's intended
+skillar joins agent telemetry to herdr panes and compares observed skill use with an orchestrator's intended
 workflow. Analysis is computed from stored events when a report is read. It observes; it does not judge with
 an LLM, restrict skill choices, or send input to panes.
 
 ## Requirements
 
-herdr is required. Start herdr and run `gisool doctor` (or `gisool doctor --json`). The `herdr` check discovers
-the socket through `herdr status server` and sends a ping; `GISOOL_HERDR_SOCKET` overrides socket discovery.
+herdr is required. Start herdr and run `skillar doctor` (or `skillar doctor --json`). The `herdr` check discovers
+the socket through `herdr status server` and sends a ping; `SKILLAR_HERDR_SOCKET` overrides socket discovery.
 A missing herdr command, unavailable socket, or invalid ping reply fails the check with `herdr_unavailable`;
 doctor exits 1 if any check fails.
 
 If herdr is unreachable, the daemon keeps collecting sessions and serving MCP and existing views. New panes
 and sessions requiring live discovery are not linked until sync reconnects and reconciles. Previously stored
-pane/session links and reports remain available, including with `GISOOL_HERDR=off`. A session skill report
+pane/session links and reports remain available, including with `SKILLAR_HERDR=off`. A session skill report
 can be read without a herdr link. Workspaces also shows these sessions as **outside herdr**; herdr being
 unavailable does not hide ingested sessions from the flows list.
 
 ## What is collected
 
 These fields were observed in captures of Claude Code 2.1.273 and Codex CLI 0.162.1 on October 14, 2026.
-The table describes what gisool keeps, not every field those agents export.
+The table describes what skillar keeps, not every field those agents export.
 
 | Agent / channel | Records kept | Available measurements and identity |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ telemetry beta. Claude traces from the verification experiment are not a pack re
 
 `codex.api_request` is deliberately ignored: the captured records have neither a session nor a timestamp
 identity for attribution. Hook lifecycle, tool-decision and connection noise is also ignored; unknown log
-event names are counted rather than stored. gisool MCP searches, `SKILL.md` loads and supporting-file reads
+event names are counted rather than stored. skillar MCP searches, `SKILL.md` loads and supporting-file reads
 are separate observations, not tool-result guesses.
 
 ## Pane and turn joins
@@ -106,15 +106,15 @@ than one skill span; these are observations of shared activity, not exclusive ca
 
 ## Orchestrator protocol
 
-Use the daemon port from `~/.gisool/config.json` (default 8799) and the bearer token from `~/.gisool/token`.
-With `GISOOL_HOME`, use that directory instead. The following examples use `jq` to construct JSON.
+Use the daemon port from `~/.skillar/config.json` (default 8799) and the bearer token from `~/.skillar/token`.
+With `SKILLAR_HOME`, use that directory instead. The following examples use `jq` to construct JSON.
 Use actual workspace, tab and pane IDs returned by herdr, not their display positions.
 
 ```sh
-GISOOL_HOME="${GISOOL_HOME:-$HOME/.gisool}"
-PORT=$(jq -r '.port // 8799' "$GISOOL_HOME/config.json")
+SKILLAR_HOME="${SKILLAR_HOME:-$HOME/.skillar}"
+PORT=$(jq -r '.port // 8799' "$SKILLAR_HOME/config.json")
 BASE="http://127.0.0.1:${PORT:-8799}"
-TOKEN=$(cat "$GISOOL_HOME/token")
+TOKEN=$(cat "$SKILLAR_HOME/token")
 ```
 
 1. Before opening panes, register a spec with `POST /api/workflows`:
@@ -182,7 +182,7 @@ TOKEN=$(cat "$GISOOL_HOME/token")
    `alreadyEnded:true`. A new flow can then start on that tab. End deliberately interrupted runs too;
    do not close unrelated flows.
 
-If tracing is unavailable, continue useful orchestration and record the gap. gisool registration is
+If tracing is unavailable, continue useful orchestration and record the gap. skillar registration is
 observation, not permission to run tools or enforcement of the declared skills.
 
 ## Read reports
@@ -238,10 +238,10 @@ discovery evidence, not task correctness. Their turn membership relies on the re
 
 ### Usage signals
 
-Each span reports `followThrough` (non-gisool tool calls after activation; zero means no action),
-`skillToolCalls` (gisool MCP calls, counted separately), `toolFailures` (including failed gisool calls),
+Each span reports `followThrough` (non-skillar tool calls after activation; zero means no action),
+`skillToolCalls` (skillar MCP calls, counted separately), `toolFailures` (including failed skillar calls),
 `supportingReads`, `durationMs` (activation to turn end), `llmCalls`, tokens, cost and attribution counts/share.
-Supporting reads are `reported` for gisool file reads or `heuristic` for native-skill tool argument paths.
+Supporting reads are `reported` for skillar file reads or `heuristic` for native-skill tool argument paths.
 Calling a file path a supporting read does not establish that the agent followed its instructions.
 
 Each span and each per-skill aggregate also carries an `activity` block (`version: 1`) that breaks the
