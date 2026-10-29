@@ -136,6 +136,26 @@ skillar import ~/skillar-backup                  # merge; existing keys are kept
 
 Import never overwrites existing settings. Run `skillar init` afterwards to connect the runtimes on the new machine.
 
+### Repair historical load attribution
+
+After an upgrade or history import, explicitly reconcile pending loads against evidence already in the database:
+
+```sh
+skillar repair-loads --from 1800000000000 --to 1800000000100 --limit 100 --json
+skillar repair-loads --from 1800000000000 --to 1800000000100 --limit 100 --after <next-event-id> --json
+```
+
+`--from` and `--to` are required epoch milliseconds, selecting `[from,to)`. Each invocation examines at most
+`--limit` pending loads (default 100, maximum 1000), ordered by timestamp and local recording order.
+Optional `--session <id>...` restricts the candidate sessions; it does not force attribution to them.
+The JSON result contains `examined`, `repaired`, `pending` within this batch, and `next`. Continue with
+`--after` while `next` is non-null, keeping the same range and session scope. Cursors also advance past
+ambiguous loads; they are event IDs for this database, not portable recording-order guarantees.
+
+Only uniquely supported evidence repairs a load. Missing captured text and multiple candidates remain pending;
+retained URI proof survives retention, and later contradictory evidence can still retract an attribution.
+Re-running the command is safe. It does not ingest new events, change capture settings, or make GET reports write.
+
 ## Settings
 
 `~/.skillar/config.json` (created on first run, mode 0600). `SKILLAR_HOME` selects a different home; it does not move existing data. Legacy home/database selection follows the [migration guide](https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md#local-state-and-configuration).
