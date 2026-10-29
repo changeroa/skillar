@@ -26,7 +26,7 @@ test("a long-running open pane backfills history without rebuilding unchanged li
   db.exec("BEGIN");
   for (let i = 0; i < 2000; i++) insert.run(`s${i}`, now - 72 * hour + i * 1000, now - 72 * hour + i * 1000 + 500);
   db.exec("COMMIT");
-  const sync = startHerdrSync(db, { env: { GISOOL_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
+  const sync = startHerdrSync(db, { env: { SKILLAR_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
   t.after(() => { sync.close(); db.close(); });
   sync.linkSessions();
   assert.equal(db.prepare("SELECT count(*) n FROM pane_sessions").get().n, 2000);
@@ -65,7 +65,7 @@ test("linking revisits only eligible lifetimes and touched sessions, preserving 
     CREATE TEMP TABLE deleted_links (id TEXT);
     CREATE TEMP TRIGGER record_delete AFTER DELETE ON pane_sessions BEGIN INSERT INTO deleted_links VALUES (old.session_id); END;`);
   const sql = captureSql(db);
-  const sync = startHerdrSync(db, { env: { GISOOL_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
+  const sync = startHerdrSync(db, { env: { SKILLAR_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
   t.after(() => { sync.close(); db.close(); });
   // When a periodic pass runs, then a batch explicitly touches an old session.
   sync.linkSessions();
@@ -99,7 +99,7 @@ test("reported linking uses runtime-scoped identities rather than another runtim
   db.exec(`INSERT INTO sessions (id,runtime,runtime_session_id,started_at) VALUES
     ('wrong','codex','shared',1), ('right','claude-code','shared',2);
     INSERT INTO pane_sessions (pane_id,agent,source,agent_session_value) VALUES ('p','claude','herdr:hook','shared');`);
-  const sync = startHerdrSync(db, { env: { GISOOL_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
+  const sync = startHerdrSync(db, { env: { SKILLAR_HERDR_SOCKET: "/tmp/gst-performance-absent.sock" }, log() {} });
   t.after(() => { sync.close(); db.close(); });
   sync.linkSessions();
   assert.equal(db.prepare("SELECT session_id FROM pane_sessions").get().session_id, "right");
@@ -144,7 +144,7 @@ test("ingest notifications carry touched session ids including binding-only hook
   const deps = createIngestDeps(store, { now: () => 100, sessionChanged: (id) => touched.push(id) });
   const ref = { runtime: "claude-code", runtimeSessionId: "binding" };
   ingest({ id: "event", ts: 100, kind: "prompt", source: "hook", ref, data: {} }, deps);
-  ingestHook("claude-code", { hook_event_name: "PostToolUse", tool_name: "mcp__gisool__search_skills",
+  ingestHook("claude-code", { hook_event_name: "PostToolUse", tool_name: "mcp__skillar__search_skills",
     tool_use_id: "tool", session_id: "binding", cwd: "/updated" }, deps);
   const id = db.prepare("SELECT id FROM sessions").get().id;
   assert.deepEqual(touched, [id, id]);

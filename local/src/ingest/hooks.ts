@@ -82,7 +82,7 @@ function claudeCode(p: Raw, ts: number): HookResult {
       const toolName = str(p.tool_name);
       const input = obj(p.tool_input);
       const toolUseId = str(p.tool_use_id);
-      if (toolName?.startsWith("mcp__gisool__")) {
+      if ((toolName?.startsWith("mcp__skillar__") || toolName?.startsWith("mcp__gisool__"))) {
         if (toolUseId && ref.runtimeSessionId) bindings.push({ toolUseId, ref });
       } else if (toolName === "Skill") {
         const name = str(input?.skill) ?? str(input?.skill_name) ?? str(input?.name);

@@ -24,8 +24,8 @@ export type OtlpError = { ok: false; status: 400; error: { code: "bad_otlp"; mes
 export type OtlpResult = OtlpOk | OtlpError;
 
 /**
- * Known event names gisool deliberately does not store: they carry no model call, tool run or skill signal.
- * They count as `ignored`, never as `unknown`, so `ingest.dropped` keeps meaning "gisool did not understand this".
+ * Known event names skillar deliberately does not store: they carry no model call, tool run or skill signal.
+ * They count as `ignored`, never as `unknown`, so `ingest.dropped` keeps meaning "skillar did not understand this".
  * `codex.api_request` belongs here because it carries neither a session nor a timestamp id and cannot be attributed.
  */
 const IGNORED_NAMES = new Set([
@@ -158,7 +158,7 @@ function claudeToolResult(attrs: Attrs, ref: SessionRef, ts: number, turnKey: st
   const params = parseJsonObject(attrs.tool_parameters) ?? {};
   const input = parseJsonObject(attrs.tool_input) ?? {};
   const mcpServer = str(attrs.mcp_server_name) ?? str(params.mcp_server_name) ?? "";
-  const gisoolMcp = mcpServer.toLowerCase() === "gisool" || isGisoolCall(toolName, input) || isGisoolCall(toolName, params);
+  const skillarMcp = ["skillar", "gisool"].includes(mcpServer.toLowerCase()) || isSkillarCall(toolName, input) || isSkillarCall(toolName, params);
   const toolUseId = str(attrs.tool_use_id);
   const extra: Partial<CanonicalEvent> = { ...(toolUseId ? { toolUseId } : {}), ...(turnKey ? { turnKey } : {}) };
   // The arguments go in `text` so applyCapture, redaction and retention treat them exactly like prompt content.
@@ -168,17 +168,17 @@ function claudeToolResult(attrs: Attrs, ref: SessionRef, ts: number, turnKey: st
     ...(args !== undefined ? { text: args } : {}),
     data: compact({
       toolName: toolName ?? "unknown", success: bool(attrs.success), durationMs: num(attrs.duration_ms), toolUseId,
-      inputBytes: num(attrs.tool_input_size_bytes), resultBytes: num(attrs.tool_result_size_bytes), ...(gisoolMcp ? { gisoolMcp: true } : {}),
+      inputBytes: num(attrs.tool_input_size_bytes), resultBytes: num(attrs.tool_result_size_bytes), ...(skillarMcp ? { skillarMcp: true } : {}),
     }),
   });
-  // A gisool MCP call is recorded in full by the MCP recorder (search/load/read_file); this row is only the
+  // A skillar MCP call is recorded in full by the MCP recorder (search/load/read_file); this row is only the
   // Claude-side view of that tool run and derives no skill reads of its own.
-  if (gisoolMcp) return [derive(call)];
+  if (skillarMcp) return [derive(call)];
   return [derive(call), ...claudeSkillReads(attrs, ref, ts, extra)];
 }
 
-function isGisoolCall(toolName: string | undefined, args: Attrs): boolean {
-  return (toolName?.startsWith("mcp__gisool__") ?? false) || str(args.server)?.toLowerCase() === "gisool";
+function isSkillarCall(toolName: string | undefined, args: Attrs): boolean {
+  return ((toolName?.startsWith("mcp__skillar__") || toolName?.startsWith("mcp__gisool__")) ?? false) || ["skillar", "gisool"].includes(str(args.server)?.toLowerCase() ?? "");
 }
 
 function claudeRecord(name: string, attrs: Attrs, ts: number): Derived[] | "ignored" | "unknown" {
@@ -228,7 +228,7 @@ function codexRecord(name: string, attrs: Attrs, ts: number): Derived[] | "ignor
       return [derive(makeEvent("prompt", "otel", ref, ts, { ...turn, ...(text !== undefined ? { text } : { data: { promptUnavailable: true } }) }))];
     }
     case "codex.sse_event": {
-      // Only the completion event carries the turn's usage; every other SSE kind is noise for gisool.
+      // Only the completion event carries the turn's usage; every other SSE kind is noise for skillar.
       if (str(attrs["event.kind"]) !== "response.completed") return "ignored";
       return [derive(makeEvent("llm_call", "otel", ref, ts, {
         ...turn,
@@ -245,12 +245,12 @@ function codexRecord(name: string, attrs: Attrs, ts: number): Derived[] | "ignor
       const callId = str(attrs.call_id);
       const args = str(attrs.arguments);
       const toolName = str(attrs.tool_name);
-      const gisoolMcp = isGisoolCall(toolName, parseJsonObject(args) ?? {})
-        || str(attrs.mcp_server_name)?.toLowerCase() === "gisool";
+      const skillarMcp = isSkillarCall(toolName, parseJsonObject(args) ?? {})
+        || ["skillar", "gisool"].includes(str(attrs.mcp_server_name)?.toLowerCase() ?? "");
       return [derive(makeEvent("tool_call", "otel", ref, ts, {
         ...turn, ...(callId ? { callId } : {}), ...(args !== undefined ? { text: args } : {}),
         data: compact({ toolName: toolName ?? "unknown", success: bool(attrs.success), durationMs: num(attrs.duration_ms),
-          ...(gisoolMcp ? { gisoolMcp: true } : {}) }),
+          ...(skillarMcp ? { skillarMcp: true } : {}) }),
       }))];
     }
     case "codex.skill_invocation": {

@@ -16,7 +16,7 @@ import {
   STEP_STATUS_LABEL, STEP_STATUS_TITLE, buildHash, type Route, type ViewProps,
 } from "../state";
 
-// Workspaces view (todo 11): the herdr flows gisool knows, and what the agents inside them did.
+// Workspaces view (todo 11): the herdr flows skillar knows, and what the agents inside them did.
 // The list is one cheap call (GET /api/flows); the found/used summary per row is that flow's report, read after the
 // list paints, SUMMARY_CONCURRENCY at a time, so a slow analysis never blocks the page. A flow report is computed on
 // read, so the detail view shows the snapshot time and refreshes on request, never on a timer.
@@ -161,7 +161,7 @@ export function spanFacts(span: Pick<SkillSpan, "startedAt" | "endedAt">, usage:
   ];
   if (usage.activity.commands > 0) facts.push({ key: "commands", value: usage.activity.commands });
   if (usage.activity.unresolvedExec > 0) facts.push({ key: "unresolvedExec", value: usage.activity.unresolvedExec });
-  if (usage.skillToolCalls > 0) facts.push({ key: "gisoolCalls", value: usage.skillToolCalls });
+  if (usage.skillToolCalls > 0) facts.push({ key: "skillarCalls", value: usage.skillToolCalls });
   if (usage.toolFailures > 0) facts.push({ key: "failed", value: usage.toolFailures });
   if (usage.supportingReads.length > 0) facts.push({ key: "reads", value: usage.supportingReads.length });
   facts.push({ key: "cost", value: usage.costUsd });
@@ -265,8 +265,8 @@ function ListEmpty({ filtered, route, navigate }: { filtered: boolean; route: Ro
     <section class="empty">
       <h2>No herdr workspaces recorded</h2>
       <p>
-        gisool groups sessions by the herdr pane they ran in. Start a herdr workspace and run an agent in one of its
-        panes, or run <code class="cmd">gisool doctor</code> to check the herdr connection.
+        skillar groups sessions by the herdr pane they ran in. Start a herdr workspace and run an agent in one of its
+        panes, or run <code class="cmd">skillar doctor</code> to check the herdr connection.
       </p>
     </section>
   );
@@ -442,7 +442,7 @@ export function Session({ link, session, route, findings, usageBySpan, flow, pan
         <Runtime runtime={session.runtime} />
         <a class="sess__link" href={buildHash({ view: "trace", sessionId: session.id, filter: route.filter })}>Open trace</a>
         <time class="sess__when" dateTime={new Date(session.startedAt).toISOString()}>{formatStarted(session.startedAt)}</time>
-        <span class="tag" title={link ? link.basis === "reported" ? "herdr reported this pane's agent session" : "herdr did not report it; gisool inferred it from cwd and time" : "no herdr pane is linked to this session"}>
+        <span class="tag" title={link ? link.basis === "reported" ? "herdr reported this pane's agent session" : "herdr did not report it; skillar inferred it from cwd and time" : "no herdr pane is linked to this session"}>
           {link?.basis ?? "outside herdr"}
         </span>
         <span class="sess__meta">{session.turns.length} {session.turns.length === 1 ? "turn" : "turns"}</span>
@@ -508,7 +508,7 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
                           link.session === null
                             ? (
                               <p key={link.agentSessionValue} class="dim" data-unlinked={link.agentSessionValue}>
-                                Agent session <code class="cmd">{link.agentSessionValue}</code> is not matched to a gisool session yet.
+                                Agent session <code class="cmd">{link.agentSessionValue}</code> is not matched to a skillar session yet.
                               </p>
                             )
                             : <Session key={link.session.id} link={link} session={link.session} route={route} findings={findings} usageBySpan={usageBySpan}

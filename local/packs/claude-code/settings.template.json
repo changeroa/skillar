@@ -11,7 +11,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Skill|mcp__gisool__.*",
+        "matcher": "Skill|mcp__(skillar|gisool)__.*",
         "hooks": [{ "type": "command", "command": "\"{{NODE}}\" \"{{HOOK}}\" claude-code", "timeout": 5 }]
       }
     ],

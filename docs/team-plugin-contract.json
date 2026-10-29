@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "objective": "Distribute Gisul through an ARKPOINT Git-backed Codex marketplace with first-use authentication, without requiring an OpenAI team workspace.",
+  "objective": "Distribute Skillar through an ARKPOINT Git-backed Codex marketplace with first-use authentication, without requiring an OpenAI team workspace.",
   "status": "in_progress",
   "requirements": [
     {
@@ -88,9 +88,9 @@
     "Cloudflare scoped API token for Worker GitHub Actions deployment",
     "Mac mini client migration; machine client access has not been available"
   ],
-  "canonical_working_path": "/Users/victor/projects/gisul",
-  "content_working_path": "/Users/victor/projects/arkpoint-gisul-skills",
-  "worktree_cleanup": "Temporary worktree /Users/victor/projects/gisul-team-plugin removed after committed changes were fast-forwarded to /Users/victor/projects/gisul and pushed to Ark-Point/gisul.",
+  "canonical_working_path": "/Users/victor/projects/skillar",
+  "content_working_path": "/Users/victor/projects/arkpoint-iyen-skills",
+  "worktree_cleanup": "Temporary worktree /Users/victor/projects/skillar-team-plugin removed after committed changes were fast-forwarded to /Users/victor/projects/skillar and pushed to Ark-Point/skillar.",
   "deployment": {
     "requested": true,
     "status": "deployed",

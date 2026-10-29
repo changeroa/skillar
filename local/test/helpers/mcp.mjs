@@ -71,7 +71,7 @@ export function seedSkills(root) {
     frontmatter: { license: "Apache-2.0", metadata: { owner: "release-team", tier: "2", "io.modelcontextprotocol/future": "ignored" }, "allowed-tools": "Bash(git:*)" } });
 }
 export async function startDaemon(dir, opts = {}) {
-  const db = openDb(join(dir, "gisool.db"));
+  const db = openDb(join(dir, "skillar.db"));
   const store = createStore(db);
   const search = createSearchIndex(db);
   const catalog = createCatalog({ roots: [{ id: "agents", path: join(dir, "skills") }], log: () => {} });
@@ -98,7 +98,7 @@ export async function startDaemon(dir, opts = {}) {
   };
 }
 export async function withDaemon(fn, opts) {
-  const dir = makeTempDir("gisool-mcp-");
+  const dir = makeTempDir("skillar-mcp-");
   seedSkills(join(dir, "skills"));
   const daemon = await startDaemon(dir, opts);
   try { await fn(daemon, dir); } finally { await daemon.stop(); removeDir(dir); }

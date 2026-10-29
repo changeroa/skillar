@@ -53,3 +53,8 @@ export function isRemoteEntry(entry: unknown, urlKeys: string[]): boolean {
     }
   });
 }
+
+/** Keep a legacy local registration's key so init never adds a second provider. */
+export function localServerName(servers: JsonObject): "skillar" | "gisool" {
+  return !Object.hasOwn(servers, "skillar") && isObject(servers.gisool) && !isRemoteEntry(servers.gisool, ["url", "httpUrl"]) ? "gisool" : "skillar";
+}

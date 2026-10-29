@@ -39,12 +39,12 @@ test("cursor plan keeps an unrelated mcp.json server and writes hooks.json with 
     const mcp = afterOf(plan, join(cursorDir, "mcp.json"));
     assert.deepEqual(mcp.mcpServers.other, { command: "x" });
     assert.equal(mcp.keep, true);
-    assert.equal(mcp.mcpServers.gisool.url, "http://127.0.0.1:8799/mcp");
-    assert.equal(mcp.mcpServers.gisool.headers.Authorization, `Bearer ${"t".repeat(64)}`);
+    assert.equal(mcp.mcpServers.skillar.url, "http://127.0.0.1:8799/mcp");
+    assert.equal(mcp.mcpServers.skillar.headers.Authorization, `Bearer ${"t".repeat(64)}`);
     const hooks = afterOf(plan, join(cursorDir, "hooks.json"));
     assert.equal(hooks.version, 1);
     for (const event of ["beforeSubmitPrompt", "sessionStart", "sessionEnd"]) {
-      assert.equal(hooks.hooks[event].length, 1, `${event} has one gisool hook`);
+      assert.equal(hooks.hooks[event].length, 1, `${event} has one skillar hook`);
       assert.match(hooks.hooks[event][0].command, /hook-post\.mjs" cursor$/);
     }
     const existingMode = statSync(join(cursorDir, "mcp.json")).mode & 0o777;
@@ -62,7 +62,7 @@ test("gemini plan writes the MCP entry and BeforeAgent plus AfterTool hooks with
     const plan = await geminiPack.plan(ctxFor(sb));
     assert.deepEqual(plan.conflicts, []);
     const settings = afterOf(plan, join(sb.home, ".gemini", "settings.json"));
-    assert.equal(settings.mcpServers.gisool.httpUrl, "http://127.0.0.1:8799/mcp");
+    assert.equal(settings.mcpServers.skillar.httpUrl, "http://127.0.0.1:8799/mcp");
     assert.equal(settings.hooks.BeforeAgent[0].hooks[0].timeout, 5000);
     assert.equal(settings.hooks.AfterTool[0].matcher, "activate_skill");
     assert.equal(settings.hooks.AfterTool[0].hooks[0].timeout, 5000);

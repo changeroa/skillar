@@ -57,7 +57,7 @@ test("stdio modern flow forwards per-request identity metadata caching and proto
     const legacy = (method, params) => rpc(method, { _meta: undefined, ...params });
     const init = await legacy("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "openclaw-mcp", version: "1" } });
     assert.equal(init.result.protocolVersion, "2025-06-18");
-    assert.equal(init.result.serverInfo.name, "gisool");
+    assert.equal(init.result.serverInfo.name, "skillar");
     assert.equal("resultType" in init.result, false);
     child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
     const legacyTools = (await legacy("tools/list")).result;

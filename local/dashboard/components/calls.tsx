@@ -1,3 +1,4 @@
+import { isSkillarMcpData } from "../../src/ingest/identity.js";
 import { useState } from "preact/hooks";
 import type { UsageTokenKey, UsageTokens } from "../../src/analysis/usage.js";
 import type { AssignedTreeEvent } from "../../src/types.js";
@@ -71,7 +72,7 @@ export type CallRow = {
   tokens: TokenPart[];
   /** Cost of a model call, "unknown" when it reported none; null on a tool call, which never carries one. */
   cost: string | null;
-  gisoolMcp: boolean;
+  skillarMcp: boolean;
 };
 
 export function isCall(event: Pick<AssignedTreeEvent, "kind">): boolean {
@@ -89,7 +90,7 @@ export function callRow(event: Pick<AssignedTreeEvent, "id" | "kind" | "data">):
     success: tool && typeof data.success === "boolean" ? data.success : null,
     tokens: tool ? [] : callTokenParts(data),
     cost: tool ? null : formatCostUsd(numberOf(data.costUsd)),
-    gisoolMcp: data.gisoolMcp === true,
+    skillarMcp: isSkillarMcpData(data),
   };
 }
 
@@ -121,7 +122,7 @@ export function CallList({ rows }: { rows: CallRow[] }) {
         {shown.map((row) => (
           <li key={row.id} class="call" data-kind={row.kind}>
             <span class="call__name">{row.name}</span>
-            {row.gisoolMcp && <span class="tag" title="a call to gisool's own MCP server">gisool</span>}
+            {row.skillarMcp && <span class="tag" title="a call to skillar's own MCP server">skillar</span>}
             {row.kind === "tool_call" && (
               row.success === null
                 ? <span class="tag tag--dim">outcome {UNKNOWN}</span>

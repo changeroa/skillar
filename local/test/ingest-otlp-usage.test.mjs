@@ -145,7 +145,7 @@ test("capture level metadata keeps tool arguments out of the store while full ca
   assert.equal(rows(full.db, "kind = 'tool_call'")[0].text, args);
 });
 
-test("sessions() ignores model calls and tool runs, and ingest.dropped only counts events gisool did not understand", () => {
+test("sessions() ignores model calls and tool runs, and ingest.dropped only counts events skillar did not understand", () => {
   const { db, store } = ingested(["claude-otlp-user-prompt.json", "claude-otlp-api-request.json", "claude-otlp-tool-result-bash-two-skills.json",
     "claude-otlp-ignored-events.json", "codex-otlp-ignored-events.json"]);
   const listed = store.sessions({});

@@ -2,12 +2,12 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
-import { DEFAULT_PORT, defaultConfigFile, ensureGisoolHome, expandHome, loadConfig, resolveGisoolHome, resolveHome } from "../config.js";
+import { DEFAULT_PORT, defaultConfigFile, ensureSkillarHome, expandHome, loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
 import { PACKS, getPack } from "../packs/registry.js";
-import type { GisoolConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
+import type { SkillarConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 import { assertPlatform } from "../version.js";
 import { type AppliedFile, WriterError, applyFiles, changedFiles, maskSecrets, removeEmptyDirs, restoreFiles, unifiedDiff, unparseable } from "./config-writer.js";
-import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath } from "./serve.js";
+import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
 export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean };
 export type InitHooks = { afterPlan?: () => void | Promise<void> };
@@ -21,10 +21,10 @@ export type BackupManifest = {
 
 // Planning never writes: a first run plans against default config and an in-memory token, and materialize() persists
 // both only once the apply starts, so dry runs and aborted runs leave HOME byte-identical.
-function readConfigForPlan(env: NodeJS.ProcessEnv): { config: GisoolConfig; token: string; materialize(): void } {
-  const gisoolHome = resolveGisoolHome(env);
-  const tokenPath = join(gisoolHome, "token");
-  const configPath = join(gisoolHome, "config.json");
+function readConfigForPlan(env: NodeJS.ProcessEnv): { config: SkillarConfig; token: string; materialize(): void } {
+  const skillarHome = resolveSkillarHome(env);
+  const tokenPath = join(skillarHome, "token");
+  const configPath = join(skillarHome, "config.json");
   if (existsSync(configPath) && existsSync(tokenPath)) {
     const config = loadConfig(env);
     return { config, token: readFileSync(tokenPath, "utf8").trim(), materialize: () => undefined };
@@ -36,13 +36,13 @@ function readConfigForPlan(env: NodeJS.ProcessEnv): { config: GisoolConfig; toke
     const parsed = JSON.parse(readFileSync(configPath, "utf8")) as { port?: unknown };
     if (typeof parsed.port === "number") port = parsed.port;
   }
-  const config: GisoolConfig = { port, captureLevel: d.captureLevel, retentionDays: d.retentionDays, roots: d.roots.map((r) => ({ id: r.id, path: expandHome(r.path, home) })), runtimes: {} };
+  const config: SkillarConfig = { port, captureLevel: d.captureLevel, retentionDays: d.retentionDays, roots: d.roots.map((r) => ({ id: r.id, path: expandHome(r.path, home) })), runtimes: {} };
   const token = existsSync(tokenPath) ? readFileSync(tokenPath, "utf8").trim() : randomBytes(32).toString("hex");
   return {
     config,
     token,
     materialize() {
-      ensureGisoolHome(env);
+      ensureSkillarHome(env);
       if (!existsSync(tokenPath)) {
         writeFileSync(tokenPath, token + "\n", { mode: 0o600, flag: "wx" });
         chmodSync(tokenPath, 0o600);
@@ -52,12 +52,12 @@ function readConfigForPlan(env: NodeJS.ProcessEnv): { config: GisoolConfig; toke
   };
 }
 
-export function backupsDir(gisoolHome: string): string {
-  return join(gisoolHome, "backups");
+export function backupsDir(skillarHome: string): string {
+  return join(skillarHome, "backups");
 }
 
-function newBackupDir(gisoolHome: string): string {
-  const root = backupsDir(gisoolHome);
+function newBackupDir(skillarHome: string): string {
+  const root = backupsDir(skillarHome);
   mkdirSync(root, { recursive: true, mode: 0o700 });
   const stamp = new Date().toISOString().replace(/[-:.]/g, "");
   let dir = join(root, stamp);
@@ -66,8 +66,8 @@ function newBackupDir(gisoolHome: string): string {
   return dir;
 }
 
-export function listBackupSets(gisoolHome: string): { dir: string; manifest: BackupManifest }[] {
-  const root = backupsDir(gisoolHome);
+export function listBackupSets(skillarHome: string): { dir: string; manifest: BackupManifest }[] {
+  const root = backupsDir(skillarHome);
   if (!existsSync(root)) return [];
   return readdirSync(root)
     .sort()
@@ -108,7 +108,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   assertPlatform();
   if (opts.rollback) return runRollback({ all: opts.all ?? false }, env, io);
   const home = resolveHome(env);
-  const gisoolHome = resolveGisoolHome(env);
+  const skillarHome = resolveSkillarHome(env);
   const { config, token, materialize } = readConfigForPlan(env);
   const mask = (t: string) => maskSecrets(t, [token]);
   const ctx: PackCtx = { home, env, port: config.port, token, nodePath: nodePath(), packageRoot: packageRoot(), disableRemote: opts.disableRemote ?? false };
@@ -123,7 +123,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     }
     for (const pack of PACKS) {
       const d = await pack.detect({ home, env });
-      io.out(`runtime ${pack.id}: ${d.installed ? `detected (${d.evidence.join(", ")})` : "not detected"}; remoteGisulRegistered=${d.remoteGisulRegistered}\n`);
+      io.out(`runtime ${pack.id}: ${d.installed ? `detected (${d.evidence.join(", ")})` : "not detected"}; remoteSkillarRegistered=${d.remoteSkillarRegistered}\n`);
       const wanted = requested.ok.length ? requested.ok.includes(pack) : d.installed && config.runtimes[pack.id]?.enabled !== false;
       if (wanted) selected.push(pack);
     }
@@ -139,7 +139,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   }
   let serviceFile: string | null = null;
   if (!opts.noService) {
-    const svc = planService({ home, gisoolHome, env, nodePath: ctx.nodePath, packageRoot: ctx.packageRoot, platform: currentServicePlatform(), uid: process.getuid?.() ?? 0 });
+    const svc = planService({ home, skillarHome, env, nodePath: ctx.nodePath, packageRoot: ctx.packageRoot, platform: currentServicePlatform(), uid: process.getuid?.() ?? 0 });
     plans.push({ id: "service", plan: { files: [svc.file], commands: svc.commands, notes: svc.notes, conflicts: [] } });
     serviceFile = svc.file.path;
   }
@@ -175,8 +175,8 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
 
   await hooks.afterPlan?.();
   materialize();
-  const backupDir = newBackupDir(gisoolHome);
-  if (serviceFile) mkdirSync(join(gisoolHome, "logs"), { recursive: true, mode: 0o700 });
+  const backupDir = newBackupDir(skillarHome);
+  if (serviceFile) mkdirSync(join(skillarHome, "logs"), { recursive: true, mode: 0o700 });
   let applied;
   try {
     applied = applyFiles(files, { backupDir, home });
@@ -204,7 +204,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     }
   }
   writeManifest(backupDir, manifest);
-  if (applied.files.some((f) => f.path === serviceFile)) io.out(`service log: ${daemonLogPath(gisoolHome)}\n`);
+  if (applied.files.some((f) => f.path === serviceFile)) io.out(`service log: ${daemonLogPath(skillarHome)}\n`);
   io.out(`applied ${applied.files.length} file(s) and ${manifest.commands.length} command(s); backup set ${backupDir}\n`);
   return 0;
 }
@@ -213,8 +213,8 @@ function undoRun(manifest: BackupManifest, dir: string, env: NodeJS.ProcessEnv, 
   const commands: RecordedCommand[] = [];
   for (const c of [...manifest.commands].reverse()) {
     if (c.exitCode !== 0 || !c.undo) continue;
-    if (env.GISOOL_NO_CLI) {
-      io.err(`GISOOL_NO_CLI set: run manually: ${c.undo.argv.join(" ")}\n`);
+    if ((env.SKILLAR_NO_CLI ?? env.GISOOL_NO_CLI)) {
+      io.err(`SKILLAR_NO_CLI set: run manually: ${c.undo.argv.join(" ")}\n`);
       commands.push({ argv: c.undo.argv, description: c.undo.description, exitCode: null });
       continue;
     }
@@ -226,8 +226,8 @@ function undoRun(manifest: BackupManifest, dir: string, env: NodeJS.ProcessEnv, 
 }
 
 export async function runRollback(opts: { all: boolean }, env: NodeJS.ProcessEnv, io: Io): Promise<number> {
-  const gisoolHome = resolveGisoolHome(env);
-  const sets = listBackupSets(gisoolHome).filter(
+  const skillarHome = resolveSkillarHome(env);
+  const sets = listBackupSets(skillarHome).filter(
     (s) => s.manifest.status === "applied" && !s.manifest.rolledBackAt && (s.manifest.files.length > 0 || s.manifest.commands.length > 0),
   );
   if (sets.length === 0) {
@@ -267,9 +267,9 @@ export async function serviceRemove(env: NodeJS.ProcessEnv, io: Io): Promise<num
     return 0;
   }
   const argv = platform === "darwin"
-    ? ["launchctl", "bootout", `gui/${process.getuid?.() ?? 0}/dev.gisool.daemon`]
-    : ["systemctl", "--user", "disable", "--now", "gisool.service"];
-  if (env.GISOOL_NO_CLI) io.out(`GISOOL_NO_CLI set: run manually: ${argv.join(" ")}\n`);
+    ? ["launchctl", "bootout", `gui/${process.getuid?.() ?? 0}/${serviceLabel(home, platform)}`]
+    : ["systemctl", "--user", "disable", "--now", `${serviceLabel(home, platform)}.service`];
+  if ((env.SKILLAR_NO_CLI ?? env.GISOOL_NO_CLI)) io.out(`SKILLAR_NO_CLI set: run manually: ${argv.join(" ")}\n`);
   else run(argv, env, io);
   rmSync(path, { force: true });
   io.out(`removed ${path}\n`);

@@ -1,3 +1,4 @@
+import { isSkillarMcpData } from "../ingest/identity.js";
 import type { AssignedTreeEvent, Filter, RuntimeId, SessionTree, SkillSpan, Store, TreeEvent, TurnTree } from "../types.js";
 import { flowTree, sessionTree } from "./tree.js";
 
@@ -22,7 +23,7 @@ export type UsageTokens = {
   readonly unknownCalls: Readonly<Record<UsageTokenKey, number>>;
 };
 
-/** A read of the skill's own files: `reported` comes from gisool MCP, `heuristic` from a tool argument path. */
+/** A read of the skill's own files: `reported` comes from skillar MCP, `heuristic` from a tool argument path. */
 export type SupportingRead = {
   readonly eventId: string; readonly kind: "read_file" | "tool_call"; readonly uri: string | null;
   readonly label: "reported" | "heuristic";
@@ -59,12 +60,12 @@ export type SpanActivity = {
 export type SkillSpanUsage = {
   readonly turnId: string; readonly spanId: string; readonly skill: string; readonly name: string; readonly uri: string | null;
   readonly activatedAt: number; readonly durationMs: number;
-  // Tool calls after the activation, gisool MCP calls excluded; 0 means "loaded, no action". A call is not an outcome.
+  // Tool calls after the activation, skillar MCP calls excluded; 0 means "loaded, no action". A call is not an outcome.
   readonly followThrough: number;
   readonly activity: SpanActivity;
-  // gisool MCP calls (skill discovery and reading), reported apart from followThrough.
+  // skillar MCP calls (skill discovery and reading), reported apart from followThrough.
   readonly skillToolCalls: number;
-  // Failed tool calls, gisool MCP calls included.
+  // Failed tool calls, skillar MCP calls included.
   readonly toolFailures: number;
   readonly supportingReads: readonly SupportingRead[];
   readonly llmCalls: number;
@@ -305,7 +306,7 @@ function supportingReadsOf(span: SkillSpan, turn: TurnTree): SupportingRead[] {
   if (span.activation.kind !== "native_skill") return reads;
   const dirHint = skillDirHint(span);
   for (const event of span.events) {
-    if (event.kind !== "tool_call" || event.data.gisoolMcp === true) continue;
+    if (event.kind !== "tool_call" || isSkillarMcpData(event.data)) continue;
     if (argsReferenceSkillDir(event, span, dirHint)) {
       reads.push({ eventId: event.id, kind: "tool_call", uri: null, label: "heuristic" });
     }
@@ -342,7 +343,7 @@ export function spanUsage(span: SkillSpan, ctx: { turn: TurnTree; nextPrompt: Tr
     else if (event.attribution === "co_active") coActive += 1;
     else if (event.attribution === "single") single += 1;
     if (event.kind === "tool_call") {
-      if (event.data.gisoolMcp === true) skillToolCalls += 1;
+      if (isSkillarMcpData(event.data)) skillToolCalls += 1;
       else {
         followThrough += 1;
         const kind = activityKind(event, ctx.runtime);

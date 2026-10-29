@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { stringify } from "yaml";
 
 // Existing server tests must never discover or connect to the user's live herdr.
-process.env.GISOOL_HERDR = "off";
+process.env.SKILLAR_HERDR = "off";
 
 export const PACKAGE_ROOT = new URL("../", import.meta.url);
 
@@ -13,7 +13,7 @@ export function distImport(rel) {
   return import(new URL(`dist/${rel}`, PACKAGE_ROOT).href);
 }
 
-export function makeTempDir(prefix = "gisool-test-") {
+export function makeTempDir(prefix = "skillar-test-") {
   return mkdtempSync(join(tmpdir(), prefix));
 }
 
@@ -26,21 +26,21 @@ const UNSET = [
   "GJC_CODING_AGENT_DIR", "GJC_CONFIG_DIR", "PI_CONFIG_DIR",
 ];
 
-/** Env per the sandbox rule: fresh HOME, GISOOL_HOME inside it, GISOOL_NO_CLI=1, runtime config vars removed. */
+/** Env per the sandbox rule: fresh HOME, SKILLAR_HOME inside it, SKILLAR_NO_CLI=1, runtime config vars removed. */
 export function sandboxEnv(home, base = process.env) {
   const env = { ...base };
   for (const key of UNSET) delete env[key];
   for (const key of Object.keys(env)) if (key.startsWith("OPENCLAW_")) delete env[key];
   env.HOME = home;
-  env.GISOOL_HOME = join(home, ".gisool");
-  env.GISOOL_NO_CLI = "1";
-  env.GISOOL_HERDR = "off";
+  env.SKILLAR_HOME = join(home, ".skillar");
+  env.SKILLAR_NO_CLI = "1";
+  env.SKILLAR_HERDR = "off";
   return env;
 }
 
 /** Creates a sandbox HOME and returns { home, env, cleanup }. */
 export function makeSandbox() {
-  const home = makeTempDir("gisool-home-");
+  const home = makeTempDir("skillar-home-");
   return { home, env: sandboxEnv(home), cleanup: () => removeDir(home) };
 }
 

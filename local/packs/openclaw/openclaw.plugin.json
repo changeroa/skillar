@@ -1,7 +1,7 @@
 {
-  "id": "gisool",
-  "name": "gisool",
-  "description": "Capture OpenClaw prompts for the local gisool skill router.",
+  "id": "skillar",
+  "name": "skillar",
+  "description": "Capture OpenClaw prompts for the local skillar skill router.",
   "activation": {
     "onStartup": true
   },
@@ -10,12 +10,12 @@
     "additionalProperties": false
   },
   "mcpServers": {
-    "gisool": {
+    "skillar": {
       "transport": "stdio",
       "command": "__COMMAND__",
       "args": "__ARGS__",
       "env": {
-        "GISOOL_HOME": "__GISOOL_HOME__"
+        "SKILLAR_HOME": "__SKILLAR_HOME__"
       }
     }
   }

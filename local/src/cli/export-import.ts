@@ -61,7 +61,7 @@ export const runImport: ExportImportApi["runImport"] = async (dir, opts, deps) =
     store.importFrom(dir, { merge: true });
     console.log("import applied");
     await printDetection(deps);
-    console.log("next: run `gisool init`");
+    console.log("next: run `skillar init`");
     return 0;
   } catch (error) {
     return fail(error);

@@ -1,17 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
 import { toolCallReferencesUri, URI_WINDOW_MS } from "../ingest/attribution.js";
-import type { Attribution, CanonicalEvent, GisoolConfig, OtelSpanRow, RuntimeId, SessionRef, SkillEntry, SkillUri, Store } from "../types.js";
+import type { Attribution, CanonicalEvent, SkillarConfig, OtelSpanRow, RuntimeId, SessionRef, SkillEntry, SkillUri, Store } from "../types.js";
 
 /**
  * Optional wiring for createStore. `createStore(db)` alone serves ingest and queries;
- * export/import need `gisoolHome` (where config.json lives) and `home` (for "~" rewriting);
+ * export/import need `skillarHome` (where config.json lives) and `home` (for "~" rewriting);
  * `config.retentionDays === null` makes retention() a no-op.
  */
 export type StoreOptions = {
-  config?: GisoolConfig;
+  config?: SkillarConfig;
   home?: string;
-  gisoolHome?: string;
+  skillarHome?: string;
   /** Default IANA tz for Filter.dow/hour in sessions()/flow(); a Filter object may also carry an extra `tz` property. */
   tz?: string;
   now?: () => number;
@@ -100,7 +100,7 @@ export function createWrites(ctx: StoreCtx): Writes {
     id: string; ts: number; runtime: RuntimeId; skill_uri: string | null; data_json: string;
     session_id: string; attribution_method: string; attribution_reason: string | null;
   };
-  type ToolRow = { session_id: string; text: string | null; gisoolMcp: number | null };
+  type ToolRow = { session_id: string; text: string | null; skillarMcp: number | null };
   const pending = `e.source = 'mcp' AND e.kind = 'load' AND e.session_id = 'unattributed' AND e.attribution_reason = 'ambiguous'`;
   const recoverable = `e.source = 'mcp' AND e.kind = 'load' AND ((${pending})
     OR (e.attribution_method = 'trace_handle' AND json_extract(e.data_json, '$.attributionBasis') = 'tool_call_uri'))`;
@@ -108,7 +108,7 @@ export function createWrites(ctx: StoreCtx): Writes {
   const pendingInSessions = db.prepare(`SELECT DISTINCT e.* FROM json_each(?) s
     CROSS JOIN load_candidates c ON c.session_id = s.value AND c.ts >= ? AND c.ts < ?
     CROSS JOIN events e ON e.id = c.load_id WHERE ${pending}`);
-  const eventById = db.prepare(`SELECT *, json_extract(data_json, '$.gisoolMcp') AS gisoolMcp,
+  const eventById = db.prepare(`SELECT *, coalesce(json_extract(data_json, '$.skillarMcp'), json_extract(data_json, '$.gisoolMcp')) AS skillarMcp,
     json_extract(data_json, '$.success') AS success FROM events WHERE id = ?`);
   const loadById = db.prepare(`SELECT e.* FROM events e WHERE e.id = ? AND ${recoverable}`);
   const loadsForTool = db.prepare(`SELECT e.* FROM events e INDEXED BY events_reconcile_load_uri
@@ -117,7 +117,7 @@ export function createWrites(ctx: StoreCtx): Writes {
   const toolUris = db.prepare(`SELECT DISTINCT value FROM json_tree(CASE WHEN json_valid(?) THEN ? ELSE '{}' END)
     WHERE type = 'text' AND value LIKE 'skill://%'`);
   const loadCandidates = db.prepare("SELECT session_id FROM load_candidates WHERE load_id = ? ORDER BY session_id");
-  const toolsForCandidate = db.prepare(`SELECT session_id, text, json_extract(data_json, '$.gisoolMcp') AS gisoolMcp
+  const toolsForCandidate = db.prepare(`SELECT session_id, text, coalesce(json_extract(data_json, '$.skillarMcp'), json_extract(data_json, '$.gisoolMcp')) AS skillarMcp
     FROM events INDEXED BY events_uri_tools WHERE source = 'otel' AND kind = 'tool_call'
       AND runtime = ? AND session_id = ? AND ts BETWEEN ? AND ? AND session_id != 'unattributed'
       AND json_extract(data_json, '$.success') IS NOT 0`);
@@ -137,7 +137,7 @@ export function createWrites(ctx: StoreCtx): Writes {
       let loads: LoadRow[];
       if (opts.eventId !== undefined) {
         const event = eventById.get(opts.eventId) as
-          (LoadRow & { source: string; kind: string; text: string | null; gisoolMcp: number | null; success: number | null }) | undefined;
+          (LoadRow & { source: string; kind: string; text: string | null; skillarMcp: number | null; success: number | null }) | undefined;
         if (!event) return { count: 0, uris: [] };
         if (event.kind === "load") {
           const load = loadById.get(event.id) as LoadRow | undefined;
@@ -148,7 +148,7 @@ export function createWrites(ctx: StoreCtx): Writes {
           }
           // Extract only from captured text. Metadata capture cannot create evidence from discarded arguments.
           const uris = toolUris.all(event.text, event.text) as { value: string }[];
-          loads = uris.filter(({ value }) => toolCallReferencesUri(event.text, value, event.gisoolMcp === 1))
+          loads = uris.filter(({ value }) => toolCallReferencesUri(event.text, value, event.skillarMcp === 1))
             .flatMap(({ value }) => loadsForTool.all(event.runtime, value, event.ts - URI_WINDOW_MS,
               event.ts + URI_WINDOW_MS, event.session_id) as LoadRow[]);
         }
@@ -175,7 +175,7 @@ export function createWrites(ctx: StoreCtx): Writes {
               : data.attributionBasis === "tool_call_uri" && sessionId !== undefined ? [sessionId] : []);
             for (const candidate of candidates) {
               const tools = toolsForCandidate.all(load.runtime, candidate, load.ts - URI_WINDOW_MS, load.ts + URI_WINDOW_MS) as ToolRow[];
-              if (tools.some((tool) => toolCallReferencesUri(tool.text, uri, tool.gisoolMcp === 1))) matches.add(candidate);
+              if (tools.some((tool) => toolCallReferencesUri(tool.text, uri, tool.skillarMcp === 1))) matches.add(candidate);
             }
             if (matches.size > 0) data.attributionMatches = [...matches].sort();
             sessionId = matches.size === 1 ? matches.values().next().value : undefined;

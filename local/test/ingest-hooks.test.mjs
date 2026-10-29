@@ -51,8 +51,8 @@ test("claude-code UserPromptExpansion slash_command -> native_skill via expansio
   assert.equal(normalizeHook("claude-code", mcp, NOW).events.length, 0);
 });
 
-test("claude-code PostToolUse for mcp__gisool__* -> tool_use_id binding, no event", () => {
-  const { events, bindings } = normalizeHook("claude-code", fixture("claude-hook-post-tool-use-gisool.json"), NOW);
+test("claude-code PostToolUse for mcp__skillar__* -> tool_use_id binding, no event", () => {
+  const { events, bindings } = normalizeHook("claude-code", fixture("claude-hook-post-tool-use-skillar.json"), NOW);
   assert.deepEqual(events, []);
   assert.deepEqual(bindings, [{ toolUseId: "tu1", ref: { runtime: "claude-code", runtimeSessionId: "s1", cwd: "/work/app" } }]);
 });

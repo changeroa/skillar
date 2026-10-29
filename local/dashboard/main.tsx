@@ -129,7 +129,7 @@ function App() {
       <header class="top">
         <div class="wrap">
           <div class="top__row">
-            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>gisool</a>
+            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>
             <span class={`live live--${live.state}`} role="status" aria-live="polite">
               <span class="live__dot" aria-hidden="true" />
               {LIVE_TEXT[live.state]}

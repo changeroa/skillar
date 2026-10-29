@@ -1,4 +1,4 @@
--- gisool store migration 2: tracing keys on events, herdr topology and workflow specs (user_version 1 -> 2).
+-- skillar store migration 2: tracing keys on events, herdr topology and workflow specs (user_version 1 -> 2).
 -- db.ts runs this inside a transaction and sets user_version afterwards, so this file sets no PRAGMA.
 
 ALTER TABLE events ADD COLUMN source_key TEXT;
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS herdr_panes (
   closed_ms INTEGER
 );
 
--- session_id stays NULL until a gisool session matches the reported agent session value.
+-- session_id stays NULL until a skillar session matches the reported agent session value.
 CREATE TABLE IF NOT EXISTS pane_sessions (
   pane_id TEXT NOT NULL,
   agent TEXT,

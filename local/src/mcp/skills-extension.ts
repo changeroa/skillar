@@ -53,7 +53,7 @@ export function listResources(catalog: Catalog, cursor?: string) {
 /** Reads are observations only: no approval state or load prerequisite is created. */
 export async function readResource(deps: ToolDeps, uri: string, ctx: McpCallContext) {
   const now = () => deps.ingest.now?.() ?? Date.now();
-  const trace = ctx.meta?.[TRACE_KEY];
+  const trace = ctx.meta?.[TRACE_KEY] ?? ctx.meta?.["app.gisool/traceId"];
   const ids = typeof trace === "string" ? { traceId: trace } : {};
   let file: Awaited<ReturnType<Catalog["readResource"]>>;
   try {

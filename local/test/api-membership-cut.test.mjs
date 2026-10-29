@@ -9,7 +9,7 @@ const { createStore } = await distImport("store/index.js");
 
 async function fixture(t, mode) {
   const server = await startTestServer();
-  const db = openDb(join(server.gisoolHome, "gisool.db"));
+  const db = openDb(join(server.skillarHome, "skillar.db"));
   let clock = 1000, sequence = 0;
   const store = createStore(db, { now: () => clock });
   t.after(async () => { store.close(); await server.stop(); });
@@ -108,7 +108,7 @@ test("post-close pane linking retains known endpoint evidence but rejects later 
 test("HTTP detail retains differently timestamped endpoint span joins only in recorded order", async (t) => {
   // Given endpoint spans linked by conversation, call and exact trace/span to interior or start events.
   const server = await startTestServer();
-  const db = openDb(join(server.gisoolHome, "gisool.db"));
+  const db = openDb(join(server.skillarHome, "skillar.db"));
   let clock = 1000;
   const store = createStore(db, { now: () => clock });
   t.after(async () => { store.close(); await server.stop(); });

@@ -1,4 +1,4 @@
--- gisool store schema, user_version 1
+-- skillar store schema, user_version 1
 CREATE TABLE IF NOT EXISTS meta (
   key TEXT PRIMARY KEY,
   value TEXT

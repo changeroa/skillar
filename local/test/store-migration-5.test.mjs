@@ -17,7 +17,7 @@ for (const version of [1, 2, 3, 4]) test(`v${version} history imports into v6 wi
   t.after(() => removeDir(dir));
   const out = join(dir, "export");
   mkdirSync(out);
-  writeFileSync(join(out, "gisool-export.json"), JSON.stringify({
+  writeFileSync(join(out, "skillar-export.json"), JSON.stringify({
     version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {},
   }));
   const old = new DatabaseSync(join(out, "history.db"));

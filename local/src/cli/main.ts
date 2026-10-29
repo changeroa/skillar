@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { ensureToken, loadConfig, resolveGisoolHome } from "../config.js";
+import { ensureToken, loadConfig, resolveSkillarHome } from "../config.js";
 import type { CliDeps, ExportImportApi } from "../types.js";
 import { runDoctor } from "./doctor.js";
 import { runInit, serviceInstall, serviceRemove } from "./init.js";
@@ -16,20 +16,20 @@ const defaultLoaders: Loaders = {
   evalApi: () => import("./eval.js"),
 };
 
-export const HELP = `gisool - local skill router
+export const HELP = `skillar - local skill router
 
 Usage:
-  gisool serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
-  gisool open [--print]                      print and open the dashboard URL
-  gisool init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
-  gisool init --rollback [--all]             undo the newest (or every) init run
-  gisool doctor [--json]                     check service, daemon, packs, index and backups
-  gisool service install|remove|status       manage the LaunchAgent / systemd user unit
-  gisool mcp-stdio                           stdio MCP proxy to the local daemon
-  gisool export <dir> [--with-history]
-  gisool import <dir> [--dry-run]
-  gisool eval [--cases <file>] [--json]
-  gisool --help | --version
+  skillar serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
+  skillar open [--print]                      print and open the dashboard URL
+  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
+  skillar init --rollback [--all]             undo the newest (or every) init run
+  skillar doctor [--json]                     check service, daemon, packs, index and backups
+  skillar service install|remove|status       manage the LaunchAgent / systemd user unit
+  skillar mcp-stdio                           stdio MCP proxy to the local daemon
+  skillar export <dir> [--with-history]
+  skillar import <dir> [--dry-run]
+  skillar eval [--cases <file>] [--json]
+  skillar --help | --version
 `;
 
 class UsageError extends Error {
@@ -117,7 +117,7 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         parseArgs(rest, { flags: [] });
         const config = loadConfig(env);
         const { runStdioProxy } = await import("../mcp/stdio-proxy.js");
-        await runStdioProxy({ port: config.port, token: ensureToken(resolveGisoolHome(env)) });
+        await runStdioProxy({ port: config.port, token: ensureToken(resolveSkillarHome(env)) });
         return 0;
       }
       case "export": {

@@ -143,7 +143,7 @@ async function follower(t, fake) {
   const logs = new EventEmitter();
   const messages = [];
   const connected = signal(logs, "log", (message) => message === "herdr connected");
-  const sync = startHerdrSync(db, { env: { GISOOL_HERDR_SOCKET: fake.path }, log(message) { messages.push(message); logs.emit("log", message); } });
+  const sync = startHerdrSync(db, { env: { SKILLAR_HERDR_SOCKET: fake.path }, log(message) { messages.push(message); logs.emit("log", message); } });
   t.after(() => { sync.close(); db.close(); });
   await connected;
   return { db, sync, changes, logs, messages };
@@ -201,12 +201,12 @@ test("pane status streams follow snapshots and pane creation, then unsubscribe o
 
 async function followedServer(t, fake, discoveryDir) {
   const sb = makeSandbox();
-  const previous = Object.fromEntries(["GISOOL_HERDR", "GISOOL_HERDR_SOCKET", "PATH"].map((key) => [key, process.env[key]]));
-  process.env.GISOOL_HERDR = "on";
+  const previous = Object.fromEntries(["SKILLAR_HERDR", "SKILLAR_HERDR_SOCKET", "PATH"].map((key) => [key, process.env[key]]));
+  process.env.SKILLAR_HERDR = "on";
   if (discoveryDir) {
     process.env.PATH = discoveryDir;
-    delete process.env.GISOOL_HERDR_SOCKET;
-  } else process.env.GISOOL_HERDR_SOCKET = fake.path;
+    delete process.env.SKILLAR_HERDR_SOCKET;
+  } else process.env.SKILLAR_HERDR_SOCKET = fake.path;
   let server, db;
   t.after(async () => {
     db?.close();
@@ -220,12 +220,12 @@ async function followedServer(t, fake, discoveryDir) {
   const logs = new EventEmitter(), messages = [];
   const ready = signal(logs, "log", (message) => message === (discoveryDir ? "herdr unreachable" : "herdr connected"));
   server = await startServer({ port: 0, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} }, {
-    gisoolHome: sb.env.GISOOL_HOME, handleSignals: false, fsWatchdog: { intervalMs: 1e9 },
+    skillarHome: sb.env.SKILLAR_HOME, handleSignals: false, fsWatchdog: { intervalMs: 1e9 },
     log(message) { messages.push(message); logs.emit("log", message); },
   });
   await ready;
-  db = openDb(join(sb.env.GISOOL_HOME, "gisool.db"));
-  const token = readFileSync(join(sb.env.GISOOL_HOME, "token"), "utf8").trim();
+  db = openDb(join(sb.env.SKILLAR_HOME, "skillar.db"));
+  const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   return { server, db, token, logs, messages };
 }
 
@@ -267,7 +267,7 @@ test("binding-only hook links reported and cwd sessions before any ordinary even
   const { server, db, token } = await followedServer(t, fake);
   // When a supported binding-only PostToolUse arrives before its MCP event.
   const res = await http(server.port, { method: "POST", path: "/ingest/hook/claude-code", headers: jsonHeaders(token),
-    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__gisool__search_skills",
+    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__skillar__search_skills",
       tool_use_id: "unseen-tool", session_id: "binding-first", cwd: "/binding" }) });
   // Then the reported identity wins despite no event publication, new snapshot, or SessionStart.
   assert.equal(res.status, 202);
@@ -287,7 +287,7 @@ test("binding-only hook links cwd when it updates an existing session", async (t
   session(db, "existing", { runtime: "claude-code", runtimeId: "binding-first", start: 1 });
   // When a binding supplies the missing cwd but publishes no event.
   const res = await http(server.port, { method: "POST", path: "/ingest/hook/claude-code", headers: jsonHeaders(token),
-    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__gisool__search_skills",
+    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__skillar__search_skills",
       tool_use_id: "unseen-tool", session_id: "binding-first", cwd: "/updated" }) });
   // Then the existing session, not a replacement session, is linked immediately.
   assert.equal(res.status, 202);
@@ -305,7 +305,7 @@ test("ingest batch revisits its touched session outside the recent pane window",
   session(db, "old-session", { runtime: "claude-code", runtimeId: "old-runtime", start: 100 });
   // When a binding-only ingest supplies that session's cwd, without a topology refresh.
   const res = await http(server.port, { method: "POST", path: "/ingest/hook/claude-code", headers: jsonHeaders(token),
-    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__gisool__search_skills",
+    body: JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "mcp__skillar__search_skills",
       tool_use_id: "old-tool", session_id: "old-runtime", cwd: "/old" }) });
   // Then the batch's session id is forwarded through server coalescing to the bounded linker.
   assert.equal(res.status, 202);
@@ -378,10 +378,10 @@ test("snapshot stores two panes and links a reported identity arriving after the
   assert.equal(db.prepare("SELECT label FROM herdr_tabs").get().label, "tests");
   assert.equal(db.prepare("SELECT session_id FROM pane_sessions").get().session_id, null);
   // When ingest supplies either supported identifier, linking no longer needs a socket event.
-  session(db, "gisool-id", { conversation: "codex-id" });
+  session(db, "skillar-id", { conversation: "codex-id" });
   sync.linkSessions();
-  // Then the foreign key points at the gisool session, not the herdr identity.
-  assert.deepEqual({ ...db.prepare("SELECT session_id, source FROM pane_sessions").get() }, { session_id: "gisool-id", source: "herdr:otel" });
+  // Then the foreign key points at the skillar session, not the herdr identity.
+  assert.deepEqual({ ...db.prepare("SELECT session_id, source FROM pane_sessions").get() }, { session_id: "skillar-id", source: "herdr:otel" });
   const subs = fake.requests.find((r) => r.method === "events.subscribe").params.subscriptions;
   assert.equal(subs.length, 12);
   assert.ok(subs.every((s) => s.type !== "pane.agent_status_changed"));
@@ -398,7 +398,7 @@ test("preseeded runtime identity links on the first snapshot", async (t) => {
   session(db, "preseeded", { runtimeId: "reported" });
   const logs = new EventEmitter();
   const done = signal(logs, "log", (message) => message === "herdr connected");
-  const sync = startHerdrSync(db, { env: { GISOOL_HERDR_SOCKET: fake.path }, log: (message) => logs.emit("log", message) });
+  const sync = startHerdrSync(db, { env: { SKILLAR_HERDR_SOCKET: fake.path }, log: (message) => logs.emit("log", message) });
   t.after(() => { sync.close(); db.close(); });
   await done;
   assert.equal(db.prepare("SELECT session_id FROM pane_sessions").get().session_id, "preseeded");
@@ -676,7 +676,7 @@ test("connection failures log each distinct cause once across retries", async (t
   const errors = ["schema mismatch", "schema mismatch", "bad snapshot"];
   const disconnected = signal(events, "disconnect");
   const client = createHerdrClient({
-    env: { GISOOL_HERDR_SOCKET: fake.path },
+    env: { SKILLAR_HERDR_SOCKET: fake.path },
     log(message) { messages.push(message); },
     async onConnect() { throw new Error(errors.shift()); },
     onDisconnect() { events.emit("disconnect"); },
@@ -774,26 +774,26 @@ test("30 second reconciliation recovers a missed topology event", async (t) => {
 
 test("daemon stays healthy while herdr is down and disables discovery when off", async (t) => {
   const sb = makeSandbox();
-  const old = { mode: process.env.GISOOL_HERDR, socket: process.env.GISOOL_HERDR_SOCKET };
-  process.env.GISOOL_HERDR = "on";
-  process.env.GISOOL_HERDR_SOCKET = join(sb.home, "absent.sock");
+  const old = { mode: process.env.SKILLAR_HERDR, socket: process.env.SKILLAR_HERDR_SOCKET };
+  process.env.SKILLAR_HERDR = "on";
+  process.env.SKILLAR_HERDR_SOCKET = join(sb.home, "absent.sock");
   const logs = new EventEmitter();
   const unreachable = signal(logs, "log", (message) => message === "herdr unreachable");
   const config = { port: 0, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} };
-  const server = await startServer(config, { gisoolHome: sb.env.GISOOL_HOME, handleSignals: false, log: (message) => logs.emit("log", message) });
+  const server = await startServer(config, { skillarHome: sb.env.SKILLAR_HOME, handleSignals: false, log: (message) => logs.emit("log", message) });
   t.after(async () => {
     await server.close();
-    process.env.GISOOL_HERDR = old.mode;
-    if (old.socket === undefined) delete process.env.GISOOL_HERDR_SOCKET;
-    else process.env.GISOOL_HERDR_SOCKET = old.socket;
+    process.env.SKILLAR_HERDR = old.mode;
+    if (old.socket === undefined) delete process.env.SKILLAR_HERDR_SOCKET;
+    else process.env.SKILLAR_HERDR_SOCKET = old.socket;
     sb.cleanup();
   });
   await unreachable;
   assert.equal((await http(server.port, { path: "/healthz" })).status, 200);
   await server.close();
-  process.env.GISOOL_HERDR = "off";
+  process.env.SKILLAR_HERDR = "off";
   const messages = [];
-  const disabled = await startServer(config, { gisoolHome: sb.env.GISOOL_HOME, handleSignals: false, log: (message) => messages.push(message) });
+  const disabled = await startServer(config, { skillarHome: sb.env.SKILLAR_HOME, handleSignals: false, log: (message) => messages.push(message) });
   assert.equal((await http(disabled.port, { path: "/healthz" })).status, 200);
   await disabled.close();
   assert.ok(messages.every((message) => !message.startsWith("herdr ")));
@@ -804,28 +804,28 @@ test("server ingest links a stored reported identity without waiting for reconci
     agent_session: { agent: "claude", kind: "id", source: "hook", value: "ingested-id" },
   })]));
   const sb = makeSandbox();
-  const oldMode = process.env.GISOOL_HERDR;
-  const oldSocket = process.env.GISOOL_HERDR_SOCKET;
-  process.env.GISOOL_HERDR = "on";
-  process.env.GISOOL_HERDR_SOCKET = fake.path;
+  const oldMode = process.env.SKILLAR_HERDR;
+  const oldSocket = process.env.SKILLAR_HERDR_SOCKET;
+  process.env.SKILLAR_HERDR = "on";
+  process.env.SKILLAR_HERDR_SOCKET = fake.path;
   const logs = new EventEmitter();
   const connected = signal(logs, "log", (message) => message === "herdr connected");
   const server = await startServer({ port: 0, captureLevel: "full", retentionDays: null, roots: [], runtimes: {} },
-    { gisoolHome: sb.env.GISOOL_HOME, handleSignals: false, log: (message) => logs.emit("log", message) });
+    { skillarHome: sb.env.SKILLAR_HOME, handleSignals: false, log: (message) => logs.emit("log", message) });
   t.after(async () => {
     await server.close();
-    process.env.GISOOL_HERDR = oldMode;
-    if (oldSocket === undefined) delete process.env.GISOOL_HERDR_SOCKET;
-    else process.env.GISOOL_HERDR_SOCKET = oldSocket;
+    process.env.SKILLAR_HERDR = oldMode;
+    if (oldSocket === undefined) delete process.env.SKILLAR_HERDR_SOCKET;
+    else process.env.SKILLAR_HERDR_SOCKET = oldSocket;
     sb.cleanup();
   });
   await connected;
-  const token = readFileSync(join(sb.env.GISOOL_HOME, "token"), "utf8").trim();
+  const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   const before = fake.requests.filter((r) => r.method === "session.snapshot").length;
   const res = await http(server.port, { method: "POST", path: "/ingest/hook/claude-code", headers: jsonHeaders(token),
     body: JSON.stringify({ hook_event_name: "SessionStart", session_id: "ingested-id", cwd: "/qa" }) });
   assert.equal(res.status, 202);
-  const db = openDb(join(sb.env.GISOOL_HOME, "gisool.db"));
+  const db = openDb(join(sb.env.SKILLAR_HOME, "skillar.db"));
   try {
     const row = db.prepare("SELECT ps.session_id, s.runtime_session_id FROM pane_sessions ps JOIN sessions s ON s.id = ps.session_id").get();
     assert.equal(row.runtime_session_id, "ingested-id");
@@ -836,7 +836,7 @@ test("server ingest links a stored reported identity without waiting for reconci
 test("socket resolution uses override, rejects misleading success, and bounds hung status commands", async (t) => {
   const dir = mkdtempSync("/tmp/gst-status-");
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  assert.equal(await resolveHerdrSocket({ GISOOL_HERDR_SOCKET: "/override", PATH: "" }), "/override");
+  assert.equal(await resolveHerdrSocket({ SKILLAR_HERDR_SOCKET: "/override", PATH: "" }), "/override");
   const bin = join(dir, "herdr");
   writeFileSync(bin, "#!/bin/sh\nprintf 'status: running\\n'\n", { mode: 0o700 });
   await assert.rejects(resolveHerdrSocket({ PATH: dir }), /no socket/);

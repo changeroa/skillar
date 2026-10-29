@@ -5,9 +5,9 @@ import { NOW as T, uri } from "./store.mjs";
 const { openDb } = await distImport("store/db.js");
 const { createStore } = await distImport("store/index.js");
 
-export function seedEvidence(gisoolHome) {
+export function seedEvidence(skillarHome) {
   let clock = T - 1;
-  const store = createStore(openDb(join(gisoolHome, "gisool.db")), { now: () => clock });
+  const store = createStore(openDb(join(skillarHome, "skillar.db")), { now: () => clock });
   let seq = 0;
   const ids = {};
   const candidate = (name, rank, digest = name) => ({
@@ -51,7 +51,7 @@ export function seedEvidence(gisoolHome) {
         }]),
       ]);
     }
-    const db = openDb(join(gisoolHome, "gisool.db"));
+    const db = openDb(join(skillarHome, "skillar.db"));
     db.prepare("INSERT INTO herdr_workspaces (id, label, created_ms) VALUES (?, ?, ?)").run("evidence-ws", "Finding and use evidence", T - 20000);
     db.prepare("INSERT INTO herdr_tabs (id, workspace_id, label, created_ms) VALUES (?, ?, ?, ?)").run("evidence-tab", "evidence-ws", "Review", T - 20000);
     db.prepare("INSERT INTO herdr_panes (id, workspace_id, tab_id, label, created_ms) VALUES (?, ?, ?, ?, ?)").run("evidence-pane", "evidence-ws", "evidence-tab", "Reused pane", T - 20000);
