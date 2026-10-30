@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Serve your agent skills from one place. Use skillar locally today, self-host a team registry, or follow the upcoming hosted skill server.">
+    <meta name="theme-color" content="#171916">
+    <meta property="og:title" content="skillar — A home for your agent skills">
+    <meta property="og:description" content="Write once. Serve over MCP. Bring your own agent. Local now; hosted servers coming soon.">
+    <meta property="og:type" content="website">
+    <title>skillar — A home for your agent skills</title>
+    <script>
+      try {
+        const theme = localStorage.getItem('skillar-theme') || 'system';
+        document.documentElement.dataset.theme = theme;
+      } catch (error) {
+        if (!(error instanceof DOMException)) throw error;
+      }
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="shell header">
+      <a class="wordmark" href="#" aria-label="skillar home">skillar<span aria-hidden="true">↗</span></a>
+      <nav aria-label="Main navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#skill-example">The format</a>
+        <a href="#hosting">Hosting</a>
+        <a href="https://github.com/changeroa/skillar">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="shell hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <h1 id="hero-title">A home for<br>your agent skills.</h1>
+          <p class="intro">Serve the know-how your agents need, from one place. Bring your Markdown. Bring your agent.</p>
+          <div class="cluster actions">
+            <a class="button primary" href="#get-server">Get your skill server <span aria-hidden="true">↗</span></a>
+            <a class="button secondary" href="https://github.com/changeroa/skillar">View on GitHub <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="note">Hosted servers are coming soon. Local and self-hosted tools are available today.</p>
+          <div class="install" data-ui>
+            <div class="install-line"><code id="install-command">npm install -g skillar</code><button id="copy" type="button" aria-label="Copy install command">Copy</button></div>
+            <p>Then <code>skillar init</code> · macOS / Linux · Node.js 24.15+</p>
+            <span id="copy-status" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+        <figure class="workshop">
+          <img src="/workshop.webp" srcset="/workshop-600.webp 600w, /workshop.webp 1200w" sizes="(max-width: 760px) calc(100vw - 48px), 45vw" width="1200" height="1200" fetchpriority="high" alt="An articulated arm brings a skill instruction card from a shared cabinet to an agent's workbench.">
+          <figcaption>Your skills. Ready when your agents need them.</figcaption>
+        </figure>
+      </section>
+
+      <section class="agents" aria-labelledby="agents-title">
+        <div class="shell">
+          <h2 id="agents-title">Your agent. Your workflow.</h2>
+          <ul class="agent-list" aria-label="Supported local runtimes">
+            <li>Claude Code</li><li>Codex</li><li>Cursor</li><li>OmO</li><li>Gemini CLI</li><li>Gajae Code</li><li>OpenClaw</li>
+          </ul>
+          <p class="note">Local setup detects supported runtimes. Capture coverage and remote integration vary by client.</p>
+        </div>
+      </section>
+
+      <section class="shell section split" id="how-it-works" aria-labelledby="how-title">
+        <div><h2 id="how-title">Write. Serve.<br>Put it to work.</h2><p>Instructions stay in files you own. Agents find the right skill and read it when the task calls for it.</p></div>
+        <ol class="workflow">
+          <li><h3>Start with a skill</h3><p>A folder with a <code>SKILL.md</code>: a name, a description, and the instructions that make your workflow yours.</p></li>
+          <li><h3>Give it a home</h3><p>Index existing folders locally, or configure your own remote registry. Managed skill servers are coming soon.</p></li>
+          <li><h3>Connect your agents</h3><p>Search through <code>search_skills</code>. Read the selected skill through MCP resources. Load the details on demand, not the whole library.</p></li>
+        </ol>
+      </section>
+
+      <section class="example-section" id="skill-example" aria-labelledby="example-title">
+        <div class="shell split">
+          <div><h2 id="example-title">Just Markdown.<br>Actual know-how.</h2><p>No new authoring language. A skill bundles instructions with the files that support them.</p><p>The local catalog indexes your folders in place. The registry exposes skills through MCP discovery and resource reads.</p><a class="text-link" href="https://github.com/changeroa/skillar/blob/main/server/README.md">Read the registry docs <span aria-hidden="true">↗</span></a></div>
+          <div class="code-panel" data-ui>
+            <div class="code-top"><span>skillar / SKILL.md</span><span>Markdown</span></div>
+            <pre><code><span class="syntax">---</span>
+<span class="syntax">name:</span> skillar
+<span class="syntax">description:</span> Discover remote skills for a new task by searching its subject and intended outcome, then load only a relevant skill. Also discover native skill packs for requested combined workflows and create or update team skills/packs when requested. Searching does not activate a skill.
+<span class="syntax">---</span>
+
+Use the Skillar MCP tools directly.</code></pre>
+            <p class="code-foot"><a href="https://github.com/changeroa/skillar/blob/main/plugins/skillar/skills/skillar/SKILL.md">Excerpt from the repository's discovery skill <span aria-hidden="true">↗</span></a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell section split" aria-labelledby="connect-title">
+        <div><h2 id="connect-title">Less setup.<br>More doing.</h2><p>The local CLI can detect your runtimes, configure MCP, and install a background service. Preview its changes before you apply them.</p><label class="example-label" for="setup-example">Show a setup command</label><select id="setup-example"><option value="all">Detected runtimes</option><option value="codex">Codex only</option><option value="claude-code">Claude Code only</option></select></div>
+        <div class="code-panel" data-ui><div class="code-top"><span>Terminal</span><span>Local setup</span></div><pre><code><span class="code-muted"># Preview without changing files</span>
+<span id="dry-command">skillar init --dry-run</span>
+
+<span class="code-muted"># Connect and start the local service</span>
+<span id="init-command">skillar init</span>
+
+<span class="code-muted"># Inspect your skill activity</span>
+skillar open</code></pre><p class="code-foot">Prefer a foreground process? <code>skillar serve</code></p></div>
+      </section>
+
+      <section class="hosting-section" id="hosting" aria-labelledby="hosting-title">
+        <div class="shell">
+          <div class="split hosting-intro"><h2 id="hosting-title">Your infrastructure.<br>Or, soon, ours.</h2><p>Start locally, deploy a team registry yourself, or follow our hosted service. The open-source tools are usable without a hosted account.</p></div>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">Available local and self-hosted options compared with planned managed hosting</caption>
+              <thead><tr><th scope="col">Choose your setup</th><th scope="col">Local / self-hosted</th><th scope="col">Hosted skill server</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Availability</th><td>Available in the repository</td><td>Coming soon</td></tr>
+                <tr><th scope="row">Serving</th><td>Local MCP, Node registry or Cloudflare Worker</td><td>Managed server planned</td></tr>
+                <tr><th scope="row">Operations</th><td>Your config, deployment and credentials</td><td>Managed provisioning planned</td></tr>
+                <tr><th scope="row">Pricing</th><td>MIT source; your infrastructure costs</td><td>Not announced</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Remote self-hosting requires your own configuration and release validation. A skill read is not permission to execute its instructions.</p>
+        </div>
+      </section>
+
+      <section class="shell section split" aria-labelledby="faq-title">
+        <h2 id="faq-title">Good questions.</h2>
+        <div class="faq">
+          <details><summary>What is an agent skill?</summary><p>A folder containing a <code>SKILL.md</code> instruction file and optional supporting files. The name and description help an agent discover it; the body carries the actual instructions.</p></details>
+          <details><summary>Can I use skillar today?</summary><p>Yes. Install the local CLI with <code>npm install -g skillar</code>. Run <code>skillar init --dry-run</code> to preview setup changes. macOS or Linux and Node.js 24.15+ are required. If you are upgrading from gisool, read the <a href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">migration guide</a> first.</p></details>
+          <details><summary>Is the hosted service live?</summary><p>Not yet. Signup, managed server provisioning, and hosted pricing are coming soon. This preview does not create an account or collect your email.</p></details>
+          <details><summary>Does every MCP client work?</summary><p>Skills require a host that can discover and read MCP resources. The repository includes runtime-specific integrations; compatibility and capture coverage vary. Check the <a href="https://github.com/changeroa/skillar/blob/main/local/README.md">protocol and compatibility guide</a> for your client.</p></details>
+          <details><summary>Where does my local data go?</summary><p>The local daemon listens on loopback, uses a local bearer token, and stores indexed skills and captured session activity in local SQLite. It does not upload captured telemetry. Your connected agent and model provider handle data separately.</p></details>
+          <details><summary>Can I host a registry for my team?</summary><p>Yes. The repository includes a Node.js registry and a Cloudflare Worker for authenticated distribution from private R2 releases. You provide infrastructure and credentials. See the <a href="https://github.com/changeroa/skillar/blob/main/docs/deployment.md">deployment guide</a>.</p></details>
+        </div>
+      </section>
+
+      <section class="signup-section" id="get-server" aria-labelledby="signup-title">
+        <div class="shell split">
+          <div><h2 id="signup-title">Make room for<br>better skills.</h2><p>Your own hosted skill server is coming soon. In the meantime, put the open-source tools to work.</p></div>
+          <form class="signup" aria-describedby="signup-note">
+            <label for="email">Email address</label>
+            <input id="email" type="email" placeholder="you@your.team" disabled autocomplete="email">
+            <button class="button primary" type="button" disabled>Get your skill server</button>
+            <p id="signup-note">Coming soon. Signup is not open; this form does not submit or save data.</p>
+            <a class="text-link" href="https://github.com/changeroa/skillar">Start with the open-source project <span aria-hidden="true">↗</span></a>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell footer">
+      <div class="footer-top"><p>From <span lang="ko">기술</span> — skill, craft, technique.</p><div class="cluster"><a href="https://github.com/changeroa/skillar">Source <span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar/blob/main/LICENSE">MIT license <span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar#documentation">Documentation <span aria-hidden="true">↗</span></a></div>
+        <label class="theme-label">Theme
+          <select id="theme" aria-label="Color theme">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
+      <div class="footer-word" aria-hidden="true">skillar.sh</div>
+      <p class="note">Open source today. Hosted servers coming soon.</p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
