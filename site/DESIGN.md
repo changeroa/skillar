@@ -17,7 +17,7 @@ Developers using multiple coding agents need portable instructions. Hook: one pl
 
 Light: background #f4f4f0, surface #e9e9e3, ink #20211e, muted #54564e, accent #b73520, on-accent #ffffff.
 Dark: background #171916, surface #242720, ink #f0f1e9, muted #b8bdad, accent #ff9277, on-accent #251811.
-Code: background #20251f, ink #eff2e7, muted #bbc4ad, syntax #ffa58b.
+Code: background #20251f in light / #0f110e in dark, ink #eff2e7, muted #bbc4ad, syntax #ffa58b. The dark panel stays visibly below both background bands.
 Focus uses current ink; no status conveyed by color alone.
 
 ## 3. Typography
@@ -39,8 +39,8 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 - Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. Disabled CTA uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark in the footer; visible label, native keyboard behavior. Source order always matches visual order.
 - Code panel: dark field, readable tokens, filename header. Links use code-ink focus rings on the dark field in both themes. Copy action reports success/failure through a live region.
-- Disclosure: native summary, 48px minimum target; plus/minus indicator, visible focus.
-- Stack, cluster, split, content-limiter: reusable layout classes; no bespoke per-section grids.
+- Disclosure: native summary, 48px minimum target; native triangle indicator, visible focus.
+- Shell, cluster, split: reusable layout classes; paragraph measures provide content limiting and normal flow provides stacking. No bespoke per-section grids.
 - Compatibility list: real agent names, not endorsement logos.
 - Example switch: native select chooses an actual host configuration example; no invented remote URL.
 
