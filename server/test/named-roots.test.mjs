@@ -44,3 +44,66 @@ test("invalid named roots fail instead of silently changing URI identities", () 
     assert.match(result.stderr, /SKILLAR_SKILL_ROOTS requires unique URI-safe ids/, config);
   }
 });
+
+test("legacy resources_read enforces URI and realpath boundaries", async t => {
+  const root = await mkdtemp(join(tmpdir(), "skillar-legacy-boundaries-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const skills = join(root, "skills");
+  await mkdir(join(skills, "alpha"), { recursive: true });
+  await mkdir(join(skills, "alpha-sibling"), { recursive: true });
+  await mkdir(join(root, "outside"), { recursive: true });
+  await writeFile(join(skills, "alpha", "SKILL.md"), "---\nname: alpha\ndescription: Fixture\n---\n");
+  await writeFile(join(skills, "alpha", "encoded name.txt"), "inside");
+  await writeFile(join(skills, "alpha-sibling", "secret.txt"), "sibling");
+  await writeFile(join(root, "outside", "secret.txt"), "outside");
+  await symlink(join(root, "outside", "secret.txt"), join(skills, "alpha", "linked.txt"));
+  await symlink(join(root, "outside"), join(skills, "alpha", "linked-dir"));
+  await symlink(join(skills, "alpha-sibling", "secret.txt"), join(skills, "alpha", "sibling.txt"));
+  await symlink(join(root, "outside"), join(skills, "escaped-skill"));
+  await symlink(join(skills, "alpha", "encoded name.txt"), join(skills, "alpha", "inside-link.txt"));
+  await symlink(skills, join(root, "current"));
+  const client = new Client({ name: "legacy-boundaries-test", version: "1" });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [server],
+    env: {
+      ...process.env,
+      SKILLAR_ROOT: join(root, "runtime"),
+      SKILLAR_STATE_DIR: join(root, "state"),
+      SKILLAR_SKILL_ROOTS: `fixture=${join(root, "current")}`,
+      SKILLAR_URI_AUTHORITY: "skillar",
+    },
+  });
+  t.after(() => client.close());
+  await client.connect(transport);
+  const prefix = "skill://skillar/fixture/alpha";
+  for (const [name, uri] of [
+    ["escaping file symlink", `${prefix}/linked.txt`],
+    ["escaping directory symlink", `${prefix}/linked-dir/secret.txt`],
+    ["sibling-prefix symlink", `${prefix}/sibling.txt`],
+    ["escaping skill symlink", "skill://skillar/fixture/escaped-skill/secret.txt"],
+    ["foreign authority", "skill://different-authority/fixture/alpha/SKILL.md"],
+    ["credentials", "skill://user:pass@skillar/fixture/alpha/SKILL.md"],
+    ["query", `${prefix}/SKILL.md?other=1`],
+    ["fragment", `${prefix}/SKILL.md#other`],
+    ["dot traversal", `${prefix}/../alpha-sibling/secret.txt`],
+    ["encoded dot traversal", `${prefix}/%2e%2e/alpha-sibling/secret.txt`],
+    ["encoded slash traversal", `${prefix}/..%2falpha-sibling%2fsecret.txt`],
+    ["encoded absolute path", `${prefix}/${encodeURIComponent(join(root, "outside", "secret.txt"))}`],
+    ["absolute path", join(root, "outside", "secret.txt")],
+    ["malformed encoding", `${prefix}/%ZZ`],
+    ["encoded NUL", `${prefix}/%00`],
+  ]) {
+    await t.test(`rejects ${name}`, async () => {
+      const result = await client.callTool({ name: "resources_read", arguments: { uri } });
+      assert.equal(result.isError, true, `must reject ${uri}`);
+    });
+  }
+  for (const resource of ["encoded%20name.txt", "inside-link.txt"]) {
+    await t.test(`reads safe ${resource} through a symlinked root`, async () => {
+      const result = await client.callTool({ name: "resources_read", arguments: { uri: `${prefix}/${resource}` } });
+      assert.notEqual(result.isError, true);
+      assert.equal(JSON.parse(result.content[0].text).text, "inside");
+    });
+  }
+});

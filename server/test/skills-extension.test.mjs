@@ -318,6 +318,15 @@ describe("resources/read", () => {
 });
 
 describe("resources/directory/read", () => {
+  for (const field of ["ttlMs", "cacheScope"]) {
+    test(`includes required ${field} on successful directory responses`, async () => {
+      const result = await client.call("resources/directory/read", { uri: `skill://${AUTHORITY}/root0/alpha` });
+      assert.ok(Object.hasOwn(result, field), `successful directory response must include ${field}`);
+      if (field === "ttlMs") assert.ok(Number.isSafeInteger(result.ttlMs) && result.ttlMs >= 0);
+      else assert.ok(["private", "public"].includes(result.cacheScope));
+    });
+  }
+
   test("lists direct children of the skill root with directory mime types", async () => {
     const result = await client.call("resources/directory/read", { uri: `skill://${AUTHORITY}/root0/alpha` });
     const byName = new Map(result.resources.map((r) => [r.name, r]));
