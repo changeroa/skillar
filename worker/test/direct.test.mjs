@@ -325,6 +325,29 @@ test("oversized publication and upload requests return 413 before mutation", asy
 });
 
 
+for (const modern of [false, true]) {
+  test(`${modern ? "modern" : "legacy"} directory reads return complete resources with private cache hints`, async t => {
+    const { rpc, bucket } = await fixture(t);
+    const a = await release(bucket, "a");
+    await activate(bucket, a.identity, 1);
+    const params = { uri: `${root}references`, _meta: { "app.skillar/commit": a.identity.commit } };
+    const response = await rpc("resources/directory/read", modern ? modernParams(params) : params, modern ? {
+      accept: "application/json, text/event-stream", "mcp-protocol-version": "2026-07-28", "mcp-method": "resources/directory/read",
+    } : {});
+    assert.equal(response.status, 200);
+    assert.equal(response.body.result.resultType, "complete");
+    assert.deepEqual(response.body.result.resources, a.inventory.skills[0].resources
+      .filter(resource => resource.uri.startsWith(`${root}references/`))
+      .map(resource => ({ uri: resource.uri, name: resource.uri.split("/").at(-1), mimeType: "text/markdown" }))
+      .sort((a, b) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0));
+    assert.equal(response.body.result._meta.commit, a.identity.commit);
+    assert.equal(response.body.result._meta.release, a.identity.release);
+    assert.equal(response.body.result.ttlMs, 30_000);
+    assert.equal(response.body.result.cacheScope, "private");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  });
+}
+
 test("modern Worker validates metadata, emits private cache hints, and preserves immutable pins", async t => {
   const { rpc, bucket } = await fixture(t);
   const a = await release(bucket, "a"), b = await release(bucket, "b");

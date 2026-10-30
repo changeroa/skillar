@@ -40,7 +40,7 @@ test('modern wire works without initialize, validates metadata and returns cache
   assert.equal((await call('skills/list',{_meta:{'io.modelcontextprotocol/protocolVersion':MODERN_VERSION}})).error.code,-32602);
   const listing=(await call('skills/list',modernParams())).result;
   const uri=listing.skills[0].uri;
-  for(const [method,params] of [['skills/get',{uri}],['resources/read',{uri}],['resources/list',{}],['tools/list',{}]]) {
+  for(const [method,params] of [['skills/get',{uri}],['resources/read',{uri}],['resources/list',{}],['resources/directory/read',{uri:uri.slice(0,uri.lastIndexOf('/'))}],['tools/list',{}]]) {
     const result=(await call(method,modernParams(params))).result;
     assert.equal(result.resultType,'complete');assert.equal(result.cacheScope,'private');assert.ok(result.ttlMs>=0);
   }
