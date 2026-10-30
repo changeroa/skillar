@@ -133,7 +133,7 @@ export async function serveMcp(request: Request, env: DirectEnv, trusted?: { can
         const skill = snapshot.inventory.skills.find(skill => skill.uri === target)!;
         return respond({ resultType: "complete", skill, _meta: { ..._meta, ...(target !== uri ? { movedFrom: uri } : {}) } });
       }
-      if (rpc.method === "resources/directory/read") return respond({ resultType: "complete", resources: readDirectory(snapshot, uri), _meta });
+      if (rpc.method === "resources/directory/read") return respond({ resultType: "complete", ttlMs: 30_000, cacheScope: "private", resources: readDirectory(snapshot, uri), _meta });
       return respond({ contents: [await readResource(env.SKILLS_BUCKET, snapshot, uri)], _meta });
     } catch (error) {
       const invalid = error instanceof ReleaseError && [400, 404].includes(error.status);

@@ -335,15 +335,11 @@ function normalizeRelativePath(value: string | undefined): string {
 }
 
 function parseSkillUri(uri: string): { record: SkillRecord; relativePath: string } {
-  const parsed = new URL(uri);
-  if (parsed.protocol !== "skill:") {
-    throw new Error(`Unsupported resource URI protocol: ${parsed.protocol}`);
-  }
-
-  const parts = parsed.pathname.split("/").filter(Boolean).map(decodeURIComponent);
-  const source = assertSkillName(parts[0] ?? "");
-  const dirName = assertSkillName(parts[1] ?? "");
-  const relativePath = normalizeRelativePath(parts.slice(2).join("/"));
+  const parsed = parseSkillUriSegments(uri);
+  if (!parsed) throw new Error(`Invalid skill resource URI: ${uri}`);
+  const source = parsed.source;
+  const dirName = assertSkillName(parsed.pathSegments[0] ?? "");
+  const relativePath = normalizeRelativePath(parsed.pathSegments.slice(1).join("/"));
   const rootDir = SKILL_ROOTS.find((root) => root.id === source)?.dir;
   if (!rootDir) throw new Error(`Unknown skill source: ${source}`);
 
@@ -360,11 +356,16 @@ async function readSkillMarkdown(record: SkillRecord): Promise<{ markdown: strin
 async function readSkillResource(record: SkillRecord, relativePathInput?: string): Promise<{ text: string; filePath: string }> {
   const safeName = assertSkillName(record.dirName);
   const relativePath = normalizeRelativePath(relativePathInput);
-  const baseDir = path.join(record.rootDir, safeName);
-  const filePath = path.resolve(baseDir, relativePath);
+  const rootDir = await realpath(record.rootDir);
+  const baseDir = await realpath(path.join(rootDir, safeName));
+  const relativeToRoot = path.relative(rootDir, baseDir);
+  if (!relativeToRoot || relativeToRoot === ".." || relativeToRoot.startsWith(`..${path.sep}`) || path.isAbsolute(relativeToRoot)) {
+    throw new Error(`Skill directory escapes the configured root: ${safeName}`);
+  }
+  const filePath = await realpath(path.resolve(baseDir, relativePath));
   const relativeToBase = path.relative(baseDir, filePath);
 
-  if (relativeToBase.startsWith("..") || path.isAbsolute(relativeToBase)) {
+  if (relativeToBase === ".." || relativeToBase.startsWith(`..${path.sep}`) || path.isAbsolute(relativeToBase)) {
     throw new Error(`Resource path escapes the skill directory: ${relativePathInput}`);
   }
 
@@ -766,7 +767,7 @@ function registerSkillsExtension(server: McpServer): void {
   }));
 
   server.server.setRequestHandler(SkillsDirectoryReadRequestSchema, async (request) => ({
-    resultType: "complete",
+    resultType: "complete", ...cacheHints,
     resources: await readSkillDirectoryByUri(request.params?.uri ?? ""),
   }));
 }

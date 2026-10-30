@@ -5,7 +5,7 @@ import { JSONRPCMessageSchema } from "@modelcontextprotocol/sdk/types.js";
 export const MODERN_VERSION = "2026-07-28";
 export const VERSION_KEY = "io.modelcontextprotocol/protocolVersion";
 export const CAPS_KEY = "io.modelcontextprotocol/clientCapabilities";
-export const CACHE_METHODS = new Set(["server/discover", "skills/list", "skills/get", "resources/read", "resources/list", "resources/templates/list", "tools/list", "prompts/list"]);
+export const CACHE_METHODS = new Set(["server/discover", "skills/list", "skills/get", "resources/read", "resources/list", "resources/directory/read", "resources/templates/list", "tools/list", "prompts/list"]);
 export const cacheHints = { ttlMs: 30_000, cacheScope: "private" as const };
 const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export function modernParams(params: Record<string, unknown> = {}) {
