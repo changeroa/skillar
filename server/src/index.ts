@@ -767,7 +767,7 @@ function registerSkillsExtension(server: McpServer): void {
   }));
 
   server.server.setRequestHandler(SkillsDirectoryReadRequestSchema, async (request) => ({
-    resultType: "complete",
+    resultType: "complete", ...cacheHints,
     resources: await readSkillDirectoryByUri(request.params?.uri ?? ""),
   }));
 }
