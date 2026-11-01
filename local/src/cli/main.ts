@@ -2,6 +2,7 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ensureToken, loadConfig, resolveSkillarHome } from "../config.js";
+import { CAPTURE_RUNTIMES, type CaptureRuntime } from "../diagnostics/capture.js";
 import type { CliDeps, ExportImportApi } from "../types.js";
 import { runDoctor } from "./doctor.js";
 import { runInit, serviceInstall, serviceRemove } from "./init.js";
@@ -23,7 +24,8 @@ Usage:
   skillar open [--print]                      print and open the dashboard URL
   skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
   skillar init --rollback [--all]             undo the newest (or every) init run
-  skillar doctor [--json]                     check service, daemon, packs, index and backups
+  skillar doctor [--json] [--capture-test] [--runtime <id>...]
+                                            check setup and optionally test daemon capture
   skillar service install|remove|status       manage the LaunchAgent / systemd user unit
   skillar mcp-stdio                           stdio MCP proxy to the local daemon
   skillar export <dir> [--with-history]
@@ -103,8 +105,12 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         }, env, io);
       }
       case "doctor": {
-        const p = parseArgs(rest, { flags: ["--json"] });
-        return await runDoctor({ json: p.flags.has("--json") }, env, io);
+        const p = parseArgs(rest, { flags: ["--json", "--capture-test"], multi: ["--runtime"] });
+        if (p.positional.length) throw new UsageError(`unexpected argument ${p.positional[0]}`);
+        const runtimes = p.values.get("--runtime");
+        if (runtimes && !p.flags.has("--capture-test")) throw new UsageError("--runtime requires --capture-test");
+        if (runtimes?.some((runtime) => !CAPTURE_RUNTIMES.includes(runtime as CaptureRuntime))) throw new UsageError("unknown capture runtime");
+        return await runDoctor({ json: p.flags.has("--json"), captureTest: p.flags.has("--capture-test"), runtimes: runtimes as CaptureRuntime[] | undefined }, env, io);
       }
       case "service": {
         const [sub, ...subRest] = rest;

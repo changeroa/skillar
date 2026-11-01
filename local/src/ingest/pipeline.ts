@@ -14,13 +14,15 @@ export type IngestDeps = {
   sessionChanged?: (sessionId: string) => void;
   log?: (message: string, error: unknown) => void;
   now?: () => number;
+  /** Only the daemon's currently pending, random diagnostic IDs bypass usage counters. */
+  isDiagnostic?: (event: CanonicalEvent) => boolean;
 };
 
 export type OtlpResponse = { status: 200; body: { partialSuccess: Record<string, never> } } | { status: 400; body: { code: "bad_otlp"; message: string } };
 
 export function createIngestDeps(store: IngestStore, opts: Partial<Omit<IngestDeps, "store">> = {}): IngestDeps {
   return { store, captureLevel: opts.captureLevel ?? "full", state: opts.state ?? createAttributionState(), publish: opts.publish,
-    sessionChanged: opts.sessionChanged, log: opts.log, now: opts.now };
+    sessionChanged: opts.sessionChanged, log: opts.log, now: opts.now, isDiagnostic: opts.isDiagnostic };
 }
 
 function nowOf(deps: IngestDeps): number {
@@ -74,7 +76,7 @@ export function ingest(event: CanonicalEvent, deps: IngestDeps): Attribution | u
     if (captured.loadId && attribution.sessionId !== "unattributed") remember(deps.state.loadSessions, captured.loadId, attribution.sessionId);
     if (!inserted) return undefined;
     if (captured.kind === "load" || (captured.kind === "tool_call" && captured.source === "otel")) deps.store.reconcileLoads({ eventId: captured.id });
-    count(deps, "accepted");
+    if (!deps.isDiagnostic?.(captured)) count(deps, "accepted");
     if (deps.publish && attribution.sessionId !== "unattributed") deps.publish({ sessionId: attribution.sessionId, attribution, event: captured });
     return attribution;
   } catch (error) {

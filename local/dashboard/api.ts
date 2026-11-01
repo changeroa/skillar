@@ -2,6 +2,7 @@ import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowRepo
   SkillEntry, SkillWeekDto, Store, TraceStep } from "../src/types.js";
 import { matchesFilter, serializeFilter } from "./state";
 import type { WorkflowSpec } from "../src/workflow/spec.js";
+import type { CaptureHealth, CaptureProbeReport, CaptureRuntime } from "../src/diagnostics/capture.js";
 
 export type Stats = ReturnType<Store["stats"]>;
 /** The API may attach the attribution reason for unattributed rows; SessionRow itself does not carry it. */
@@ -32,6 +33,8 @@ export type Api = {
   skills(): Promise<SkillEntry[]>;
   addEvalCase(input: EvalCaseInput): Promise<void>;
   health(): Promise<{ ok: boolean; version: string }>;
+  captureHealth(): Promise<CaptureHealth>;
+  testCapture(runtime: CaptureRuntime): Promise<CaptureProbeReport>;
   events(handlers: EventHandlers): () => void;
 };
 
@@ -88,6 +91,10 @@ const httpApi: Api = {
   skills: () => request("/api/skills"),
   addEvalCase: (input) => request("/api/eval-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
   health: () => request("/healthz"),
+  captureHealth: () => request("/api/diagnostics/capture"),
+  testCapture: (runtime) => request("/api/diagnostics/capture", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ runtime }),
+  }),
   events({ onSession, onState }) {
     onState?.("connecting");
     const source = new EventSource("/api/events/stream");
@@ -174,6 +181,10 @@ function fixtureApi(variant: FixtureVariant): Api {
     skills: () => settle((data) => data.skills),
     addEvalCase: () => Promise.resolve(),
     health: () => Promise.resolve({ ok: true, version: "fixtures" }),
+    captureHealth: () => Promise.resolve({
+      generatedAt: Date.now(), scope: "all_history", runtimes: [],
+    }),
+    testCapture: () => Promise.reject(new ApiError(400, "fixtures_read_only", "Capture tests need a running daemon")),
     events({ onState }) {
       onState?.("fixtures");
       return () => undefined;
