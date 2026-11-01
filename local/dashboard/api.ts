@@ -1,4 +1,4 @@
-import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, SessionRow, SessionSkillReportDto,
+import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, HistoryDeletion, PrivacySettings, SessionRow, SessionSkillReportDto,
   SkillEntry, SkillWeekDto, Store, TraceStep } from "../src/types.js";
 import { matchesFilter, serializeFilter } from "./state";
 import type { WorkflowSpec } from "../src/workflow/spec.js";
@@ -30,6 +30,9 @@ export type Api = {
   /** The filter limits only the unattributed counts (time range and runtime); the other figures stay global. */
   stats(filter?: Filter): Promise<Stats>;
   skills(): Promise<SkillEntry[]>;
+  privacy(): Promise<PrivacySettings>;
+  updatePrivacy(input: PrivacySettings & { confirmFullCapture?: boolean }): Promise<PrivacySettings>;
+  deleteHistory(): Promise<{ deleted: HistoryDeletion; preserved: string[] }>;
   addEvalCase(input: EvalCaseInput): Promise<void>;
   health(): Promise<{ ok: boolean; version: string }>;
   events(handlers: EventHandlers): () => void;
@@ -86,6 +89,9 @@ const httpApi: Api = {
   skillWeek: (filter) => request(withQuery("/api/skill-week", filter)),
   stats: (filter = {}) => request(withQuery("/api/stats", filter)),
   skills: () => request("/api/skills"),
+  privacy: () => request("/api/privacy"),
+  updatePrivacy: (input) => request("/api/privacy", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
+  deleteHistory: () => request("/api/history", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: "DELETE_HISTORY" }) }),
   addEvalCase: (input) => request("/api/eval-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
   health: () => request("/healthz"),
   events({ onSession, onState }) {
@@ -143,6 +149,7 @@ function fixtureApi(variant: FixtureVariant): Api {
     const twelve = new Set(data.sessions12);
     return variant === "empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions;
   };
+  let privacy: PrivacySettings = { captureLevel: "metadata", retentionDays: 90 };
   return {
     mode: "fixtures",
     sessions: (filter) => settle((data) => rowsOf(data).filter((row) => matchesFilter(row, filter))),
@@ -172,6 +179,12 @@ function fixtureApi(variant: FixtureVariant): Api {
       return variant === "empty" ? { ...data.statsEmpty, ...extra.statsEmpty } : { ...data.stats, ...extra.stats };
     },
     skills: () => settle((data) => data.skills),
+    privacy: () => Promise.resolve({ ...privacy }),
+    updatePrivacy: (input) => Promise.resolve((privacy = { captureLevel: input.captureLevel, retentionDays: input.retentionDays })),
+    deleteHistory: () => Promise.resolve({
+      deleted: { sessions: 0, events: 0, loads: 0, spans: 0, links: 0, workspaces: 0, tabs: 0, panes: 0, flows: 0, flowSteps: 0, reconciliationCandidates: 0, ingestTelemetry: 0 },
+      preserved: ["catalog", "config", "eval_cases", "workflow_specs", "aliases", "recording_lineage"],
+    }),
     addEvalCase: () => Promise.resolve(),
     health: () => Promise.resolve({ ok: true, version: "fixtures" }),
     events({ onState }) {

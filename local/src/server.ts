@@ -10,7 +10,7 @@ import { authGate, deny, localOnly, requireJson } from "./api/security.js";
 import { createSseHub } from "./api/sse.js";
 import { registerStatic } from "./api/static.js";
 import { createCatalog } from "./catalog/index.js";
-import { ensureSkillarHome, ensureToken, resolveSkillarHome, resolveHome } from "./config.js";
+import { ensureSkillarHome, ensureToken, resolveSkillarHome, resolveHome, updatePrivacySettings } from "./config.js";
 import { createFsWatchdog } from "./fs-watchdog.js";
 import { startHerdrSync } from "./herdr/sync.js";
 import { createIngestDeps } from "./ingest/pipeline.js";
@@ -19,7 +19,7 @@ import { packageVersion } from "./mcp/tools.js";
 import { createSearchIndex } from "./search/index.js";
 import { openDb, selfCheck } from "./store/db.js";
 import { createStore } from "./store/index.js";
-import type { SkillarConfig, SessionRow, Store } from "./types.js";
+import type { PrivacySettings, SkillarConfig, SessionRow, Store } from "./types.js";
 import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
 export type ServerDeps = {
@@ -122,8 +122,30 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
     const sse = createSseHub(lookupRow, log);
     cleanup.push(() => sse.close());
 
+    let activePrivacy: PrivacySettings = { captureLevel: config.captureLevel, retentionDays: config.retentionDays };
+    let retentionTimer: NodeJS.Timeout | undefined;
+    const runRetention = (days: number, report: boolean): number => {
+      const removed = ownStore.retention(days, { force: true });
+      if (report) log(`retention removed ${removed} captured value(s) older than ${days} days`);
+      return removed;
+    };
+    const configureRetention = (days: number | null, immediate: boolean): void => {
+      if (immediate && days !== null) runRetention(days, false);
+      if (retentionTimer) clearInterval(retentionTimer);
+      retentionTimer = undefined;
+      if (days === null) return;
+      retentionTimer = setInterval(() => {
+        try {
+          runRetention(days, true);
+        } catch (error) {
+          log(`retention failed: ${(error as Error).message}`);
+        }
+      }, DAY_MS);
+      retentionTimer.unref();
+    };
+
     const ingestDeps = createIngestDeps(ownStore, {
-      captureLevel: config.captureLevel,
+      captureLevel: () => activePrivacy.captureLevel,
       publish: (change) => sse.notify(change.sessionId),
       sessionChanged: (sessionId) => {
         // Ingest batches are synchronous; coalesce their notifications into one linking pass.
@@ -187,7 +209,24 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
       if (req.path.startsWith("/ingest/")) ownStore.countIngest("rejected", "unsupported_media_type");
     }));
 
-    registerRoutes(app, { store: ownStore, catalog, ingest: ingestDeps, sse, version, log, fsHealth: () => watchdog.health() });
+    const privacy = {
+      settings: (): PrivacySettings => ({ ...activePrivacy }),
+      update(next: PrivacySettings): PrivacySettings {
+        // Persist before exposing a setting; the response is sent only after the active daemon has applied it too.
+        updatePrivacySettings(skillarHome, resolveHome(process.env), config, next);
+        if (next.retentionDays !== activePrivacy.retentionDays) configureRetention(next.retentionDays, true);
+        activePrivacy = { ...next };
+        return { ...activePrivacy };
+      },
+      deleteHistory() {
+        const deleted = ownStore.deleteHistory();
+        ingestDeps.state.toolUseSessions.clear();
+        ingestDeps.state.loadSessions.clear();
+        linkSessions.clear();
+        return deleted;
+      },
+    };
+    registerRoutes(app, { store: ownStore, catalog, ingest: ingestDeps, sse, version, log, fsHealth: () => watchdog.health(), privacy });
     registerMcp(app, { catalog, search, store: ownStore, ingest: ingestDeps, token });
     registerStatic(app, { token, ...(deps.dashboardDir ? { dir: deps.dashboardDir } : {}) });
     app.use((_req: Request, res: Response) => deny(res, 404, "not_found"));
@@ -204,20 +243,11 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
     const server = createServer(app);
     boundPort = await listen(server, config.port);
 
-    let retentionTimer: NodeJS.Timeout | undefined;
     cleanup.push(() => watchdog.stop());
-    if (config.retentionDays !== null) {
-      const days = config.retentionDays;
-      const runRetention = () => {
-        try {
-          log(`retention removed ${ownStore.retention(days)} sessions older than ${days} days`);
-        } catch (error) {
-          log(`retention failed: ${(error as Error).message}`);
-        }
-      };
-      runRetention();
-      retentionTimer = setInterval(runRetention, DAY_MS);
-      retentionTimer.unref();
+    try {
+      configureRetention(activePrivacy.retentionDays, true);
+    } catch (error) {
+      log(`retention failed: ${(error as Error).message}`);
     }
 
     let closing: Promise<void> | undefined;

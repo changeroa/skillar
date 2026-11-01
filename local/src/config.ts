@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { z } from "zod";
-import type { SkillarConfig } from "./types.js";
+import { applyFiles } from "./cli/config-writer.js";
+import type { PrivacySettings, SkillarConfig } from "./types.js";
 
 export const DEFAULT_PORT = 8799;
 
@@ -48,8 +49,8 @@ export function expandHome(path: string, home: string): string {
   return isAbsolute(path) ? path : join(home, path);
 }
 
-export function defaultConfigFile(): { port: number; captureLevel: "full"; retentionDays: null; roots: { id: string; path: string }[]; runtimes: Record<string, never> } {
-  return { port: DEFAULT_PORT, captureLevel: "full", retentionDays: null, roots: DEFAULT_ROOTS.map((r) => ({ ...r })), runtimes: {} };
+export function defaultConfigFile(): { port: number; captureLevel: "metadata"; retentionDays: 90; roots: { id: string; path: string }[]; runtimes: Record<string, never> } {
+  return { port: DEFAULT_PORT, captureLevel: "metadata", retentionDays: 90, roots: DEFAULT_ROOTS.map((r) => ({ ...r })), runtimes: {} };
 }
 
 export function ensureSkillarHome(env: NodeJS.ProcessEnv): string {
@@ -72,6 +73,65 @@ export function ensureToken(skillarHome: string): string {
   return token;
 }
 
+/** Parses a config without creating a home, token, or config file; callers use it while planning dry runs. */
+export function parseConfigFile(text: string, home: string): SkillarConfig {
+  const parsed = fileSchema.parse(JSON.parse(text));
+  const defaults = defaultConfigFile();
+  return {
+    port: parsed.port ?? defaults.port,
+    captureLevel: parsed.captureLevel ?? defaults.captureLevel,
+    retentionDays: parsed.retentionDays === undefined ? defaults.retentionDays : parsed.retentionDays,
+    roots: (parsed.roots ?? defaults.roots).map((r) => ({ id: r.id, path: expandHome(r.path, home) })),
+    runtimes: parsed.runtimes ?? {},
+  };
+}
+
+function configObject(config: SkillarConfig): Record<string, unknown> {
+  return {
+    // Port zero is valid only for in-process ephemeral test servers; never persist it as a user config value.
+    port: config.port || DEFAULT_PORT,
+    captureLevel: config.captureLevel,
+    retentionDays: config.retentionDays,
+    roots: config.roots.map((root) => ({ ...root })),
+    runtimes: config.runtimes,
+  };
+}
+
+function settingsBackupDir(skillarHome: string): string {
+  const root = join(skillarHome, "backups");
+  mkdirSync(root, { recursive: true, mode: 0o700 });
+  const stamp = new Date().toISOString().replace(/[-:.]/g, "");
+  for (let i = 0; ; i += 1) {
+    const dir = join(root, `settings-${stamp}${i === 0 ? "" : `-${String(i).padStart(3, "0")}`}`);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { mode: 0o700 });
+      return dir;
+    }
+  }
+}
+
+/**
+ * Atomically updates only the privacy keys, retaining every existing config key (including roots and runtime settings).
+ * The previous config is backed up under SKILLAR_HOME/backups using the same atomic writer as `skillar init`.
+ */
+export function updatePrivacySettings(skillarHome: string, home: string, config: SkillarConfig, next: PrivacySettings): PrivacySettings {
+  const path = join(skillarHome, "config.json");
+  const before = existsSync(path) ? readFileSync(path, "utf8") : null;
+  const source = before === null ? configObject(config) : JSON.parse(before) as Record<string, unknown>;
+  const current = parseConfigFile(JSON.stringify(source), home);
+  const previous: PrivacySettings = { captureLevel: current.captureLevel, retentionDays: current.retentionDays };
+  if (previous.captureLevel === next.captureLevel && previous.retentionDays === next.retentionDays) return previous;
+  const after = JSON.stringify({ ...source, captureLevel: next.captureLevel, retentionDays: next.retentionDays }, null, 2) + "\n";
+  const backupDir = settingsBackupDir(skillarHome);
+  try {
+    applyFiles([{ path, before, after, mode: 0o600 }], { backupDir, home });
+  } catch (error) {
+    rmSync(backupDir, { recursive: true, force: true });
+    throw error;
+  }
+  return previous;
+}
+
 /** Loads (and on first run creates) SKILLAR_HOME, config.json and the token. No work happens at import time. */
 export function loadConfig(env: NodeJS.ProcessEnv): SkillarConfig {
   const home = resolveHome(env);
@@ -80,16 +140,9 @@ export function loadConfig(env: NodeJS.ProcessEnv): SkillarConfig {
   if (!existsSync(configPath)) {
     writeFileSync(configPath, JSON.stringify(defaultConfigFile(), null, 2) + "\n", { mode: 0o600 });
   }
-  const parsed = fileSchema.parse(JSON.parse(readFileSync(configPath, "utf8")));
+  const config = parseConfigFile(readFileSync(configPath, "utf8"), home);
   ensureToken(skillarHome);
-  const defaults = defaultConfigFile();
-  return {
-    port: parsed.port ?? defaults.port,
-    captureLevel: parsed.captureLevel ?? defaults.captureLevel,
-    retentionDays: parsed.retentionDays ?? null,
-    roots: (parsed.roots ?? defaults.roots).map((r) => ({ id: r.id, path: expandHome(r.path, home) })),
-    runtimes: parsed.runtimes ?? {},
-  };
+  return config;
 }
 
 export function dbPath(skillarHome: string): string {
