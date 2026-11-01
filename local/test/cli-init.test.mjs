@@ -190,7 +190,7 @@ test("export, import, and eval dispatch to the todo-14 modules", async () => {
     assert.equal(await runMain(["import", "/tmp/y", "--dry-run"], { env: sb.env, io, loaders }), 0);
     assert.equal(await runMain(["eval", "--cases", "c.json", "--json"], { env: sb.env, io, loaders }), 0);
     assert.equal(await runMain(["export"], { env: sb.env, io, loaders }), 2);
-    assert.deepEqual(calls, [["export", "/tmp/x", { withHistory: true }], ["import", "/tmp/y", { dryRun: true }], ["eval", { cases: "c.json", json: true }]]);
+    assert.deepEqual(calls, [["export", "/tmp/x", { withHistory: true }], ["import", "/tmp/y", { dryRun: true }], ["eval", { cases: "c.json", json: true, baseline: false }]]);
   } finally {
     sb.cleanup();
   }

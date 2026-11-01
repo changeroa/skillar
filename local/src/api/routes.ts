@@ -3,13 +3,15 @@ import type { FsHealth } from "../fs-watchdog.js";
 import { ingestOtlpTraces } from "../ingest/otlp-traces.js";
 import { ingestHook, ingestOtlp, type IngestDeps } from "../ingest/pipeline.js";
 import { isRuntimeId, RUNTIME_IDS } from "../ingest/runtimes.js";
-import type { AdoptionState, Catalog, Filter, RuntimeId, Store } from "../types.js";
+import { catalogFingerprint, evaluateCases } from "../evaluation.js";
+import type { AdoptionState, Catalog, EvalLabel, Filter, RuntimeId, SearchIndex, Store } from "../types.js";
 import { registerWorkflowRoutes } from "../workflow/routes.js";
 import { registerFlowRoutes } from "./flows.js";
 import { deny } from "./security.js";
 import type { SseHub } from "./sse.js";
 
 const STATES: readonly AdoptionState[] = ["loaded", "exposed_only", "no_match", "aborted", "not_used"];
+const EVAL_LABELS: readonly EvalLabel[] = ["unlabeled", "skill", "no_match"];
 const CLIENT_ERROR_CODES = new Set(["invalid_tz", "bad_filter", "bad_request"]);
 
 class BadRequest extends Error {
@@ -75,6 +77,7 @@ function defaultTz(): string {
 export type RouteDeps = {
   store: Store;
   catalog: Catalog;
+  search: SearchIndex;
   ingest: IngestDeps;
   sse: SseHub;
   version: string;
@@ -95,6 +98,28 @@ function handle(log: (msg: string) => void, fn: (req: Request, res: Response) =>
       deny(res, 500, "internal_error");
     }
   };
+}
+
+function evalCaseInput(body: Record<string, unknown>, catalog: Catalog, includeQuery: boolean): { query?: string; label: EvalLabel; expectedUri?: string; fromTraceId?: string } {
+  const query = typeof body.query === "string" ? body.query.trim() : "";
+  if (includeQuery && !query) throw new BadRequest("bad_request", "query is required");
+  for (const key of ["expectedUri", "fromTraceId"]) {
+    if (body[key] !== undefined && typeof body[key] !== "string") throw new BadRequest("bad_request", `${key} must be a string`);
+  }
+  if (!includeQuery && body.fromTraceId !== undefined) throw new BadRequest("bad_request", "fromTraceId is set only when saving a query");
+  if (body.label !== undefined && (typeof body.label !== "string" || !EVAL_LABELS.includes(body.label as EvalLabel))) {
+    throw new BadRequest("bad_request", "label must be unlabeled, skill, or no_match");
+  }
+  const expectedUri = typeof body.expectedUri === "string" ? body.expectedUri : undefined;
+  const label = (body.label as EvalLabel | undefined) ?? (expectedUri ? "skill" : "unlabeled");
+  if (label === "skill") {
+    if (!expectedUri) throw new BadRequest("bad_request", "skill labels require expectedUri");
+    if (!catalog.get(expectedUri)) throw new BadRequest("bad_request", "expectedUri must name a current catalog skill");
+  } else if (expectedUri !== undefined) {
+    throw new BadRequest("bad_request", `${label} labels cannot have expectedUri`);
+  }
+  return { ...(includeQuery ? { query } : {}), label, ...(expectedUri ? { expectedUri } : {}),
+    ...(typeof body.fromTraceId === "string" && includeQuery ? { fromTraceId: body.fromTraceId } : {}) };
 }
 
 export function registerRoutes(app: Express, deps: RouteDeps): void {
@@ -177,19 +202,35 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
     res.json(catalog.list());
   }));
 
+  app.get("/api/eval-cases", handle(log, (_req, res) => {
+    res.json(store.evaluationCases());
+  }));
+
   app.post("/api/eval-cases", handle(log, (req, res) => {
+    const input = evalCaseInput((req.body ?? {}) as Record<string, unknown>, catalog, true);
+    res.status(201).json({ case: store.addEvalCase(input as { query: string; label: EvalLabel; expectedUri?: string; fromTraceId?: string }) });
+  }));
+
+  app.patch("/api/eval-cases/:id", handle(log, (req, res) => {
+    const input = evalCaseInput((req.body ?? {}) as Record<string, unknown>, catalog, false);
+    const row = store.updateEvalCase(String(req.params.id), { label: input.label, ...(input.expectedUri ? { expectedUri: input.expectedUri } : {}) });
+    if (!row) return deny(res, 404, "not_found");
+    res.json({ case: row });
+  }));
+
+  app.get("/api/evaluation", handle(log, (_req, res) => {
+    res.json({ ...store.evaluationSummary(), currentCatalogFingerprint: catalogFingerprint(catalog.list()) });
+  }));
+
+  app.post("/api/evaluation/runs", handle(log, (req, res) => {
     const body = (req.body ?? {}) as Record<string, unknown>;
-    const query = typeof body.query === "string" ? body.query.trim() : "";
-    if (!query) throw new BadRequest("bad_request", "query is required");
-    for (const key of ["expectedUri", "fromTraceId"]) {
-      if (body[key] !== undefined && typeof body[key] !== "string") throw new BadRequest("bad_request", `${key} must be a string`);
-    }
-    store.addEvalCase({
-      query,
-      ...(typeof body.expectedUri === "string" ? { expectedUri: body.expectedUri } : {}),
-      ...(typeof body.fromTraceId === "string" ? { fromTraceId: body.fromTraceId } : {}),
-    });
-    res.status(201).json({ ok: true });
+    if (body.baseline !== undefined && typeof body.baseline !== "boolean") throw new BadRequest("bad_request", "baseline must be a boolean");
+    const cases = store.evaluationCases();
+    if (!cases.some((item) => item.label !== "unlabeled")) throw new BadRequest("bad_request", "label at least one evaluation case before running it");
+    const evaluated = evaluateCases(cases, deps.search);
+    const run = store.saveEvalRun({ catalogFingerprint: catalogFingerprint(catalog.list()), catalogSize: catalog.list().length,
+      baseline: body.baseline === true, metrics: evaluated.metrics, outcomes: evaluated.outcomes });
+    res.status(201).json({ run, ...store.evaluationSummary(), currentCatalogFingerprint: catalogFingerprint(catalog.list()) });
   }));
 
   app.get("/api/events/stream", (req, res) => deps.sse.handler(req, res));

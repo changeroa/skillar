@@ -1,4 +1,4 @@
-import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, SessionRow, SessionSkillReportDto,
+import type { Attribution, AutomatedMode, EvalCase, EvalLabel, EvaluationSummary, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, SessionRow, SessionSkillReportDto,
   SkillEntry, SkillWeekDto, Store, TraceStep } from "../src/types.js";
 import { matchesFilter, serializeFilter } from "./state";
 import type { WorkflowSpec } from "../src/workflow/spec.js";
@@ -7,7 +7,8 @@ export type Stats = ReturnType<Store["stats"]>;
 /** The API may attach the attribution reason for unattributed rows; SessionRow itself does not carry it. */
 export type SessionListRow = SessionRow & { attributionReason?: NonNullable<Attribution["reason"]> };
 export type LiveState = "connecting" | "live" | "offline" | "fixtures";
-export type EvalCaseInput = { query: string; expectedUri?: string; fromTraceId?: string };
+export type EvalCaseInput = { query: string; label?: EvalLabel; expectedUri?: string; fromTraceId?: string };
+export type EvaluationDto = EvaluationSummary & { currentCatalogFingerprint: string };
 /** GET /api/flows takes its own range and page size, not the full session Filter. */
 export type FlowsQuery = { from?: number; to?: number; limit?: number; automated?: AutomatedMode };
 export const FLOWS_PAGE_LIMIT = 20;
@@ -31,6 +32,9 @@ export type Api = {
   stats(filter?: Filter): Promise<Stats>;
   skills(): Promise<SkillEntry[]>;
   addEvalCase(input: EvalCaseInput): Promise<void>;
+  updateEvalCase(id: string, input: { label: EvalLabel; expectedUri?: string }): Promise<EvalCase>;
+  evaluation(): Promise<EvaluationDto>;
+  runEvaluation(input: { baseline: boolean }): Promise<EvaluationDto>;
   health(): Promise<{ ok: boolean; version: string }>;
   events(handlers: EventHandlers): () => void;
 };
@@ -87,6 +91,9 @@ const httpApi: Api = {
   stats: (filter = {}) => request(withQuery("/api/stats", filter)),
   skills: () => request("/api/skills"),
   addEvalCase: (input) => request("/api/eval-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
+  updateEvalCase: (id, input) => request<{ case: EvalCase }>(`/api/eval-cases/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }).then((result) => result.case),
+  evaluation: () => request("/api/evaluation"),
+  runEvaluation: (input) => request("/api/evaluation/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
   health: () => request("/healthz"),
   events({ onSession, onState }) {
     onState?.("connecting");
@@ -173,6 +180,9 @@ function fixtureApi(variant: FixtureVariant): Api {
     },
     skills: () => settle((data) => data.skills),
     addEvalCase: () => Promise.resolve(),
+    updateEvalCase: () => Promise.reject(new ApiError(404, "fixtures_read_only", "fixtures are read-only")),
+    evaluation: () => Promise.resolve({ cases: [], currentCatalogFingerprint: "fixtures" }),
+    runEvaluation: () => Promise.reject(new ApiError(400, "fixtures_read_only", "fixtures are read-only")),
     health: () => Promise.resolve({ ok: true, version: "fixtures" }),
     events({ onState }) {
       onState?.("fixtures");

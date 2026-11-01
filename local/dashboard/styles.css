@@ -202,12 +202,14 @@ button, input, select { font: inherit; color: inherit; }
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s-1);
   padding-block: var(--s-1) var(--s-2);
 }
 
 .tab {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   min-height: 36px;
   padding: 0 var(--s-3);
