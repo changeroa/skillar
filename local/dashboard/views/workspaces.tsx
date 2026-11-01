@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { AttributionShare, SkillSpanUsage } from "../../src/analysis/usage.js";
 import type {
   AutomatedMode, FlowListEntry, FlowReportDto, FlowSpecRef, FlowTree, RuntimeId, SessionTree, SkillSpan, TreePaneLink,
@@ -201,35 +201,105 @@ function Runtime({ runtime }: { runtime: RuntimeId }) {
 
 type SummaryState = { status: "loading" } | { status: "ready"; summary: FlowSummary } | { status: "error" };
 
-/** Reads one flow report per row, SUMMARY_CONCURRENCY at a time, and drops what is in flight when the list changes. */
+/** Reads one flow report per row, SUMMARY_CONCURRENCY at a time, without discarding summaries from earlier pages. */
 function useFlowSummaries(ids: readonly string[], query: FlowsQuery): Record<string, SummaryState> {
   const key = ids.join("\n");
   const queryKey = JSON.stringify(query);
   const [summaries, setSummaries] = useState<Record<string, SummaryState>>({});
+  const summariesRef = useRef(summaries);
+  const previousQueryRef = useRef<string | undefined>(undefined);
   useEffect(() => {
+    const queryChanged = previousQueryRef.current !== queryKey;
+    previousQueryRef.current = queryKey;
     if (ids.length === 0) {
+      summariesRef.current = {};
       setSummaries({});
       return;
     }
     let cancelled = false;
-    setSummaries(Object.fromEntries(ids.map((id) => [id, { status: "loading" } as SummaryState])));
-    const queue = [...ids];
+    const previous = queryChanged ? {} : summariesRef.current;
+    const next = Object.fromEntries(ids.map((id) => [id, previous[id] ?? { status: "loading" } as SummaryState]));
+    const queue = ids.filter((id) => previous[id] === undefined || previous[id].status === "loading");
+    summariesRef.current = next;
+    setSummaries(next);
     const worker = async (): Promise<void> => {
       for (let next = queue.shift(); next !== undefined && !cancelled; next = queue.shift()) {
         const id = next;
         try {
           const report = await api.flowReport(id, query);
-          if (!cancelled) setSummaries((prev) => ({ ...prev, [id]: { status: "ready", summary: flowSummary(report) } }));
+          if (!cancelled) setSummaries((prev) => {
+            const updated = { ...prev, [id]: { status: "ready", summary: flowSummary(report) } as SummaryState };
+            summariesRef.current = updated;
+            return updated;
+          });
         } catch {
           // A report that cannot be read leaves the row's structure facts in place; the summary line says so.
-          if (!cancelled) setSummaries((prev) => ({ ...prev, [id]: { status: "error" } }));
+          if (!cancelled) setSummaries((prev) => {
+            const updated = { ...prev, [id]: { status: "error" } as SummaryState };
+            summariesRef.current = updated;
+            return updated;
+          });
         }
       }
     };
-    void Promise.all(Array.from({ length: Math.min(SUMMARY_CONCURRENCY, ids.length) }, worker));
+    void Promise.all(Array.from({ length: Math.min(SUMMARY_CONCURRENCY, queue.length) }, worker));
     return () => { cancelled = true; };
   }, [key, queryKey]);
   return summaries;
+}
+
+/** Merges a fresh head page or a following page without moving existing entries or rendering an id twice. */
+export function mergeFlowEntries(current: readonly FlowListEntry[], page: readonly FlowListEntry[], mode: "refresh" | "append"): FlowListEntry[] {
+  const pageById = new Map(page.map((entry) => [entry.id, entry]));
+  const seen = new Set<string>();
+  const add = (entries: readonly FlowListEntry[], usePageValues: boolean, into: FlowListEntry[]) => {
+    for (const entry of entries) {
+      if (seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      into.push(usePageValues ? pageById.get(entry.id) ?? entry : entry);
+    }
+  };
+  const merged: FlowListEntry[] = [];
+  if (mode === "refresh") {
+    add(page, true, merged);
+    add(current, false, merged);
+  } else {
+    add(current, true, merged);
+    add(page, true, merged);
+  }
+  return merged;
+}
+
+export type WorkspaceRequest = { readonly kind: "reload" | "page"; readonly queryKey: string; readonly epoch: number; readonly id: number };
+
+/** Separates reload and next-page responses while invalidating both whenever a filter changes. */
+export function createWorkspaceRequestGate() {
+  let queryKey = "";
+  let epoch = 0;
+  let reloadId = 0;
+  let pageId = 0;
+  const activate = (nextQueryKey: string): boolean => {
+    if (nextQueryKey === queryKey) return false;
+    queryKey = nextQueryKey;
+    epoch += 1;
+    reloadId = 0;
+    pageId = 0;
+    return true;
+  };
+  return {
+    beginReload(nextQueryKey: string): { queryChanged: boolean; request: WorkspaceRequest } {
+      const queryChanged = activate(nextQueryKey);
+      return { queryChanged, request: { kind: "reload", queryKey: nextQueryKey, epoch, id: ++reloadId } };
+    },
+    beginPage(nextQueryKey: string): { queryChanged: boolean; request: WorkspaceRequest } {
+      const queryChanged = activate(nextQueryKey);
+      return { queryChanged, request: { kind: "page", queryKey: nextQueryKey, epoch, id: ++pageId } };
+    },
+    isCurrent(request: WorkspaceRequest): boolean {
+      return request.queryKey === queryKey && request.epoch === epoch
+        && (request.kind === "reload" ? request.id === reloadId : request.id === pageId);
+    },
+  };
 }
 
 function FlowRow({ entry, route, summary }: { entry: FlowListEntry; route: Route; summary: SummaryState | undefined }) {
@@ -255,8 +325,8 @@ function ListEmpty({ filtered, route, navigate }: { filtered: boolean; route: Ro
   if (filtered) {
     return (
       <section class="empty">
-        <h2>No workspaces in this range</h2>
-        <p>Widen the time range or remove a filter to see more workspaces.</p>
+        <h2>No workspaces match these filters</h2>
+        <p>Widen the time range or change the automation filter to see more workspaces.</p>
         <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>Clear filters</button>
       </section>
     );
@@ -276,41 +346,103 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
   const query = flowsQuery(route);
   const queryKey = JSON.stringify(query);
   const [flows, setFlows] = useState<FlowListEntry[]>();
-  const [error, setError] = useState<string>();
-  const [refresh, setRefresh] = useState(0);
+  const [flowsQueryKey, setFlowsQueryKey] = useState<string>();
+  const [nextCursor, setNextCursor] = useState<string | null>();
+  const [loadError, setLoadError] = useState<{ queryKey: string; message: string; refreshed: boolean }>();
+  const [loadMoreError, setLoadMoreError] = useState<string>();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [reload, setReload] = useState(0);
+  const requestGateRef = useRef(createWorkspaceRequestGate());
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (live.seq === 0) return;
-    const timer = setTimeout(() => setRefresh((n) => n + 1), LIVE_REFRESH_DEBOUNCE_MS);
+    const timer = setTimeout(() => setReload((n) => n + 1), LIVE_REFRESH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [live.seq]);
 
   useEffect(() => {
-    let cancelled = false;
+    const { queryChanged, request } = requestGateRef.current.beginReload(queryKey);
+    if (queryChanged) {
+      hasLoadedRef.current = false;
+      setFlows(undefined);
+      setFlowsQueryKey(undefined);
+      setNextCursor(undefined);
+      setLoadMoreError(undefined);
+      setLoadingMore(false);
+    }
+    setLoadError(undefined);
+    let mounted = true;
     api.flows(query)
       .then((dto) => {
-        if (cancelled) return;
-        setFlows([...dto.flows]);
-        setError(undefined);
+        if (!mounted || !requestGateRef.current.isCurrent(request)) return;
+        const firstPage = !hasLoadedRef.current;
+        hasLoadedRef.current = true;
+        setFlows((previous) => firstPage ? [...dto.flows] : mergeFlowEntries(previous ?? [], dto.flows, "refresh"));
+        setFlowsQueryKey(queryKey);
+        // The tail cursor remains after a live head refresh: it continues after every page the reader has loaded.
+        if (firstPage) setNextCursor(dto.nextCursor);
+        setLoadError(undefined);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!mounted || !requestGateRef.current.isCurrent(request)) return;
+        setLoadError({ queryKey, message: err instanceof Error ? err.message : String(err), refreshed: hasLoadedRef.current });
       });
-    return () => { cancelled = true; };
-  }, [queryKey, refresh]);
+    return () => { mounted = false; };
+  }, [queryKey, reload]);
 
-  const summaries = useFlowSummaries(flows?.map((entry) => entry.id) ?? [], query);
-  const filtered = query.from !== undefined || query.to !== undefined;
+  const visibleFlows = flowsQueryKey === queryKey ? flows : undefined;
+  const visibleError = loadError?.queryKey === queryKey ? loadError : undefined;
+  const loadMore = () => {
+    if (visibleFlows === undefined || nextCursor === undefined || nextCursor === null || loadingMore) return;
+    const cursor = nextCursor;
+    const { request } = requestGateRef.current.beginPage(queryKey);
+    setLoadingMore(true);
+    setLoadMoreError(undefined);
+    api.flows({ ...query, cursor })
+      .then((dto) => {
+        if (!requestGateRef.current.isCurrent(request)) return;
+        setFlows((previous) => previous === undefined ? previous : mergeFlowEntries(previous, dto.flows, "append"));
+        setNextCursor(dto.nextCursor);
+      })
+      .catch((err: unknown) => {
+        if (requestGateRef.current.isCurrent(request)) setLoadMoreError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (requestGateRef.current.isCurrent(request)) setLoadingMore(false);
+      });
+  };
+
+  const summaries = useFlowSummaries(visibleFlows?.map((entry) => entry.id) ?? [], query);
+  const filtered = query.from !== undefined || query.to !== undefined || query.automated !== undefined;
+  const busy = (visibleFlows === undefined && visibleError === undefined) || loadingMore;
 
   return (
-    <section class="ws" aria-busy={flows === undefined}>
-      {error && <p class="notice" role="alert">Could not load workspaces: {error}</p>}
-      {flows !== undefined && flows.length === 0 && <ListEmpty filtered={filtered} route={route} navigate={navigate} />}
-      {flows !== undefined && flows.length > 0 && (
+    <section class="ws" aria-busy={busy}>
+      {visibleFlows === undefined && !visibleError && <p class="ws__status" role="status">Loading workspaces{"\u2026"}</p>}
+      {visibleError && (
+        <div class="ws__notice" role="alert">
+          <p>Could not {visibleError.refreshed ? "refresh" : "load"} workspaces: {visibleError.message}</p>
+          <button type="button" class="btn" onClick={() => setReload((n) => n + 1)}>Retry</button>
+        </div>
+      )}
+      {visibleFlows !== undefined && visibleFlows.length === 0 && <ListEmpty filtered={filtered} route={route} navigate={navigate} />}
+      {visibleFlows !== undefined && visibleFlows.length > 0 && (
         <div class="card">
-          <ul class="wslist" aria-label="herdr workspaces">
-            {flows.map((entry) => <FlowRow key={entry.id} entry={entry} route={route} summary={summaries[entry.id]} />)}
+          <ul class="wslist" id="workspace-list" aria-label="herdr workspaces">
+            {visibleFlows.map((entry) => <FlowRow key={entry.id} entry={entry} route={route} summary={summaries[entry.id]} />)}
           </ul>
+          {(nextCursor !== undefined && nextCursor !== null || loadingMore || loadMoreError) && (
+            <div class="ws__pager" aria-live="polite">
+              {loadMoreError && <p class="notice">Could not load more workspaces: {loadMoreError}</p>}
+              {loadingMore && <p class="ws__status" role="status">Loading more workspaces{"\u2026"}</p>}
+              {nextCursor !== undefined && nextCursor !== null && (
+                <button type="button" class="btn" onClick={loadMore} disabled={loadingMore} aria-controls="workspace-list">
+                  {loadMoreError ? "Retry loading more" : loadingMore ? "Loading more\u2026" : "Load more workspaces"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -658,6 +790,11 @@ export function WorkspaceView({ route }: ViewProps) {
 
 const WORKSPACES_CSS = `
 .ws { display: grid; gap: var(--s-4); }
+.ws__status { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); }
+.ws__notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.ws__notice p { margin: 0; color: var(--bad); font-size: var(--fs-sm); }
+.ws__pager { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-3) var(--s-4); border-top: 1px solid var(--line); }
+.ws__pager .notice { margin: 0; }
 .ws__head { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
 .ws__back { display: inline-flex; align-items: center; gap: var(--s-1); justify-self: start; min-height: 32px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; text-decoration: none; }
 .ws__back:hover { color: var(--ink); }
