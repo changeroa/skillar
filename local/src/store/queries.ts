@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { automationOf, NO_ACTIVITY } from "./automation.js";
 import { executionEventScope } from "./execution.js";
+import { evalRunFromRow } from "../evaluation.js";
 import { nameFromUri, parseJson, readIngestCounters, storeError, type StoreCtx } from "./writes.js";
-import type { AdoptionState, Attribution, Candidate, EventKind, Filter, FlowDto, HeatmapDto, OtelSpanRow, RuntimeId, SessionRow, SkillUri, SkillWeekDto, Store, TraceStep, TreeEvent, TreeTopologyNode, TreePaneLink } from "../types.js";
+import type { AdoptionState, Attribution, Candidate, EvalCase, EvalLabel, EvalRun, EvaluationComparison, EventKind, Filter, FlowDto, HeatmapDto, OtelSpanRow, RuntimeId, SessionRow, SkillUri, SkillWeekDto, Store, TraceStep, TreeEvent, TreeTopologyNode, TreePaneLink } from "../types.js";
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
@@ -134,7 +135,7 @@ function shortDigest(d: unknown): string {
   return s.replace(/^sha256[:-]/, "").slice(0, 12);
 }
 
-type Queries = Pick<Store, "sessions" | "trace" | "flow" | "heatmap" | "skillWeek" | "stats" | "treeSessionData" | "treeFlowData"
+type Queries = Pick<Store, "sessions" | "trace" | "flow" | "heatmap" | "skillWeek" | "stats" | "evalCases" | "evaluationCases" | "evaluationSummary" | "treeSessionData" | "treeFlowData"
   | "outsideHerdrSessionIds" | "outsideHerdrSessions" | "sessionAutomation">;
 
 /** The automation id of a session, or undefined when a person drove it: the rule matching its first prompt, else
@@ -143,9 +144,63 @@ function automationIdOf(firstPrompt: string | undefined, active: boolean): strin
   return automationOf(firstPrompt) ?? (active ? undefined : NO_ACTIVITY);
 }
 
+type EvalCaseRow = { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null; created_at: number };
+type EvalRunCaseRow = { eval_case_id: string; label: Exclude<EvalLabel, "unlabeled">; expected_uri: string | null; rank: number | null; abstained: number };
+
+function evalCaseFromRow(row: EvalCaseRow): EvalCase {
+  return { id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}),
+    ...(row.from_trace_id ? { fromTraceId: row.from_trace_id } : {}), createdAt: row.created_at };
+}
+
+function metricDelta(after: number | null, before: number | null): number | null {
+  return after === null || before === null ? null : after - before;
+}
+
+function pairedMetrics(rows: EvalRunCaseRow[]): EvaluationComparison["pairedBaseline"] {
+  const skills = rows.filter((row) => row.label === "skill");
+  const noMatch = rows.filter((row) => row.label === "no_match");
+  const top1 = skills.filter((row) => row.rank === 1).length;
+  const noMatchCorrect = noMatch.filter((row) => row.abstained === 1).length;
+  return {
+    hitAt1: skills.length ? top1 / skills.length : null,
+    hitAt3: skills.length ? skills.filter((row) => row.rank !== null && row.rank <= 3).length / skills.length : null,
+    mrr: skills.length ? skills.reduce((sum, row) => sum + (row.rank === null ? 0 : 1 / row.rank), 0) / skills.length : null,
+    noMatchAccuracy: noMatch.length ? noMatchCorrect / noMatch.length : null,
+    labelAccuracy: rows.length ? (top1 + noMatchCorrect) / rows.length : null,
+  };
+}
+
+function compareRuns(baseline: EvalRun, current: EvalRun, before: EvalRunCaseRow[], after: EvalRunCaseRow[]): EvaluationComparison {
+  const prior = new Map(before.map((row) => [row.eval_case_id, row]));
+  const beforePairs: EvalRunCaseRow[] = [], afterPairs: EvalRunCaseRow[] = [];
+  let improved = 0, regressed = 0, newlyFound = 0, lost = 0, noMatchImproved = 0, noMatchRegressed = 0;
+  for (const next of after) {
+    const prev = prior.get(next.eval_case_id);
+    if (!prev || prev.label !== next.label || prev.expected_uri !== next.expected_uri) continue;
+    beforePairs.push(prev);
+    afterPairs.push(next);
+    if (next.label === "skill") {
+      if (prev.rank === null && next.rank !== null) newlyFound += 1;
+      else if (prev.rank !== null && next.rank === null) lost += 1;
+      else if (prev.rank !== null && next.rank !== null && next.rank < prev.rank) improved += 1;
+      else if (prev.rank !== null && next.rank !== null && next.rank > prev.rank) regressed += 1;
+    } else if (next.abstained > prev.abstained) noMatchImproved += 1;
+    else if (next.abstained < prev.abstained) noMatchRegressed += 1;
+  }
+  const pairedBaseline = pairedMetrics(beforePairs), pairedCurrent = pairedMetrics(afterPairs);
+  return { baseline, current, paired: beforePairs.length, pairedBaseline, pairedCurrent, improved, regressed, newlyFound, lost, noMatchImproved, noMatchRegressed,
+    hitAt1Delta: metricDelta(pairedCurrent.hitAt1, pairedBaseline.hitAt1),
+    hitAt3Delta: metricDelta(pairedCurrent.hitAt3, pairedBaseline.hitAt3),
+    mrrDelta: metricDelta(pairedCurrent.mrr, pairedBaseline.mrr),
+    noMatchAccuracyDelta: metricDelta(pairedCurrent.noMatchAccuracy, pairedBaseline.noMatchAccuracy),
+    labelAccuracyDelta: metricDelta(pairedCurrent.labelAccuracy, pairedBaseline.labelAccuracy) };
+}
+
 export function createQueries(ctx: StoreCtx): Queries {
   const { db } = ctx;
   const defaultTz = () => ctx.opts.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const listEvalCases = () => (db.prepare("SELECT id, query, label, expected_uri, from_trace_id, created_at FROM eval_cases ORDER BY created_at, rowid").all() as EvalCaseRow[])
+    .map(evalCaseFromRow);
 
   function skillMeta(): Map<SkillUri, SkillMeta> {
     const rows = db.prepare("SELECT uri, name, tags_json, group_id FROM skills").all() as { uri: string; name: string; tags_json: string; group_id: string | null }[];
@@ -234,6 +289,30 @@ export function createQueries(ctx: StoreCtx): Queries {
   }
 
   const queries: Queries = {
+    evalCases() {
+      return listEvalCases().flatMap((row) => row.label === "skill" && row.expectedUri ? [{ query: row.query, expectedUri: row.expectedUri }] : [{ query: row.query }]);
+    },
+
+    evaluationCases() {
+      return listEvalCases();
+    },
+
+    evaluationSummary() {
+      const cases = listEvalCases();
+      const rows = db.prepare(`SELECT id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json
+        FROM eval_runs ORDER BY created_at DESC, rowid DESC`).all() as { id: string; catalog_fingerprint: string; catalog_size: number;
+        created_at: number; baseline: number; metrics_json: string }[];
+      const runs = rows.map(evalRunFromRow);
+      const latest = runs[0];
+      const baseline = runs.find((run) => run.baseline);
+      if (!latest || !baseline || latest.id === baseline.id || latest.catalogFingerprint === baseline.catalogFingerprint) {
+        return { cases, ...(baseline ? { baseline } : {}), ...(latest ? { latest } : {}) };
+      }
+      const outcomes = (runId: string) => db.prepare(`SELECT eval_case_id, label, expected_uri, rank, abstained
+        FROM eval_run_cases WHERE run_id = ?`).all(runId) as EvalRunCaseRow[];
+      return { cases, baseline, latest, comparison: compareRuns(baseline, latest, outcomes(baseline.id), outcomes(latest.id)) };
+    },
+
     treeSessionData(sessionId, scope) {
       const session = db.prepare(`SELECT id, runtime, started_at AS startedAt, ended_at AS endedAt
         FROM sessions WHERE id = ?`).get(sessionId) as { id: string; runtime: RuntimeId; startedAt: number; endedAt: number | null } | undefined;

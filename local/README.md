@@ -88,7 +88,7 @@ skillar serve                         # default port 8799
 skillar serve --port 8800
 ```
 
-Open the dashboard (sessions, per-session trace, flow, and weekday-by-hour heatmap):
+Open the dashboard (sessions, per-session trace, flow, weekday-by-hour heatmap, and saved-query evaluation):
 
 ```sh
 skillar open                          # opens the browser
@@ -110,12 +110,18 @@ skillar doctor                        # service, daemon, token mode, FTS5, roots
 skillar doctor --json
 ```
 
-Measure search quality against recorded or hand-written cases:
+Measure search quality against saved labels or hand-written cases:
 
 ```sh
-skillar eval
-skillar eval --cases cases.json --json
+skillar eval --baseline                 # persist the before snapshot for labeled saved queries
+skillar eval                            # persist current ranking and compare after catalog changes
+skillar eval --cases cases.json --json  # one-off JSON cases; does not alter saved snapshots
 ```
+
+From a session trace, use **Save as eval case** to retain a query. In the dashboard's **Evaluation** tab,
+mark it as the correct current catalog skill or as an explicit **No matching catalog skill**. Leaving it
+unlabeled retains the captured query but does not score it as a miss. The tab reports aggregate ranking,
+explicit no-match, and Korean/English label metrics, and keeps the baseline/current comparison locally.
 
 ## Skill tracing
 
@@ -125,7 +131,7 @@ See [Skill tracing](https://github.com/changeroa/skillar/blob/main/local/docs/sk
 
 ## Export and import
 
-Move your skillar setup (skill roots, config, eval cases, aliases) to another machine:
+Move your skillar setup (skill roots, config, evaluation labels and snapshots, aliases) to another machine:
 
 ```sh
 skillar export ~/skillar-backup                  # settings only

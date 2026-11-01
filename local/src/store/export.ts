@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { DEFAULT_ROOTS, expandHome } from "../config.js";
 import { parseJson, readAliasesOverrides, storeError, writeAliasesOverrides, type StoreCtx } from "./writes.js";
-import type { Store } from "../types.js";
+import type { EvalLabel, EvalMetrics, Store } from "../types.js";
 
 export const EXPORT_FILE = "skillar-export.json";
 export const HISTORY_FILE = "history.db";
@@ -26,14 +26,17 @@ const HISTORY_TABLES: Record<string, string[]> = {
 };
 // recording_clock is deliberately local. Row provenance and flow cuts travel
 // through shared columns; insert triggers add destination arrival provenance.
-const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6];
+const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6, 7];
 
-type ExportedEvalCase = { query: string; expectedUri?: string; fromTraceId?: string };
+type ExportedEvalCase = { id?: string; query: string; label?: EvalLabel; expectedUri?: string; fromTraceId?: string };
+type ExportedEvalRun = { id: string; catalogFingerprint: string; catalogSize: number; createdAt: number; baseline: boolean; metrics: EvalMetrics;
+  outcomes: { evalCaseId: string; query: string; label: Exclude<EvalLabel, "unlabeled">; expectedUri?: string; language: "ko" | "en" | "other"; rank?: number; abstained: boolean }[] };
 export type ExportDoc = { version: 1; config: Record<string, unknown>; roots: { id: string; path: string }[]; evalCases: ExportedEvalCase[];
-  aliasesOverrides: Record<string, string[]> };
+  evaluationRuns?: ExportedEvalRun[]; aliasesOverrides: Record<string, string[]> };
 
 export type ImportDetails = {
   evalCases: { added: number; skipped: number };
+  evaluationRuns: { added: number; skipped: number };
   roots: { added: string[]; skipped: string[] };
   configKeys: { added: string[]; kept: string[] };
   aliases: { added: string[]; skipped: string[] };
@@ -60,9 +63,19 @@ export function createPortable(ctx: StoreCtx): Portable {
   const { db } = ctx;
   const home = () => ctx.opts.home ?? homedir();
 
-  function existingEvalKeys(): Set<string> {
-    const rows = db.prepare("SELECT query, expected_uri FROM eval_cases").all() as { query: string; expected_uri: string | null }[];
-    return new Set(rows.map((r) => JSON.stringify([r.query, r.expected_uri])));
+  function evalLabelOf(c: ExportedEvalCase): EvalLabel {
+    if (c.label === "unlabeled" || c.label === "skill" || c.label === "no_match") return c.label;
+    return c.expectedUri ? "skill" : "unlabeled";
+  }
+
+  function evalKey(query: string, label: EvalLabel, expectedUri?: string): string {
+    return JSON.stringify([query, label, expectedUri ?? null]);
+  }
+
+  function existingEvalRows(): { id: string; query: string; label: EvalLabel; expectedUri?: string }[] {
+    const rows = db.prepare("SELECT id, query, label, expected_uri FROM eval_cases").all() as
+      { id: string; query: string; label: EvalLabel; expected_uri: string | null }[];
+    return rows.map((row) => ({ id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}) }));
   }
 
   function columnsOf(schema: "main" | "hist", table: string): string[] {
@@ -149,14 +162,35 @@ export function createPortable(ctx: StoreCtx): Portable {
       void _token;
       const roots = (Array.isArray(rawRoots) ? (rawRoots as { id: string; path: string }[]) : [])
         .map((r) => ({ id: r.id, path: tildify(r.path, home()) }));
-      const evalRows = db.prepare("SELECT query, expected_uri, from_trace_id FROM eval_cases ORDER BY created_at, rowid").all() as
-        { query: string; expected_uri: string | null; from_trace_id: string | null }[];
+      const evalRows = db.prepare("SELECT id, query, label, expected_uri, from_trace_id FROM eval_cases ORDER BY created_at, rowid").all() as
+        { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null }[];
+      const evalCases = evalRows.map((r) => ({ id: r.id, query: r.query, label: r.label, ...(r.expected_uri !== null ? { expectedUri: r.expected_uri } : {}),
+        ...(r.from_trace_id !== null ? { fromTraceId: r.from_trace_id } : {}) }));
+      const outcomeRows = db.prepare(`SELECT r.id AS run_id, r.catalog_fingerprint, r.catalog_size, r.created_at, r.baseline, r.metrics_json,
+          x.eval_case_id, c.query, x.label, x.expected_uri, x.language, x.rank, x.abstained
+        FROM eval_runs r LEFT JOIN eval_run_cases x ON x.run_id = r.id LEFT JOIN eval_cases c ON c.id = x.eval_case_id
+        ORDER BY r.created_at, r.rowid, c.created_at, c.rowid`).all() as { run_id: string; catalog_fingerprint: string; catalog_size: number;
+          created_at: number; baseline: number; metrics_json: string; eval_case_id: string | null; query: string | null; label: Exclude<EvalLabel, "unlabeled"> | null;
+          expected_uri: string | null; language: "ko" | "en" | "other" | null; rank: number | null; abstained: number | null }[];
+      const runs = new Map<string, ExportedEvalRun>();
+      for (const row of outcomeRows) {
+        let run = runs.get(row.run_id);
+        if (!run) {
+          run = { id: row.run_id, catalogFingerprint: row.catalog_fingerprint, catalogSize: row.catalog_size, createdAt: row.created_at,
+            baseline: row.baseline === 1, metrics: parseJson<EvalMetrics>(row.metrics_json, {} as EvalMetrics), outcomes: [] };
+          runs.set(row.run_id, run);
+        }
+        if (row.eval_case_id !== null && row.query !== null && row.label !== null && row.language !== null && row.abstained !== null) {
+          run.outcomes.push({ evalCaseId: row.eval_case_id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}), language: row.language,
+            ...(row.rank !== null ? { rank: row.rank } : {}), abstained: row.abstained === 1 });
+        }
+      }
       const doc: ExportDoc = {
         version: 1,
         config,
         roots,
-        evalCases: evalRows.map((r) => ({ query: r.query, ...(r.expected_uri !== null ? { expectedUri: r.expected_uri } : {}),
-          ...(r.from_trace_id !== null ? { fromTraceId: r.from_trace_id } : {}) })),
+        evalCases,
+        evaluationRuns: [...runs.values()],
         aliasesOverrides: readAliasesOverrides(db),
       };
       const out = join(dir, EXPORT_FILE);
@@ -177,14 +211,41 @@ export function createPortable(ctx: StoreCtx): Portable {
       if (doc.version !== 1) throw storeError("unsupported_export_version", `unsupported export version: ${String(doc.version)}`);
       const apply = opts.merge;
 
-      const evalKeys = existingEvalKeys();
-      const evalToAdd: ExportedEvalCase[] = [];
+      const existingCases = existingEvalRows();
+      const casesById = new Map(existingCases.map((row) => [row.id, row]));
+      const sourceCaseIds = new Set<string>();
+      const evalKeys = new Set(existingCases.map((row) => evalKey(row.query, row.label, row.expectedUri)));
+      const evalToAdd: (ExportedEvalCase & { label: EvalLabel })[] = [];
       let evalSkipped = 0;
-      for (const c of doc.evalCases ?? []) {
-        const key = JSON.stringify([c.query, c.expectedUri ?? null]);
-        if (evalKeys.has(key)) evalSkipped++;
+      for (const raw of doc.evalCases ?? []) {
+        if (typeof raw.query !== "string" || !raw.query) throw storeError("invalid_eval_case", "evaluation cases need a query");
+        if (raw.id !== undefined) {
+          if (typeof raw.id !== "string" || !raw.id || sourceCaseIds.has(raw.id)) throw storeError("invalid_eval_case", "evaluation case IDs must be unique nonempty strings");
+          sourceCaseIds.add(raw.id);
+        }
+        const label = evalLabelOf(raw);
+        const expectedUri = typeof raw.expectedUri === "string" ? raw.expectedUri : undefined;
+        if ((label === "skill") !== (expectedUri !== undefined)) throw storeError("invalid_eval_case", "skill labels need expectedUri and other labels cannot have one");
+        if (raw.fromTraceId !== undefined && typeof raw.fromTraceId !== "string") throw storeError("invalid_eval_case", "fromTraceId must be a string");
+        const c = { ...(raw.id ? { id: raw.id } : {}), query: raw.query, label, ...(expectedUri ? { expectedUri } : {}), ...(typeof raw.fromTraceId === "string" ? { fromTraceId: raw.fromTraceId } : {}) };
+        const key = evalKey(c.query, c.label, c.expectedUri);
+        const existing = raw.id ? casesById.get(raw.id) : undefined;
+        if (existing && existing.query !== raw.query) throw storeError("invalid_eval_case", "an existing evaluation case ID has a different query");
+        if (raw.id ? existing !== undefined : evalKeys.has(key)) evalSkipped++;
         else { evalKeys.add(key); evalToAdd.push(c); }
       }
+      const importedRuns = Array.isArray(doc.evaluationRuns) ? doc.evaluationRuns : [];
+      const knownRunIds = new Set((db.prepare("SELECT id FROM eval_runs").all() as { id: string }[]).map((row) => row.id));
+      const evalRunsToAdd = importedRuns.filter((run) => {
+        if (typeof run.id !== "string" || !run.id || typeof run.catalogFingerprint !== "string" || !Number.isInteger(run.catalogSize)
+          || !Number.isInteger(run.createdAt) || typeof run.baseline !== "boolean" || !run.metrics || !Array.isArray(run.outcomes)) {
+          throw storeError("invalid_eval_run", "evaluation runs are malformed");
+        }
+        if (knownRunIds.has(run.id)) return false;
+        knownRunIds.add(run.id);
+        return true;
+      });
+      const evalRunsSkipped = importedRuns.length - evalRunsToAdd.length;
 
       const currentAliases = readAliasesOverrides(db);
       const aliasAdded = Object.keys(doc.aliasesOverrides ?? {}).filter((k) => !(k in currentAliases));
@@ -237,10 +298,31 @@ export function createPortable(ctx: StoreCtx): Portable {
       }
 
       if (apply) {
-        const insert = db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at) VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?)");
+        const insert = db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at, label) VALUES (COALESCE(?, lower(hex(randomblob(16)))), ?, ?, ?, ?, ?)");
         db.exec("BEGIN IMMEDIATE");
         try {
-          for (const c of evalToAdd) insert.run(c.query, c.expectedUri ?? null, c.fromTraceId ?? null, ctx.now());
+          for (const c of evalToAdd) insert.run(c.id ?? null, c.query, c.expectedUri ?? null, c.fromTraceId ?? null, ctx.now(), c.label);
+          const restoredCases = new Map(existingEvalRows().map((row) => [row.id, row]));
+          const insertRun = db.prepare(`INSERT INTO eval_runs (id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json)
+            VALUES (?, ?, ?, ?, ?, ?)`);
+          const insertOutcome = db.prepare(`INSERT INTO eval_run_cases
+            (run_id, eval_case_id, label, expected_uri, language, rank, abstained) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+          for (const run of evalRunsToAdd) {
+            insertRun.run(run.id, run.catalogFingerprint, run.catalogSize, run.createdAt, run.baseline ? 1 : 0, JSON.stringify(run.metrics));
+            for (const outcome of run.outcomes) {
+              if (typeof outcome.evalCaseId !== "string" || !sourceCaseIds.has(outcome.evalCaseId)
+                || typeof outcome.query !== "string" || (outcome.label !== "skill" && outcome.label !== "no_match")
+                || (outcome.label === "skill" && typeof outcome.expectedUri !== "string")
+                || (outcome.label !== "skill" && outcome.expectedUri !== undefined)
+                || (outcome.language !== "ko" && outcome.language !== "en" && outcome.language !== "other")
+                || typeof outcome.abstained !== "boolean" || (outcome.rank !== undefined && (!Number.isInteger(outcome.rank) || outcome.rank < 1))) {
+                throw storeError("invalid_eval_run", "evaluation run outcome is malformed");
+              }
+              const restoredCase = restoredCases.get(outcome.evalCaseId);
+              if (!restoredCase || restoredCase.query !== outcome.query) throw storeError("invalid_eval_run", "evaluation run references a case not in the export");
+              insertOutcome.run(run.id, restoredCase.id, outcome.label, outcome.expectedUri ?? null, outcome.language, outcome.rank ?? null, outcome.abstained ? 1 : 0);
+            }
+          }
           if (aliasAdded.length > 0) {
             const next = { ...currentAliases };
             for (const k of aliasAdded) next[k] = doc.aliasesOverrides![k]!;
@@ -264,10 +346,11 @@ export function createPortable(ctx: StoreCtx): Portable {
 
       const historyAdded = history ? Object.values(history.tables).reduce((sum, n) => sum + n, 0) : 0;
       return {
-        added: evalToAdd.length + rootsAdded.length + configAdded.length + aliasAdded.length + historyAdded,
-        skipped: evalSkipped + rootsSkipped.length + configKept.length + aliasSkipped.length + (history?.skipped ?? 0),
+        added: evalToAdd.length + evalRunsToAdd.length + rootsAdded.length + configAdded.length + aliasAdded.length + historyAdded,
+        skipped: evalSkipped + evalRunsSkipped + rootsSkipped.length + configKept.length + aliasSkipped.length + (history?.skipped ?? 0),
         details: {
           evalCases: { added: evalToAdd.length, skipped: evalSkipped },
+          evaluationRuns: { added: evalRunsToAdd.length, skipped: evalRunsSkipped },
           roots: { added: rootsAdded.map((r) => r.id), skipped: rootsSkipped },
           configKeys: { added: configAdded, kept: configKept },
           aliases: { added: aliasAdded, skipped: aliasSkipped },
