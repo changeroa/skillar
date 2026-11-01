@@ -21,7 +21,7 @@ export const HELP = `skillar - local skill router
 Usage:
   skillar serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
   skillar open [--print]                      print and open the dashboard URL
-  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
+  skillar init [--dry-run] [--runtime <id>...] [--capture-level <metadata|redacted|full>] [--retention-days <n|forever>] [--no-service] [--disable-remote]
   skillar init --rollback [--all]             undo the newest (or every) init run
   skillar doctor [--json]                     check service, daemon, packs, index and backups
   skillar service install|remove|status       manage the LaunchAgent / systemd user unit
@@ -94,12 +94,30 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         return await runOpen({ print: p.flags.has("--print") }, env, io);
       }
       case "init": {
-        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote"], multi: ["--runtime"] });
+        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote"],
+          values: ["--capture-level", "--retention-days"], multi: ["--runtime"] });
         if (p.positional.length) throw new UsageError(`unexpected argument ${p.positional[0]}`);
         if (p.flags.has("--all") && !p.flags.has("--rollback")) throw new UsageError("--all is only valid with --rollback");
+        const one = (name: "--capture-level" | "--retention-days") => {
+          const values = p.values.get(name);
+          if (values !== undefined && values.length !== 1) throw new UsageError(`${name} needs one value`);
+          return values?.[0];
+        };
+        const capture = one("--capture-level");
+        if (capture !== undefined && capture !== "metadata" && capture !== "redacted" && capture !== "full") {
+          throw new UsageError("--capture-level must be metadata, redacted, or full");
+        }
+        const retentionRaw = one("--retention-days");
+        let retentionDays: number | null | undefined;
+        if (retentionRaw !== undefined) {
+          if (retentionRaw === "forever") retentionDays = null;
+          else if (/^[1-9]\d*$/.test(retentionRaw) && Number.isSafeInteger(Number(retentionRaw))) retentionDays = Number(retentionRaw);
+          else throw new UsageError("--retention-days must be a positive integer or forever");
+        }
         return await runInit({
           dryRun: p.flags.has("--dry-run"), rollback: p.flags.has("--rollback"), all: p.flags.has("--all"),
           noService: p.flags.has("--no-service"), disableRemote: p.flags.has("--disable-remote"), runtimes: p.values.get("--runtime") ?? [],
+          ...(capture !== undefined ? { captureLevel: capture } : {}), ...(retentionDays !== undefined ? { retentionDays } : {}),
         }, env, io);
       }
       case "doctor": {

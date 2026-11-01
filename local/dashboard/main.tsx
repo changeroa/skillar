@@ -1,4 +1,4 @@
-import { render } from "preact";
+import { Fragment, render } from "preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 import type { Filter } from "../src/types.js";
 import { api, type LiveState, type SessionListRow } from "./api";
@@ -6,6 +6,7 @@ import {
   DOW_LABEL, FILTER_KEYS, RUNTIME_LABEL, STATE_LABEL, buildHash, parseHash, skillName, withoutFilterKey,
   type FilterKey, type LiveInfo, type Route, type View,
 } from "./state";
+import { PrivacyControls } from "./components/privacy";
 import { FlowView } from "./views/flow";
 import { HeatmapView } from "./views/heatmap";
 import { SessionsView } from "./views/sessions";
@@ -122,6 +123,8 @@ export const TAB_OF: Record<View, View> = {
 function App() {
   const [route, navigate] = useRoute();
   const live = useLive();
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [historyRevision, setHistoryRevision] = useState(0);
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live };
   return (
@@ -136,6 +139,7 @@ function App() {
             </span>
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
+            <button type="button" class="btn privacy-toggle" onClick={() => setPrivacyOpen(true)}>Privacy</button>
           </div>
           <nav class="tabs" aria-label="Views">
             {TABS.map((tab) => (
@@ -147,12 +151,15 @@ function App() {
         </div>
       </header>
       <main class="page wrap">
-        {route.view === "sessions" && <SessionsView {...props} />}
-        {route.view === "trace" && <TraceView {...props} />}
-        {route.view === "workspaces" && <WorkspacesView {...props} />}
-        {route.view === "workspace" && <WorkspaceView {...props} />}
-        {route.view === "flow" && <FlowView {...props} />}
-        {route.view === "heatmap" && <HeatmapView {...props} />}
+        {privacyOpen && <PrivacyControls onClose={() => setPrivacyOpen(false)} onHistoryDeleted={() => setHistoryRevision((value) => value + 1)} />}
+        <Fragment key={historyRevision}>
+          {route.view === "sessions" && <SessionsView {...props} />}
+          {route.view === "trace" && <TraceView {...props} />}
+          {route.view === "workspaces" && <WorkspacesView {...props} />}
+          {route.view === "workspace" && <WorkspaceView {...props} />}
+          {route.view === "flow" && <FlowView {...props} />}
+          {route.view === "heatmap" && <HeatmapView {...props} />}
+        </Fragment>
       </main>
     </>
   );

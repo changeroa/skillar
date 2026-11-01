@@ -11,8 +11,8 @@ test("first run creates SKILLAR_HOME 0700, config.json defaults, and a 0600 hex 
   try {
     const config = loadConfig(sb.env);
     assert.equal(config.port, 8799);
-    assert.equal(config.captureLevel, "full");
-    assert.equal(config.retentionDays, null);
+    assert.equal(config.captureLevel, "metadata");
+    assert.equal(config.retentionDays, 90);
     assert.deepEqual(config.runtimes, {});
     assert.deepEqual(config.roots.map((r) => r.id), ["agents", "claude", "codex", "gemini", "omo", "gajae", "openclaw", "iyen"]);
     assert.equal(config.roots.find((r) => r.id === "gajae").path, join(sb.home, ".gjc/agent/skills"));
@@ -44,6 +44,20 @@ test("SKILLAR_HOME defaults to HOME/.skillar and config.json overrides are honor
     assert.equal(config.captureLevel, "metadata");
     assert.equal(config.retentionDays, 30);
     assert.deepEqual(config.roots, [{ id: "x", path: join(sb.home, "x/skills") }]);
+  } finally {
+    sb.cleanup();
+  }
+});
+
+test("explicit legacy privacy choices remain unchanged", () => {
+  const sb = makeSandbox();
+  try {
+    const path = join(sb.env.SKILLAR_HOME, "config.json");
+    loadConfig(sb.env);
+    writeFileSync(path, JSON.stringify({ captureLevel: "full", retentionDays: null, roots: [{ id: "x", path: "~/x/skills" }] }));
+    const config = loadConfig(sb.env);
+    assert.equal(config.captureLevel, "full");
+    assert.equal(config.retentionDays, null);
   } finally {
     sb.cleanup();
   }
