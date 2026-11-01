@@ -9,6 +9,7 @@ import type { LiveState, SessionListRow } from "./api";
 //   #/workspaces/<flow id>         (one flow; an unregistered workspace is addressed as "ws:<id>")
 //   #/flow?skill=skill://local/agents/pr-review-ko/SKILL.md
 //   #/heatmap?dow=1&hour=9&hourSpan=2
+//   #/evaluation                         (saved-query labels and persisted rank comparisons)
 // The query part uses exactly the server's Filter params (from,to epoch ms; runtime,skill,state
 // comma lists; dow,hour,hourSpan ints; q), so the same string feeds /api/* calls.
 
@@ -17,7 +18,7 @@ export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_onl
 export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
-export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap";
+export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "evaluation";
 export type Route = { view: View; sessionId?: string; flowId?: string; filter: Filter };
 /** One shared SSE subscription: `seq` increments per `session` event, `last` is that event's row. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
@@ -207,6 +208,7 @@ export function parseHash(hash: string): Route {
   switch (segments[0]) {
     case "flow": return { view: "flow", filter };
     case "heatmap": return { view: "heatmap", filter };
+    case "evaluation": return { view: "evaluation", filter };
     case "workspaces":
       return segments[1] ? { view: "workspace", flowId: segments[1], filter } : { view: "workspaces", filter };
     case "sessions":

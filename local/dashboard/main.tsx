@@ -8,6 +8,7 @@ import {
 } from "./state";
 import { FlowView } from "./views/flow";
 import { HeatmapView } from "./views/heatmap";
+import { EvaluationView } from "./views/evaluation";
 import { SessionsView } from "./views/sessions";
 import { TraceView } from "./views/trace";
 import { WorkspaceView, WorkspacesView } from "./views/workspaces";
@@ -112,11 +113,12 @@ const TABS: { view: View; label: string }[] = [
   { view: "workspaces", label: "Workspaces" },
   { view: "flow", label: "Flow" },
   { view: "heatmap", label: "Heatmap" },
+  { view: "evaluation", label: "Evaluation" },
 ];
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap",
+  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", evaluation: "evaluation",
 };
 
 function App() {
@@ -153,6 +155,7 @@ function App() {
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
+        {route.view === "evaluation" && <EvaluationView {...props} />}
       </main>
     </>
   );

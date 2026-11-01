@@ -105,6 +105,7 @@ test("hash routes carry the view, the session id, and the filter", () => {
   }
   assert.deepEqual(parseHash("#/flow?runtime=codex"), { view: "flow", filter: { runtime: ["codex"] } });
   assert.deepEqual(parseHash("#/heatmap?dow=3&hour=14&hourSpan=4"), { view: "heatmap", filter: { dow: 3, hour: 14, hourSpan: 4 } });
+  assert.deepEqual(parseHash("#/evaluation"), { view: "evaluation", filter: {} });
   assert.deepEqual(parseHash("#/sessions/ses_01?q=review"), { view: "trace", sessionId: "ses_01", filter: { q: "review" } });
   assert.deepEqual(parseHash("#/sessions/a%2Fb"), { view: "trace", sessionId: "a/b", filter: {} });
 });
@@ -116,6 +117,8 @@ test("buildHash -> parseHash round-trips every view and keeps the filter query s
     { view: "trace", sessionId: "ses_abc/1", filter: { runtime: ["gajae"] } },
     { view: "flow", filter: { skill: [SKILL_A] } },
     { view: "heatmap", filter: { dow: 0, hour: 0, hourSpan: 1 } },
+    { view: "evaluation", filter: {} },
+
   ];
   for (const route of routes) {
     const hash = buildHash(route);
