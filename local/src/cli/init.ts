@@ -2,14 +2,15 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
-import { DEFAULT_PORT, defaultConfigFile, ensureSkillarHome, expandHome, loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
+import { DEFAULT_PORT, defaultConfigFile, ensureSkillarHome, expandHome, parseConfigFile, resolveSkillarHome, resolveHome } from "../config.js";
 import { PACKS, getPack } from "../packs/registry.js";
-import type { SkillarConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
+import type { CaptureLevel, SkillarConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 import { assertPlatform } from "../version.js";
 import { type AppliedFile, WriterError, applyFiles, changedFiles, maskSecrets, removeEmptyDirs, restoreFiles, unifiedDiff, unparseable } from "./config-writer.js";
 import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
-export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean };
+export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean;
+  captureLevel?: CaptureLevel; retentionDays?: number | null };
 export type InitHooks = { afterPlan?: () => void | Promise<void> };
 
 type RecordedCommand = { argv: string[]; description: string; undo?: { argv: string[]; description: string }; exitCode: number | null; allowFailure?: boolean };
@@ -21,33 +22,29 @@ export type BackupManifest = {
 
 // Planning never writes: a first run plans against default config and an in-memory token, and materialize() persists
 // both only once the apply starts, so dry runs and aborted runs leave HOME byte-identical.
-function readConfigForPlan(env: NodeJS.ProcessEnv): { config: SkillarConfig; token: string; materialize(): void } {
+function readConfigForPlan(env: NodeJS.ProcessEnv): { config: SkillarConfig; token: string; configPath: string; configBefore: string | null; materialize(): void } {
   const skillarHome = resolveSkillarHome(env);
   const tokenPath = join(skillarHome, "token");
   const configPath = join(skillarHome, "config.json");
-  if (existsSync(configPath) && existsSync(tokenPath)) {
-    const config = loadConfig(env);
-    return { config, token: readFileSync(tokenPath, "utf8").trim(), materialize: () => undefined };
-  }
+  const configBefore = existsSync(configPath) ? readFileSync(configPath, "utf8") : null;
   const home = resolveHome(env);
   const d = defaultConfigFile();
-  let port = DEFAULT_PORT;
-  if (existsSync(configPath)) {
-    const parsed = JSON.parse(readFileSync(configPath, "utf8")) as { port?: unknown };
-    if (typeof parsed.port === "number") port = parsed.port;
-  }
-  const config: SkillarConfig = { port, captureLevel: d.captureLevel, retentionDays: d.retentionDays, roots: d.roots.map((r) => ({ id: r.id, path: expandHome(r.path, home) })), runtimes: {} };
+  const config: SkillarConfig = configBefore === null
+    ? { port: DEFAULT_PORT, captureLevel: d.captureLevel, retentionDays: d.retentionDays,
+      roots: d.roots.map((r) => ({ id: r.id, path: expandHome(r.path, home) })), runtimes: {} }
+    : parseConfigFile(configBefore, home);
   const token = existsSync(tokenPath) ? readFileSync(tokenPath, "utf8").trim() : randomBytes(32).toString("hex");
   return {
     config,
     token,
+    configPath,
+    configBefore,
     materialize() {
       ensureSkillarHome(env);
       if (!existsSync(tokenPath)) {
         writeFileSync(tokenPath, token + "\n", { mode: 0o600, flag: "wx" });
         chmodSync(tokenPath, 0o600);
       }
-      loadConfig(env);
     },
   };
 }
@@ -109,7 +106,15 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   if (opts.rollback) return runRollback({ all: opts.all ?? false }, env, io);
   const home = resolveHome(env);
   const skillarHome = resolveSkillarHome(env);
-  const { config, token, materialize } = readConfigForPlan(env);
+  const { config, token, configPath, configBefore, materialize } = readConfigForPlan(env);
+  const nextPrivacy = { captureLevel: opts.captureLevel ?? config.captureLevel, retentionDays: opts.retentionDays ?? config.retentionDays };
+  const sourceConfig = configBefore === null ? defaultConfigFile() : JSON.parse(configBefore) as Record<string, unknown>;
+  const configAfter = JSON.stringify({ ...sourceConfig, ...nextPrivacy }, null, 2) + "\n";
+  const privacyChanged = configBefore === null
+    || (opts.captureLevel !== undefined && opts.captureLevel !== config.captureLevel)
+    || (opts.retentionDays !== undefined && opts.retentionDays !== config.retentionDays);
+  const configFile: PackPlanFile | undefined = privacyChanged
+    ? { path: configPath, before: configBefore, after: configAfter, mode: 0o600 } : undefined;
   const mask = (t: string) => maskSecrets(t, [token]);
   const ctx: PackCtx = { home, env, port: config.port, token, nodePath: nodePath(), packageRoot: packageRoot(), disableRemote: opts.disableRemote ?? false };
 
@@ -162,12 +167,19 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     return 1;
   }
 
+  if (configFile || opts.captureLevel !== undefined || opts.retentionDays !== undefined) {
+    const previousCapture = configBefore === null ? "unset" : config.captureLevel;
+    const previousRetention = configBefore === null ? "unset" : config.retentionDays === null ? "forever" : `${config.retentionDays} days`;
+    const retention = nextPrivacy.retentionDays === null ? "forever" : `${nextPrivacy.retentionDays} days`;
+    io.out(`privacy settings: capture ${previousCapture} -> ${nextPrivacy.captureLevel}; retention ${previousRetention} -> ${retention}\n`);
+  }
+  if (configFile) io.out(mask(unifiedDiff(configFile.path, configFile.before, configFile.after)));
   for (const p of plans) {
     for (const f of changedFiles(p.plan.files)) io.out(mask(unifiedDiff(f.path, f.before, f.after)));
     for (const c of p.plan.commands) io.out(mask(`command [${p.id}]: ${c.argv.join(" ")}${c.undo ? `  (undo: ${c.undo.argv.join(" ")})` : ""}\n`));
     for (const n of p.plan.notes) io.out(mask(`note [${p.id}]: ${n}\n`));
   }
-  const toWrite = changedFiles(files);
+  const toWrite = changedFiles(configFile ? [configFile, ...files] : files);
   if (opts.dryRun) {
     io.out(`dry run: ${toWrite.length} file(s) and ${commands.length} command(s) planned; nothing written\n`);
     return 0;
@@ -179,7 +191,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   if (serviceFile) mkdirSync(join(skillarHome, "logs"), { recursive: true, mode: 0o700 });
   let applied;
   try {
-    applied = applyFiles(files, { backupDir, home });
+    applied = applyFiles(configFile ? [configFile, ...files] : files, { backupDir, home });
   } catch (error) {
     rmSync(backupDir, { recursive: true, force: true });
     if (error instanceof WriterError) {

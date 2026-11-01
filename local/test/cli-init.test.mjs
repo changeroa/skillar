@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { test } from "node:test";
 import { distImport } from "./_helpers.mjs";
@@ -71,6 +71,32 @@ test("apply writes planned files with 0600 backups, re-apply is a no-op, rollbac
   assert.deepEqual(strip(snapshotTree(sb.home)), strip(original));
   const again = await runCli(["init", "--rollback"], sb.env);
   assert.match(again.stdout, /nothing to roll back/);
+});
+
+test("init privacy options preview without mutation and preserve unrelated config settings", async (t) => {
+  const fresh = cliSandbox({ runtimes: [] });
+  t.after(fresh.cleanup);
+  const before = snapshotTree(fresh.home);
+  const dry = await runCli(["init", "--dry-run", "--no-service", "--capture-level", "full", "--retention-days", "30"], fresh.env);
+  assert.equal(dry.code, 0, dry.output);
+  assert.match(dry.stdout, /privacy settings: capture unset -> full; retention unset -> 30 days/);
+  assert.match(dry.stdout, /"captureLevel": "full"/);
+  assert.deepEqual(snapshotTree(fresh.home), before);
+
+  const sb = cliSandbox({ runtimes: [] });
+  t.after(sb.cleanup);
+  mkdirSync(sb.env.SKILLAR_HOME, { recursive: true });
+  writeFileSync(join(sb.env.SKILLAR_HOME, "config.json"), JSON.stringify({
+    port: 9001, captureLevel: "full", retentionDays: null, roots: [{ id: "work", path: "~/work/skills" }],
+    runtimes: { codex: { enabled: false } }, extra: "keep",
+  }, null, 2) + "\n");
+  const applied = await runCli(["init", "--no-service", "--capture-level", "redacted", "--retention-days", "30"], sb.env);
+  assert.equal(applied.code, 0, applied.output);
+  const config = JSON.parse(readFileSync(join(sb.env.SKILLAR_HOME, "config.json"), "utf8"));
+  assert.deepEqual(config, {
+    port: 9001, captureLevel: "redacted", retentionDays: 30, roots: [{ id: "work", path: "~/work/skills" }],
+    runtimes: { codex: { enabled: false } }, extra: "keep",
+  });
 });
 
 test("a file modified between plan and apply aborts all writes", async (t) => {
