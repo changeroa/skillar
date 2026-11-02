@@ -1,10 +1,10 @@
-# Activity shard foundation (P3)
+# Activity shard foundation (P3, extended by P5)
 
 This AGPL-3.0-only module is an **internal metadata ledger**, not a public
-ingestion endpoint or a connected dashboard. No Worker entrypoint, production
-route or deployment is added. `wrangler.activity.jsonc` is resource-only:
-Workers.dev/preview URLs are disabled and routes are empty. The initial
-server-defined shard is `activity-00`.
+ingestion endpoint or a connected dashboard. P5 adds a service-binding-only
+content entrypoint; its ingest flag is false, Workers.dev/preview URLs remain
+disabled, and routes are empty. No production activation is included. See
+`CONTENT.md` for the private R2 transport. The server-defined shard is `activity-00`.
 
 ## Contract
 
@@ -12,7 +12,8 @@ server-defined shard is `activity-00`.
 P2 device principal, checks ingest scope/device/generation/shard, and parses
 the strict P1 metadata envelope. Caller-controlled tenant IDs are not accepted.
 The caller must authenticate through P2; this library is not a serialized
-identity-header trust boundary. P5 will add consented network/R2 transport.
+identity-header trust boundary. P5's Pages proxy authenticates and replaces
+identity headers before calling the nonpublic service entrypoint.
 
 An active `tenant_fences` row must already exist for the account/generation.
 The ledger never provisions or reopens a missing/closed fence as a side effect
@@ -22,8 +23,9 @@ The receipt hash covers the normalized P1 DTO's JSON serialization, including
 source namespace, consent version, range, sequence and journal cut. Receipts
 retain that strict metadata JSON for replay after projections advance.
 Arbitrary raw prompt/query/args/path/span attributes remain rejected by P1.
-P5 must add separately durable immutable R2 inputs before acknowledging raw
-content; this metadata receipt is not evidence of raw-content durability.
+P5 adds separately durable immutable R2 inputs and a manifest in this same
+transaction before acknowledging raw content. A v1 metadata receipt alone
+remains no evidence of raw-content durability.
 
 Each D1 `batch` atomically:
 

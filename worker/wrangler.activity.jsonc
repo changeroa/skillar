@@ -1,15 +1,27 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "skillar-activity-foundation",
+  "main": "./src/activity/content-api.ts",
   "account_id": "00000000000000000000000000000000",
   "compatibility_date": "2026-09-03",
   "workers_dev": false,
   "preview_urls": false,
   "routes": [],
+  "vars": { "ACTIVITY_INGEST_ENABLED": "false" },
+  "triggers": { "crons": ["*/15 * * * *"] },
   "d1_databases": [{
     "binding": "ACTIVITY",
     "database_name": "example-activity",
     "database_id": "00000000-0000-0000-0000-000000000002",
     "migrations_dir": "activity-migrations"
+  }, {
+    "binding": "ACCOUNTS",
+    "database_name": "example-accounts",
+    "database_id": "00000000-0000-0000-0000-000000000001",
+    "migrations_dir": "../site/migrations"
+  }],
+  "r2_buckets": [{
+    "binding": "ACTIVITY_RAW",
+    "bucket_name": "example-activity-raw"
   }]
 }
