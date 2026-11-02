@@ -34,7 +34,7 @@ test("modern search and resource reads record load/read_file observations and su
   assert.equal(bytes.length, entry.resources.find((r) => r.uri === entry.uri).size);
   const read = await client.readResource({ uri: uriOf("pr-review", "guide.md"), _meta: meta });
   assert.equal(read.contents[0].text, "Review guide v1");
-  const rows = daemon.rows();
+  const rows = daemon.rows().filter((r) => r.kind !== "skill_request");
   assert.deepEqual(rows.map((r) => r.kind), ["search", "load", "read_file"]);
   for (const r of rows) { assert.equal(r.runtime, "codex"); assert.equal(r.attribution_method, "vendor_meta"); assert.equal(r.trace_id, search.body.trace_id); }
   assert.equal(rows[2].data.bytes, Buffer.byteLength("Review guide v1"));
@@ -58,7 +58,7 @@ test("resource reads need no prior load and never inherit another request's clie
   await first.readResource({ uri: uriOf("pr-review"), _meta: { threadId: "first" } });
   const second = modernClient(daemon.port, undefined, "senpi-mcp-client");
   await second.readResource({ uri: uriOf("pr-review"), _meta: { threadId: "second" } });
-  const rows = daemon.rows();
+  const rows = daemon.rows().filter((r) => r.kind !== "skill_request");
   assert.deepEqual(rows.map((r) => r.kind), ["read_file", "load", "load"]);
   assert.equal(rows[2].runtime, "omo");
   assert.notEqual(rows[1].load_id, rows[2].load_id);
@@ -73,13 +73,13 @@ test("changed resource bytes fail until catalog refresh then match the refreshed
   const after = (await client.request("skills/get", { uri: uriOf("pr-review") })).skill;
   assert.notDeepEqual(before.resources, after.resources);
   assert.equal((await client.readResource({ uri: uriOf("pr-review", "guide.md") })).contents[0].text, "Review guide v2 edited");
-  assert.equal(daemon.rows()[0].kind, "error");
+  assert.equal(daemon.rows().find((r) => r.kind !== "skill_request").kind, "error");
 }));
 
 test("client and vendor metadata retain runtime attribution without transport sessions", () => withDaemon(async (daemon) => {
   await call(modernClient(daemon.port, undefined, "senpi-mcp-client"), "search_skills", { query: "plan a product release" });
   await call(modernClient(daemon.port, undefined, "claude-code"), "search_skills", { query: "plan a product release" }, { "claudecode/toolUseId": "tu9" });
-  const rows = daemon.rows();
+  const rows = daemon.rows().filter((r) => r.kind !== "skill_request");
   assert.equal(rows[0].runtime, "omo");
   assert.equal(rows[1].runtime, "claude-code");
   assert.equal(rows[1].tool_use_id, "tu9");

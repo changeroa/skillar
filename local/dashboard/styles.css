@@ -518,7 +518,9 @@ button, input, select { font: inherit; color: inherit; }
       "runtime started"
       "prompt prompt"
       "skills skills"
-      "state attr";
+      "search search"
+      "load load"
+      ". attr";
     gap: var(--s-2) var(--s-3);
     padding: var(--s-3) var(--s-4);
     border-bottom: 1px solid var(--line);
@@ -530,7 +532,10 @@ button, input, select { font: inherit; color: inherit; }
   .c-started { grid-area: started; justify-self: end; }
   .c-prompt { grid-area: prompt; }
   .c-skills { grid-area: skills; }
-  .c-state { grid-area: state; }
+  .c-search { grid-area: search; }
+  .c-load { grid-area: load; }
+  .sessions .c-search, .sessions .c-load { display: flex; align-items: baseline; gap: var(--s-2); }
+  .c-search::before, .c-load::before { content: attr(data-label); color: var(--ink-3); min-width: 4rem; }
   .c-attr { grid-area: attr; justify-self: end; }
   .when { flex-direction: row; gap: var(--s-2); }
   .when__dur::before { content: "\00b7\00a0"; }
@@ -540,3 +545,14 @@ button, input, select { font: inherit; color: inherit; }
   .live__dot { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Request outcomes use independent counts; no session-level winner hides failures. */
+.badge--succeeded { --badge-c: var(--ok); }
+.badge--failed { --badge-c: var(--bad); }
+.badge--in_progress { --badge-c: var(--warn); }
+.badge--cancelled, .badge--unknown, .badge--not_attempted { --badge-c: var(--neutral); }
+.request-counts { display: flex; flex-wrap: wrap; gap: 4px; overflow-wrap: anywhere; }
+.request-summary { display: grid; gap: 8px; }
+.request-details { padding: 16px; margin-top: 16px; overflow-x: auto; }
+.request-details table { width: 100%; border-collapse: collapse; }
+.request-details th, .request-details td { padding: 8px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }

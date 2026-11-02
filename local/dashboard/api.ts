@@ -1,3 +1,4 @@
+import { requestRecords, summarizeRequests } from "../src/request-status.js";
 import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, SessionRow, SessionSkillReportDto,
   SkillEntry, SkillWeekDto, Store, TraceStep } from "../src/types.js";
 import { matchesFilter, serializeFilter } from "./state";
@@ -119,6 +120,33 @@ type FixtureData = {
   skillWeek12: SkillWeekDto;
 };
 
+function fixtureRequests(steps: TraceStep[]) {
+  return requestRecords(steps.map((step, i) => ({ id: `fixture-${i}`, ts: step.ts, kind: step.kind, data: step.detail })));
+}
+
+function fixtureRequestFlow(data: FixtureData, rows: SessionListRow[], unit: FlowDto["unit"]): FlowDto {
+  const nodes = new Map<string, FlowDto["nodes"][number]>();
+  const links = new Map<string, FlowDto["links"][number]>();
+  let count = 0;
+  for (const row of rows) for (const request of fixtureRequests(data.traces[row.id] ?? [])) {
+    if (request.operation !== (unit === "search_requests" ? "search" : "load")) continue;
+    count++;
+    const values = ["unclassified", request.uri ?? "(none)", request.status];
+    const ids = values.map((value, i) => `${["t", "s", "a"][i]}:${value}`);
+    values.forEach((value, i) => {
+      const node = nodes.get(ids[i]!) ?? { id: ids[i]!, column: i as 0 | 1 | 2, label: value, count: 0 };
+      node.count++;
+      nodes.set(node.id, node);
+    });
+    for (const i of [0, 1]) {
+      const key = `${ids[i]}|${ids[i + 1]}|${request.status}`;
+      const link = links.get(key) ?? { source: ids[i]!, target: ids[i + 1]!, state: request.status, count: 0 };
+      link.count++; links.set(key, link);
+    }
+  }
+  return { unit, requestCount: count, sessionCount: rows.length, columns: ["task_type", "skill", "state"], nodes: [...nodes.values()], links: [...links.values()] };
+}
+
 /** Usage figures (unattributed counts, null attribution rates) live in their own lazily loaded file and override `stats`. */
 type UsageFixtureData = { stats: Partial<Stats>; statsEmpty: Partial<Stats> };
 
@@ -141,7 +169,7 @@ function fixtureApi(variant: FixtureVariant): Api {
   const loadUsage = (): Promise<UsageFixtureData> => (usage ??= import("./dev-fixtures-usage.json").then((m) => m.default as unknown as UsageFixtureData));
   const rowsOf = (data: FixtureData): SessionListRow[] => {
     const twelve = new Set(data.sessions12);
-    return variant === "empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions;
+    return (variant === "empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions).map((row) => ({ ...row, requests: summarizeRequests(fixtureRequests(data.traces[row.id] ?? [])) }));
   };
   return {
     mode: "fixtures",
@@ -156,8 +184,9 @@ function fixtureApi(variant: FixtureVariant): Api {
     flowReport: (id) => Promise.reject(new ApiError(404, "flow_not_found", `no flow or herdr workspace ${id}`)),
     workflowVersions: () => Promise.resolve([]),
     skillReport: (sessionId) => Promise.reject(new ApiError(404, "session_not_found", `no session ${sessionId}`)),
-    flow: (_filter, opts = {}) =>
+    flow: (filter, opts = {}) =>
       settle((data) => {
+        if (opts.unit === "search_requests" || opts.unit === "load_requests") return fixtureRequestFlow(data, rowsOf(data).filter((row) => matchesFilter(row, filter)), opts.unit);
         const dto = variant === "twelve" ? data.flow12 : data.flow;
         return variant === "empty" ? { ...dto, nodes: [], links: [], sessionCount: 0, unit: opts.unit ?? dto.unit } : { ...dto, unit: opts.unit ?? dto.unit };
       }),
