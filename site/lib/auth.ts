@@ -17,7 +17,8 @@ export const configSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   SESSION_KEY: z.string().min(32),
   PUBLIC_ORIGIN: z.url().refine(value =>
-    value === 'https://site.example.test' || value === 'http://localhost:8788'),
+    value === 'https://skillar.sh' || value === 'https://site.example.test' ||
+    value === 'http://localhost:8788'),
 });
 export type Config = z.infer<typeof configSchema>;
 

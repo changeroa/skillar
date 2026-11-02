@@ -175,7 +175,7 @@ test('treats a forged session as signed out', async () => {
 });
 
 // The adapter uses real SQLite for the D1 SQL contract, not canned query results.
-async function fixture(t) {
+async function fixture(t, requestOrigin = origin, publicOrigin = requestOrigin) {
   t.mock.method(Date, 'now', () => now * 1000);
   const db = new DatabaseSync(':memory:');
   db.exec(await readFile(new URL('../migrations/0001_accounts.sql', import.meta.url), 'utf8'));
@@ -185,7 +185,7 @@ async function fixture(t) {
     first: async () => db.prepare(sql).get(...args) ?? null,
     run: async () => db.prepare(sql).run(...args),
   });
-  const env = { ...config, ACCOUNTS: {
+  const env = { ...config, PUBLIC_ORIGIN: publicOrigin, ACCOUNTS: {
     prepare: statement,
     batch: async queries => {
       db.exec('BEGIN');
@@ -200,7 +200,7 @@ async function fixture(t) {
       }
     },
   } };
-  const request = (path, init = {}) => onRequest({ request: new Request(origin + path, init), env });
+  const request = (path, init = {}) => onRequest({ request: new Request(requestOrigin + path, init), env });
   const outbound = [];
   t.mock.method(globalThis, 'fetch', async (input, init) => {
     const req = new Request(input, init);
@@ -209,7 +209,7 @@ async function fixture(t) {
     if (req.url === 'https://oauth2.googleapis.com/token') {
       const body = new URLSearchParams(await req.text());
       assert.equal(body.get('client_secret'), config.GOOGLE_CLIENT_SECRET);
-      assert.equal(body.get('redirect_uri'), `${origin}/auth/google/callback`);
+      assert.equal(body.get('redirect_uri'), `${requestOrigin}/auth/google/callback`);
       assert.equal(body.get('code_verifier'), flow.verifier);
       return Response.json({ id_token: await idToken({
         nonce: flow.nonce, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600,
@@ -219,7 +219,7 @@ async function fixture(t) {
   });
   const login = async () => {
     const timestamp = Math.floor(Date.now() / 1000);
-    const signedFlow = await signCookie(flow, 'oauth', config, timestamp);
+    const signedFlow = await signCookie(flow, 'oauth', { ...config, PUBLIC_ORIGIN: requestOrigin }, timestamp);
     return request(`/auth/google/callback?state=${flow.state}&code=google-code`, {
       headers: { cookie: `${FLOW_COOKIE}=${signedFlow}` },
     });
@@ -359,15 +359,57 @@ test('a cancelled authorization clears the flow without contacting Google', asyn
   assert.deepEqual(f.outbound, []);
 });
 
-test('rejects an unapproved host rather than using it for an OAuth redirect', async t => {
+for (const requestOrigin of ['https://skillar.sh', origin]) {
+  test(`canonical deployment authenticates and logs out on ${requestOrigin}`, async t => {
+    // Given
+    const f = await fixture(t, requestOrigin, 'https://skillar.sh');
+    // When
+    const start = await f.request('/auth/google');
+    const login = await f.login();
+    const signedCookie = login.headers.getSetCookie()
+      .find(value => value.startsWith(`${SESSION_COOKIE}=`)).split(';')[0];
+    const session = await f.request('/auth/session', { headers: { cookie: signedCookie } });
+    const logout = await f.request('/auth/logout', {
+      method: 'POST', headers: { origin: requestOrigin, cookie: signedCookie },
+    });
+    // Then
+    assert.equal(start.status, 303);
+    assert.equal(new URL(start.headers.get('location')).searchParams.get('redirect_uri'),
+      `${requestOrigin}/auth/google/callback`);
+    assert.equal(login.headers.get('location'), '/login/');
+    assert.equal((await session.json()).user.email, profile.email);
+    assert.equal(logout.status, 303);
+    assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0);
+  });
+}
+
+test('a canonical-domain session cannot authenticate on the Pages alias', async t => {
   // Given
-  const f = await fixture(t);
+  const f = await fixture(t, 'https://skillar.sh');
+  const login = await f.login();
+  const signedCookie = login.headers.getSetCookie()
+    .find(value => value.startsWith(`${SESSION_COOKIE}=`)).split(';')[0];
   // When
-  const response = await onRequest({ request: new Request('https://deployment-10.example.test/auth/google'), env: f.env });
+  const response = await onRequest({
+    request: new Request(`${origin}/auth/session`, { headers: { cookie: signedCookie } }), env: f.env,
+  });
   // Then
-  assert.equal(response.status, 403);
-  assert.equal(response.headers.has('location'), false);
+  assert.deepEqual(await response.json(), { user: null });
 });
+
+for (const publicOrigin of [origin, 'https://skillar.sh']) {
+  test(`rejects an unapproved host when configured for ${publicOrigin}`, async t => {
+    // Given
+    const f = await fixture(t, publicOrigin);
+    // When
+    const response = await onRequest({
+      request: new Request('https://deployment-10.example.test/auth/google'), env: f.env,
+    });
+    // Then
+    assert.equal(response.status, 403);
+    assert.equal(response.headers.has('location'), false);
+  });
+}
 
 test('missing OAuth configuration returns an unavailable state instead of starting a broken flow', async t => {
   // Given
