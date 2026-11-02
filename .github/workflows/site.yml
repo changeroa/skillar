@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'site/**'
+      - 'shared/**'
       - '.github/workflows/site.yml'
   pull_request:
     paths:
       - 'site/**'
+      - 'shared/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -25,6 +27,8 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: site/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: shared
       - run: npm ci
         working-directory: site
       - run: npm test
