@@ -9,6 +9,18 @@ export const consentRequestSchema = z.strictObject({
   consent: consentSchema,
 }).readonly();
 
+export async function currentDeviceConsent(
+  env: ActivityEnv,
+  identity: { readonly accountId: string; readonly generation: number; readonly deviceId: string },
+) {
+  const row = await env.ACCOUNTS.prepare(`SELECT version, consent_json FROM device_consents
+    WHERE account_id=? AND device_id=? AND generation=? ORDER BY version DESC LIMIT 1`)
+    .bind(identity.accountId, identity.deviceId, identity.generation).first();
+  if (row === null) return { version: 0, consent: defaultConsent };
+  const saved = z.object({ version: revisionSchema, consent_json: z.string() }).parse(row);
+  return { version: saved.version, consent: consentSchema.parse(JSON.parse(saved.consent_json)) };
+}
+
 export async function readDeviceConsent(
   principal: BrowserPrincipal, deviceId: string, env: ActivityEnv,
 ): Promise<Response> {
@@ -17,14 +29,9 @@ export async function readDeviceConsent(
     WHERE account_id=? AND device_id=? AND revoked_at IS NULL`)
     .bind(principal.accountId, device).first();
   if (owned === null) return activityError(404, "not_found");
-  const row = await env.ACCOUNTS.prepare(`SELECT version, consent_json FROM device_consents
-    WHERE account_id=? AND device_id=? AND generation=? ORDER BY version DESC LIMIT 1`)
-    .bind(principal.accountId, device, principal.generation).first();
-  if (row === null) return Response.json({ version: 0, consent: defaultConsent }, { headers: noStore });
-  const saved = z.object({ version: revisionSchema, consent_json: z.string() }).parse(row);
-  return Response.json({
-    version: saved.version, consent: consentSchema.parse(JSON.parse(saved.consent_json)),
-  }, { headers: noStore });
+  return Response.json(await currentDeviceConsent(env, {
+    accountId: principal.accountId, deviceId: device, generation: principal.generation,
+  }), { headers: noStore });
 }
 
 export async function setDeviceConsent(

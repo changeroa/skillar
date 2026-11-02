@@ -7,7 +7,7 @@ import type { ActivityEnv } from "./activity-auth.ts";
 import {
   exchangeDeviceGrant, issueDeviceGrant, readDevicePrincipal, revokeDevice,
 } from "./device-auth.ts";
-import { readDeviceConsent, setDeviceConsent } from "./activity-consent.ts";
+import { currentDeviceConsent, readDeviceConsent, setDeviceConsent } from "./activity-consent.ts";
 
 const grantRequestSchema = z.strictObject({
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).max(2).readonly(),
@@ -72,12 +72,25 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
   if (path.startsWith("/v1/")) {
     const principal = await readDevicePrincipal(request, env);
     if (principal === null) return activityError(401, "unauthorized");
-    if ((path === "/v1/activity/chunks" || path === "/v1/activity/batches") &&
+    if (path === "/v1/devices/self" && request.method === "GET") {
+      return Response.json({
+        accountId: principal.accountId, deviceId: principal.deviceId,
+        generation: principal.generation, shardId: principal.shardId,
+        scopes: principal.scopes,
+        ingestEnabled: env.ACTIVITY_INGEST_ENABLED === "true" && env.ACTIVITY_SERVICE !== undefined,
+        ...await currentDeviceConsent(env, principal),
+      }, { headers: noStore });
+    }
+    const migration = /^\/v1\/activity\/migrations\/(begin|status|page|complete|export|rollback)$/.exec(path);
+    if ((path === "/v1/activity/chunks" || path === "/v1/activity/batches" ||
+        path === "/v1/activity/export" || migration !== null) &&
         request.method === "POST") {
-      if (env.ACTIVITY_INGEST_ENABLED !== "true" || env.ACTIVITY_SERVICE === undefined) {
+      const readOnly = path === "/v1/activity/export" ||
+        migration?.[1] === "status" || migration?.[1] === "export";
+      if ((!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") || env.ACTIVITY_SERVICE === undefined) {
         return activityError(404, "not_found");
       }
-      if (!principal.scopes.includes("activity:ingest")) {
+      if (!principal.scopes.includes(readOnly ? "activity:read" : "activity:ingest")) {
         return activityError(403, "insufficient_scope");
       }
       // The internal Worker has no public routes. Forward only server-created

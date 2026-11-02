@@ -36,7 +36,7 @@ export async function contentScopeHash(input: ContentScopeInput): Promise<string
   return contentDigest(new TextEncoder().encode(JSON.stringify(contentScope(input))));
 }
 
-export async function requireContentConsent(
+async function currentContentConsent(
   accounts: D1Database, principal: IngestPrincipal, scope: UploadScope,
 ): Promise<GrantedContentConsent> {
   if (principal.deviceId !== scope.deviceId) throw new ActivityLedgerError("forbidden");
@@ -49,9 +49,35 @@ export async function requireContentConsent(
     .bind(principal.accountId, principal.deviceId, principal.generation, principal.generation).first();
   if (row === null) throw new ContentConsentError();
   const stored = z.object({ version: z.number().int(), consent_json: z.string() }).parse(row);
-  if (stored.version !== scope.consentVersion) throw new ContentConsentError();
   const consent = consentSchema.parse(JSON.parse(stored.consent_json));
-  if (consent.mode !== "managed-content") throw new ContentConsentError();
+  if (consent.mode !== "managed-content" || consent.version !== stored.version) throw new ContentConsentError();
+  return consent;
+}
+
+export async function requireContentConsent(
+  accounts: D1Database, principal: IngestPrincipal, scope: UploadScope,
+): Promise<GrantedContentConsent> {
+  const consent = await currentContentConsent(accounts, principal, scope);
   authorizeUpload(consent, scope);
+  return consent;
+}
+
+/** A fresh read grant may reauthorize retained bytes, never a stale write request. */
+export function readContentScope(consent: GrantedContentConsent, scope: UploadScope): UploadScope {
+  const historical = scope.backfill !== null || scope.fromMs < consent.grantedAtMs;
+  if (historical && consent.backfill === undefined) throw new ContentConsentError();
+  return {
+    ...scope, consentVersion: consent.version,
+    backfill: historical && consent.backfill !== undefined ? {
+      version: consent.backfill.version, snapshotId: consent.backfill.snapshotId,
+      journalCut: consent.backfill.journalCut,
+    } : null,
+  };
+}
+export async function requireContentReadConsent(
+  accounts: D1Database, principal: IngestPrincipal, scope: UploadScope,
+): Promise<GrantedContentConsent> {
+  const consent = await currentContentConsent(accounts, principal, scope);
+  authorizeUpload(consent, readContentScope(consent, scope));
   return consent;
 }
