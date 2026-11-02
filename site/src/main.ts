@@ -1,0 +1,62 @@
+const themeSelect = document.querySelector<HTMLSelectElement>('#theme');
+if (themeSelect) {
+  themeSelect.value = document.documentElement.dataset['theme'] || 'system';
+  themeSelect.addEventListener('change', () => {
+    document.documentElement.dataset['theme'] = themeSelect.value;
+    try {
+      localStorage.setItem('skillar-theme', themeSelect.value);
+    } catch (error) {
+      if (!(error instanceof DOMException)) throw error;
+      // The theme remains usable when browser storage is blocked.
+    }
+  });
+}
+
+const writeClipboard = async (text: string): Promise<boolean> => {
+  // Insecure contexts and some browsers expose no clipboard API at all.
+  if (!navigator.clipboard) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    if (!(error instanceof DOMException)) throw error;
+    return false;
+  }
+};
+
+const selectContents = (element: HTMLElement) => {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+const copyButton = document.querySelector<HTMLButtonElement>('#copy');
+const copyStatus = document.querySelector<HTMLElement>('#copy-status');
+const installCommand = document.querySelector<HTMLElement>('#install-command');
+if (copyButton && copyStatus && installCommand) {
+  copyButton.addEventListener('click', async () => {
+    if (await writeClipboard(installCommand.textContent ?? '')) {
+      copyStatus.textContent = 'Install command copied.';
+      return;
+    }
+    selectContents(installCommand);
+    copyStatus.textContent = "Couldn't copy. The install command is selected; copy it manually.";
+  });
+}
+
+const setupExample = document.querySelector<HTMLSelectElement>('#setup-example');
+const dryCommand = document.querySelector<HTMLElement>('#dry-command');
+const initCommand = document.querySelector<HTMLElement>('#init-command');
+const foregroundCommand = document.querySelector<HTMLElement>('#foreground-command');
+if (setupExample && dryCommand && initCommand && foregroundCommand) {
+  setupExample.addEventListener('change', () => {
+    const runtime = setupExample.value;
+    const command = runtime === 'all' ? 'skillar init' : `skillar init --runtime ${runtime}`;
+    dryCommand.textContent = `${command} --dry-run`;
+    initCommand.textContent = command;
+    foregroundCommand.textContent = `${command} --no-service`;
+  });
+}
