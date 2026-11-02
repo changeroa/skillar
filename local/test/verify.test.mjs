@@ -7,6 +7,9 @@ import { verify } from "../../scripts/verify.mjs";
 
 const node = process.execPath;
 const expectedChecks = [
+  ["shared", "npm", ["ci"]],
+  ["shared", "npm", ["run", "build"]],
+  ["shared", "npm", ["test"]],
   ["server", "npm", ["ci"]],
   ["worker", "npm", ["ci"]],
   ["local", "npm", ["ci"]],
@@ -26,7 +29,7 @@ const expectedChecks = [
   ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"]],
 ];
 
-test("shared verifier runs the 17 CI checks from its supplied root", () => {
+test("shared verifier runs the CI checks from its supplied root", () => {
   const calls = [];
   assert.equal(verify({
     root: "/checkout",
@@ -48,10 +51,10 @@ test("shared verifier stops at the first failed check", () => {
   assert.throws(() => verify({
     run: () => {
       calls += 1;
-      return { status: calls === 4 ? 9 : 0 };
+      return { status: calls === 2 ? 9 : 0 };
     },
   }), /npm run build failed \(9\)/);
-  assert.equal(calls, 4);
+  assert.equal(calls, 2);
 });
 
 test("shared verifier preserves a process-start error and stops immediately", () => {
@@ -73,7 +76,7 @@ test("runtime workflow invokes the shared verifier for main and dev source chang
   assert.equal(checkout.uses, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1");
   assert.equal(setupNode.uses, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020");
   assert.equal(setupNode.with.cache, "npm");
-  assert.equal(setupNode.with["cache-dependency-path"], "server/package-lock.json\nworker/package-lock.json\nlocal/package-lock.json\n");
+  assert.equal(setupNode.with["cache-dependency-path"], "shared/package-lock.json\nserver/package-lock.json\nworker/package-lock.json\nlocal/package-lock.json\n");
   assert.equal(verifyStep.run, "node scripts/verify.mjs");
   assert.equal(workflow.jobs.runtime.steps.length, 3);
 });
