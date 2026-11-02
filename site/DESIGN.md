@@ -8,12 +8,13 @@
 - Reference shortlist: Vercel, Warp, Claude. Vercel selected for precise developer typography and readable code; its brand colors and logo are not copied. Native skillar workshop artwork supplies the project's own visual identity.
 - Direction: a skill workshop, not an abstract cloud. Huge utilitarian lettering, vermilion actions, neutral paper, a real instruction file and the repository's articulated-arm illustration. Hosted capability is kept distinct from working local tooling.
 - Existing brand artwork replaces generated concepts; no stock photography or invented product interface is needed.
+- Google sign-in increment (owner brief, supersedes the earlier no-backend rule): `GET /auth/google` starts a code + PKCE OIDC flow, `GET /auth/session` returns `{user:null}` or the stored profile as no-store JSON, same-origin `POST /auth/logout` ends the session and redirects to `/login/`, and the callback lands on `/login/`, `/login/?error=cancelled` or `/login/?error=failed`. Sign-in is real and stores a minimal profile; MCP endpoint provisioning and dashboard activity remain previews.
 
 ## 1. Audience and argument
 
-Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. The SaaS-informed revision leads with deployment choice and a clearly labeled account-preview action, alongside the working local path. No signup form and no email collection.
+Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. The SaaS-informed revision leads with deployment choice and Google account sign-in, alongside the working local path. No marketing signup form; Google profile storage is disclosed beside sign-in.
 
-Account preview (screen only): `/login/` shows a disabled "Sign in with GitHub" with its reason beside it and a separate, enabled "Explore the account preview" link. `/connect/` shows a fixed MCP configuration on a reserved `.example` host, labeled as a non-working example. `/dashboard/` has four empty views: Sessions, Workspaces, Flow, Heatmap, in the local dashboard's order. Nothing authenticates, connects, stores or fetches account data. The audit behind this is `docs/design/web-ui-audit.md`.
+Account routes: `/login/` is the account page. Signed out, it offers a working "Continue with Google" link to `/auth/google`, a privacy note naming exactly what is stored, and a separate "Explore without signing in" link. Signed in, it shows the stored profile (name, email, picture, first and latest sign-in), a sign-out form and the onward preview link. `/connect/` shows a fixed MCP configuration on a reserved `.example` host, labeled as a non-working example, and reports sign-in status in its status list. `/dashboard/` has four empty views: Sessions, Workspaces, Flow, Heatmap, in the local dashboard's order, with sign-in status in the connection help. Only `/auth/session` is read, only on these three routes; nothing provisions an endpoint, connects or records activity. The audit behind the preview increment is `docs/design/web-ui-audit.md`.
 
 ## 2. Color
 
@@ -38,7 +39,7 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 
 ## 5. Primitives and states
 
-- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. Disabled CTA uses native disabled semantics with an adjacent explanation.
+- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark near the main navigation on every route, one shared state and storage key; visible label, native keyboard behavior. System is the default when nothing is saved. Source order always matches visual order.
 - Code panel: dark field, readable tokens, filename header. Links use code-ink focus rings on the dark field in both themes. Copy action reports success/failure through a live region.
 - Disclosure: native summary, 48px minimum target; native triangle indicator, visible focus.
@@ -47,19 +48,24 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 - Example switch: native select chooses an actual host configuration example; no invented remote URL.
 - Wordmark: home link keeps its type size; padding grows its hit area to at least 44x44px.
 
-### 5a. Account preview primitives
+### 5a. Account primitives
 
 These use the tokens above. No new colors, fonts or radii.
 
-- Preview notice: a bordered surface band at the top of every account route, before any action. Text in ink: "Screen-only preview. Nothing here signs you in, connects or stores data." Plus a link back to the landing page. It never collapses or dismisses.
-- Account shell: same shell and gutters as the landing page. Header holds wordmark, a route nav (Sign in, Setup, Dashboard) and the theme select. Nav wraps at narrow widths; it never hides. Each page has a unique title and one h1.
-- Disabled action: native `disabled` button, ink text on surface with a 1px dashed ink border. No opacity fade, so its label still meets 4.5:1. A visible reason sits directly after it and is tied with `aria-describedby`. It never navigates, opens a popup or sends a request.
-- Preview link: an action-styled link (accent fill) whose label names the outcome, e.g. "Explore the account preview". One accent action per view.
-- Status line: text first, e.g. "Not connected (preview)". A neutral square marker may precede it; color never carries the meaning. No green, no "connected", "live", "synced" or "signed in".
+- Availability notice: a bordered surface band at the top of every account route, before any action. Text in ink: "Google sign-in is live. MCP setup and the dashboard are still screen-only previews: no endpoint is assigned and no activity is recorded." Plus a link back to the landing page. It never collapses or dismisses.
+- Account shell: same shell and gutters as the landing page. Header holds wordmark, a route nav (Account, Connect MCP, Dashboard) and the theme select. Nav wraps at narrow widths; it never hides. Each page has a unique title and one h1.
+- Sign-in action: an accent-filled action link "Continue with Google" to `/auth/google`. A plain link, so it works without JavaScript; no popup, no script-driven redirect, no Google logo (same no-logo rule as the agent list). The privacy note sits directly after it and names what is stored: Google ID, email, name, picture, first and latest sign-in times; the session is a signed, secure cookie; Google tokens are not retained.
+- Preview link: an action-styled link whose label names the outcome. Signed out it is the secondary "Explore without signing in"; signed in it is the primary "Preview MCP setup". One accent action per visible state.
+- Session status line: a `.note` paragraph with `role="status"` under the lead. Text only: "Checking your account…", then "Not signed in." or a failure sentence; cleared when the signed-in card appears. Empty it has no height or margin but stays in the accessibility tree, so the change is announced.
+- Callback message: a second status paragraph filled from `?error=`: "Sign-in was cancelled. Nothing was stored." or "Sign-in didn't complete. You can try again." Unknown codes get the second sentence; the query value itself is never rendered.
+- Signed-in card: picture (48px square, `object-fit: cover`, `alt=""`, no-referrer, only for `https:` URLs, hidden on load error) beside "Signed in as", the name at subhead size and the email in muted small text (the email takes the name slot when Google sent no name). Below it a two-row status list for first and latest sign-in: `<time>` with an ISO `datetime` and locale-formatted text. The shared account schema validates the server response before rendering. Every value is set through `textContent`; never `innerHTML`.
+- Sign-out form: a plain `<form method="post" action="/auth/logout">` with a secondary action button "Sign out", followed by a note that it ends the browser session and does not delete the stored profile. No fetch and no script, so the browser sends the same-origin `Origin` header the service requires.
+- Account line: `data-account-line` text inside the connect status list and the dashboard connection help. Default "See the Account page for sign-in status." is true without JavaScript; the session check replaces it with "Checking your account…", "Signed in as {email}.", "Not signed in." or a sentence saying the status is unknown.
+- Status line: text first, e.g. "Not connected — preview". A neutral square marker may precede it; color never carries the meaning. No green. "Signed in" appears only after `/auth/session` returned a user; "connected", "live" and "synced" stay banned for MCP and dashboard.
 - Example config panel: the code panel with header "Example only, won't connect" shown before the copy button. Content is fixed client-specific JSON or a CLI example using an `.example` host; it's selectable and wraps rather than widening the page. No editable endpoint, token or secret.
 - Copy feedback: a polite live region next to the button. Success: "Example copied." Failure: "Couldn't copy. Select the text and copy it manually." and the text gets selected. Messages stay until the next action; nothing times out.
 - Agent selector: native select switching among fixed example configs. Changing it updates the panel and announces nothing beyond the new panel label.
-- Step list: an ordered list showing the journey (Sign in, Set up, Dashboard) with `aria-current="step"` on the current one. Display only, not a wizard and not a progress indicator.
+- Step list: an ordered list labeled "Account journey" (Account, Connect MCP, Dashboard) with `aria-current="step"` on the current one. Display only, not a wizard and not a progress indicator.
 - View nav: four links, Sessions, Workspaces, Flow, Heatmap, each at least 44px tall, with `aria-current="page"` on exactly one. Current view uses an ink underline plus bold weight, not color alone. No tab roles.
 - Empty state: per view, an h2, one sentence on what would appear, one sentence on why it's empty in the preview, and one link onward (setup, or local `skillar open` instructions). No charts, zero-filled grids, counts, timestamps, skeletons or spinners.
 
@@ -68,23 +74,27 @@ These use the tokens above. No new colors, fonts or radii.
 | State | Where | Rule |
 | --- | --- | --- |
 | Rest, hover, active, focus | all controls | Existing rules: underline on hover, opacity on press, 3px focus outline in current ink (code-ink on code panels) |
-| Disabled | GitHub sign-in | Dashed border, full-contrast text, reason beside it, removed from tab order natively |
+| Checking | session status line, account lines | Plain text "Checking your account…" while `/auth/session` is in flight. No spinner, skeleton or dimming; the sign-in and exploration links stay usable |
+| Signed out | login | Status "Not signed in."; sign-in action, privacy note and exploration link visible |
+| Signed in | login, account lines | The card, sign-out form and onward preview link replace the sign-in action; connect and dashboard lines read "Signed in as {email}." |
+| Session check failed | login, account lines | Unreachable: "Couldn't reach the account service…"; bad or non-OK answer: "The account service didn't answer as expected…". Signed-out actions stay visible; never a raw server string |
+| Callback cancelled / failed | login `?error=` | Fixed sentences from 5a; the session check still runs |
 | Current | route nav, view nav, step list | `aria-current` plus underline and weight |
 | Empty | four dashboard views | Explanation and next link, never a loading look |
 | Copy success / failure | example config | Live region text as above |
 | Unknown view | dashboard hash | Falls back to Sessions and says so in the view heading area; never blank |
-| No JavaScript | all routes | All content and links visible; theme falls back to system; copy shows selectable text |
+| No JavaScript | all routes | All content and links visible; theme falls back to system; copy shows selectable text. The sign-in link works; the login page says it cannot show sign-in status; account lines keep their neutral default |
 | Storage blocked | theme | Choice applies for the page; nothing breaks |
 
-Not used: loading, connected, error-from-server, signed-in. These states don't exist in a screen-only preview, so they have no styles.
+Not used: disabled sign-in, connected, synced, spinners, skeletons, progress bars. MCP setup and the dashboard have no live state to show, so they have no styles for one.
 
 ## 6. Motion
 
-No decorative animation. Control hover is an immediate underline; press opacity communicates activation. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
+No decorative animation. Control hover is an immediate underline; press opacity communicates activation. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly, and so does the swap from the sign-in action to the signed-in card; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
 
 ## 7. Accessibility constraints
 
-Visible skip link, semantic landmarks, one h1 per page, visible labels, keyboard-operable disclosures, no color-only status. No page collects personal data or pretends to provision a server.
+Visible skip link, semantic landmarks, one h1 per page, visible labels, keyboard-operable disclosures, no color-only status. Personal data is collected only by the Google consent flow that `/auth/google` starts, and the login page names what is stored before that link. No page pretends to provision a server.
 
 - Targets: every interactive element is at least 44x44 CSS px at every width, including the wordmark and view nav. Action buttons stay at 48px.
 - Contrast: ALL text is at least 4.5:1, including bold, large, labels, notes, disabled text and code. There's no 3:1 large-text exception on this site. Focus rings and control borders are at least 3:1.
@@ -105,12 +115,12 @@ Visible skip link, semantic landmarks, one h1 per page, visible labels, keyboard
 
 - Accent text on surface (4.86 light) is the tightest pair; don't put accent text on anything lighter-contrast than surface.
 - Text reflows at 200% enlargement and at 320px width with no page-level horizontal scroll. Long example URLs break inside the code panel.
-- Keyboard: tab order follows reading order; disabled sign-in doesn't trap focus; Back and reload keep the current route and view.
+- Keyboard: tab order follows reading order; the sign-in link, exploration link and sign-out button are ordinary controls in that order; Back and reload keep the current route and view.
 - Forced colors: borders, focus and current markers stay visible.
 
 ## 8. Accepted debt and boundaries
 
-Hosted signup, account provisioning, billing and prices are coming soon, not implemented. No backend is authorized by the brief. The account preview has no real sign-in, OAuth, credentials, cookies, account data, endpoint requests or telemetry; it stores only the theme choice. Whether a future hosted service captures any local activity is undecided, and no copy may imply it does today. RTL isn't supported; new CSS should still prefer logical properties so it isn't harder later. Dashboard views use hash links inside one page, so a hosting change would need a recheck of deep links. English only; Korean toggle optional and omitted. No custom domain attachment. Native system typography avoids CDN dependencies.
+Hosted MCP provisioning, account dashboards, billing and prices are coming soon, not implemented. Google sign-in is implemented behind `/auth/*` (code + PKCE OIDC, owner brief). Stored: Google ID, email, name, picture, first and latest sign-in times; the session is a signed, secure, HttpOnly cookie; Google tokens are not retained. The browser additionally stores only the theme choice. Not available yet, so no copy promises them: account deletion, profile export, a retry control for a failed session check (the page says to reload). A no-JavaScript sign-out form remains available even though the page cannot display sign-in status without JavaScript. Timestamps from `/auth/session` are Unix seconds and are formatted in the reader's locale; a malformed account response shows a failed check instead of a partial profile. `/auth/*` answers 403 on any origin other than the configured production or localhost origin, which the pages report as the failed check rather than hiding it. Whether a future hosted service captures any local activity is undecided, and no copy may imply it does today. RTL isn't supported; new CSS should still prefer logical properties so it isn't harder later. Dashboard views use hash links inside one page, so a hosting change would need a recheck of deep links. English only; Korean toggle optional and omitted. No custom domain attachment. Native system typography avoids CDN dependencies.
 
 ## 9. SaaS-informed information architecture
 
@@ -125,16 +135,19 @@ branding, prices, organizational complexity or authenticated sample data.
   belongs with the working local setup, not the hosted prospect's first view.
 - Navigation names the user tasks: Hosting, Hosted flow, Local setup, Docs.
   Before account pages ship, the hosted action truthfully reaches the on-page
-  flow. The account increment replaces it with the actual screen-preview entry.
-- Login has one purpose and explains the next step. Unavailable GitHub sign-in
-  is distinct from an enabled, explicitly non-authenticating exploration link.
+  flow. The account increment replaced it with the account page entry, which
+  the sign-in increment made a real sign-in.
+- Login has one purpose and explains the next step. The working Google sign-in
+  is distinct from an enabled, explicitly non-authenticating exploration link;
+  signed-in people see exactly what is stored and how to sign out.
 - Connect MCP keeps account scope, unassigned endpoint/credentials and
   client-specific example configuration separate. Copy labels say example.
   No Verify action, completed step or connected badge can imply a real service.
 - Dashboard keeps connection help next to four empty activity views. Account
-  context is informational: no account created, endpoint not provisioned,
-  hosted pricing not announced. No fake user, organization, project, seat,
-  trial meter, upgrade action or billing page is introduced.
+  context is informational and real: sign-in status from `/auth/session`,
+  endpoint not provisioned, hosted pricing not announced. No fake user,
+  organization, project, seat, trial meter, upgrade action or billing page is
+  introduced.
 - Reference access limits remain explicit: public sign-in was viewed; private
   onboarding/empty/settings were gated or supplemented by identified official
   documentation. A loading frame is not an empty dashboard.

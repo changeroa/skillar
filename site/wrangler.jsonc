@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "skillar-site",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-09-03",
+  "vars": {
+    "PUBLIC_ORIGIN": "https://site.example.test"
+  },
+  "d1_databases": [
+    {
+      "binding": "ACCOUNTS",
+      "database_name": "example-accounts",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
