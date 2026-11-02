@@ -2,7 +2,7 @@ import type { CanonicalEvent, SearchEventData, SearchOutcome, SessionRef, SkillU
 import { makeEvent, str } from "./hooks.js";
 import { runtimeFromClientName } from "./runtimes.js";
 
-export type McpCallContext = { clientName?: string; meta?: Record<string, unknown> };
+export type McpCallContext = { signal?: AbortSignal; clientName?: string; meta?: Record<string, unknown> };
 type McpBase = { ref: SessionRef; toolUseId?: string; data: Record<string, unknown> };
 
 /**

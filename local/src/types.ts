@@ -24,11 +24,12 @@ export type SearchOutcome = { traceId: string; query: string; mode: SearchMode; 
   abstained?: { reason: AbstainReason; hint: string }; elapsedMs: number };
 export interface SearchIndex { rebuild(entries: SkillEntry[]): void; apply(delta: CatalogDelta): void;
   search(query: string, opts: { mode: SearchMode; limit: number }): SearchOutcome }
-export type EventKind = "session_start" | "prompt" | "search" | "load" | "read_file" | "native_skill" | "llm_call" | "tool_call" | "session_end" | "error";
+export type EventKind = "session_start" | "prompt" | "search" | "load" | "read_file" | "native_skill" | "llm_call" | "tool_call" | "session_end" | "error" | "skill_request";
 export type SessionRef = { runtime: RuntimeId; runtimeSessionId?: string; conversationId?: string; clientName?: string; cwd?: string };
 // session upsert key = (runtime, runtimeSessionId ?? conversationId); Codex MCP _meta.threadId maps to conversationId
 export type SearchEventData = { query: string; mode: SearchMode; candidates: Candidate[]; abstained?: { reason: AbstainReason; hint: string }; elapsedMs: number; total: number };
 export type TraceStepDetail =
+  | { kind: "skill_request"; requestId: string; operation: "search" | "load"; status: import("./request-status.js").RequestStatus }
   | { kind: "prompt"; text?: string; textLength?: number }
   | ({ kind: "search"; traceId: string; chosen: SkillUri[] } & SearchEventData)
   | { kind: "load"; uri: SkillUri; loadId: string; manifestDigest: string }
@@ -58,15 +59,20 @@ export type Attribution = { sessionId: string | "unattributed"; method: "runtime
   reason?: "no_session" | "ambiguous" | "stale" };
 export type AdoptionState = "loaded" | "exposed_only" | "no_match" | "aborted" | "not_used";
 export type Filter = { from?: number; to?: number; runtime?: RuntimeId[]; skill?: SkillUri[]; state?: AdoptionState[]; dow?: number; hour?: number; hourSpan?: number; q?: string;
+  searchStatus?: import("./request-status.js").RequestStatus[]; loadStatus?: import("./request-status.js").RequestStatus[];
+  searchResult?: import("./request-status.js").SearchResult[];
   // automated sessions (first prompt sent by a harness or the runtime, see store/automation.ts) are excluded unless "include" or "only"
   automated?: "include" | "only" };
 // dow: 0-6 with 0 = Sunday (JS getDay semantics, in the requested tz); hour: start hour 0-23; hourSpan: number of hours from `hour` (default 1; a 2 h bucket click sends hourSpan 2; shift-click ranges send the union span)
 export type SessionRow = { id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; skills: SkillUri[]; state: AdoptionState; attribution: Attribution["method"];
+  /** Request-level counts; state is retained only for old API clients. */
+  requests?: import("./request-status.js").RequestSummary;
   automated?: string };
 export type TraceStep = { ts: number; kind: EventKind; summary: string; detail: Record<string, unknown> };
-export type FlowDto = { unit: "first_load" | "all_loads"; columns: ["task_type", "skill", "state"];
+export type FlowState = AdoptionState | import("./request-status.js").RequestStatus;
+export type FlowDto = { unit: "first_load" | "all_loads" | "search_requests" | "load_requests"; requestCount?: number; columns: ["task_type", "skill", "state"];
   nodes: { id: string; column: 0 | 1 | 2; label: string; count: number; other?: boolean }[];
-  links: { source: string; target: string; count: number; state: AdoptionState }[]; sessionCount: number };
+  links: { source: string; target: string; count: number; state: FlowState }[]; sessionCount: number };
 export type HeatmapDto = { tz: string; weekStart: 0 | 1; bucketHours: 1 | 2 | 4; cells: { dow: number; hour: number; count: number }[]; rowTotals: number[]; colTotals: number[] };
 export type SkillWeekDto = { weeks: string[]; rows: { uri: SkillUri; name: string; counts: number[] }[] };
 export interface Store {
@@ -84,7 +90,7 @@ export interface Store {
   traceSession(traceId: string): string | undefined;
   upsertSkills(entries: SkillEntry[]): void; markRemoved(uris: SkillUri[]): void;
   sessions(f: Filter): SessionRow[]; trace(sessionId: string): TraceStep[];
-  flow(f: Filter, unit: "first_load" | "all_loads", top?: number): FlowDto; heatmap(f: Filter, tz: string, weekStart: 0 | 1, bucketHours: 1 | 2 | 4): HeatmapDto; skillWeek(f: Filter): SkillWeekDto;
+  flow(f: Filter, unit: FlowDto["unit"], top?: number): FlowDto; heatmap(f: Filter, tz: string, weekStart: 0 | 1, bucketHours: 1 | 2 | 4): HeatmapDto; skillWeek(f: Filter): SkillWeekDto;
   // attributionRate is null for a runtime with no MCP events (no data), distinct from 0 (MCP events, none attributed).
   // unattributed counts MCP search/load events with no matched session, limited by f.from/f.to/f.runtime.
   stats(f?: Filter): { attributionRate: Record<RuntimeId, number | null>; abstainRate: number; unusedSkills: SkillUri[]; lastEventTs?: number;

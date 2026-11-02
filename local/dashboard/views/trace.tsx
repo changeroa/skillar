@@ -1,3 +1,4 @@
+import { RequestCounts, RequestDetails } from "../components/requests";
 import { isSkillarMcpData } from "../../src/ingest/identity.js";
 import { useEffect, useState } from "preact/hooks";
 import type { AbstainReason, EventKind, FindingLabel, RuntimeId, SearchMode, SessionSkillReportDto, SkillSpan, SkillUri,
@@ -7,7 +8,7 @@ import { CallList, callRows, isCall } from "../components/calls";
 import { Candidates, type CandidateLike } from "../components/candidates";
 import { Facts, type Fact } from "../components/facts";
 import { UnresolvedLoadNotice } from "../components/skill-evidence";
-import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK, STATE_LABEL, STATE_TITLE,
+import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK,
   buildHash, skillName, type ViewProps } from "../state";
 
 // Session trace view (todo 15): header + narrative timeline + candidates panel + "Save as eval case".
@@ -35,6 +36,7 @@ export type ToolArgs = { captured: true; text: string; truncated: boolean } | { 
 const COST_UNKNOWN = "cost unknown";
 
 export const KIND_LABEL: Record<EventKind, string> = {
+  skill_request: "Request",
   session_start: "Session started",
   prompt: "Prompt",
   search: "Searched skillar",
@@ -64,6 +66,7 @@ export type TimelineItem =
  * skill report (an older daemon, or a session the report cannot be read for) the timeline stays exactly as recorded.
  */
 export function planTimeline(steps: readonly TraceStep[], report?: Pick<SessionSkillReportDto, "tree" | "finding">): TimelineItem[] {
+  steps = steps.filter((step) => step.kind !== "skill_request");
   if (!report) return steps.map((step) => ({ kind: "step", step }));
   const labels = new Map(report.finding.turns.map((turn) => [turn.turnId, turn.label]));
   const spans = report.tree.turns
@@ -278,9 +281,9 @@ function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads }:
         </div>
         {row && (
           <div>
-            <dt>State</dt>
+            <dt>Requests</dt>
             <dd>{unresolvedLoads ? <span class="tag" data-adoption-status="uncertain">attribution unresolved</span>
-              : <span class={`badge badge--${row.state}`} title={STATE_TITLE[row.state] ?? row.state}>{STATE_LABEL[row.state] ?? row.state}</span>}</dd>
+              : <RequestCounts summary={row.requests} />}</dd>
           </div>
         )}
         <div>
@@ -289,6 +292,7 @@ function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads }:
         </div>
       </dl>
       <p class="trace__counts">{parts.join(" \u00b7 ")}</p>
+      <RequestDetails steps={steps} />
     </header>
   );
 }
@@ -360,7 +364,7 @@ function SearchBody({ detail }: { detail: SearchDetail }) {
       {detail.abstained ? (
         <div class="tl__abstain" data-abstained={detail.abstained.reason}>
           <div class="tl__abstain-head">
-            <span class="badge badge--no_match">abstained {"\u00b7"} {ABSTAIN_LABEL[detail.abstained.reason] ?? detail.abstained.reason}</span>
+            <span class="badge badge--succeeded">no_candidates {"\u00b7"} {ABSTAIN_LABEL[detail.abstained.reason] ?? detail.abstained.reason}</span>
           </div>
           <p class="tl__hint">{detail.abstained.hint}</p>
           <SaveEvalButton detail={detail} />

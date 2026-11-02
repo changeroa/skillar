@@ -68,8 +68,12 @@ export function attribute(event: CanonicalEvent, store: AttributionStore, now: n
     if (bound) return { sessionId: bound, method: "vendor_meta" };
   }
 
+  const requestId = typeof event.data.requestId === "string" ? event.data.requestId : undefined;
+  const requestSession = requestId ? state.loadSessions.get(`request:${requestId}`) : undefined;
+  if (attributed(requestSession)) return { sessionId: requestSession, method: "trace_handle" };
+
   // (3) load / read_file joined to an attributed search (traceId) or load (loadId).
-  if (event.kind === "load" || event.kind === "read_file") {
+  if (event.kind === "load" || event.kind === "read_file" || event.kind === "skill_request" || event.kind === "error") {
     const viaTrace = event.traceId ? store.traceSession(event.traceId) : undefined;
     if (attributed(viaTrace)) return { sessionId: viaTrace, method: "trace_handle" };
     const viaLoad = event.loadId ? state.loadSessions.get(event.loadId) : undefined;

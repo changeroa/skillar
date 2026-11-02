@@ -1,6 +1,7 @@
+import { REQUEST_STATUSES } from "../../src/request-status.js";
 import { sankey as sankeyLayout, sankeyLinkHorizontal, type SankeyNode } from "d3-sankey";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { AdoptionState, FlowDto } from "../../src/types.js";
+import type { FlowState as AdoptionState, FlowDto } from "../../src/types.js";
 import { STATE_LABEL } from "../state";
 
 // Three-column Sankey (task type -> skill -> outcome): d3-sankey computes the layout, the SVG is
@@ -21,7 +22,7 @@ export type FlowLayout = { nodes: LaidOutNode[]; links: LaidOutLink[] };
 export type LayoutOptions = { width: number; height: number; top?: number; nodeWidth?: number; nodePadding?: number };
 
 export const COLUMN_TITLE: Record<FlowDto["columns"][number], string> = { task_type: "Task type", skill: "Skill", state: "Outcome" };
-export const STATE_VALUES: ReadonlySet<string> = new Set<AdoptionState>(["loaded", "exposed_only", "no_match", "aborted", "not_used"]);
+export const STATE_VALUES: ReadonlySet<string> = new Set<AdoptionState>(["loaded", "exposed_only", "no_match", "aborted", "not_used", ...REQUEST_STATUSES]);
 
 const NODE_WIDTH = 10;
 const HEADER_HEIGHT = 24;
@@ -168,13 +169,13 @@ function truncate(text: string, max: number): string {
 function describe(dto: FlowDto, target: FlowTarget): { title: string; sub: string } {
   if (target.kind === "node") {
     const { node } = target;
-    return { title: displayLabel(node), sub: `${node.count} ${node.count === 1 ? "session" : "sessions"} \u00b7 ${percent(node.count, dto.sessionCount)}` };
+    return { title: displayLabel(node), sub: `${node.count} ${dto.requestCount !== undefined ? "requests" : node.count === 1 ? "session" : "sessions"} \u00b7 ${percent(node.count, (dto.requestCount ?? dto.sessionCount))}` };
   }
   const label = new Map(dto.nodes.map((n) => [n.id, displayLabel(n)]));
   const { link } = target;
   return {
     title: `${label.get(link.source) ?? link.source} \u2192 ${label.get(link.target) ?? link.target}`,
-    sub: `${STATE_LABEL[link.state] ?? link.state} \u00b7 ${link.count} ${link.count === 1 ? "session" : "sessions"} \u00b7 ${percent(link.count, dto.sessionCount)}`,
+    sub: `${STATE_LABEL[link.state] ?? link.state} \u00b7 ${link.count} ${dto.requestCount !== undefined ? "requests" : link.count === 1 ? "session" : "sessions"} \u00b7 ${percent(link.count, (dto.requestCount ?? dto.sessionCount))}`,
   };
 }
 
@@ -184,9 +185,9 @@ const SANKEY_CSS = `
 .sankey__svg.is-narrow { font-size: var(--fs-micro); }
 .sankey__head { fill: var(--ink-3); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
 .sankey__link { fill: none; stroke: var(--neutral); stroke-opacity: 0.38; transition: stroke-opacity var(--t-micro); }
-.sankey__link.is-loaded { stroke: var(--ok); }
-.sankey__link.is-exposed_only { stroke: var(--warn); }
-.sankey__link.is-no_match { stroke: var(--bad); }
+.sankey__link.is-succeeded, .sankey__link.is-loaded { stroke: var(--ok); }
+.sankey__link.is-in_progress, .sankey__link.is-exposed_only { stroke: var(--warn); }
+.sankey__link.is-failed, .sankey__link.is-no_match { stroke: var(--bad); }
 .sankey__link.is-aborted, .sankey__link.is-not_used { stroke: var(--neutral); }
 .sankey__svg.is-hovering .sankey__link:not(.is-on) { stroke-opacity: 0.1; }
 .sankey__svg.is-hovering .sankey__link.is-on { stroke-opacity: 0.72; }
@@ -194,9 +195,9 @@ const SANKEY_CSS = `
 .sankey__svg.is-hovering .sankey__node:not(.is-on) { opacity: 0.35; }
 .sankey__rect { fill: var(--ink-2); }
 .sankey__node.is-other .sankey__rect { fill: var(--ink-3); }
-.sankey__node.is-c2.is-loaded .sankey__rect { fill: var(--ok); }
-.sankey__node.is-c2.is-exposed_only .sankey__rect { fill: var(--warn); }
-.sankey__node.is-c2.is-no_match .sankey__rect { fill: var(--bad); }
+.sankey__node.is-c2.is-succeeded .sankey__rect, .sankey__node.is-c2.is-loaded .sankey__rect { fill: var(--ok); }
+.sankey__node.is-c2.is-in_progress .sankey__rect, .sankey__node.is-c2.is-exposed_only .sankey__rect { fill: var(--warn); }
+.sankey__node.is-c2.is-failed .sankey__rect, .sankey__node.is-c2.is-no_match .sankey__rect { fill: var(--bad); }
 .sankey__node.is-c2.is-aborted .sankey__rect, .sankey__node.is-c2.is-not_used .sankey__rect { fill: var(--neutral); }
 .sankey__label { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; dominant-baseline: central; pointer-events: none; }
 .sankey__label--end, .sankey__head--end { text-anchor: end; }
@@ -279,7 +280,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   return (
     <div class="sankey" ref={wrap} style={{ minHeight: `${height}px` }}>
       {layout.nodes.length > 0 && (
-        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`Flow of ${dto.sessionCount} sessions from task type to skill to outcome`}>
+        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`Flow of ${(dto.requestCount ?? dto.sessionCount)} ${dto.requestCount !== undefined ? "requests" : "sessions"} from task type to skill to outcome`}>
           <g aria-hidden="true">
             <text class="sankey__head" x={0} y={10}>{COLUMN_TITLE[dto.columns[0]]}</text>
             <text class="sankey__head sankey__head--mid" x={plotWidth / 2} y={10}>{COLUMN_TITLE[dto.columns[1]]}</text>
@@ -293,7 +294,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const dest = nodeById.get(link.target);
               const on = !lit || lit.links.has(link.index);
               const path = <path class={`sankey__link is-${link.state}${on ? " is-on" : ""}`} d={link.path} stroke-width={Math.max(1, link.width)} />;
-              const label = `${source ? displayLabel(source) : link.source} to ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${link.count} sessions (${percent(link.count, dto.sessionCount)})`;
+              const label = `${source ? displayLabel(source) : link.source} to ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${link.count} ${dto.requestCount !== undefined ? "requests" : "sessions"} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, { x: ((source?.x1 ?? 0) + (dest?.x0 ?? plotWidth)) / 2, y: (link.y0 + link.y1) / 2 });
               return href
                 ? <a key={`l${link.index}`} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{path}</a>
@@ -319,7 +320,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
                   </text>
                 </>
               );
-              const label = `${displayLabel(node)}: ${node.count} sessions (${percent(node.count, dto.sessionCount)})`;
+              const label = `${displayLabel(node)}: ${node.count} ${dto.requestCount !== undefined ? "requests" : "sessions"} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, { x: end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP, y: (node.y0 + node.y1) / 2 });
               if (href) return <a key={node.id} class={cls} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{body}</a>;
               if (expandable) {

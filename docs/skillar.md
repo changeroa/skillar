@@ -106,20 +106,51 @@ that applies:
 
 A session row reports the method of its earliest attributed event.
 
-## Adoption states
+## Search and load request statuses
 
-Each session gets one state, by precedence:
+The dashboard reports search and load independently. Status belongs to one request, not to an entire session.
+A failed request followed by a successful retry contributes one failure and one success; neither erases the other.
 
-| State | Meaning |
+| Status | Evidence |
 | --- | --- |
-| `loaded` | at least one `load_skill` |
-| `exposed_only` | a search returned candidates but nothing was loaded |
-| `no_match` | searches abstained |
-| `aborted` | an error followed the first search |
-| `not_used` | no skillar search in the session |
+| `not_attempted` | No request observed for this operation in the captured session history (summary only; total is zero). |
+| `in_progress` | A start was recorded and this daemon is still executing that request. |
+| `succeeded` | The operation completed successfully. |
+| `failed` | The operation ended with an observed error. |
+| `cancelled` | The caller explicitly cancelled this request. |
+| `unknown` | A request was observed but its outcome cannot be established, including starts from a previous daemon process. |
 
-The flow view groups sessions as task type (from the loaded or top-ranked skill and the first prompt) -> skill ->
-state; `unit=first_load` counts each session once, `unit=all_loads` counts every loaded skill.
+A successful search has `result: candidates_found` or `result: no_candidates`. The latter carries the search engine's
+`reason` when available: `empty_query`, `no_overlap`, `below_threshold`, or `explicit_only`. These are normal search
+outcomes, not execution failures. Pagination uses the total candidate count: an empty page does not mean no candidates.
+Historical searches without enough result metadata leave the result unspecified rather than inventing a reason.
+
+`GET /api/sessions` includes `requests.search` and `requests.load`, each containing `total`, per-status `counts`,
+search `results` counts and `reasons` counts. `not_attempted` is derived from zero total rather than a fictitious request.
+The filters `searchStatus`, `loadStatus` and `searchResult` accept comma-separated values; values within a filter use OR,
+and the filters use AND. One session may match both failed and succeeded because it contains multiple requests.
+The Trace view lists requests individually with their result, reason, target skill and error code.
+
+New `skill_request` events record a UUID, operation, start time and status. Detailed `search`, `load` and `error`
+observations carry the same request ID and are not counted again. Only reads of skill entry documents count as loads;
+supporting-file reads and native skill activation remain separate observations. Failures retain the requested URI.
+Start and completion attribution is joined by request ID when possible; unresolved session attribution is not guessed.
+
+Explicit MCP `notifications/cancelled` is scoped to an established legacy transport session, the stdio proxy's private
+transport ID, or a reported runtime identity, together with the request ID. The stdio proxy forwards explicit cancellation
+without inventing a runtime session for attribution. Anonymous HTTP notifications cannot cancel another caller's request. A disconnected connection or a missing
+completion is not cancellation. A process restart leaves unfinished requests `unknown`; it does not rewrite stored history.
+
+The Flow view uses `unit=search_requests` or `unit=load_requests` and counts individual requests (including retries).
+`requestCount` is its denominator; `sessionCount` remains the number of matching sessions. A zero-request session has
+nothing to draw in this view; it is available via the session list's `not_attempted` filter.
+
+### Legacy API compatibility
+
+The old `SessionRow.state`, `state` filter and `unit=first_load|all_loads` flow aggregation remain available for older API
+clients, but are deprecated and are not used as dashboard request outcomes. Their historical precedence is unchanged:
+`loaded`, `exposed_only`, `no_match`, `aborted`, `not_used`. In particular, legacy `aborted` must not be interpreted as proof
+of a failed or cancelled load. No database migration rewrites historical events.
 
 ## Testing
 
