@@ -77,8 +77,15 @@ export const contentKindSchema = z.enum(contentKinds);
 export type ContentKind = z.infer<typeof contentKindSchema>;
 export const MAX_BATCH_BYTES = 256 * 1024;
 
-export function parseActivityBatch(input: unknown): ActivityBatch {
-  const value = activityBatchSchema.parse(input);
+export function parseActivityBatch(
+  input: unknown, options: { readonly allowEmptyMetadata?: boolean } = {},
+): ActivityBatch {
+  // A P5 content manifest may carry source tables with no P1 metadata mutation.
+  // The public v1 metadata path keeps its original nonempty contract.
+  const parser = options.allowEmptyMetadata === true ? activityBatchSchema.unwrap().extend({
+    mutations: z.array(metadataMutationSchema).max(100).readonly(),
+  }).readonly() : activityBatchSchema;
+  const value = parser.parse(input);
   if (new TextEncoder().encode(JSON.stringify(value)).byteLength > MAX_BATCH_BYTES) {
     throw new ActivityContractError("batch_too_large");
   }

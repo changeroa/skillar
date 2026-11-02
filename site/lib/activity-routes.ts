@@ -7,6 +7,7 @@ import type { ActivityEnv } from "./activity-auth.ts";
 import {
   exchangeDeviceGrant, issueDeviceGrant, readDevicePrincipal, revokeDevice,
 } from "./device-auth.ts";
+import { readDeviceConsent, setDeviceConsent } from "./activity-consent.ts";
 
 const grantRequestSchema = z.strictObject({
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).max(2).readonly(),
@@ -18,7 +19,7 @@ const deviceListSchema = z.array(z.strictObject({
 
 class ActivityRequestError extends Error {}
 
-async function readBody(request: Request): Promise<unknown> {
+async function readBody(request: Request, maxBytes = 4096): Promise<unknown> {
   if (!request.headers.get("content-type")?.startsWith("application/json") || request.body === null) {
     throw new ActivityRequestError("invalid_body");
   }
@@ -30,7 +31,7 @@ async function readBody(request: Request): Promise<unknown> {
       const chunk = await reader.read();
       if (chunk.done) break;
       size += chunk.value.byteLength;
-      if (size > 4096) {
+      if (size > maxBytes) {
         await reader.cancel();
         throw new ActivityRequestError("body_too_large");
       }
@@ -71,6 +72,23 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
   if (path.startsWith("/v1/")) {
     const principal = await readDevicePrincipal(request, env);
     if (principal === null) return activityError(401, "unauthorized");
+    if ((path === "/v1/activity/chunks" || path === "/v1/activity/batches") &&
+        request.method === "POST") {
+      if (env.ACTIVITY_INGEST_ENABLED !== "true" || env.ACTIVITY_SERVICE === undefined) {
+        return activityError(404, "not_found");
+      }
+      if (!principal.scopes.includes("activity:ingest")) {
+        return activityError(403, "insufficient_scope");
+      }
+      // The internal Worker has no public routes. Forward only server-created
+      // identity, never caller-supplied headers, cookies or authorization.
+      const headers = new Headers({
+        "content-type": request.headers.get("content-type") ?? "",
+        "x-skillar-principal": JSON.stringify(principal),
+      });
+      const forwarded = new Request(`https://activity.internal${path}`, request);
+      return env.ACTIVITY_SERVICE.fetch(new Request(forwarded, { headers }));
+    }
     if (path === "/v1/activity/status" && request.method === "GET") {
       if (!principal.scopes.includes("activity:read")) return activityError(403, "insufficient_scope");
       return Response.json({
@@ -96,6 +114,14 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
     return Response.json({ devices: deviceListSchema.parse(rows.results) }, { headers: noStore });
   }
   if (!principal.scopes.includes("device:manage")) return activityError(403, "insufficient_scope");
+  const consent = /^\/api\/devices\/([^/]+)\/consent$/.exec(path);
+  if (consent?.[1] !== undefined) {
+    const deviceId = decodeURIComponent(consent[1]);
+    if (request.method === "GET") return readDeviceConsent(principal, deviceId, env);
+    if (request.method === "POST") {
+      return setDeviceConsent(principal, deviceId, await readBody(request, 256 * 1024), env);
+    }
+  }
   if (path === "/api/devices/grants" && request.method === "POST") {
     const { scopes } = grantRequestSchema.parse(await readBody(request));
     return Response.json(await issueDeviceGrant(principal, scopes, env), { status: 201, headers: noStore });
