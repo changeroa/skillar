@@ -13,6 +13,9 @@ test("runtime verification runs the full CI sequence from the selected checkout"
     return { status: 0 };
   } });
   assert.deepEqual(calls, [
+    ["npm", ["ci"], resolve(root, "shared")],
+    ["npm", ["run", "build"], resolve(root, "shared")],
+    ["npm", ["test"], resolve(root, "shared")],
     ["npm", ["ci"], resolve(root, "server")],
     ["npm", ["ci"], resolve(root, "worker")],
     ["npm", ["ci"], resolve(root, "local")],

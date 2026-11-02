@@ -22,6 +22,7 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: |
+            shared/package-lock.json
             server/package-lock.json
             worker/package-lock.json
             local/package-lock.json

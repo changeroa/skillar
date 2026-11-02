@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 
 export function verify({ root = fileURLToPath(new URL("../", import.meta.url)), run = spawnSync } = {}) {
   const checks = [
+    ["shared", "npm", ["ci"]],
+    ["shared", "npm", ["run", "build"]],
+    ["shared", "npm", ["test"]],
     ["server", "npm", ["ci"]],
     ["worker", "npm", ["ci"]],
     ["local", "npm", ["ci"]],
