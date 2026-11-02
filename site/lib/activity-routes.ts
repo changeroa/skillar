@@ -82,10 +82,14 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
       }, { headers: noStore });
     }
     const migration = /^\/v1\/activity\/migrations\/(begin|status|page|complete|export|rollback)$/.exec(path);
+    const report = /^\/v1\/activity\/reports\/(status|result)$/.test(path);
     if ((path === "/v1/activity/chunks" || path === "/v1/activity/batches" ||
-        path === "/v1/activity/export" || migration !== null) &&
+        path === "/v1/activity/export" || path === "/v1/activity/query" ||
+        path === "/v1/activity/context" || path === "/v1/activity/context/read" ||
+        report || migration !== null) &&
         request.method === "POST") {
-      const readOnly = path === "/v1/activity/export" ||
+      const readOnly = path === "/v1/activity/export" || path === "/v1/activity/query" ||
+        path === "/v1/activity/context/read" || report ||
         migration?.[1] === "status" || migration?.[1] === "export";
       if ((!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") || env.ACTIVITY_SERVICE === undefined) {
         return activityError(404, "not_found");

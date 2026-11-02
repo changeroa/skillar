@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "skillar-activity-foundation",
-  "main": "./src/activity/content-api.ts",
+  "main": "./src/activity/report-worker.ts",
   "account_id": "8277c1acc712e4a9d00479255015c200",
   "compatibility_date": "2026-09-03",
   "workers_dev": false,
@@ -9,6 +9,11 @@
   "routes": [],
   "vars": { "ACTIVITY_INGEST_ENABLED": "false" },
   "triggers": { "crons": ["*/15 * * * *"] },
+  "workflows": [{
+    "binding": "REPORT_FLOW",
+    "name": "skillar-report-flow",
+    "class_name": "ReportFlow"
+  }],
   "d1_databases": [{
     "binding": "ACTIVITY",
     "database_name": "skillar-activity-00",

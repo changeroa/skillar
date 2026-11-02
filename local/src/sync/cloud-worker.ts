@@ -4,14 +4,20 @@ import { parentPort, workerData } from "node:worker_threads";
 import { z } from "zod";
 import { atomicCloudJson, cloudHome } from "./cloud-connection.js";
 import { runCloudStep } from "./cloud.js";
+import { requestRuntimeCapture, runCloudRuntimeStep } from "./cloud-runtime.js";
 
-const { home, source } = z.strictObject({ home: z.string(), source: z.string() }).parse(workerData);
+const { home, source, captureRuntime } = z.strictObject({
+  home: z.string(), source: z.string(), captureRuntime: z.boolean().default(false),
+}).parse(workerData);
 let busy = false, again = false, timer: NodeJS.Timeout | undefined;
 const wake = () => {
   if (timer !== undefined) clearTimeout(timer);
   if (busy) { again = true; return; }
   busy = true;
-  void runCloudStep(home, source).then(progress => {
+  void runCloudStep(home, source).then(progress =>
+    captureRuntime ? runCloudRuntimeStep(home, source, progress,
+      request => requestRuntimeCapture(parentPort, request)) : progress,
+  ).then(progress => {
     parentPort?.postMessage(progress);
     busy = false;
     if (again || progress.phase === "queued") {
@@ -42,5 +48,5 @@ const sourceWatch = watch(dirname(source), (_event, filename) => {
 const controlWatch = watch(cloudHome(home), (_event, filename) => {
   if (filename === "control.json" || filename === "connection.json") wake();
 });
-parentPort?.on("message", wake);
+parentPort?.on("message", value => { if (value === "wake") wake(); });
 wake();
