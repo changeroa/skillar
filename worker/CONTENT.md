@@ -67,6 +67,75 @@ require all seven kinds because a fragment cannot prove complete document policy
 Unselected mixed JSON is rejected, not staged and later silently redacted.
 Partial documents intentionally do not claim full content parity.
 
+## Read-only CDC export (P6 reverse restore)
+
+`POST https://activity.internal/v1/activity/export` is service-binding-only and
+uses the existing internal authenticated device principal with `activity:read`.
+It stays readable when ingest is off, just like migration export. This does not
+add a public route, proxy, cross-device grant, or permission to read arbitrary R2
+keys. Account identity is exclusively the principal's account.
+
+The strict JSON request is:
+
+```ts
+{
+  deviceId: string; sourceDomain: string; generation: number;
+  consentVersion: number; projectId: string; rootId: string | null;
+  range: { fromMs: number; toMs: number };
+  backfill: { version: number; snapshotId: string; journalCut: number } | null;
+  afterSequence: number; throughSequence?: number; limit?: number;
+}
+```
+
+`afterSequence` is exclusive; `throughSequence` is inclusive and defaults to the
+observed source head. Save that returned ceiling and pass it on every resumed
+page. `limit` defaults to 1 and is an integer in 1..4 (at most 64 MiB of decoded
+document JSON plus envelopes per page, under the existing 16 MiB/batch limit).
+All sequence numbers are nonnegative safe integers. A ceiling above the observed
+head, a missing nonzero resume anchor, or a sequence gap returns 409
+`sequence_gap`. Invalid input returns 400. Missing accepted content returns 409
+`content_missing`; inconsistent immutable envelope/receipt returns 409
+`content_conflict` (including journal discontinuity). Existing fence, consent, field-policy and crypto errors retain
+their existing codes. No partial successful page is returned on failure.
+
+The exact successful JSON response contract is:
+
+```ts
+type Cursor = { sequence: number; journalThrough: number };
+type ExportPage = {
+  schemaVersion: 1;
+  deviceId: string; sourceDomain: string; generation: number;
+  afterSequence: number; throughSequence: number;
+  start: Cursor | null; // cursor at afterSequence
+  cursor: Cursor | null; // last returned batch, or start on an empty page
+  head: Cursor | null; // observed live device_streams head, not account change head
+  hasMore: boolean; // cursor.sequence < throughSequence
+  batches: Array<{
+    batch: ContentBatch; // original shared v2 envelope, journal (from, through]
+    receipt: IngestReceipt; // original projected receipt including payloadHash/changeSeq
+    document: ContentDocument; // exact decrypted shared v2 document, no redaction
+  }>;
+};
+```
+
+The cursor fields are null only for an absent source stream (with ceiling 0 and
+no batches); a published baseline can instead have sequence 0 and a nonzero
+journal cut. Clients verify consecutive sequence numbers starting at
+`afterSequence + 1`, each `batch.journal.from === previous.journalThrough`,
+receipt/envelope identity, and the final cursor/ceiling. Envelopes are reconstructed
+from immutable ledger metadata and manifests and checked against the original
+receipt payload hash. Chunk object keys and encryption material are not returned.
+`document` preserves exact parsed values, including Unicode, control characters,
+opaque JSON strings, nulls, numeric values and tombstones; original JSON whitespace
+is not exported.
+
+The request scope authorizes the read, including empty pages. Each returned batch
+is independently checked against its original scope and the current primary-D1
+consent, including current field policy; scope is not an omission-producing
+filter. Consent and the tenant fence are checked again after R2 reads. Uploads
+without accepted receipts and snapshot pages are never CDC batches. A metadata-only
+receipt in the interval fails closed instead of being silently skipped.
+
 ## Keys
 
 `CONTENT_KEYRING` is a Worker secret containing JSON:
