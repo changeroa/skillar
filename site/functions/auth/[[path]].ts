@@ -30,11 +30,14 @@ async function handle(request: Request, env: Env): Promise<Response> {
   if (!parsed.success || !env.ACCOUNTS) {
     return Response.json({ error: 'Sign-in is temporarily unavailable.' }, { status: 503, headers: noStore });
   }
-  const config = parsed.data;
-  // The single approved OAuth origin is also the cookie and logout boundary.
-  if (url.origin !== config.PUBLIC_ORIGIN) {
+  // Keep the production Pages alias usable, but never accept arbitrary preview hosts.
+  if (url.origin !== parsed.data.PUBLIC_ORIGIN &&
+      !(parsed.data.PUBLIC_ORIGIN === 'https://skillar.sh' &&
+        url.origin === 'https://site.example.test')) {
     return Response.json({ error: 'Use the production sign-in URL.' }, { status: 403, headers: noStore });
   }
+  // Each approved host owns its callback, cookie issuer and logout Origin.
+  const config = { ...parsed.data, PUBLIC_ORIGIN: url.origin };
   const now = Math.floor(Date.now() / 1000);
   const path = url.pathname.replace(/\/$/, '');
 
