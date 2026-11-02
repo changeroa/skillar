@@ -1,6 +1,8 @@
 # Account preview QA
 
-Preview: https://d8e5e0d5.skillar-site.pages.dev.
+Current preview: https://3c183402.skillar-site.pages.dev.
+Initial account preview, before the skip correction:
+https://d8e5e0d5.skillar-site.pages.dev.
 Screen-only: no authentication, account, provisioned endpoint or activity data.
 `skillar.sh` remains unattached.
 
@@ -33,6 +35,31 @@ additional dashboard and copy-state images show content below the phone fold.
 | Production build | Strict tsc and Vite MPA build exit 0 | PASS | `site/package.json`, `site/vite.config.js`; build transcript |
 | Production Lighthouse | 3 mobile + 3 desktop runs per four routes, all category scores 100, exit 0 | PASS | Lane `account-qa/lighthouse-{landing,login,connect,dashboard}/` |
 | Static Pages direct routes | Four routes HTTP200 with distinct correct HTML and current built asset names; preview noindex | PASS | Live preview above |
+
+## Gate-found keyboard regression
+
+The first account gate (`st_01a19a5c`) rejected the increment: dashboard
+`href="#main"` entered the view router, replacing Heatmap with Sessions and
+announcing an invalid view. Earlier keyboard checks covered login exploration
+and dashboard view links, not dashboard skip; their Q10 PASS was too broad.
+Root reproduced the failure before changing source.
+
+The dashboard skip now moves focus to a focusable main landmark without changing
+the view hash. Native no-JavaScript skip remains an ordinary anchor. Real Enter
+activation passed for all four views at390/1440 in light/dark (16 cases), plus
+the hashless default. The selected view, current link, title and hash stay intact;
+no error is announced. Next Tab reaches MCP setup. Ordinary view links, back,
+direct reentry, genuinely malformed hashes and four no-JS sections were rechecked.
+No fixed sleep, test suppression or new routing framework was added.
+
+`before-skip-*` images reproduce the actual previous deployed failure;
+`after-skip-*` show the corrected focus navigation. The new 16-state delta matrix
+is in lane `after/account-skip-fix/`. Earlier 90-image resting/geometry evidence
+remains valid for unchanged layout, not evidence that the old skip worked.
+Affected dashboard production Lighthouse was rerun separately under
+`account-qa/lighthouse-dashboard-skip-fix/`: all four categories100 in all six
+mobile/desktop runs, exit0. The corrected live preview also preserves default
+and Heatmap skip state with focus on main, then ordinary Workspaces navigation.
 
 The initial remote automation changed selects before deferred modules were ready.
 That observation was not counted as a persistence/config pass. Repeating after

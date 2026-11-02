@@ -42,6 +42,14 @@ const viewLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.view
 const recovery = document.querySelector<HTMLElement>('#view-recovery');
 
 if (emptyViews.length && recovery) {
+  const skipLink = document.querySelector<HTMLAnchorElement>('.skip');
+  const main = document.querySelector<HTMLElement>('#main');
+  if (skipLink && main) {
+    skipLink.addEventListener('click', event => {
+      event.preventDefault();
+      main.focus();
+    });
+  }
   const showView = (moveFocus: boolean) => {
     const hash = window.location.hash;
     const known = ['', '#sessions', '#workspaces', '#flow', '#heatmap'].includes(hash);

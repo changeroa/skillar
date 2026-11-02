@@ -76,7 +76,7 @@ absent, not deferred UI implementation.
 | Q7 | PASS: distinct explanations and next action for every empty view; no charts, counts, filters, timestamps or create simulation. |
 | Q8 | PASS: seven surfaces x three widths x two themes = 42 initial captures, 90 including overlapping tails; focus, primitive and boundary states separately captured. |
 | Q9 | PASS: no horizontal document overflow at 320/390/768/1440, including long config. 320 CSS pixels supplies the reflow equivalent of 1280px at 400% browser zoom; no claim of automated browser-chrome zoom. Doubled computed text reflows at 390/1440. |
-| Q10 | PASS for exercised keyboard/DOM behavior: skip, titles, h1, native controls and hash heading focus. No screen-reader certification claimed. |
+| Q10 | PASS after gate repair: login skip/exploration and dashboard skip on all four views plus default were driven with Enter. Dashboard skip preserves hash/current view and focuses main, then Tab reaches setup. Earlier broad skip claim missed the router collision; it is superseded by the 16-case delta run. Titles, h1, native controls and view heading focus remain verified. No screen-reader certification claimed. |
 | Q11 | PASS: visible controls measured >=44x44 and actions >=48 high. Computed direct text/background ratios across seven surfaces, both themes: minimum 5.37 light / 7.87 dark; no <4.5 failures. Opaque neutral/code surfaces, no text over artwork. |
 | Q12 | PASS: theme/reload, denied storage, forced colors and reduced motion checked; zero animations. |
 | Q13 | PASS: strict production build and raw production Lighthouse. Static-host readback remains a delivery gate. |
@@ -113,11 +113,17 @@ scope-specific N/A reasons remain in the baseline audit.
 
 ## Delivery state
 
+First account gate `st_01a19a5c` rejected the dashboard skip/hash collision.
+Root reproduced and fixed it, then rechecked all four views at390/1440 light/dark,
+default skip, back/reentry, invalid hashes and no-JS content. The original gate
+report is retained; a delta approval is required before merge.
+
 Landing PR40: merged `37eda19648d8cc0ec7f72b3f64648a76abd2edde` after gate
 `st_01a19a41` APPROVE, three current-head checks and live preview/image readbacks.
 Landing preview: https://d05b70a6.skillar-site.pages.dev.
 
-Account preview deployment: https://d8e5e0d5.skillar-site.pages.dev.
+Corrected account preview: https://3c183402.skillar-site.pages.dev
+(initial version: https://d8e5e0d5.skillar-site.pages.dev).
 Four direct routes returned HTTP200, correct distinct HTML and current built
 asset names. Root drove landing -> login -> setup -> all four views, then
 back/forward/direct reentry on this host; exact current view, theme persistence
