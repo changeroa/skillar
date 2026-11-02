@@ -9,8 +9,15 @@ import type { ContentEnv } from "./content-env.ts";
 import { ContentStorageError } from "./content-keys.ts";
 import { storeContentChunk } from "./content-objects.ts";
 import { acceptContentBatch } from "./content-service.ts";
+import { exportContent } from "./export-service.ts";
 import { ManagedCryptoError } from "./crypto.ts";
 import { ActivityLedgerError } from "./types.ts";
+import type { IngestPrincipal } from "./types.ts";
+import {
+  beginMigration, completeMigration, exportMigration, migrationStatus,
+  rollbackMigration, stageMigrationPage, MigrationError,
+} from "./migrations.ts";
+import { MigrationContractError } from "../../../shared/activity-sync.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -20,6 +27,15 @@ const internalPrincipalSchema = z.strictObject({
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).readonly(),
 }).readonly();
 const headers = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
+const migrationHandlers = new Map<string,
+  (env: ContentEnv, principal: IngestPrincipal, input: unknown) => Promise<unknown>>([
+  ["/v1/activity/migrations/begin", beginMigration],
+  ["/v1/activity/migrations/status", migrationStatus],
+  ["/v1/activity/migrations/page", stageMigrationPage],
+  ["/v1/activity/migrations/complete", completeMigration],
+  ["/v1/activity/migrations/export", exportMigration],
+  ["/v1/activity/migrations/rollback", rollbackMigration],
+]);
 class ContentHttpError extends Error {
   constructor(readonly status: 400 | 413 | 415, readonly code: string) {
     super(code);
@@ -58,17 +74,27 @@ async function body(request: Request): Promise<unknown> {
  * Pages authenticates the device and replaces identity headers before forwarding.
  */
 export async function activityContentRequest(request: Request, env: ContentEnv): Promise<Response> {
-  if (env.ACTIVITY_INGEST_ENABLED !== "true") {
+  const url = new URL(request.url);
+  const readOnly = url.pathname === "/v1/activity/migrations/status" ||
+    url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export";
+  if (!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") {
     return Response.json({ error: "not_found" }, { status: 404, headers });
   }
-  if (new URL(request.url).origin !== "https://activity.internal" || request.method !== "POST") {
+  if (url.origin !== "https://activity.internal" || request.method !== "POST") {
     return Response.json({ error: "not_found" }, { status: 404, headers });
   }
   try {
     const identity = request.headers.get("x-skillar-principal");
     if (identity === null) return Response.json({ error: "unauthorized" }, { status: 401, headers });
     const principal = internalPrincipalSchema.parse(JSON.parse(identity));
-    const path = new URL(request.url).pathname;
+    const path = url.pathname;
+    if (path === "/v1/activity/export") {
+      return Response.json(await exportContent(env, principal, await body(request)), { headers });
+    }
+    const migration = migrationHandlers.get(path);
+    if (migration !== undefined) {
+      return Response.json(await migration(env, principal, await body(request)), { headers });
+    }
     if (path === "/v1/activity/chunks") {
       return Response.json(await storeContentChunk(env, principal, await body(request)), {
         status: 201, headers,
@@ -80,7 +106,8 @@ export async function activityContentRequest(request: Request, env: ContentEnv):
     return Response.json({ error: "not_found" }, { status: 404, headers });
   } catch (error) {
     if (error instanceof ActivityLedgerError || error instanceof ContentStorageError ||
-        error instanceof ContentConsentError || error instanceof ContentHttpError) {
+        error instanceof ContentConsentError || error instanceof ContentHttpError ||
+        error instanceof MigrationError || error instanceof MigrationContractError) {
       return Response.json({ error: error.code }, { status: error.status, headers });
     }
     if (error instanceof ActivityContractError) {
