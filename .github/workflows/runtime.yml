@@ -3,9 +3,9 @@ name: Runtime validation
 on:
   push:
     branches: [main, dev, feat/dev-tools-mvp]
-    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
+    paths: ['server/**', 'worker/**', 'local/**', 'shared/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
   pull_request:
-    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
+    paths: ['server/**', 'worker/**', 'local/**', 'shared/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
   workflow_dispatch:
 
 permissions:
