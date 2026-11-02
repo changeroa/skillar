@@ -25,3 +25,9 @@ export {
 export type {
   MigrationBegin, MigrationPage, MigrationStatus, SnapshotCounts,
 } from "../../../shared/dist/activity-sync.js";
+export {
+  analysisRuntimeSchema, ingestCountersSchema, runtimeCommitSchema,
+} from "../../../shared/dist/activity-runtime.js";
+export type {
+  AnalysisRuntime, RuntimeCommit,
+} from "../../../shared/dist/activity-runtime.js";

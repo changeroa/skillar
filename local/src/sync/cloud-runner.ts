@@ -4,10 +4,12 @@ import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { cloudHome } from "./cloud-connection.js";
 import { cloudProgressSchema } from "./cloud.js";
+import { runtimeCaptureRequestSchema } from "./cloud-runtime.js";
+import type { CaptureRuntime } from "./cloud-runtime.js";
 
 /** No worker or network connection exists until a browser-authorized credential does. */
 export function startCloudSync(
-  home: string, source: string, log: (message: string) => void,
+  home: string, source: string, log: (message: string) => void, captureRuntime?: CaptureRuntime,
 ) {
   let worker: Worker | undefined, controls: FSWatcher | undefined, closed = false;
   let lastPhase: string | undefined;
@@ -26,10 +28,18 @@ export function startCloudSync(
     }
     if (worker !== undefined) { worker.postMessage("wake"); return; }
     const started = new Worker(new URL("./cloud-worker.js", import.meta.url), {
-      workerData: { home, source },
+      workerData: { home, source, captureRuntime: captureRuntime !== undefined },
     });
     worker = started;
     started.on("message", value => {
+      const request = runtimeCaptureRequestSchema.safeParse(value);
+      if (request.success) {
+        if (closed || worker !== started) return;
+        started.postMessage({
+          kind: "runtime-captured", id: request.data.id, capture: captureRuntime?.() ?? null,
+        });
+        return;
+      }
       const progress = cloudProgressSchema.safeParse(value);
       if (progress.success && progress.data.phase !== lastPhase) {
         lastPhase = progress.data.phase;

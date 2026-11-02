@@ -1,11 +1,17 @@
 import { z } from "zod";
 import {
-  accountIdSchema, ActivityContractError, deviceIdSchema, MAX_BATCH_BYTES,
+  accountIdSchema, ActivityContractError, deviceIdSchema, MAX_BATCH_BYTES, sourceDomainSchema,
 } from "../../../shared/activity-schema.ts";
 import { ContentContractError } from "../../../shared/activity-content.ts";
 import { ContentConsentError } from "./content-consent.ts";
 import { sweepContent } from "./content-db.ts";
 import type { ContentEnv } from "./content-env.ts";
+import type { ReportEnv } from "./report-types.ts";
+import { ReportError } from "./report-types.ts";
+import { dispatchPendingReports, reportResult, reportStatus, startReport } from "./report-api.ts";
+import { sweepReports } from "./report-objects.ts";
+import { commitRuntime, readRuntimeContext } from "./runtime-api.ts";
+import { RuntimeError } from "./runtime-store.ts";
 import { ContentStorageError } from "./content-keys.ts";
 import { storeContentChunk } from "./content-objects.ts";
 import { acceptContentBatch } from "./content-service.ts";
@@ -27,6 +33,9 @@ const internalPrincipalSchema = z.strictObject({
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).readonly(),
 }).readonly();
 const headers = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
+const runtimeReadSchema = z.strictObject({
+  sourceDomain: sourceDomainSchema, sequence: z.number().int().positive().optional(),
+});
 const migrationHandlers = new Map<string,
   (env: ContentEnv, principal: IngestPrincipal, input: unknown) => Promise<unknown>>([
   ["/v1/activity/migrations/begin", beginMigration],
@@ -73,10 +82,12 @@ async function body(request: Request): Promise<unknown> {
  * Service-binding entrypoint only: routes=[], workers_dev=false, preview_urls=false.
  * Pages authenticates the device and replaces identity headers before forwarding.
  */
-export async function activityContentRequest(request: Request, env: ContentEnv): Promise<Response> {
+export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
   const readOnly = url.pathname === "/v1/activity/migrations/status" ||
-    url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export";
+    url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export" ||
+    url.pathname === "/v1/activity/query" || url.pathname === "/v1/activity/reports/status" ||
+    url.pathname === "/v1/activity/reports/result" || url.pathname === "/v1/activity/context/read";
   if (!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") {
     return Response.json({ error: "not_found" }, { status: 404, headers });
   }
@@ -88,6 +99,21 @@ export async function activityContentRequest(request: Request, env: ContentEnv):
     if (identity === null) return Response.json({ error: "unauthorized" }, { status: 401, headers });
     const principal = internalPrincipalSchema.parse(JSON.parse(identity));
     const path = url.pathname;
+    if (path === "/v1/activity/query") {
+      return Response.json(await startReport(env, principal, await body(request)), { status: 202, headers });
+    }
+    if (path === "/v1/activity/reports/status") {
+      return Response.json(await reportStatus(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/reports/result") {
+      return Response.json(await reportResult(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/context") {
+      return Response.json(await commitRuntime(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/context/read") {
+      return Response.json(await readRuntimeContext(env, principal, runtimeReadSchema.parse(await body(request))), { headers });
+    }
     if (path === "/v1/activity/export") {
       return Response.json(await exportContent(env, principal, await body(request)), { headers });
     }
@@ -107,7 +133,8 @@ export async function activityContentRequest(request: Request, env: ContentEnv):
   } catch (error) {
     if (error instanceof ActivityLedgerError || error instanceof ContentStorageError ||
         error instanceof ContentConsentError || error instanceof ContentHttpError ||
-        error instanceof MigrationError || error instanceof MigrationContractError) {
+        error instanceof MigrationError || error instanceof MigrationContractError ||
+        error instanceof ReportError || error instanceof RuntimeError) {
       return Response.json({ error: error.code }, { status: error.status, headers });
     }
     if (error instanceof ActivityContractError) {
@@ -129,7 +156,9 @@ export async function activityContentRequest(request: Request, env: ContentEnv):
 
 export default {
   fetch: activityContentRequest,
-  scheduled(_event: ScheduledController, env: ContentEnv, context: ExecutionContext) {
-    context.waitUntil(sweepContent(env.ACTIVITY, env.ACTIVITY_RAW));
+  scheduled(_event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
+    context.waitUntil(Promise.all([
+      sweepContent(env.ACTIVITY, env.ACTIVITY_RAW), sweepReports(env), dispatchPendingReports(env),
+    ]));
   },
 };
