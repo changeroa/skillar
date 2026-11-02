@@ -223,7 +223,7 @@ export async function runCloudRuntimeStep(
     }
     if (paused(home)) return save({ phase: "paused" });
     blobs.renew();
-    const receipt = receiptSchema.parse(await http.request("/v1/activity/runtime/commit", { body: job.body }));
+    const receipt = receiptSchema.parse(await http.request("/v1/activity/context", { body: job.body }));
     blobs.renew();
     if (receipt.sequence !== commit.sequence || receipt.sourceCut !== commit.sourceCut ||
         receipt.contentHash !== commit.contentHash) throw new CloudSyncError("invalid_remote_receipt");

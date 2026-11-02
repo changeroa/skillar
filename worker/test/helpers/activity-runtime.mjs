@@ -17,12 +17,10 @@ export default {async fetch(request,bindings) {
   const env={...bindings,CONTENT_KEYRING:JSON.stringify({current:1,keys:{
     1:"${Buffer.alloc(32, 7).toString("base64url")}"}}),ACTIVITY_INGEST_ENABLED:"true"};
   const path=new URL(request.url).pathname;
-  if(path.startsWith("/v1/") && path!=="/v1/activity/runtime/commit") {
+  if(path.startsWith("/v1/")) {
     return activityContentRequest(new Request("https://activity.internal"+path,request),env);
   }
-  const wrapped=await request.json();
-  const principal=path.startsWith("/v1/")?JSON.parse(request.headers.get("x-skillar-principal")):wrapped.principal;
-  const input=path.startsWith("/v1/")?wrapped:wrapped.input;
+  const {principal,input}=await request.json();
   try {
     let value;
     switch(path) {
@@ -36,7 +34,7 @@ export default {async fetch(request,bindings) {
         }
         value=await storeContentChunk(env,principal,input);break;
       }
-      case "/commit": case "/v1/activity/runtime/commit":
+      case "/commit":
         value=await commitRuntime(env,principal,input);break;
       case "/read": case "/readThenRevoke": {
         if(path==="/readThenRevoke") {
