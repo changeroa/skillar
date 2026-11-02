@@ -1,8 +1,8 @@
 # skillar landing
 
 Vite site with same-origin Cloudflare Pages Functions for Google sign-in.
-MCP provisioning and hosted activity remain previews. No analytics, external
-fonts, or custom-domain binding.
+MCP provisioning and hosted activity remain previews. No analytics or external
+fonts. The owner-authorized production domain is `https://skillar.sh`.
 
 ```sh
 cd site
@@ -15,7 +15,8 @@ npm run dev:pages
 Pages project: `skillar-site`. Build command: `npm run build` from `site`;
 output: `site/dist`. Run deployments from `site` so Wrangler includes
 `functions/`. Production is the `main` branch at
-`https://skillar-site.pages.dev`. Only `/auth/*` runs Functions; account HTML
+`https://skillar.sh`, with `https://skillar-site.pages.dev` retained as a working
+production alias. Only `/auth/*` runs Functions; account HTML
 and assets remain static and contain no personal data.
 
 ## Google sign-in operations
@@ -25,12 +26,18 @@ Configure these exact Google-authorized origins and callback URLs:
 
 | Environment | Origin | Redirect URI |
 | --- | --- | --- |
-| Production | `https://skillar-site.pages.dev` | `https://skillar-site.pages.dev/auth/google/callback` |
+| Canonical production | `https://skillar.sh` | `https://skillar.sh/auth/google/callback` |
+| Production alias | `https://skillar-site.pages.dev` | `https://skillar-site.pages.dev/auth/google/callback` |
 | Local | `http://localhost:8788` | `http://localhost:8788/auth/google/callback` |
 
 Google does not support wildcard callback URLs. Branch preview hosts cannot
 authenticate: their `/auth/*` routes reject unapproved origins. Do not put
-production credentials in preview bindings.
+production credentials in preview bindings. `PUBLIC_ORIGIN` is `https://skillar.sh`.
+The exact production Pages alias also authenticates; callbacks, signed-cookie
+issuers and logout Origin checks stay bound to the host where login began.
+Sessions are separate host-only cookies, never shared across the two domains.
+All four HTML entries declare their corresponding `skillar.sh` canonical URL.
+There is no alias redirect and no wildcard preview authorization.
 
 Set **production** Pages secrets using Wrangler (never commit their values):
 
@@ -62,10 +69,10 @@ timestamps, plus random session IDs and their expiry. No Google access,
 refresh or ID tokens are retained. Expired sessions are pruned on login.
 Rotating `SESSION_KEY` invalidates all existing browser sessions.
 
-When `skillar.sh` is approved later, add its exact origin and callback URI to
-the Google client, update the server origin allowlist and `PUBLIC_ORIGIN`,
-then verify login and logout again. **Do not attach the domain as part of
-this change.**
+The apex `skillar.sh` domain is attached to this Pages project with a proxied
+CNAME to `skillar-site.pages.dev`. Its exact Google origin and callback are
+registered alongside the Pages alias and localhost. Verify active HTTPS and
+real login/logout on the canonical domain after deployment.
 
 `public/workshop.webp` is an optimized copy of the repository's own `docs/assets/gisul-workshop.png`. See that folder's README for source details. The code example excerpts `plugins/skillar/skills/skillar/SKILL.md`, with its complete frontmatter and first instruction sentence.
 
