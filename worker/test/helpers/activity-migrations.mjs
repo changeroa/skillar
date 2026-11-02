@@ -15,8 +15,10 @@ import { ActivityContractError } from "../shared/activity-schema.ts";
 import { activityContentRequest } from "./src/activity/content-api.ts";
 const ring=JSON.stringify({current:1,keys:{1:"${Buffer.alloc(32, 7).toString("base64url")}"}});
 let armed=false,latePut;
+const fixtureActions={};
 export default { async fetch(request,bindings) {
   const env={...bindings,CONTENT_KEYRING:ring};
+  fixtureActions.environment?.(env);
   const path=new URL(request.url).pathname;
   if(path.startsWith("/v1/")) return activityContentRequest(
     new Request("https://activity.internal"+path,request),{...env,ACTIVITY_INGEST_ENABLED:"true"});
@@ -51,7 +53,9 @@ export default { async fetch(request,bindings) {
       case "complete": value=await migrations.completeMigration(env,principal,input);break;
       case "export": value=await migrations.exportMigration(env,principal,input);break;
       case "rollback": value=await migrations.rollbackMigration(env,principal,input);break;
-      default: throw new Error("unknown_fixture_operation");
+      default:
+        if(!fixtureActions[name]) throw new Error("unknown_fixture_operation");
+        value=await fixtureActions[name](env,principal,input);
     }
     return Response.json(value);
   } catch(error) {
@@ -60,11 +64,13 @@ export default { async fetch(request,bindings) {
   }
 } };
 `;
-const bundle = build({
-  stdin: { contents: source, resolveDir: fileURLToPath(new URL("../../", import.meta.url)),
+const createBundle = suffix => build({
+  stdin: { contents: source + suffix, resolveDir: fileURLToPath(new URL("../../", import.meta.url)),
     sourcefile: "activity-migrations-fixture.mjs" },
   bundle: true, write: false, platform: "browser", format: "esm", target: "es2022",
+  external: ["cloudflare:workers", "cloudflare:workflows"],
 });
+const bundle = createBundle("");
 
 async function migrate(db, path) {
   const sql = await readFile(path, "utf8");
@@ -83,23 +89,24 @@ async function migrate(db, path) {
   await db.batch(statements);
 }
 
-export async function fixture(t) {
+export async function fixture(t, options = {}) {
   const runtime = new Miniflare({ telemetry: { enabled: false }, workers: [{ config: {
     type: "worker", name: "activity-migrations-fixture", compatibilityDate: "2026-09-03",
     manifest: { mainModule: "index.js", modules: {
-      "index.js": { type: "esm", contents: (await bundle).outputFiles[0].text },
+      "index.js": { type: "esm", contents: (await (options.sourceSuffix ? createBundle(options.sourceSuffix) : bundle)).outputFiles[0].text },
     } },
     env: {
       ACTIVITY: { type: "d1", name: "migration-activity" },
       ACCOUNTS: { type: "d1", name: "migration-accounts" },
       ACTIVITY_RAW: { type: "r2", name: "migration-content" },
+      ...options.env,
     }, exports: {},
   } }] });
   t.after(() => runtime.dispose());
   const db = await runtime.getD1Database("ACTIVITY");
   const accounts = await runtime.getD1Database("ACCOUNTS");
   const bucket = await runtime.getR2Bucket("ACTIVITY_RAW");
-  for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql"]) {
+  for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql", ...(options.migrations ?? [])]) {
     await migrate(db, new URL(`../../activity-migrations/${name}`, import.meta.url));
   }
   for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql"]) {
@@ -163,7 +170,11 @@ export async function snapshot(f, documents, { cut = 0, snapshotId = "snapshot-1
   const packets = [];
   for (const [index, document] of documents.entries()) {
     const p = await packet(document, { through: cut, batchId: `${snapshotId}-page-${index}` });
-    p.uploads = p.uploads.map(upload => ({ ...upload, backfill: begin.backfill }));
+    p.uploads = p.uploads.map(upload => ({
+      ...upload, deviceId: begin.deviceId, sourceDomain: begin.sourceDomain,
+      generation: begin.generation, consentVersion: begin.consentVersion,
+      projectId: begin.projectId, rootId: begin.rootId, range: begin.range, backfill: begin.backfill,
+    }));
     packets.push({
       uploads: p.uploads,
       page: {
