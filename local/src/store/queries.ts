@@ -1,3 +1,4 @@
+import { requestRecords, summarizeRequests, hasStatus, type RequestRecord, type RequestSummary } from "../request-status.js";
 import { existsSync, readFileSync } from "node:fs";
 import { automationOf, NO_ACTIVITY } from "./automation.js";
 import { executionEventScope } from "./execution.js";
@@ -75,7 +76,7 @@ function llmTokens(data: Record<string, unknown>): number {
 type SessionInfo = {
   id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; events: EvRow[];
   loaded: SkillUri[]; exposed: SkillUri[]; firstTop?: SkillUri; state: AdoptionState; attribution: Attribution["method"]; texts: string[];
-  automated?: string;
+  automated?: string; requests: RequestSummary; requestRecords: RequestRecord[];
 };
 
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
@@ -195,7 +196,10 @@ export function createQueries(ctx: StoreCtx): Queries {
         } else if (e.kind === "prompt" && e.text) texts.push(e.text);
       });
       const attributed = evs.find((e) => e.attribution_method !== "none");
+      const records = requestRecords(evs.map((e, i) => ({ id: e.id, ts: e.ts, kind: e.kind, data: parsed[i]!.data, ...(e.skill_uri ? { skillUri: e.skill_uri } : {}) })));
+      const requests = summarizeRequests(records);
       const info: SessionInfo = {
+        requests, requestRecords: records,
         id: r.id, runtime: r.runtime as RuntimeId, startedAt: r.started_at, events: evs, loaded, exposed, state: adoptionState(parsed),
         attribution: attributed?.attribution_method ?? "none", texts,
         ...(r.ended_at !== null ? { endedAt: r.ended_at } : {}),
@@ -204,13 +208,16 @@ export function createQueries(ctx: StoreCtx): Queries {
       };
       // A session with no prompt and no skill activity (e.g. a thread the Codex daemon reopened) tells nothing about usage.
       const active = loaded.length > 0 || exposed.length > 0
-        || evs.some((e) => e.kind === "prompt" || e.kind === "native_skill" || e.kind === "read_file");
+        || evs.some((e) => e.kind === "prompt" || e.kind === "native_skill" || e.kind === "read_file" || e.kind === "skill_request" || e.kind === "search");
       const automated = automationIdOf(info.firstPrompt, active);
       if (automated !== undefined) info.automated = automated;
       if (f.automated === undefined && automated !== undefined) continue;
       if (f.automated === "only" && automated === undefined) continue;
+      if (f.searchStatus?.length && !f.searchStatus.some((status) => hasStatus(requests.search, status))) continue;
+      if (f.loadStatus?.length && !f.loadStatus.some((status) => hasStatus(requests.load, status))) continue;
+      if (f.searchResult?.length && !f.searchResult.some((result) => requests.search.results[result] > 0)) continue;
       if (f.state && f.state.length > 0 && !f.state.includes(info.state)) continue;
-      if (f.skill && f.skill.length > 0 && !f.skill.some((u) => loaded.includes(u) || exposed.includes(u))) continue;
+      if (f.skill && f.skill.length > 0 && !f.skill.some((u) => loaded.includes(u) || exposed.includes(u) || records.some((r) => r.uri === u))) continue;
       if (f.q) {
         const q = f.q.toLowerCase();
         if (![info.firstPrompt ?? "", ...texts].some((t) => t.toLowerCase().includes(q))) continue;
@@ -383,7 +390,7 @@ export function createQueries(ctx: StoreCtx): Queries {
       return loadSessions(f)
         .sort((a, b) => b.startedAt - a.startedAt)
         .map((s) => ({
-          id: s.id, runtime: s.runtime, startedAt: s.startedAt, skills: sessionSkills(s), state: s.state, attribution: s.attribution,
+          id: s.id, runtime: s.runtime, startedAt: s.startedAt, requests: s.requests, skills: sessionSkills(s), state: s.state, attribution: s.attribution,
           ...(s.endedAt !== undefined ? { endedAt: s.endedAt } : {}),
           ...(s.firstPrompt !== undefined ? { firstPrompt: s.firstPrompt } : {}),
           ...(s.automated !== undefined ? { automated: s.automated } : {}),
@@ -401,6 +408,7 @@ export function createQueries(ctx: StoreCtx): Queries {
         loadsByTrace.set(e.trace_id, list);
       }
       const loadRow = db.prepare("SELECT uri, manifest_digest FROM loads WHERE load_id = ?");
+      const requestOutcomes = new Map(requestRecords(evs.map((e) => ({ id: e.id, ts: e.ts, kind: e.kind, data: parseJson<Record<string, unknown>>(e.data_json, {}) }))).map((r) => [r.id, r]));
       return evs.map((e): TraceStep => {
         const data = parseJson<Record<string, unknown>>(e.data_json, {});
         switch (e.kind) {
@@ -427,7 +435,7 @@ export function createQueries(ctx: StoreCtx): Queries {
             const uri = e.skill_uri ?? stored?.uri ?? (typeof data.uri === "string" ? data.uri : "");
             const manifestDigest = typeof data.manifestDigest === "string" ? data.manifestDigest : stored?.manifest_digest ?? "";
             return { ts: e.ts, kind: e.kind, summary: `load ${metaFor(skills, uri).name} (${uri}) @${shortDigest(manifestDigest)}`,
-              detail: { kind: "load", uri, loadId, manifestDigest } };
+              detail: { ...data, kind: "load", uri, loadId, manifestDigest } };
           }
           case "read_file": {
             const uri = typeof data.uri === "string" ? data.uri : "";
@@ -454,10 +462,14 @@ export function createQueries(ctx: StoreCtx): Queries {
                 ...(e.tool_use_id !== null ? { toolUseId: e.tool_use_id } : {}), ...(e.call_id !== null ? { callId: e.call_id } : {}),
                 ...(e.text !== null ? { args: e.text } : {}), ...(e.text_length !== null ? { argsLength: e.text_length } : {}) } };
           }
+          case "skill_request": {
+            const record = requestOutcomes.get(String(data.requestId));
+            return { ts: e.ts, kind: e.kind, summary: `${data.operation} request: ${record?.status ?? "unknown"}`, detail: { ...data, kind: e.kind, currentStatus: record?.status ?? "unknown" } };
+          }
           case "error": {
             const code = typeof data.code === "string" ? data.code : "error";
             const message = typeof data.message === "string" ? data.message : e.text ?? "";
-            return { ts: e.ts, kind: e.kind, summary: `error ${code}${message ? `: ${message.slice(0, 200)}` : ""}`, detail: { kind: "error", code, message } };
+            return { ts: e.ts, kind: e.kind, summary: `error ${code}${message ? `: ${message.slice(0, 200)}` : ""}`, detail: { ...data, ...(e.skill_uri ? { uri: e.skill_uri } : {}), kind: "error", code, message } };
           }
           default:
             return { ts: e.ts, kind: e.kind, summary: e.kind === "session_start" ? "session started" : "session ended", detail: { kind: e.kind } };
@@ -465,15 +477,26 @@ export function createQueries(ctx: StoreCtx): Queries {
       });
     },
 
-    flow(f: Filter, unit: "first_load" | "all_loads", top = 7): FlowDto {
+    flow(f: Filter, unit: FlowDto["unit"], top = 7): FlowDto {
       const limit = Math.min(15, Math.max(1, Math.floor(top)));
       const sessions = loadSessions(f);
       const skills = skillMeta();
-      type Path = { session: string; task: string; skill: string; state: AdoptionState };
+      type Path = { session: string; task: string; skill: string; state: FlowDto["links"][number]["state"] };
       const paths: Path[] = [];
       for (const s of sessions) {
         const primary = s.loaded[0] ?? s.firstTop;
         const task = classifyTaskType(primary ? metaFor(skills, primary) : undefined, s.firstPrompt ?? s.texts[0]);
+        if (unit === "search_requests" || unit === "load_requests") {
+          const operation = unit === "search_requests" ? "search" : "load";
+          const statuses = operation === "search" ? f.searchStatus : f.loadStatus;
+          for (const request of s.requestRecords.filter((r) => r.operation === operation
+            && (!statuses?.length || statuses.includes(r.status))
+            && (!f.skill?.length || r.uri !== undefined && f.skill.includes(r.uri))
+            && (operation !== "search" || !f.searchResult?.length || r.result !== undefined && f.searchResult.includes(r.result)))) {
+            paths.push({ session: `${s.id}:${request.id}`, task, skill: request.uri ?? "(none)", state: request.status });
+          }
+          continue;
+        }
         const skillList = unit === "all_loads" && s.loaded.length > 0 ? s.loaded : primary ? [primary] : ["(none)"];
         for (const sk of skillList) paths.push({ session: s.id, task, skill: sk, state: s.state });
       }
@@ -513,7 +536,7 @@ export function createQueries(ctx: StoreCtx): Queries {
       };
       const before = countLinks();
       for (const p of mapped) {
-        if (p.skill === OTHER) continue;
+        if (p.skill === OTHER || unit.endsWith("_requests")) continue;
         const weakLeft = (before.left.get(`${p.task}\u0000${p.skill}\u0000${p.state}`)?.size ?? 0) < 2;
         const weakRight = (before.right.get(`${p.skill}\u0000${p.stateNode}\u0000${p.state}`)?.size ?? 0) < 2;
         if (weakLeft || weakRight) { otherMembers[1].add(p.skill); p.skill = OTHER; }
@@ -536,15 +559,15 @@ export function createQueries(ctx: StoreCtx): Queries {
         .map(([id, n]) => ({ id, column: n.column, label: label(n.column, n.value), count: n.sessions.size, ...(n.value === OTHER ? { other: true } : {}) }));
       const links: FlowDto["links"] = [];
       for (const [k, set] of after.left) {
-        const [task, skill, state] = k.split("\u0000") as [string, string, AdoptionState];
+        const [task, skill, state] = k.split("\u0000") as [string, string, FlowDto["links"][number]["state"]];
         links.push({ source: nodeId(0, task), target: nodeId(1, skill), count: set.size, state });
       }
       for (const [k, set] of after.right) {
-        const [skill, stateNode, state] = k.split("\u0000") as [string, string, AdoptionState];
+        const [skill, stateNode, state] = k.split("\u0000") as [string, string, FlowDto["links"][number]["state"]];
         links.push({ source: nodeId(1, skill), target: nodeId(2, stateNode), count: set.size, state });
       }
       links.sort((a, b) => b.count - a.count);
-      return { unit, columns: ["task_type", "skill", "state"], nodes, links, sessionCount: sessions.length };
+      return { ...(unit.endsWith("_requests") ? { requestCount: paths.length } : {}), unit, columns: ["task_type", "skill", "state"], nodes, links, sessionCount: sessions.length };
     },
 
     heatmap(f: Filter, tz: string, weekStart: 0 | 1, bucketHours: 1 | 2 | 4): HeatmapDto {

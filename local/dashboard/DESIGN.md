@@ -45,10 +45,10 @@ Light and dark values swap under `prefers-color-scheme: dark`. Washes are derive
 | Accent | `--accent` | #5e6ad2 | #7170ff | Live dot, active tab text, links |
 | Accent hover | `--accent-2` | #4f5bc4 | #828fff | Link hover |
 | Accent wash | `--accent-wash` | color-mix(accent 12%) | color-mix(accent 18%) | Live dot halo, focus ring halo |
-| Status ok | `--ok` | #1f8f45 | #3ccb6a | `loaded` |
-| Status warn | `--warn` | #a8690f | #e0a84a | `exposed_only` |
-| Status bad | `--bad` | #c0392b | #ef6b6b | `no_match`, ingest errors, offline dot |
-| Status neutral | `--neutral` | #8a8f98 | #7f848d | `aborted`, `not_used`, unattributed |
+| Status ok | `--ok` | #1f8f45 | #3ccb6a | `succeeded` (including `no_candidates`) |
+| Status warn | `--warn` | #a8690f | #e0a84a | `in_progress` |
+| Status bad | `--bad` | #c0392b | #ef6b6b | `failed`, ingest errors, offline dot |
+| Status neutral | `--neutral` | #8a8f98 | #7f848d | `cancelled`, `unknown`, `not_attempted`, unattributed |
 
 Rules
 - Accent never marks state on a border. Selected / active / hover are `--wash` / `--wash-2`
@@ -134,19 +134,19 @@ Layout
 - Accessibility: remove button has `aria-label="Remove <label> filter"`.
 
 ### SessionsToolbar (`views/sessions.tsx`)
-- Structure: `form.toolbar` > search input (`q`) + runtime `select` + state `select`.
+- Structure: `form.toolbar` > search input (`q`) + runtime `select` + search status, load status and search result selects.
 - States: input focus ring; placeholder `--ink-3`.
 - Layout: `cluster`; wraps at narrow widths.
 
 ### SessionsTable
-- Structure: `table.sessions` with columns runtime / started / prompt / skills / state /
+- Structure: `table.sessions` with columns runtime / started / prompt / skills / search / load /
   attribution; each row is a link target (`a.rowlink` on the prompt cell + whole row click).
 - Spacing: cell padding `--s-3` x `--s-3`; row min-height 56px.
 - States: hover `--wash`; `focus-visible` ring on the row link; empty (two variants below).
 - Accessibility: real `<table>` semantics on desktop; `<th scope="col">`; on cards each cell keeps
   `data-label` for context.
 - Layout: under 640px rows become grid cards:
-  `"runtime started" / "prompt prompt" / "skills skills" / "state attr"`.
+  `"runtime started" / "prompt prompt" / "skills skills" / "search search" / "load load" / ". attr"`.
 
 ### RuntimeLabel
 - Structure: `span.rt` > `span.rt__mark` (two-letter monogram, `--surface-2` tile, radius
@@ -155,7 +155,8 @@ Layout
 ### StateBadge
 - Structure: `span.badge.badge--<state>` > dot + label. Dot color = status token; text `--ink-2`;
   background `color-mix(status 12%)`.
-- Variants: loaded (ok), exposed_only (warn), no_match (bad), aborted / not_used (neutral).
+- Variants: succeeded (ok), in_progress (warn), failed (bad), cancelled / unknown / not_attempted (neutral).
+- Search and load show all nonzero request counts independently. Zero total displays not_attempted; missing summary data displays unknown.
 
 ### SkillChip
 - Structure: `span.skill` with the skill dir name; `title` carries the full URI. Max 3 shown,
@@ -304,7 +305,7 @@ Layout
 
 ### AbstainBlock (`views/trace.tsx`)
 - Structure: `div.tl__abstain` (hairline `--line`, radius `--r-sm`) > StateBadge
-  `badge--no_match` "abstained · <reason>" > `p.tl__hint` > GhostButton "Save as eval case"
+  `badge--succeeded` "no_candidates · <reason>" > `p.tl__hint` > GhostButton "Save as eval case"
   (POSTs `{query, fromTraceId}`; states idle / saving / saved / error with a `role="alert"` line).
 
 ### Callout

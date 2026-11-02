@@ -1,9 +1,11 @@
+import { REQUEST_STATUSES, type RequestStatus, type SearchResult } from "../../src/request-status.js";
+import { OperationCounts } from "../components/requests";
 import { useEffect, useState } from "preact/hooks";
-import type { AdoptionState, Filter, RuntimeId } from "../../src/types.js";
+import type { Filter, RuntimeId } from "../../src/types.js";
 import { api, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
 import {
-  ADOPTION_STATES, ATTRIBUTION_LABEL, RUNTIME_IDS, RUNTIME_LABEL, RUNTIME_MARK, STATE_LABEL, STATE_TITLE,
+  ATTRIBUTION_LABEL, RUNTIME_IDS, RUNTIME_LABEL, RUNTIME_MARK,
   buildHash, isEmptyFilter, serializeFilter, skillName, type Route, type ViewProps,
 } from "../state";
 
@@ -118,9 +120,6 @@ function Skills({ skills }: { skills: string[] }) {
   );
 }
 
-function StateBadge({ state }: { state: AdoptionState }) {
-  return <span class={`badge badge--${state}`} title={STATE_TITLE[state] ?? state}>{STATE_LABEL[state] ?? state}</span>;
-}
 
 function AttributionCell({ row }: { row: SessionListRow }) {
   if (row.attribution !== "none") return <span class="attr">{ATTRIBUTION_LABEL[row.attribution] ?? row.attribution}</span>;
@@ -146,7 +145,8 @@ function Row({ row, route, navigate }: { row: SessionListRow; route: Route; navi
         </a>
       </td>
       <td class="c-skills" data-label="Skills"><Skills skills={row.skills} /></td>
-      <td class="c-state" data-label="State"><StateBadge state={row.state} /></td>
+      <td class="c-search" data-label="Search"><OperationCounts summary={row.requests?.search} /></td>
+      <td class="c-load" data-label="Load"><OperationCounts summary={row.requests?.load} /></td>
       <td class="c-attr" data-label="Attribution"><AttributionCell row={row} /></td>
     </tr>
   );
@@ -228,9 +228,16 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
         <option value="">All runtimes</option>
         {RUNTIME_IDS.map((id) => <option key={id} value={id}>{RUNTIME_LABEL[id]}</option>)}
       </select>
-      <select class="field field--select" aria-label="Adoption state" value={filter.state?.length === 1 ? filter.state[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as AdoptionState | ""; update({ state: v ? [v] : undefined }); }}>
-        <option value="">All states</option>
-        {ADOPTION_STATES.map((state) => <option key={state} value={state}>{STATE_LABEL[state]}</option>)}
+      {(["searchStatus", "loadStatus"] as const).map((key) => (
+        <select class="field field--select" aria-label={key === "searchStatus" ? "Search status" : "Load status"} value={filter[key]?.length === 1 ? filter[key]![0] : ""}
+          onChange={(event) => { const value = event.currentTarget.value as RequestStatus | ""; update({ [key]: value ? [value] : undefined }); }}>
+          <option value="">{key === "searchStatus" ? "All search statuses" : "All load statuses"}</option>
+          {REQUEST_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+      ))}
+      <select class="field field--select" aria-label="Search result" value={filter.searchResult?.[0] ?? ""}
+        onChange={(event) => { const value = event.currentTarget.value as SearchResult | ""; update({ searchResult: value ? [value] : undefined }); }}>
+        <option value="">All search results</option><option value="candidates_found">candidates_found</option><option value="no_candidates">no_candidates</option>
       </select>
       {count !== undefined && <span class="toolbar__count">{count} {count === 1 ? "session" : "sessions"}</span>}
     </form>
@@ -281,12 +288,13 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
       <div class="card">
         <table class="sessions">
           <colgroup>
-            <col style="width:15%" />
             <col style="width:10%" />
+            <col style="width:9%" />
             <col />
-            <col style="width:20%" />
-            <col style="width:13%" />
+            <col style="width:14%" />
+            <col style="width:17%" />
             <col style="width:12%" />
+            <col style="width:10%" />
           </colgroup>
           <thead>
             <tr>
@@ -294,7 +302,8 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
               <th scope="col">Started</th>
               <th scope="col">First prompt</th>
               <th scope="col">Skills</th>
-              <th scope="col">State</th>
+              <th scope="col">Search</th>
+              <th scope="col">Load</th>
               <th scope="col">Attribution</th>
             </tr>
           </thead>
@@ -308,6 +317,7 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={rows === undefined}>
+      <p class="dim">Search and load counts are per request. No observed requests: not_attempted. Missing outcomes: unknown.</p>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
       {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
       {rows !== undefined && stats && <UsageNote stats={stats} />}

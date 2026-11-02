@@ -50,6 +50,9 @@ function chipsFor(filter: Filter): Chip[] {
       case "to": chips.push({ key, label: "to", value: dateTime.format(value as number) }); break;
       case "runtime": chips.push({ key, label: "runtime", value: filter.runtime!.map((r) => RUNTIME_LABEL[r]).join(", ") }); break;
       case "skill": chips.push({ key, label: "skill", value: filter.skill!.map(skillName).join(", ") }); break;
+      case "searchStatus": chips.push({ key, label: "search status", value: filter.searchStatus!.join(", ") }); break;
+      case "loadStatus": chips.push({ key, label: "load status", value: filter.loadStatus!.join(", ") }); break;
+      case "searchResult": chips.push({ key, label: "search result", value: filter.searchResult!.join(", ") }); break;
       case "state": chips.push({ key, label: "state", value: filter.state!.map((s) => STATE_LABEL[s]).join(", ") }); break;
       case "dow": chips.push({ key, label: "day", value: DOW_LABEL[value as number] ?? String(value) }); break;
       case "hour": {
