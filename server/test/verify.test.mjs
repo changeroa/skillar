@@ -33,6 +33,7 @@ test("runtime verification runs the full CI sequence from the selected checkout"
     ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.team.jsonc", "--dry-run"], resolve(root, "worker")],
     ["npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"], resolve(root, "worker")],
     ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"], resolve(root, "worker")],
+    ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.activity.jsonc", "--dry-run"], resolve(root, "worker")],
   ]);
 });
 

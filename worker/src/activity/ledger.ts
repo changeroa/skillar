@@ -3,11 +3,25 @@ import { commitGuard, projectMutation } from "./projections.ts";
 import { ActivityLedgerError, receiptSchema } from "./types.ts";
 import type { IngestPrincipal, IngestReceipt } from "./types.ts";
 
+export type DurableContentCommit = {
+  readonly payloadHash: string;
+  readonly contentHash: string;
+  readonly totalBytes: number;
+  readonly manifestJson: string;
+};
+
 export async function commitActivityBatch(
   db: D1Database,
-  input: { readonly principal: IngestPrincipal; readonly batch: unknown; readonly receivedAtMs: number },
+  input: {
+    readonly principal: IngestPrincipal; readonly batch: unknown; readonly receivedAtMs: number;
+    // Internal only: the content service supplies this after verifying durable R2
+    // bytes and current consent. Never copy this field from an HTTP request.
+    readonly durableContent?: DurableContentCommit;
+  },
 ): Promise<IngestReceipt> {
-  const batch = parseActivityBatch(input.batch);
+  const batch = parseActivityBatch(input.batch, {
+    allowEmptyMetadata: input.durableContent !== undefined,
+  });
   const principal = input.principal;
   if (!principal.scopes.includes("activity:ingest") || principal.scopes.includes("device:manage") ||
       principal.deviceId !== batch.deviceId ||
@@ -19,7 +33,8 @@ export async function commitActivityBatch(
   const digest = new Uint8Array(await crypto.subtle.digest(
     "SHA-256", new TextEncoder().encode(metadataJson),
   ));
-  const payloadHash = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+  const payloadHash = input.durableContent?.payloadHash ??
+    Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
   const commitId = crypto.randomUUID();
   const stream = {
     accountId: principal.accountId, generation: principal.generation,
@@ -70,6 +85,22 @@ export async function commitActivityBatch(
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND batch_id=?`)
       .bind(...identity, batch.batchId),
   ];
+  const content = input.durableContent;
+  if (content !== undefined) {
+    statements.splice(1, 0,
+      db.prepare(`INSERT INTO content_manifests
+        (account_id,generation,device_id,source_domain,batch_id,content_hash,total_bytes,
+          manifest_json,commit_id)
+        SELECT ?,?,?,?,?,?,?,?,? WHERE ${commitGuard}`)
+        .bind(...identity, batch.batchId, content.contentHash, content.totalBytes,
+          content.manifestJson, commitId, commitId),
+      db.prepare(`UPDATE content_uploads SET state='committed'
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND batch_id=?
+        AND object_key IN (SELECT json_extract(value,'$.objectKey')
+          FROM json_each(?,'$.chunks')) AND ${commitGuard}`)
+        .bind(...identity, batch.batchId, content.manifestJson, commitId),
+    );
+  }
   try {
     const results = await db.batch(statements);
     return receiptSchema.parse(results.at(-1)?.results[0]);
