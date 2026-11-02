@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
 <p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="기계 팔이 서랍장에서 작업 지침 카드를 꺼내 작업대로 옮기는 일러스트. 따뜻한 상아색 바탕의 검정과 주홍색 판화."></p>
 
@@ -134,4 +134,8 @@ Node.js 24와 npm을 설치한 뒤 체크아웃에서 `node scripts/verify.mjs`�
 
 ## 라이선스
 
-[MIT](LICENSE). 이름은 **기술**(skill, craft, technique)에서 왔습니다.
+Skillar는 오픈 소스입니다. [`server/`](server/LICENSE)와 [`worker/`](worker/LICENSE)는 **AGPL-3.0-only**, 로컬 CLI([`local/`](local/LICENSE))와 클라이언트 통합([`clients/`](clients/LICENSE)), 그 밖의 프로젝트 파일은 [루트 라이선스](LICENSE)에 따라 **MIT**를 유지합니다.
+
+`server/`와 `worker/`에는 [LICENSING.md](LICENSING.md)를 추가한 커밋부터 AGPL-3.0-only가 적용됩니다. 이전 릴리스를 포함해 그 전에 받은 사본은 MIT 조건을 유지하며, 이미 부여된 MIT 권한은 철회되지 않습니다. 적용 범위와 자세한 내용은 [라이선스 안내](LICENSING.md)를 참고하세요.
+
+이름은 **기술**(skill, craft, technique)에서 왔습니다.
