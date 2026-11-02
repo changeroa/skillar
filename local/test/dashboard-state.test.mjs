@@ -52,10 +52,11 @@ const FULL_FILTER = {
   hourSpan: 2,
   q: "주문 테이블 & status=pending",
   automated: "include",
+  searchStatus: ["succeeded", "failed"], loadStatus: ["unknown"], searchResult: ["no_candidates"],
 };
 
 test("FILTER_KEYS covers every Filter field exactly once", () => {
-  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "q", "runtime", "skill", "state", "to"]);
+  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "loadStatus", "q", "runtime", "searchResult", "searchStatus", "skill", "state", "to"]);
 });
 
 test("every Filter field round-trips through serialize -> parse", () => {

@@ -1,3 +1,4 @@
+import { REQUEST_STATUSES, hasStatus, type RequestStatus, type SearchResult } from "../src/request-status.js";
 import type { AdoptionState, Attribution, FindingLabel, Filter, RuntimeId, SessionRow, TurnBasis } from "../src/types.js";
 import type { StepStatus } from "../src/workflow/compare.js";
 import type { LiveState, SessionListRow } from "./api";
@@ -14,7 +15,7 @@ import type { LiveState, SessionListRow } from "./api";
 
 export const RUNTIME_IDS: readonly RuntimeId[] = ["claude-code", "codex", "gemini", "cursor", "omo", "gajae", "openclaw", "unknown"];
 export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_only", "no_match", "aborted", "not_used"];
-export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated"] as const satisfies readonly (keyof Filter)[];
+export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
 export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap";
@@ -30,14 +31,15 @@ export const RUNTIME_LABEL: Record<RuntimeId, string> = {
 export const RUNTIME_MARK: Record<RuntimeId, string> = {
   "claude-code": "CC", codex: "CX", gemini: "GM", cursor: "CU", omo: "OM", gajae: "GJ", openclaw: "OC", unknown: "??",
 };
-export const STATE_LABEL: Record<AdoptionState, string> = {
+export const STATE_LABEL: Record<import("../src/types.js").FlowState, string> = {
+  not_attempted: "not_attempted", in_progress: "in_progress", succeeded: "succeeded", failed: "failed", cancelled: "cancelled", unknown: "unknown",
   loaded: "Loaded", exposed_only: "Exposed", no_match: "No match", aborted: "Aborted", not_used: "Not used",
 };
 export const STATE_TITLE: Record<AdoptionState, string> = {
   loaded: "loaded: a skill was loaded in this session",
   exposed_only: "exposed_only: candidates were shown but none was loaded",
   no_match: "no_match: the search returned no candidate",
-  aborted: "aborted: a load started but did not complete",
+  aborted: "aborted: legacy session classification; does not establish a failed or cancelled load",
   not_used: "not_used: the session never searched for a skill",
 };
 export const ATTRIBUTION_LABEL: Record<Attribution["method"], string> = {
@@ -144,6 +146,17 @@ export function parseFilter(input: string | URLSearchParams): Filter {
         if (skills.length) filter.skill = skills;
         break;
       }
+      case "searchStatus":
+      case "loadStatus": {
+        const statuses = list(raw).filter((value): value is RequestStatus => REQUEST_STATUSES.includes(value as RequestStatus));
+        if (statuses.length) filter[key] = statuses;
+        break;
+      }
+      case "searchResult": {
+        const results = list(raw).filter((value): value is SearchResult => value === "candidates_found" || value === "no_candidates");
+        if (results.length) filter.searchResult = results;
+        break;
+      }
       case "state": {
         const states = list(raw).filter((s): s is AdoptionState => STATE_SET.has(s));
         if (states.length) filter.state = states;
@@ -240,6 +253,9 @@ export function matchesFilter(row: SessionRow, filter: Filter): boolean {
   if (filter.to !== undefined && row.startedAt > filter.to) return false;
   if (filter.runtime && !filter.runtime.includes(row.runtime)) return false;
   if (filter.state && !filter.state.includes(row.state)) return false;
+  if (filter.searchStatus?.length && !filter.searchStatus.some((s) => row.requests ? hasStatus(row.requests.search, s) : s === "unknown")) return false;
+  if (filter.loadStatus?.length && !filter.loadStatus.some((s) => row.requests ? hasStatus(row.requests.load, s) : s === "unknown")) return false;
+  if (filter.searchResult?.length && !filter.searchResult.some((r) => (row.requests?.search.results[r] ?? 0) > 0)) return false;
   if (filter.skill && !filter.skill.some((uri) => row.skills.includes(uri))) return false;
   const started = new Date(row.startedAt);
   if (filter.dow !== undefined && started.getDay() !== filter.dow) return false;
