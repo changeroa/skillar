@@ -9,6 +9,8 @@ import type { Config } from "./auth.ts";
 export interface ActivityEnv extends Config {
   readonly ACCOUNTS: D1Database;
   readonly ACTIVITY_ENABLED?: string;
+  readonly ACTIVITY_INGEST_ENABLED?: string;
+  readonly ACTIVITY_SERVICE?: Fetcher;
 }
 export const activityScopes = ["activity:read", "activity:ingest", "device:manage"] as const;
 export const activityScopeSchema = z.enum(activityScopes);
