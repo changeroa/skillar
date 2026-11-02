@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Explore the planned skillar account flow without signing in or sharing credentials. Screen-only preview.">
+    <meta name="description" content="Sign in to skillar with Google. The MCP endpoint and remote dashboard for your account are still screen-only previews.">
     <meta name="theme-color" content="#171916">
-    <title>Account preview — skillar</title>
+    <title>Account — skillar</title>
     <script>
       try {
         document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
@@ -24,34 +24,57 @@
       <label class="theme-label">Theme
         <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
       </label>
-      <nav aria-label="Account preview"><a href="/login/" aria-current="page">Account</a><a href="/connect/">Connect MCP</a><a href="/dashboard/">Dashboard</a></nav>
+      <nav aria-label="Account"><a href="/login/" aria-current="page">Account</a><a href="/connect/">Connect MCP</a><a href="/dashboard/">Dashboard</a></nav>
     </header>
-    <aside class="preview-notice" aria-label="Preview boundary">
-      <div class="shell"><strong>Screen-only preview.</strong> No sign-in, connection or account data. Only your theme preference is saved. <a href="/">Exit preview ↗</a></div>
+    <aside class="preview-notice" aria-label="What works today">
+      <div class="shell"><strong>Google sign-in is live.</strong> MCP setup and the dashboard are still screen-only previews: no endpoint is assigned and no activity is recorded. <a href="/">Back to skillar ↗</a></div>
     </aside>
     <main id="main" class="shell account-main">
-      <ol class="steps" aria-label="Planned journey"><li aria-current="step">Account</li><li>Connect MCP</li><li>Dashboard</li></ol>
+      <ol class="steps" aria-label="Account journey"><li aria-current="step">Account</li><li>Connect MCP</li><li>Dashboard</li></ol>
       <div class="account-grid">
         <section aria-labelledby="account-title">
           <h1 id="account-title">Your skills.<br>Your account.</h1>
-          <p class="account-lead">The planned hosted service gives your account an MCP endpoint for your agents, with a remote activity dashboard.</p>
-          <div class="auth-actions">
-            <button class="button" type="button" disabled aria-describedby="signin-reason">Sign in with GitHub</button>
-            <p id="signin-reason" class="note">GitHub sign-in is not available in this preview. No account will be created.</p>
-            <a class="button primary" href="/connect/">Explore without signing in <span aria-hidden="true">→</span></a>
-            <p class="note">See example setup and empty dashboard screens. No email, password or token is needed.</p>
+          <p class="account-lead">Sign in with Google to open your skillar account. The MCP endpoint for your agents and the remote activity dashboard are still previews.</p>
+          <p id="auth-result" class="note session-status" role="status"></p>
+          <p id="session-status" class="note session-status" role="status" aria-live="polite"></p>
+          <noscript>
+            <p class="note">JavaScript is off. Sign-in still works, but this page can't show whether you're already signed in.</p>
+            <form class="auth-actions" method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out of this browser</button></form>
+          </noscript>
+          <div id="signed-out" class="auth-actions">
+            <a class="button primary" href="/auth/google">Continue with Google <span aria-hidden="true">→</span></a>
+            <p class="note">Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained.</p>
+            <a class="button secondary" href="/connect/">Explore without signing in <span aria-hidden="true">→</span></a>
+            <p class="note">See example MCP setup and the empty dashboard. The previews need no sign-in.</p>
+          </div>
+          <div id="signed-in" class="auth-actions" hidden>
+            <div class="account-user">
+              <img id="user-picture" alt="" width="48" height="48" referrerpolicy="no-referrer" hidden>
+              <div>
+                <p class="note">Signed in as</p>
+                <p class="account-name" id="user-name"></p>
+                <p class="account-email" id="user-email"></p>
+              </div>
+            </div>
+            <dl class="account-status account-times">
+              <div><dt>First sign-in</dt><dd><time id="user-created"></time></dd></div>
+              <div><dt>Latest sign-in</dt><dd><time id="user-last"></time></dd></div>
+            </dl>
+            <a class="button primary" href="/connect/">Preview MCP setup <span aria-hidden="true">→</span></a>
+            <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out</button></form>
+            <p class="note">Signing out ends your session in this browser. It doesn't delete your stored profile: Google ID, email, name, picture and sign-in times.</p>
           </div>
         </section>
         <aside class="account-aside" aria-labelledby="next-title">
           <h2 id="next-title">From account to agent.</h2>
           <p>Next, inspect the proposed account endpoint and client configuration. Then explore Sessions, Workspaces, Flow and Heatmap without sample activity.</p>
-          <p class="note">Hosting and account provisioning are planned. Pricing is not announced.</p>
+          <p class="note">MCP endpoint provisioning and the hosted dashboard are coming soon. Pricing is not announced.</p>
           <a class="text-link" href="/#local-setup">Use skillar locally today ↗</a>
-          <p class="note">Run <code>skillar open</code> after local setup to inspect your real local activity. This preview does not access it.</p>
+          <p class="note">Run <code>skillar open</code> after local setup to inspect your real local activity. Signing in here does not access it.</p>
         </aside>
       </div>
     </main>
     <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">Back to skillar</a><a class="text-link" href="https://github.com/changeroa/skillar#documentation">Documentation ↗</a></div></footer>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/account.ts"></script>
   </body>
 </html>
