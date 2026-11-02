@@ -15,7 +15,21 @@
 .account-aside .text-link { margin-top: var(--s3); }
 .auth-actions { display: grid; justify-items: start; gap: var(--s3); margin-top: var(--s5); }
 .auth-actions .button { justify-content: center; width: min(100%, 380px); text-align: center; }
-.auth-actions .button:disabled { border: 1px dashed var(--ink); background: var(--surface); color: var(--ink); }
+.auth-actions > form, .auth-actions > .account-user, .auth-actions > .account-status { width: min(100%, 380px); }
+.auth-actions form .button { width: 100%; }
+.auth-actions[hidden] { display: none; }
+.session-status:empty { margin: 0; }
+.account-main noscript > .note { margin-top: var(--s3); }
+.account-user { display: flex; align-items: center; gap: var(--s4); }
+.account-user img { flex: none; width: var(--s6); height: var(--s6); object-fit: cover; }
+.account-user img[hidden] { display: none; }
+.account-user > div { min-width: 0; }
+.account-user p + p { margin-top: 0; }
+.account-name { font-size: var(--subhead); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; overflow-wrap: anywhere; }
+.account-email { font-size: var(--small); color: var(--muted); overflow-wrap: anywhere; }
+.auth-actions .account-status { margin: 0; }
+.account-status div[hidden] { display: none; }
+.account-times[hidden] { display: none; }
 .account-header a[aria-current="page"], .view-nav a[aria-current="page"] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; }
 .account-footer { border-top: 1px solid var(--muted); padding-block: var(--s4); font-size: var(--small); }
 .account-footer .text-link { margin-top: 0; }
@@ -52,5 +66,5 @@
   .account-grid { grid-template-columns: 1fr; gap: var(--s6); }
   .steps { margin-bottom: var(--s6); gap: var(--s2) var(--s4); }
   .auth-actions { justify-items: stretch; }
-  .auth-actions .button { width: 100%; }
+  .auth-actions .button, .auth-actions > form, .auth-actions > .account-user, .auth-actions > .account-status { width: 100%; }
 }

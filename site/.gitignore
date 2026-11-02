@@ -2,3 +2,5 @@ node_modules/
 dist/
 .wrangler/
 qa/
+.dev.vars*
+.env*
