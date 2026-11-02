@@ -1,6 +1,9 @@
 # Skillar web UI audit
 
-Status: research final, implementation pending. Every gap below is OPEN and every checklist row is PENDING until a current build supplies evidence.
+Status: implementation and local verification complete. The original gap/checklist
+tables below preserve the pre-implementation baseline. Current dispositions and
+evidence are in [`web-ui-verification.md`](web-ui-verification.md); its delivery
+section distinguishes verified local behavior from remaining PR/merge checks.
 Scope: `site/` only. The local dashboard is read-only product context.
 Contract: `site/DESIGN.md` (extended for the account preview before any screen code).
 Plan: approved work plan `skillar-web-ui` (Todos 1 to 6, F1, F2).
@@ -81,7 +84,8 @@ Coverage check: 20 gaps, each mapped to at least one implementation Todo and one
 
 ## 6. Precise QA conditions
 
-These come from the frontend audit (Q1 to Q14) and the plan. They're run on the implementation. None has been run yet.
+These are the original frontend audit conditions (Q1 to Q14). Their current
+results and explicit adaptations are recorded in `web-ui-verification.md`.
 
 | ID | Condition |
 | --- | --- |
@@ -102,7 +106,10 @@ These come from the frontend audit (Q1 to Q14) and the plan. They're run on the 
 
 ## 7. HIG checklist applicability (all 63 items)
 
-Item numbers match `research/hig-report.md` section 4. "Applies" rows are PENDING until Todo 6 and F1 record PASS or FAIL with evidence. "N/A" rows give the reason, which is a scope fact and not a pass. Nothing here is marked PASS.
+Item numbers match `research/hig-report.md` section 4. PENDING in this baseline
+table means awaiting the later implementation, not a current unresolved failure.
+The verification document accounts for all 63 IDs. N/A reasons remain scope
+facts, not passed tests.
 
 | # | Item (short) | Applicability | Status |
 | --- | --- | --- | --- |

@@ -11,7 +11,7 @@
 
 ## 1. Audience and argument
 
-Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. Convert: the working local install first, then a clearly labeled route into the screen-only account preview. No signup form and no email collection.
+Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. The SaaS-informed revision leads with deployment choice and a clearly labeled account-preview action, alongside the working local path. No signup form and no email collection.
 
 Account preview (screen only): `/login/` shows a disabled "Sign in with GitHub" with its reason beside it and a separate, enabled "Explore the account preview" link. `/connect/` shows a fixed MCP configuration on a reserved `.example` host, labeled as a non-working example. `/dashboard/` has four empty views: Sessions, Workspaces, Flow, Heatmap, in the local dashboard's order. Nothing authenticates, connects, stores or fetches account data. The audit behind this is `docs/design/web-ui-audit.md`.
 
