@@ -87,6 +87,7 @@ pre code { font-size: var(--small); }
 .example-label { display: block; margin-top: var(--s5); margin-bottom: var(--s2); font-size: var(--small); }
 .hosting-section { background: var(--surface); padding-block: var(--s8); }
 .hosting-intro { align-items: center; margin-bottom: var(--s6); }
+.hosting-intro > p { margin-top: 0; }
 table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; }
 th, td { padding: var(--s4) var(--s3); vertical-align: top; overflow-wrap: anywhere; }
 thead th { background: var(--bg); font-size: var(--subhead); letter-spacing: -.025em; line-height: 1.2; }
@@ -98,7 +99,7 @@ tbody th { font-weight: 500; }
 details { background: var(--surface); padding: var(--s1) var(--s4); }
 summary { font-weight: 600; padding-block: var(--s3); min-height: 48px; }
 details p { padding-block: 0 var(--s4); }
-.preview-section { padding-block: var(--s8); background: var(--surface); }
+.preview-section { padding-block: var(--s8); background: var(--bg); }
 .preview-section .cluster { margin-top: var(--s5); gap: var(--s3) var(--s5); }
 .preview-section .text-link { margin-top: 0; }
 .footer { padding-block: var(--s6); }

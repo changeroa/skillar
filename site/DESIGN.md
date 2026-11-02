@@ -111,3 +111,30 @@ Visible skip link, semantic landmarks, one h1 per page, visible labels, keyboard
 ## 8. Accepted debt and boundaries
 
 Hosted signup, account provisioning, billing and prices are coming soon, not implemented. No backend is authorized by the brief. The account preview has no real sign-in, OAuth, credentials, cookies, account data, endpoint requests or telemetry; it stores only the theme choice. Whether a future hosted service captures any local activity is undecided, and no copy may imply it does today. RTL isn't supported; new CSS should still prefer logical properties so it isn't harder later. Dashboard views use hash links inside one page, so a hosting change would need a recheck of deep links. English only; Korean toggle optional and omitted. No custom domain attachment. Native system typography avoids CDN dependencies.
+
+## 9. SaaS-informed information architecture
+
+The owner's analogous-billing reference pass is recorded in
+[`docs/design/saas-ia-comparison.md`](../docs/design/saas-ia-comparison.md).
+Preserve this visual system; transfer the observed task sequence, not vendor
+branding, prices, organizational complexity or authenticated sample data.
+
+- Landing order: hero, deployment choice, hosted account journey, agent
+  compatibility, how skills work, skill format, local setup, FAQ, footer.
+  Hosting choice comes before installation detail. The install/migration block
+  belongs with the working local setup, not the hosted prospect's first view.
+- Navigation names the user tasks: Hosting, Hosted flow, Local setup, Docs.
+  Before account pages ship, the hosted action truthfully reaches the on-page
+  flow. The account increment replaces it with the actual screen-preview entry.
+- Login has one purpose and explains the next step. Unavailable GitHub sign-in
+  is distinct from an enabled, explicitly non-authenticating exploration link.
+- Connect MCP keeps account scope, unassigned endpoint/credentials and
+  client-specific example configuration separate. Copy labels say example.
+  No Verify action, completed step or connected badge can imply a real service.
+- Dashboard keeps connection help next to four empty activity views. Account
+  context is informational: no account created, endpoint not provisioned,
+  hosted pricing not announced. No fake user, organization, project, seat,
+  trial meter, upgrade action or billing page is introduced.
+- Reference access limits remain explicit: public sign-in was viewed; private
+  onboarding/empty/settings were gated or supplemented by identified official
+  documentation. A loading frame is not an empty dashboard.
