@@ -53,12 +53,12 @@ async function fixture(t) {
       issuer: undefined, sessionId: undefined, kind: undefined,
     });
     const result = await remote.api(path, JSON.parse(init.body), principal());
-    if (path === "/v1/activity/runtime/commit" && loseReceipt) {
+    if (path === "/v1/activity/context" && loseReceipt) {
       loseReceipt = false;
       assert.equal(result.status, 200, await result.clone().text());
       throw new TypeError("fixture lost committed runtime receipt");
     }
-    if (path === "/v1/activity/runtime/commit" && wrongReceipt) {
+    if (path === "/v1/activity/context" && wrongReceipt) {
       wrongReceipt = false;
       const receipt = await result.json();
       return Response.json({ ...receipt, sourceCut: receipt.sourceCut + 1 });
@@ -97,7 +97,7 @@ test("unchanged rows with changing active state and counters commit new pinned r
   const first = (await f.remote.send("read", { sourceDomain: f.head.sourceDomain })).body;
   f.setContext(context({ capturedAtMs: 101 })); // Timestamp alone is not a new state.
   await f.step();
-  assert.equal(f.calls.filter(call => call.path === "/v1/activity/runtime/commit").length, 1);
+  assert.equal(f.calls.filter(call => call.path === "/v1/activity/context").length, 1);
   f.setContext(context({
     capturedAtMs: 102, activeRequests: [], ingest: { accepted: 4, rejected: 2, dropped: 1 },
   }));
@@ -132,7 +132,7 @@ test("lost runtime receipt preserves exact pending request and blobs across reop
   assert.equal((await f.step()).phase, "caught-up");
   // Then no new capture replaced the pending request, and only verified bytes were ACKed.
   assert.equal(f.captures(), 1);
-  const commits = f.calls.filter(call => call.path === "/v1/activity/runtime/commit");
+  const commits = f.calls.filter(call => call.path === "/v1/activity/context");
   assert.equal(commits.length, 2); assert.equal(commits[0].body, commits[1].body);
   const uploads = f.calls.filter(call => call.path === "/v1/activity/chunks");
   assert.deepEqual(uploads.map(call => call.body), [...chunkBytes, ...chunkBytes]);
