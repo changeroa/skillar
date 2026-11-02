@@ -11,7 +11,7 @@
 
 ## 1. Audience and argument
 
-Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. Convert: the working local install first, then a clearly labeled route into the screen-only account preview. No signup form and no email collection.
+Developers using multiple coding agents need portable instructions. Hook: one place to serve skills. Explain: write, serve, connect. Prove: actual Markdown and MCP resource flow. Compare: local/self-host today versus hosted coming soon. The SaaS-informed revision leads with deployment choice and a clearly labeled account-preview action, alongside the working local path. No signup form and no email collection.
 
 Account preview (screen only): `/login/` shows a disabled "Sign in with GitHub" with its reason beside it and a separate, enabled "Explore the account preview" link. `/connect/` shows a fixed MCP configuration on a reserved `.example` host, labeled as a non-working example. `/dashboard/` has four empty views: Sessions, Workspaces, Flow, Heatmap, in the local dashboard's order. Nothing authenticates, connects, stores or fetches account data. The audit behind this is `docs/design/web-ui-audit.md`.
 
@@ -56,7 +56,7 @@ These use the tokens above. No new colors, fonts or radii.
 - Disabled action: native `disabled` button, ink text on surface with a 1px dashed ink border. No opacity fade, so its label still meets 4.5:1. A visible reason sits directly after it and is tied with `aria-describedby`. It never navigates, opens a popup or sends a request.
 - Preview link: an action-styled link (accent fill) whose label names the outcome, e.g. "Explore the account preview". One accent action per view.
 - Status line: text first, e.g. "Not connected (preview)". A neutral square marker may precede it; color never carries the meaning. No green, no "connected", "live", "synced" or "signed in".
-- Example config panel: the code panel with header "Example only, won't connect" shown before the copy button. Content is fixed JSON using an `.example` host; it's selectable and wraps rather than widening the page. No editable endpoint, token or secret.
+- Example config panel: the code panel with header "Example only, won't connect" shown before the copy button. Content is fixed client-specific JSON or a CLI example using an `.example` host; it's selectable and wraps rather than widening the page. No editable endpoint, token or secret.
 - Copy feedback: a polite live region next to the button. Success: "Example copied." Failure: "Couldn't copy. Select the text and copy it manually." and the text gets selected. Messages stay until the next action; nothing times out.
 - Agent selector: native select switching among fixed example configs. Changing it updates the panel and announces nothing beyond the new panel label.
 - Step list: an ordered list showing the journey (Sign in, Set up, Dashboard) with `aria-current="step"` on the current one. Display only, not a wizard and not a progress indicator.
