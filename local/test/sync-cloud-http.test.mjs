@@ -1,8 +1,77 @@
 import assert from "node:assert/strict";
+import { once } from "node:events";
+import { createServer } from "node:http";
 import test from "node:test";
 import { distImport } from "./_helpers.mjs";
 
 const { CloudHttp, retryAt } = await distImport("sync/cloud-http.js");
+
+test("native connection loss after successful headers schedules a body-phase retry", { timeout: 10000 }, async t => {
+  let pending;
+  const server = createServer((_request, response) => {
+    pending = response;
+    response.writeHead(200, { "content-type": "application/json", "content-length": "100" });
+    response.write('{"accepted":');
+  });
+  t.after(async () => {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+  });
+  const ready = once(server, "listening");
+  server.listen(0, "127.0.0.1");
+  await ready;
+  let headersSeen = false;
+  const http = new CloudHttp("https://skillar.sh", "fixture", async (_url, init) => {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}`, init);
+    assert.equal(response.status, 200);
+    headersSeen = true;
+    pending.destroy();
+    return response;
+  });
+  await assert.rejects(http.request("/v1/activity/batches", { body: "{}" }), {
+    state: "retry", code: "network_unavailable", status: 200,
+  });
+  assert.equal(headersSeen, true);
+});
+
+test("aborted body reads retry while invalid JSON and UTF-8 stay quarantined", async () => {
+  for (const name of ["AbortError", "TimeoutError"]) {
+    const http = new CloudHttp("https://skillar.sh", "fixture", async () =>
+      new Response(new ReadableStream({
+        start(controller) { controller.enqueue(new TextEncoder().encode("{")); },
+        pull(controller) { controller.error(new DOMException("body interrupted", name)); },
+      })));
+    await assert.rejects(http.request("/v1/activity/batches", { body: "{}" }), {
+      state: "retry", code: "network_unavailable", status: 200,
+    });
+  }
+  for (const body of ["{bad JSON", Uint8Array.of(0xff)]) {
+    const malformed = new CloudHttp("https://skillar.sh", "fixture", async () => new Response(body));
+    await assert.rejects(malformed.request("/v1/activity/batches", { body: "{}" }), {
+      state: "quarantined", code: "invalid_response",
+    });
+  }
+});
+
+test("network failure while discarding a body preserves its known HTTP or size failure", async () => {
+  for (const [status, state, code] of [
+    [302, "quarantined", "unsafe_redirect"], [503, "retry", "remote_unavailable"],
+  ]) {
+    const http = new CloudHttp("https://skillar.sh", "fixture", async () =>
+      new Response(new ReadableStream({
+        start(controller) { controller.error(new TypeError("terminated")); },
+      }), { status }));
+    await assert.rejects(http.request("/v1/activity/batches", { body: "{}" }), { state, code, status });
+  }
+  const oversized = new CloudHttp("https://skillar.sh", "fixture", async () =>
+    new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new Uint8Array(100)); },
+      cancel() { throw new TypeError("terminated"); },
+    })));
+  await assert.rejects(oversized.request("/v1/activity/batches", { body: "{}", maxResponseBytes: 20 }), {
+    state: "quarantined", code: "response_too_large",
+  });
+});
 
 test("HTTP transport pins origin and never follows redirects with bearer credentials", async () => {
   const calls = [];

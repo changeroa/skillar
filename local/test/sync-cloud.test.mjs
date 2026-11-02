@@ -15,6 +15,54 @@ const { rollbackCloud } = await distImport("sync/cloud-rollback.js");
 const { openDb } = await distImport("store/db.js");
 const { readRows } = await distImport("sync/restore-rows.js");
 
+test("lost receipt body persists retry and automatically resumes identical pending bytes", async t => {
+  const f = await fixture(t);
+  let now = Date.now(), interrupted = false;
+  t.mock.method(Date, "now", () => now);
+  t.mock.method(Math, "random", () => 0);
+  await f.setConsent(grant(null));
+  const fetcher = async (url, init) => {
+    const response = await f.fetcher(url, init);
+    if (!interrupted && new URL(url).pathname === "/v1/activity/batches") {
+      interrupted = true;
+      assert.equal(response.status, 200);
+      await response.body.cancel();
+      return new Response(new ReadableStream({
+        start(controller) { controller.enqueue(new TextEncoder().encode('{"batchId":')); },
+        pull(controller) { controller.error(new TypeError("terminated")); },
+      }));
+    }
+    return response;
+  };
+  const step = () => runCloudStep(f.home, f.source, { fetcher });
+  assert.equal((await step()).phase, "queued");
+  assert.equal((await step()).phase, "queued");
+  const baseline = journalHead(f.db);
+  f.db.prepare("INSERT INTO sessions(id,runtime,started_at,first_prompt) VALUES('new','codex',2000,'body loss')").run();
+  const progress = await step();
+  assert.equal(progress.phase, "retry");
+  assert.equal(progress.code, "network_unavailable");
+  let spool = new CloudBlobs(join(f.home, "cloud", "spool.sqlite"));
+  const stream = liveStream(f.connection.instanceId, baseline.sourceDomain);
+  const pending = spool.pending(stream);
+  assert.ok(pending);
+  assert.equal(spool.cursor(stream).ack_cut, baseline.cut);
+  spool.close();
+  const calls = f.calls.length;
+  assert.equal((await step()).phase, "retry");
+  assert.equal(f.calls.length, calls);
+  now = progress.retryAtMs; // Advance the clock to the scheduler's exact signal, without a delay.
+  assert.equal((await step()).acknowledgedCut, journalHead(f.db).cut);
+  const sent = f.calls.filter(call => call.path === "/v1/activity/batches");
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0].body, sent[1].body);
+  assert.equal((await f.remote.rows("SELECT count(*) n FROM ingest_receipts"))[0].n, 1);
+  spool = new CloudBlobs(join(f.home, "cloud", "spool.sqlite"));
+  assert.equal(spool.pending(stream), null);
+  assert.equal(spool.cursor(stream).ack_sequence, pending.sequence);
+  spool.close();
+});
+
 test("connection alone, metadata mode, and disabled ingestion never serialize source rows", async t => {
   const f = await fixture(t);
   f.db.prepare("INSERT INTO sessions(id,runtime,started_at,first_prompt) VALUES('s','codex',1,'LOCAL ONLY')").run();

@@ -22,6 +22,18 @@ export function retryAt(
   const floor = Number.isFinite(specified) ? Math.max(now, specified) : now + base;
   return floor + Math.floor(random() * base / 4);
 }
+function isNetworkError(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof DOMException &&
+    (error.name === "AbortError" || error.name === "TimeoutError"));
+}
+async function discardBody(
+  body: { cancel(): Promise<void> } | null, failure: CloudRequestError,
+): Promise<never> {
+  try { await body?.cancel(); } catch (error) {
+    if (!isNetworkError(error)) throw error;
+  }
+  throw failure;
+}
 async function readJson(response: Response, limit: number): Promise<unknown> {
   if (response.body === null) throw new CloudRequestError("quarantined", "invalid_response", response.status);
   const reader = response.body.getReader(), chunks: Uint8Array[] = [];
@@ -32,8 +44,8 @@ async function readJson(response: Response, limit: number): Promise<unknown> {
       if (next.done) break;
       size += next.value.byteLength;
       if (size > limit) {
-        await reader.cancel();
-        throw new CloudRequestError("quarantined", "response_too_large", response.status);
+        return await discardBody(reader,
+          new CloudRequestError("quarantined", "response_too_large", response.status));
       }
       chunks.push(next.value);
     }
@@ -89,23 +101,31 @@ export class CloudHttp {
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (error) {
-      if (error instanceof TypeError || error instanceof DOMException) {
+      if (isNetworkError(error)) {
         throw new CloudRequestError("retry", "network_unavailable", 0,
           retryAt(null, options.attempt ?? this.attempt));
       }
       throw error;
     }
     if (response.status >= 300 && response.status < 400) {
-      await response.body?.cancel();
-      throw new CloudRequestError("quarantined", "unsafe_redirect", response.status);
+      return discardBody(response.body,
+        new CloudRequestError("quarantined", "unsafe_redirect", response.status));
     }
     if (response.status === 429 || response.status >= 500) {
-      await response.body?.cancel();
-      throw new CloudRequestError("retry",
+      return discardBody(response.body, new CloudRequestError("retry",
         response.status === 429 ? "rate_limited" : "remote_unavailable", response.status,
-        retryAt(response.headers.get("retry-after"), options.attempt ?? this.attempt));
+        retryAt(response.headers.get("retry-after"), options.attempt ?? this.attempt)));
     }
-    const value = await readJson(response, options.maxResponseBytes ?? 256 * 1024);
+    let value: unknown;
+    try {
+      value = await readJson(response, options.maxResponseBytes ?? 256 * 1024);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        throw new CloudRequestError("retry", "network_unavailable", response.status,
+          retryAt(null, options.attempt ?? this.attempt));
+      }
+      throw error;
+    }
     if (response.ok) return value;
     const parsed = z.object({ error: z.string().regex(/^[a-z0-9_]{1,100}$/) }).safeParse(value);
     const code = parsed.success ? parsed.data.error : "remote_error";
