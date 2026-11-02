@@ -85,3 +85,70 @@ which aborts because `libsimdjson.33.dylib` is missing. The test also fails
 alone, and invoking that Node binary reproduces the loader failure. This is
 not hidden or skipped; the remaining verifier checks were run separately.
 Linux CI remains the complete repository gate.
+
+## P7: shared analysis and asynchronous reports
+
+The local SQLite readers and the cloud fact adapter now use the same portable
+session/flow assembly, findings, usage and comparison code. The cloud adapter
+retains source rowids, recording marks, nulls and original JSON values; transport
+order does not become source order. The exact SQL comparison also covers
+runtime-index ordering, Unicode matching, timezone cells, membership boundaries,
+request status and pagination ties.
+
+The daemon captures active requests, ingest counters, timezone and source cut
+on its main thread. The sync worker requests that capture over a correlated
+MessagePort exchange only after an unrestricted raw-content grant. Runtime
+snapshots use encrypted P5 chunks and an independent immutable sequence, so a
+changed live request does not invent a CDC revision. The receiver records its
+own receipt time: an ahead-of-server source clock cannot keep a report fresh.
+
+### Report protocol
+
+The existing authenticated activity service exposes:
+
+- `POST /v1/activity/query`: prepare an encrypted request and return HTTP 202
+  with a durable job reference.
+- `POST /v1/activity/reports/status`: retrieve state, pinned source/runtime
+  revisions, analysis version, freshness and the completed result manifest.
+- `POST /v1/activity/reports/result`: retrieve one verified result part.
+
+Queries cover sessions, trace, flow aggregation, heatmap, skill-week, stats,
+flow lists/reports, session reports and skill usage. The shared report builders
+include session/flow trees, findings, comparison, outside-workspace membership
+and usage details. Missing or excluded objects retain the local error codes.
+
+`REPORT_FLOW` is a native Cloudflare Workflow. Its parameters and step result
+contain only job/tenant references and state, never the query or report body.
+The job pins both source and runtime revisions before dispatch. Repeating the
+same request ID retains those revisions; a different request under that ID
+conflicts. A later capture makes the old result stale rather than silently
+recomputing it with different inputs.
+
+Raw requests/results remain encrypted in R2. D1 holds references, hashes,
+leases, manifests and status. The result writer produces 128 KiB encrypted
+parts and a native streaming SHA-256 digest without serializing the entire
+report into a second full JSON buffer. Its 512 MiB output ceiling is a limit,
+not a claim that a 512 MiB input dataset has been load-tested.
+
+Current consent and generation fences gate submission, input reads, result
+reads and publication. Report expiry is bounded by both policy and the oldest
+raw upload used for the calculation; making a report does not restart that
+input's retention period. The existing scheduled Worker recovers queued
+dispatch and removes expired/closed-generation report objects, including
+late encrypted PUTs whose intents were already recorded.
+
+### Verification and activation
+
+The native Workflow fixture uses real workerd D1/R2 and the production
+`ReportFlow`, not a simulated Workflow result. On identical raw SQLite records,
+74 HTTP report payload/error cases match the local readers, including two
+encrypted multipart results. Separate cases exercise concurrent capture,
+consent revocation, tenant/device/generation isolation, expired input before
+decryption, closure after PUT, repeated orphan cleanup and dispatch recovery.
+No Oracle service or credential is provided to these runs.
+
+`worker/wrangler.activity.jsonc` binds `skillar-report-flow` and keeps
+`ACTIVITY_INGEST_ENABLED=false`, no public routes and no workers.dev endpoint.
+This PR supplies the report foundation; dashboard connection, production
+activation, durable live replay and the remaining release/retention gates
+belong to P8-P14. It does not upload the owner's local database.
