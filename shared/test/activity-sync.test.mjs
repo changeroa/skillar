@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { build } from "../../worker/node_modules/esbuild/lib/main.js";
-const result = await build({
-  entryPoints: [new URL("../activity-sync.ts", import.meta.url).pathname],
-  bundle: true, write: false, platform: "node", format: "esm", target: "es2022",
-});
-const sync = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+import * as sync from "../dist/activity-sync.js";
 const row = (key, values) => ({
   table: "events", key, revision: 0, operation: "upsert", sourceOrder: 0, values,
 });
