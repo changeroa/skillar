@@ -32,10 +32,10 @@
         </select>
       </label>
       <nav aria-label="Main navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#skill-example">The format</a>
         <a href="#hosting">Hosting</a>
-        <a href="https://github.com/changeroa/skillar">GitHub&nbsp;<span aria-hidden="true">↗</span></a>
+        <a href="#hosted-preview">Hosted flow</a>
+        <a href="#local-setup">Local setup</a>
+        <a href="https://github.com/changeroa/skillar#documentation">Docs&nbsp;<span aria-hidden="true">↗</span></a>
       </nav>
     </header>
 
@@ -43,26 +43,55 @@
       <section class="shell hero" aria-labelledby="hero-title">
         <div class="hero-copy">
           <h1 id="hero-title">A home for<br>your agent skills.</h1>
-          <p class="intro">Skills are Markdown instructions your agents read on demand. skillar serves them from one place over the Model Context Protocol (MCP). Bring your Markdown. Bring your agent.</p>
-          <p class="note">Works today: the local CLI and self-hosted registry. Coming soon: hosted accounts, previewed below.</p>
+          <p class="intro">Serve Markdown instructions to your agents through the Model Context Protocol (MCP). Run your own server today, or explore the planned hosted account flow.</p>
+          <p class="note">Available now: local and self-hosted. Hosted service: coming soon.</p>
           <div class="cluster actions">
-            <a class="button primary" href="#local-setup">Set up locally <span aria-hidden="true">↓</span></a>
-            <a class="button secondary" href="#hosted-preview">Preview hosted accounts <span aria-hidden="true">↓</span></a>
-          </div>
-          <div class="install" data-ui>
-            <div class="install-top">
-              <p class="install-label"><strong>Fresh install</strong> · macOS or Linux · Node.js&nbsp;24.15+</p>
-              <a class="text-link" href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">Upgrading from gisool? Migrate first&nbsp;<span aria-hidden="true">↗</span></a>
-            </div>
-            <div class="install-line"><code id="install-command">npm install -g skillar</code><button id="copy" type="button" aria-label="Copy install command">Copy</button></div>
-            <span id="copy-status" role="status" aria-live="polite"></span>
-            <p>Then run <code>skillar init</code>. Installing over gisool collides on the <code>gisool</code> command, so migrate first.</p>
+            <a class="button primary" href="#hosted-preview">See hosted flow <span aria-hidden="true">↓</span></a>
+            <a class="button secondary" href="#local-setup">Run locally <span aria-hidden="true">↓</span></a>
           </div>
         </div>
         <figure class="workshop">
-          <img src="/workshop.webp" srcset="/workshop-600.webp 600w, /workshop.webp 1200w" sizes="(max-width: 760px) calc(100vw - 48px), 45vw" width="1200" height="1200" fetchpriority="high" alt="An articulated arm brings a skill instruction card from a shared cabinet to an agent's workbench.">
+          <img src="/workshop-1200-optimized.webp" srcset="/workshop-600-optimized.webp 600w, /workshop-1200-optimized.webp 1200w" sizes="(max-width: 760px) calc(100vw - 48px), 45vw" width="1200" height="1200" fetchpriority="high" alt="An articulated arm brings a skill instruction card from a shared cabinet to an agent's workbench.">
           <figcaption>Your skills. Ready when your agents need them.</figcaption>
         </figure>
+      </section>
+
+      <section class="hosting-section" id="hosting" aria-labelledby="hosting-title">
+        <div class="shell">
+          <div class="split hosting-intro"><h2 id="hosting-title">Choose how<br>you run skillar.</h2><p>Use the open-source tools on your own infrastructure, or explore the planned managed service. The choice is who runs the server, not whether your skills stay in Markdown.</p></div>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">Available local and self-hosted options compared with planned managed hosting</caption>
+              <thead><tr><th scope="col">Setup</th><th scope="col">Local / self-hosted</th><th scope="col">Hosted account</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Availability</th><td>Available in the repository</td><td>Coming soon</td></tr>
+                <tr><th scope="row">Endpoint</th><td>Your local or self-hosted URL</td><td>Account-scoped MCP endpoint planned</td></tr>
+                <tr><th scope="row">Operations</th><td>Your config, deployment and credentials</td><td>Managed provisioning planned</td></tr>
+                <tr><th scope="row">Pricing</th><td>MIT software; your infrastructure costs</td><td>Not announced</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Remote self-hosting requires your own configuration and release validation. A skill read is not permission to execute its instructions.</p>
+        </div>
+      </section>
+
+      <section class="preview-section" id="hosted-preview" aria-labelledby="preview-title">
+        <div class="shell split">
+          <div>
+            <h2 id="preview-title">Your account.<br>Your MCP endpoint.</h2>
+            <p>The planned hosted flow: access your account, connect an agent, then open the remote dashboard. This is a screen preview, not a working hosted service.</p>
+            <p class="note">No account or server is created. Only your theme preference is saved in this browser. Hosted pricing is not announced.</p>
+            <div class="cluster">
+              <a class="text-link" href="#local-setup">Run locally now&nbsp;<span aria-hidden="true">↓</span></a>
+              <a class="text-link" href="https://github.com/changeroa/skillar#documentation">Read the docs&nbsp;<span aria-hidden="true">↗</span></a>
+            </div>
+          </div>
+          <ol class="workflow">
+            <li><h3>Access your account</h3><p>GitHub sign-in is planned. Preview screens will not ask for your email, password or tokens.</p></li>
+            <li><h3>Connect your agent</h3><p>Use your account's MCP endpoint with client-specific configuration. The preview shows examples only: no endpoint is provisioned and no connection is made.</p></li>
+            <li><h3>Review activity</h3><p>Explore empty Sessions, Workspaces, Flow and Heatmap views in the planned remote dashboard. The local daemon does not upload captured activity; future hosted capture is not decided.</p></li>
+          </ol>
+        </div>
       </section>
 
       <section class="agents" aria-labelledby="agents-title">
@@ -101,7 +130,21 @@ Use the Skillar MCP tools directly.</code></pre>
       </section>
 
       <section class="shell section split" id="local-setup" aria-labelledby="connect-title">
-        <div><h2 id="connect-title">Less setup.<br>More doing.</h2><p>The local CLI can detect your runtimes, configure MCP, and install a background service. Preview its changes before you apply them.</p><label class="example-label" for="setup-example">Show a setup command</label><select id="setup-example"><option value="all">Detected runtimes</option><option value="codex">Codex only</option><option value="claude-code">Claude Code only</option></select></div>
+        <div>
+          <h2 id="connect-title">Less setup.<br>More doing.</h2>
+          <p>The local CLI can detect your runtimes, configure MCP, and install a background service. Preview its changes before you apply them.</p>
+          <div class="install" data-ui>
+            <div class="install-top">
+              <p class="install-label"><strong>Fresh install</strong> · macOS or Linux · Node.js&nbsp;24.15+</p>
+              <a class="text-link" href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">Upgrading from gisool? Migrate first&nbsp;<span aria-hidden="true">↗</span></a>
+            </div>
+            <div class="install-line"><code id="install-command">npm install -g skillar</code><button id="copy" type="button" aria-label="Copy install command">Copy</button></div>
+            <span id="copy-status" role="status" aria-live="polite"></span>
+            <p>Then run <code>skillar init</code>. Installing over gisool collides on the <code>gisool</code> command, so migrate first.</p>
+          </div>
+          <label class="example-label" for="setup-example">Show a setup command</label>
+          <select id="setup-example"><option value="all">Detected runtimes</option><option value="codex">Codex only</option><option value="claude-code">Claude Code only</option></select>
+        </div>
         <div class="code-panel" data-ui><div class="code-top"><span>Terminal</span><span>Local setup</span></div><pre><code><span class="code-muted"># Preview without changing files</span>
 <span id="dry-command">skillar init --dry-run</span>
 
@@ -110,25 +153,6 @@ Use the Skillar MCP tools directly.</code></pre>
 
 <span class="code-muted"># Inspect your skill activity</span>
 skillar open</code></pre><p class="code-foot">Prefer a foreground process? Instead of the service step above, run <code id="foreground-command">skillar init --no-service</code>, then <code>skillar serve</code>.</p></div>
-      </section>
-
-      <section class="hosting-section" id="hosting" aria-labelledby="hosting-title">
-        <div class="shell">
-          <div class="split hosting-intro"><h2 id="hosting-title">Your infrastructure.<br>Or, soon, ours.</h2><p>Start locally, deploy a team registry yourself, or follow our hosted service. The open-source tools are usable without a hosted account.</p></div>
-          <div class="table-wrap">
-            <table>
-              <caption class="sr-only">Available local and self-hosted options compared with planned managed hosting</caption>
-              <thead><tr><th scope="col">Choose your setup</th><th scope="col">Local / self-hosted</th><th scope="col">Hosted skill server</th></tr></thead>
-              <tbody>
-                <tr><th scope="row">Availability</th><td>Available in the repository</td><td>Coming soon</td></tr>
-                <tr><th scope="row">Serving</th><td>Local MCP, Node registry or Cloudflare Worker</td><td>Managed server planned</td></tr>
-                <tr><th scope="row">Operations</th><td>Your config, deployment and credentials</td><td>Managed provisioning planned</td></tr>
-                <tr><th scope="row">Pricing</th><td>MIT source; your infrastructure costs</td><td>Not announced</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="note">Remote self-hosting requires your own configuration and release validation. A skill read is not permission to execute its instructions.</p>
-        </div>
       </section>
 
       <section class="shell section split" aria-labelledby="faq-title">
@@ -143,24 +167,6 @@ skillar open</code></pre><p class="code-foot">Prefer a foreground process? Inste
         </div>
       </section>
 
-      <section class="preview-section" id="hosted-preview" aria-labelledby="preview-title">
-        <div class="shell split">
-          <div>
-            <h2 id="preview-title">Hosted accounts.<br>Coming soon.</h2>
-            <p>This is the planned account journey, described so you can judge it before it exists. Nothing here signs you in, connects your agents or collects account data. Signup is not open; only your theme preference is saved in this browser.</p>
-            <p class="note">The local tools work today without an account. Pricing is not announced.</p>
-            <div class="cluster">
-              <a class="text-link" href="#local-setup">Use the local tools today&nbsp;<span aria-hidden="true">↑</span></a>
-              <a class="text-link" href="https://github.com/changeroa/skillar">Start with the open-source project&nbsp;<span aria-hidden="true">↗</span></a>
-            </div>
-          </div>
-          <ol class="workflow">
-            <li><h3>Sign in with GitHub</h3><p>One named sign-in method for a hosted account. It is not open yet, and no form on this page collects an email or a password.</p></li>
-            <li><h3>Set up your agent over MCP</h3><p>Each account would get its own MCP endpoint. You would paste a short configuration into your agent, the way <code>skillar init</code> configures the local server today.</p></li>
-            <li><h3>Open the remote dashboard</h3><p>Planned to mirror the local dashboard's four views: Sessions, Workspaces, Flow and Heatmap. The local daemon does not upload captured activity. How future hosted capture will work is not decided.</p></li>
-          </ol>
-        </div>
-      </section>
     </main>
 
     <footer class="shell footer">
