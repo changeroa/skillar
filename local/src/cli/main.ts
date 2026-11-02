@@ -30,6 +30,9 @@ Usage:
   skillar import <dir> [--dry-run]
   skillar repair-loads --from <ms> --to <ms> [--limit <n>] [--session <id>...] [--after <event-id>] [--json]
   skillar eval [--cases <file>] [--json]
+  skillar sync connect --grant-file <path>    connect a browser-authorized device (no upload consent)
+  skillar sync status|prepare|run|backfill|pause|rollback|disconnect
+  skillar sync restore --destination <db> --source-domain <id> --snapshot-id <id>
   skillar --help | --version
 `;
 
@@ -166,6 +169,8 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         const cases = p.values.get("--cases")?.[0];
         return await (await loaders.evalApi()).runEval({ ...(cases ? { cases } : {}), json: p.flags.has("--json") }, makeCliDeps(env));
       }
+      case "sync":
+        return await (await import("./sync.js")).runSync(rest, env, io);
       default:
         throw new UsageError(`unknown command ${command}`);
     }

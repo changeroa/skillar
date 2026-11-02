@@ -19,6 +19,7 @@ import { packageVersion } from "./mcp/tools.js";
 import { createSearchIndex } from "./search/index.js";
 import { openDb, selfCheck } from "./store/db.js";
 import { createStore } from "./store/index.js";
+import { startCloudSync } from "./sync/cloud-runner.js";
 import type { SkillarConfig, SessionRow, Store } from "./types.js";
 import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
@@ -203,6 +204,8 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
 
     const server = createServer(app);
     boundPort = await listen(server, config.port);
+    const cloudSync = startCloudSync(skillarHome, dbPath(skillarHome), log);
+    cleanup.push(() => cloudSync.close());
 
     let retentionTimer: NodeJS.Timeout | undefined;
     cleanup.push(() => watchdog.stop());
