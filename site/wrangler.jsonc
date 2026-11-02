@@ -4,7 +4,7 @@
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-09-03",
   "vars": {
-    "PUBLIC_ORIGIN": "https://skillar-site.pages.dev"
+    "PUBLIC_ORIGIN": "https://skillar.sh"
   },
   "d1_databases": [
     {
