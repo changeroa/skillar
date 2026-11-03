@@ -69,11 +69,15 @@ test("one failed account cannot block another account's notification", { timeout
     [{ account_id: "account-a", seq: 1 }]);
 });
 
-test("generation-separated outbox entries remain retryable regardless of delivery order", { timeout: 30000 }, async t => {
+for (const generations of [[1, 2], [2, 1]]) test(`generation-separated outbox entries remain retryable in delivery order ${generations}`, { timeout: 30000 }, async t => {
   // Given
   const f = await fixture(t);
-  await f.append(1, "account-a", 2);
-  await f.append(1, "account-a", 1);
+  const createdAt = Date.now();
+  for (const [index, generation] of generations.entries()) {
+    await f.append(1, "account-a", generation);
+    await f.db.prepare("UPDATE account_event_outbox SET created_at=? WHERE generation=?")
+      .bind(createdAt + index, generation).run();
+  }
   await f.db.prepare("UPDATE tenant_fences SET generation=2").run();
   // When
   await f.send("dispatch");
@@ -81,7 +85,7 @@ test("generation-separated outbox entries remain retryable regardless of deliver
   // Then
   assert.deepEqual(await f.rows("SELECT * FROM account_event_outbox"), []);
   assert.deepEqual((await f.rows("SELECT body FROM test_notifications")).map(row => JSON.parse(row.body).generation),
-    [1, 2]);
+    generations);
   assert.deepEqual(page.changes, [{ generation: 2, seq: 1, invalidationKind: "activity" }]);
 });
 
