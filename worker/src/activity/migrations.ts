@@ -8,6 +8,9 @@ import type {
   MigrationExport, MigrationPageResult, MigrationStatus,
 } from "../../../shared/activity-sync.ts";
 import type { ContentRow } from "../../../shared/activity-content.ts";
+import { contentKinds } from "../../../shared/activity-schema.ts";
+import { contentScope } from "./content-consent.ts";
+import { initializeContentAccount } from "./content-account.ts";
 import { contentDigest } from "./content-db.ts";
 import type { ContentEnv } from "./content-env.ts";
 import { readMigrationPage } from "./migration-pages.ts";
@@ -34,6 +37,7 @@ const reference = (value: { readonly deviceId: string; readonly sourceDomain: st
 export async function beginMigration(env: ContentEnv, principal: IngestPrincipal, input: unknown): Promise<MigrationStatus> {
   const begin = migrationBeginSchema.parse(input);
   const identity = migrationIdentity(principal, begin, true);
+  await initializeContentAccount(env, principal, contentScope(begin, begin.backfill === null ? [] : contentKinds));
   await authorizeMigration(env, principal, begin);
   const digest = await hash(begin);
   await migrationWrite(() => env.ACTIVITY.prepare(`INSERT INTO migration_runs

@@ -24,6 +24,10 @@ import {
   rollbackMigration, stageMigrationPage, MigrationError,
 } from "./migrations.ts";
 import { MigrationContractError } from "../../../shared/activity-sync.ts";
+import { dashboardServicePaths } from "../../../shared/activity-dashboard.ts";
+import { dashboardProfiles } from "./dashboard-profiles.ts";
+import { DashboardEvalError, storeDashboardEvalCase } from "./dashboard-eval.ts";
+import { sweepDashboardEvalCases } from "./dashboard-eval-cleanup.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -84,7 +88,7 @@ async function body(request: Request): Promise<unknown> {
  */
 export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
-  const readOnly = url.pathname === "/v1/activity/migrations/status" ||
+  const readOnly = url.pathname === dashboardServicePaths.profiles || url.pathname === "/v1/activity/migrations/status" ||
     url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export" ||
     url.pathname === "/v1/activity/query" || url.pathname === "/v1/activity/reports/status" ||
     url.pathname === "/v1/activity/reports/result" || url.pathname === "/v1/activity/context/read";
@@ -97,8 +101,14 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
   try {
     const identity = request.headers.get("x-skillar-principal");
     if (identity === null) return Response.json({ error: "unauthorized" }, { status: 401, headers });
+    if (url.pathname === dashboardServicePaths.profiles) {
+      return Response.json(await dashboardProfiles(env, JSON.parse(identity)), { headers });
+    }
     const principal = internalPrincipalSchema.parse(JSON.parse(identity));
     const path = url.pathname;
+    if (path === dashboardServicePaths.evalCases) {
+      return Response.json(await storeDashboardEvalCase(env, principal, await body(request)), { status: 201, headers });
+    }
     if (path === "/v1/activity/query") {
       return Response.json(await startReport(env, principal, await body(request)), { status: 202, headers });
     }
@@ -134,7 +144,7 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     if (error instanceof ActivityLedgerError || error instanceof ContentStorageError ||
         error instanceof ContentConsentError || error instanceof ContentHttpError ||
         error instanceof MigrationError || error instanceof MigrationContractError ||
-        error instanceof ReportError || error instanceof RuntimeError) {
+        error instanceof ReportError || error instanceof RuntimeError || error instanceof DashboardEvalError) {
       return Response.json({ error: error.code }, { status: error.status, headers });
     }
     if (error instanceof ActivityContractError) {
@@ -159,6 +169,7 @@ export default {
   scheduled(_event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
     context.waitUntil(Promise.all([
       sweepContent(env.ACTIVITY, env.ACTIVITY_RAW), sweepReports(env), dispatchPendingReports(env),
+      sweepDashboardEvalCases(env),
     ]));
   },
 };

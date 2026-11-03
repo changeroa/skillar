@@ -23,7 +23,7 @@ export type Route = { view: View; sessionId?: string; flowId?: string; filter: F
 /** One shared SSE subscription: `seq` increments per `session` event, `last` is that event's row. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
 /** Props every mounted view receives from main.tsx (trace/flow/heatmap stubs are replaced by todos 15-17). */
-export type ViewProps = { route: Route; navigate: (next: Route) => void; live: LiveInfo };
+export type ViewProps = { route: Route; navigate: (next: Route) => void; live: LiveInfo; readonly embedded?: boolean };
 
 export const RUNTIME_LABEL: Record<RuntimeId, string> = {
   "claude-code": "Claude Code", codex: "Codex", gemini: "Gemini CLI", cursor: "Cursor", omo: "OmO", gajae: "Gajae Code", openclaw: "OpenClaw", unknown: "Unknown",

@@ -132,6 +132,7 @@ export function HeatmapView({ route, navigate, live }: ViewProps) {
     <section class="hm-stack" aria-busy={grid === undefined}>
       <HeatmapStyles />
       {error && <p class="notice" role="alert">Could not load the heatmap: {error}</p>}
+      {!grid && !error && <p class="dim" role="status">Building heatmap reports{"\u2026"}</p>}
       {grid && (
         <article class="hmc" aria-labelledby="hm-dow-title">
           <header class="hmc__head">

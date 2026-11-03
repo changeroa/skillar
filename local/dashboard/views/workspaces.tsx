@@ -264,10 +264,10 @@ function ListEmpty({ filtered, route, navigate }: { filtered: boolean; route: Ro
   return (
     <section class="empty">
       <h2>No herdr workspaces recorded</h2>
-      <p>
+      {api.mode === "cloud" ? <p>This snapshot has no recorded herdr workspaces. Upload a newer snapshot from a source device with herdr activity, then reload sources.</p> : <p>
         skillar groups sessions by the herdr pane they ran in. Start a herdr workspace and run an agent in one of its
         panes, or run <code class="cmd">skillar doctor</code> to check the herdr connection.
-      </p>
+      </p>}
     </section>
   );
 }
@@ -368,7 +368,7 @@ function Steps({ comparison, specSteps, specError, uncertain }: { comparison: Fl
     <section class="card ws__block" aria-labelledby="ws-steps">
       <h2 class="ws__h" id="ws-steps">Steps</h2>
       {specError && <p class="notice" role="alert">Could not read step matching modes: {specError}</p>}
-      <ol class="steps">
+      <ol class="wssteps">
         {comparison.steps.map((step) => <StepRow key={step.stepId} step={step} specStep={specSteps.find((item) => item.id === step.stepId)} uncertain={uncertain} />)}
       </ol>
       {comparison.unplanned.length > 0 && (
@@ -528,7 +528,8 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
   );
 }
 
-export function Header({ report, backHref, onRefresh, busy }: { report: FlowReportDto; backHref: string; onRefresh: () => void; busy: boolean }) {
+export function Header({ report, backHref, onRefresh, busy, embedded = false }: { report: FlowReportDto; backHref: string; onRefresh: () => void; busy: boolean; readonly embedded?: boolean }) {
+  const Title = embedded ? "h2" : "h1";
   const panes = report.tree.tabs.reduce((n, tab) => n + tab.panes.length, 0);
   const history = report.tree.tabs.some((tab) => tab.panes.some((pane) => pane.sessions.some((link) =>
     link.session !== null && !sessionInWindow(link.session, report.flow))));
@@ -538,7 +539,7 @@ export function Header({ report, backHref, onRefresh, busy }: { report: FlowRepo
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         Workspaces
       </a>
-      <h1 class="ws__title">{report.label ?? report.workspaceId}</h1>
+      <Title class="ws__title">{report.label ?? report.workspaceId}</Title>
       <dl class="ws__meta">
         {report.kind !== "outside_herdr" && <>
         <div>
@@ -583,7 +584,7 @@ export function Header({ report, backHref, onRefresh, busy }: { report: FlowRepo
   );
 }
 
-export function WorkspaceView({ route }: ViewProps) {
+export function WorkspaceView({ route, embedded = false }: ViewProps) {
   const flowId = route.flowId ?? "";
   const backHref = buildHash({ view: "workspaces", filter: route.filter });
   const query = flowsQuery(route);
@@ -647,7 +648,7 @@ export function WorkspaceView({ route }: ViewProps) {
   const { findings, usageBySpan } = reportIndex(report);
   return (
     <section class="ws" aria-busy="false">
-      <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} />
+      <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded} />
       {report.executionScope && <aside class="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
       <UnresolvedLoadNotice loads={report.unattributedLoads} />
       {report.comparison && <Steps comparison={report.comparison} specSteps={specSteps} specError={specError} uncertain={report.unattributedLoads.count > 0} />}
@@ -683,7 +684,7 @@ const WORKSPACES_CSS = `
 .wsrow__meta { grid-area: meta; }
 .wsrow__sum { grid-area: sum; }
 
-.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.wssteps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .step { display: grid; gap: var(--s-1); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
 .step__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .step__id { color: var(--ink); font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; }

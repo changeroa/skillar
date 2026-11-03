@@ -232,7 +232,8 @@ function Runtime({ runtime }: { runtime: RuntimeId }) {
   );
 }
 
-function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads }: { sessionId: string; row?: SessionListRow; steps: TraceStep[]; backHref: string; liveState: ViewProps["live"]["state"]; unresolvedLoads: boolean }) {
+function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads, embedded }: { sessionId: string; row?: SessionListRow; steps: TraceStep[]; backHref: string; liveState: ViewProps["live"]["state"]; unresolvedLoads: boolean; readonly embedded: boolean }) {
+  const Title = embedded ? "h2" : "h1";
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
   const title = firstPromptOf(steps, row);
@@ -261,7 +262,7 @@ function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads }:
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         Sessions
       </a>
-      <h1 class={title ? "trace__title" : "trace__title trace__title--dim"}>{title ?? "(no prompt captured)"}</h1>
+      <Title class={title ? "trace__title" : "trace__title trace__title--dim"}>{title ?? "(no prompt captured)"}</Title>
       <dl class="trace__meta">
         <div>
           <dt>Runtime</dt>
@@ -543,7 +544,7 @@ function ensureStyles() {
   document.head.append(el);
 }
 
-export function TraceView({ route, live }: ViewProps) {
+export function TraceView({ route, live, embedded = false }: ViewProps) {
   ensureStyles();
   const sessionId = route.sessionId ?? "";
   const backHref = buildHash({ view: "sessions", filter: route.filter });
@@ -603,7 +604,7 @@ export function TraceView({ route, live }: ViewProps) {
   return (
     <section class="trace" aria-busy="false">
       {error && <p class="notice" role="alert">Live update failed: {error}</p>}
-      <Header sessionId={sessionId} row={row} steps={steps} backHref={backHref} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} />
+      <Header sessionId={sessionId} row={row} steps={steps} backHref={backHref} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} embedded={embedded} />
       {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
       {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
       {items.length > 0 && (

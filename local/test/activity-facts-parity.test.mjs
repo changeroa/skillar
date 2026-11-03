@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { distImport } from "./_helpers.mjs";
+import { CATALOG, skillEntry } from "./helpers/store.mjs";
 import { seedParity, seedMembershipCut, parityStore, snapshot, assertReadParity, fixtureJson, reportReader,
   activeRequests, createFactStore, NOW, DAY, uri } from "./helpers/activity-facts.mjs";
 import * as analysis from "../../shared/dist/activity-analysis.js";
@@ -9,10 +10,11 @@ const { compareFlow } = await distImport("workflow/compare.js");
 const { localDowHour } = await distImport("store/index.js");
 const statuses = ["not_attempted", "in_progress", "succeeded", "failed", "cancelled", "unknown"];
 
-test("all synchronous fact read methods equal actual local Store on identical source rows", t => {
+test("all synchronous fact reads equal the native Store and its catalog inputs", t => {
   const f = seedParity(t), facts = f.facts();
   const scope = f.store.flowEventScope(f.flowId);
   const cases = [
+    ["skills"],
     ["sessions", {}], ["trace", f.human], ["trace", "missing"],
     ["flow", {}, "first_load"], ["flow", {}, "all_loads"], ["flow", {}, "search_requests"], ["flow", {}, "load_requests"],
     ["heatmap", {}, "Asia/Seoul", 1, 2], ["skillWeek", {}], ["stats"], ["stats", { from: NOW - 600, to: NOW }],
@@ -46,7 +48,11 @@ test("all synchronous fact read methods equal actual local Store on identical so
   ];
   assert.deepEqual([...new Set(cases.map(c => c[0]))].sort(), Object.keys(facts).sort(), "every exported adapter method is covered");
   const before = snapshot(f.db);
-  assertReadParity(f.store, facts, cases);
+  // Catalog.list() is separate from Store; compare the actual entries written
+  // by seedParity, including removal, rather than calling a nonexistent Store.skills().
+  const catalog = [...CATALOG, skillEntry("never-used")].sort((a, b) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0);
+  assert.deepStrictEqual(facts.skills(), catalog);
+  assertReadParity(f.store, facts, cases.filter(([method]) => method !== "skills"));
   assert.deepEqual(snapshot(f.db), before, "SQL reports do not repair pending rows");
   assert.equal(f.store.reconcileLoads({ readOnly: true }).count, 1);
   assert.deepEqual(facts.reconcileLoads(), f.store.reconcileLoads({ readOnly: true }), "fact reconciliation is always read-only");

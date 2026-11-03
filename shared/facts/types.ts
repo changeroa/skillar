@@ -33,6 +33,7 @@ export type FlowDto = { unit: "first_load" | "all_loads" | "search_requests" | "
 export type HeatmapDto = { tz: string; weekStart: 0 | 1; bucketHours: 1 | 2 | 4; cells: { dow: number; hour: number; count: number }[]; rowTotals: number[]; colTotals: number[] };
 export type SkillWeekDto = { weeks: string[]; rows: { uri: SkillUri; name: string; counts: number[] }[] };
 export interface FactStore {
+skills(): SkillEntry[];
 hasSourceKey(sourceKey: string): boolean;
 openSessions(runtime: RuntimeId, since: number): { id: string; startedAt: number; lastActivityAt: number; ref: SessionRef }[];
 findEventByToolUseId(toolUseId: string): string | undefined;

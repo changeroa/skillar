@@ -77,7 +77,7 @@ export async function fixture(t, options = {}) {
     await new Promise(resolve => server.close(resolve));
   });
   const f = await migrationFixture(t, {
-    sourceSuffix, migrations: ["0004_reports.sql", "0005_runtime.sql"],
+    sourceSuffix, migrations: ["0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql"],
     env: {
       CONTENT_KEYRING: { type: "text", value: JSON.stringify({
         current: 1, keys: { 1: Buffer.alloc(32, 7).toString("base64url") },
