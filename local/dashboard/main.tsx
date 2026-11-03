@@ -155,7 +155,12 @@ export function App({ embedded = false }: AppOptions = {}) {
     let active: HTMLElement | null = null;
     const position = () => {
       const tip = active;
-      if (tip === null || !tip.isConnected || !tip.matches(":hover, :focus-visible")) return;
+      if (tip === null) return;
+      if (!tip.isConnected || !tip.matches(":hover, :focus-visible")) {
+        tip.removeAttribute("data-tip-active");
+        active = null;
+        return;
+      }
       const rect = tip.getBoundingClientRect(), clip = (tip.closest(".hm") ?? root).getBoundingClientRect();
       const outside = rect.right <= Math.max(0, clip.left) || rect.left >= Math.min(innerWidth, clip.right)
         || rect.bottom <= Math.max(0, clip.top) || rect.top >= Math.min(innerHeight, clip.bottom);
@@ -177,19 +182,30 @@ export function App({ embedded = false }: AppOptions = {}) {
     const leave = (event: PointerEvent) => {
       const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest("[data-tip]") : null;
       const tip = next ?? root.querySelector("[data-tip]:focus-visible");
-      if (!(tip instanceof HTMLElement) || !root.contains(tip)) return;
+      if (!(tip instanceof HTMLElement) || !root.contains(tip)) {
+        active?.removeAttribute("data-tip-active");
+        active = null;
+        return;
+      }
       if (active !== tip) active?.removeAttribute("data-tip-active");
       active = tip;
       active.setAttribute("data-tip-active", "");
       position();
     };
-    const measure = () => root.style.setProperty("--embedded-toolbar-height", `${toolbar.getBoundingClientRect().height}px`);
+    const measure = () => {
+      root.style.setProperty("--embedded-toolbar-height", `${toolbar.getBoundingClientRect().height}px`);
+      position();
+    };
     const observer = new ResizeObserver(measure);
-    observer.observe(toolbar); measure();
+    const layoutRoot = root.parentElement ?? root;
+    observer.observe(toolbar); observer.observe(layoutRoot); measure();
+    const mutations = new MutationObserver(position);
+    mutations.observe(layoutRoot, { childList: true, characterData: true, subtree: true });
     root.addEventListener("pointerover", show); root.addEventListener("focusin", show); root.addEventListener("pointerout", leave);
     addEventListener("scroll", position, true); addEventListener("resize", position);
     return () => {
       observer.disconnect();
+      mutations.disconnect();
       root.removeEventListener("pointerover", show); root.removeEventListener("focusin", show); root.removeEventListener("pointerout", leave);
       removeEventListener("scroll", position, true); removeEventListener("resize", position);
     };
