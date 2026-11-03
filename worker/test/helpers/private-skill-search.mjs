@@ -5,7 +5,14 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { build } from "esbuild";
 import { Miniflare } from "miniflare";
-import { createSearchIndex } from "../../../local/dist/search/index.js";
+
+const localSearch = await build({
+  entryPoints: [fileURLToPath(new URL("../../../local/src/search/index.ts", import.meta.url))],
+  bundle: true, write: false, platform: "node", format: "esm", target: "node24",
+});
+const { createSearchIndex } = await import(
+  `data:text/javascript;base64,${Buffer.from(localSearch.outputFiles[0].text).toString("base64")}`
+);
 
 export const entry = (id, extra = {}) => ({
   uri: `skill://remote/${id}`, name: id, description: "", examples: [], aliasesKo: [],
