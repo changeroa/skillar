@@ -1,6 +1,9 @@
 # P8 visual evidence
 
 This dedicated branch contains review images, not application source.
+The refreshed candidate images correspond to application commit
+`623c5a4906575dad027a77acaf5fc641a21e2c26` (PR #59). Anonymous P7 before images
+are unchanged.
 
 - `before/`: the existing P7 production site at `https://skillar.sh/dashboard/`,
   captured anonymously before the P8 deployment.
