@@ -44,7 +44,7 @@ h2 { font-size: var(--heading); letter-spacing: -.04em; line-height: 1.08; font-
 h3 { font-size: var(--subhead); letter-spacing: -.025em; line-height: 1.2; font-weight: 600; }
 p { max-width: 62ch; }
 p + p { margin-top: var(--s4); }
-.hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: var(--s6); padding-block: var(--s7) var(--s8); }
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: var(--s6); padding-block: var(--s7) var(--s8); }
 .intro { margin-top: var(--s5); max-width: 48ch; }
 .cluster { display: flex; gap: var(--s3); flex-wrap: wrap; align-items: center; }
 .actions { margin-top: var(--s3); }
@@ -68,8 +68,29 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
 .install .install-label { margin: 0; }
 .install .text-link { margin-top: 0; font-size: var(--small); }
 #copy-status { display: block; min-height: var(--s4); }
-.workshop img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
-.workshop figcaption { margin-top: var(--s3); font-size: var(--small); color: var(--muted); }
+.prompt-figure { min-width: 0; width: 100%; max-width: 576px; justify-self: center; }
+.prompt-art { padding: var(--s4); background: radial-gradient(var(--border) .75px, transparent .75px) 0 0 / var(--s2) var(--s2); }
+.prompt-terminal { border: 1px solid var(--border); background: var(--code-bg); color: var(--code-ink); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--small); }
+.prompt-bar { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--border); background: var(--surface); color: var(--muted); }
+.prompt-window-mark { color: var(--ink); }
+.prompt-body { padding: var(--s4); }
+.prompt-command { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; font-size: var(--subhead); line-height: 1.2; overflow-wrap: anywhere; }
+.prompt-command > span { color: var(--accent); }
+.prompt-file { margin-top: var(--s5); padding: var(--s3); border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+.prompt-file-title { display: flex; align-items: center; gap: var(--s2); overflow-wrap: anywhere; }
+.prompt-file-title svg { flex: none; }
+.prompt-file-title small { display: block; margin-top: var(--s1); color: var(--muted); font: inherit; }
+.prompt-source { margin-top: var(--s4); line-height: 1.7; }
+.prompt-source > span { color: var(--accent); }
+.prompt-lines { display: grid; gap: var(--s1); margin-block: var(--s3) var(--s1); }
+.prompt-lines i { width: 100%; height: 1px; background: var(--border); }
+.prompt-lines i:nth-child(2) { width: 80%; }
+.prompt-lines i:nth-child(3) { width: 60%; }
+.prompt-handoff { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s4); }
+.prompt-handoff > :last-child { padding: var(--s1) var(--s2); border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+.prompt-arrow { flex: 1; color: var(--accent); text-align: center; font-size: var(--subhead); }
+.prompt-demand { margin-top: var(--s2); color: var(--code-muted); }
+.prompt-figure figcaption { margin-top: var(--s3); font-size: var(--small); color: var(--muted); }
 .agents { background: var(--surface); padding-block: var(--s6); }
 .agents h2 { font-size: var(--subhead); letter-spacing: -.025em; }
 .agent-list { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); padding: 0; margin-block: var(--s4); list-style: none; font-size: var(--subhead); font-weight: 600; letter-spacing: -.025em; }
@@ -118,6 +139,7 @@ details p { padding-block: 0 var(--s4); }
   .header { gap: var(--s3) var(--s4); }
   nav { gap: var(--s3); }
   .hero { gap: var(--s5); }
+  .prompt-command { font-size: var(--body); }
   .split { gap: var(--s6); }
   .actions { gap: var(--s2); }
 }
@@ -129,8 +151,8 @@ details p { padding-block: 0 var(--s4); }
   .hero { grid-template-columns: 1fr; padding-block: var(--s6) var(--s7); gap: var(--s5); }
   .intro { margin-top: var(--s4); }
   .actions { display: grid; }
-  .workshop { max-width: 440px; }
-  .workshop figcaption { margin-top: var(--s1); }
+  .prompt-figure { max-width: 440px; }
+  .prompt-figure figcaption { margin-top: var(--s1); }
   .agents { padding-block: var(--s5); }
   .agent-list { font-size: var(--body); gap: var(--s3) var(--s4); }
   .split { grid-template-columns: 1fr; gap: var(--s6); }
