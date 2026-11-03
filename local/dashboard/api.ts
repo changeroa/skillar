@@ -10,7 +10,7 @@ export type SessionListRow = SessionRow & { attributionReason?: NonNullable<Attr
 export type LiveState = "connecting" | "live" | "offline" | "fixtures";
 export type EvalCaseInput = { query: string; expectedUri?: string; fromTraceId?: string };
 /** GET /api/flows takes its own range and page size, not the full session Filter. */
-export type FlowsQuery = { from?: number; to?: number; limit?: number; automated?: AutomatedMode };
+export type FlowsQuery = { from?: number; to?: number; limit?: number; automated?: AutomatedMode; cursor?: string };
 export const FLOWS_PAGE_LIMIT = 20;
 export type EventHandlers = {
   onSession?: (row: SessionListRow) => void; onState?: (state: LiveState) => void;
@@ -75,12 +75,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** Keeps the server-issued cursor opaque while serializing every flows-list filter. */
+export function flowsPath(query: FlowsQuery = {}): string {
+  return withQuery("/api/flows", {}, {
+    from: query.from, to: query.to, limit: query.limit, automated: query.automated, cursor: query.cursor,
+  });
+}
+
 const httpApi: Api = {
   mode: "http",
   sessions: (filter) => request(withQuery("/api/sessions", filter)),
   trace: (sessionId) => request(`/api/sessions/${encodeURIComponent(sessionId)}/trace`),
   flow: (filter, opts = {}) => request(withQuery("/api/flow", filter, { unit: opts.unit, top: opts.top })),
-  flows: (query = {}) => request(withQuery("/api/flows", {}, { from: query.from, to: query.to, limit: query.limit, automated: query.automated })),
+  flows: (query = {}) => request(flowsPath(query)),
   flowReport: (id, opts = {}) => request(withQuery(`/api/flows/${encodeURIComponent(id)}`, {}, {
     automated: opts.automated, from: opts.from, to: opts.to, limit: opts.limit,
   })),

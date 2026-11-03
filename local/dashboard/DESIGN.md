@@ -228,8 +228,12 @@ Layout
 - Layout: under 640px the row is one column and every part gets its own line, `"title" / "tag" /
   "when" / "meta" / "sum"`: at 390px a 64-character spec name and a flow label cannot share a line
   without one of them collapsing to one-character rows.
-- Empty: `section.empty` "No herdr workspaces recorded" (with `skillar doctor`) or "No workspaces in
-  this range" with a Clear filters GhostButton when the time filter is set.
+- Pagination: the list appends a 32px GhostButton, "Load more workspaces", below the rows when the API
+  supplies a next cursor. It disables with a visible text loading state, reports a retryable error in place,
+  and uses `aria-controls` for the list. A live refresh replaces the newest page while keeping older loaded rows
+  in their existing order.
+- Empty: `section.empty` "No herdr workspaces recorded" (with `skillar doctor`) or a filtered empty state
+  with a Clear filters GhostButton when a time or automation filter is set.
 
 ### FlowHeader / Steps / PaneTree (`views/workspaces.tsx`)
 - Flow cost sums unique model calls in the execution window, including calls with no skill.
