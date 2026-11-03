@@ -28,7 +28,7 @@
   },
   "agent": {
     "status": "ok",
-    "session_id": "gisul-iyen-oauth-20261001",
+    "session_id": "example-oauth-20261001",
     "agent_harness": "codex",
     "successful_tools": [
       "bash",

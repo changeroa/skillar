@@ -67,7 +67,7 @@ Production OAuth was deployed on 2026-10-01 from source
 `3af736e8161152504fd339f496b474eb47ba258c`, after its PR CI passed.
 Cloudflare version: `00000000-0000-0000-0000-000000000014`.
 The canonical deployed checkout is retained on the Mac mini at
-`/Users/iyen/dev-tools/gisul-iyen-oauth/releases/3af736e8161152504fd339f496b474eb47ba258c`.
+`/Users/iyen/dev-tools/example-oauth/releases/3af736e8161152504fd339f496b474eb47ba258c`.
 The previous version, `00000000-0000-0000-0000-000000000011`, is recorded for rollback.
 
 Live health and OAuth metadata checks passed, and the pre-existing bearer
