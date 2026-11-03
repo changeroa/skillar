@@ -2,12 +2,13 @@
 
 This dedicated branch contains review images, not application source.
 The refreshed candidate images correspond to application commit
-`091d3f1367e81fc591ea37f28addf69ba90ce1d8` (PR #59), rebased on brand
-`7aa0b04`. Anonymous before images were recaptured after that brand deploy
-was confirmed live, before P8 activation. Both sides use the same new palette
-and `›skillar` header, with matching viewport and top-of-page framing.
+`1a20871a61b1f14f85faae2a96849ca1e29109c8` (PR #59), containing hero
+`69c580a` and brand `7aa0b04`. Anonymous before images were recaptured after
+both owner-managed deployments, before P8 activation. Both sides use the same
+new palette and `›skillar` header, with matching viewport and top-of-page
+framing. The merged terminal/SKILL.md/MCP hero is preserved unchanged.
 
-- `before/`: the existing P7 feature baseline plus brand PR60 in production at
+- `before/`: the existing P7 feature baseline plus brand PR60 and hero PR61 in production at
   `https://skillar.sh/dashboard/`, captured anonymously before P8 deployment.
 - `after/`: the P8 candidate build's anonymous dashboard, at the same viewport
   and color theme, served by the loopback QA harness.
