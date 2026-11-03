@@ -1,8 +1,9 @@
 :root {
   color-scheme: light dark;
-  --bg: #f4f4f0; --surface: #e9e9e3; --ink: #20211e; --muted: #54564e;
-  --accent: #b73520; --on-accent: #ffffff;
-  --code-bg: #20251f; --code-ink: #eff2e7; --code-muted: #bbc4ad; --syntax: #ffa58b;
+  --bg: #f5f4ef; --surface: #ffffff; --ink: #1f201d; --muted: #5f615b;
+  --accent: #b4321c; --on-accent: #ffffff;
+  --code-bg: #f2f1eb; --code-ink: #1f201d; --code-muted: #5f615b; --syntax: #b4321c;
+  --success: #1f6f3c; --warn: #8a5300; --error: #b0123f; --border: #878983;
   --body: 18px; --small: 15px; --subhead: 24px;
   --display: clamp(44px, 5.56vw, 80px); --heading: clamp(32px, 3.34vw, 48px);
   --s1: 8px; --s2: 12px; --s3: 16px; --s4: 24px; --s5: 32px;
@@ -11,10 +12,14 @@
   font-synthesis: none;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #171916; --surface: #242720; --ink: #f0f1e9; --muted: #b8bdad; --accent: #ff9277; --on-accent: #251811; --code-bg: #0f110e; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #171916; --surface: #212420; --ink: #f0f1e9; --muted: #a9aba2; --accent: #ff8f70; --on-accent: #1f0e09; --code-bg: #0f100e; --code-ink: #e7e8e0; --code-muted: #a9aba2; --syntax: #ff8f70; --success: #76d48c; --warn: #f4be55; --error: #ff7e9a; --border: #6e716a; color-scheme: dark; }
+  :root:not([data-theme="light"]) .wordmark-light { display: none; }
+  :root:not([data-theme="light"]) .wordmark-dark { display: block; }
 }
-:root[data-theme="dark"] { --bg: #171916; --surface: #242720; --ink: #f0f1e9; --muted: #b8bdad; --accent: #ff9277; --on-accent: #251811; --code-bg: #0f110e; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #171916; --surface: #212420; --ink: #f0f1e9; --muted: #a9aba2; --accent: #ff8f70; --on-accent: #1f0e09; --code-bg: #0f100e; --code-ink: #e7e8e0; --code-muted: #a9aba2; --syntax: #ff8f70; --success: #76d48c; --warn: #f4be55; --error: #ff7e9a; --border: #6e716a; color-scheme: dark; }
 :root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] .wordmark-light { display: none; }
+:root[data-theme="dark"] .wordmark-dark { display: block; }
 * { box-sizing: border-box; }
 body { margin: 0; font-size: var(--body); line-height: 1.55; }
 a { color: inherit; text-underline-offset: 5px; }
@@ -27,7 +32,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .shell { width: min(100% - var(--s8), 1280px); margin-inline: auto; }
 .header { display: flex; align-items: center; gap: var(--s3) var(--s5); min-height: var(--s8); flex-wrap: wrap; padding-block: var(--s4); }
 .wordmark { display: inline-flex; align-items: center; min-height: 44px; margin-right: auto; font-size: 32px; line-height: 1; font-weight: 600; letter-spacing: -.06em; text-decoration: none; }
-.wordmark span { margin-left: var(--s1); color: var(--accent); }
+.wordmark img { width: 120px; height: auto; }
+.wordmark .wordmark-dark { display: none; }
 nav { display: flex; flex-wrap: wrap; gap: var(--s4); }
 nav a { padding-block: var(--s2); font-size: var(--small); text-decoration: none; }
 .theme-label { display: flex; align-items: center; gap: var(--s1); font-size: var(--small); }
