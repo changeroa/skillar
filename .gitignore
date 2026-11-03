@@ -1,0 +1,9 @@
+*
+!.gitignore
+!README.md
+!checks.md
+!review.md
+!assets/
+!assets/*.png
+!comparisons/
+!comparisons/*.png
