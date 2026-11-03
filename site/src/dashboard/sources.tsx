@@ -78,7 +78,9 @@ export function SnapshotSection({ profile, report, failure, onRebuild, onClose, 
       <dl class="account-status snapshot__facts" aria-live="polite">
         {snapshotLines(profile, report, failure).map(line => (
           <div key={line.term} {...(line.tone === undefined ? {} : { "data-tone": line.tone })}>
-            <dt>{line.term}</dt><dd>{line.detail}</dd>
+            <dt>{line.term}</dt><dd>{line.detail}{line.technical !== undefined && (
+              <details><summary>Technical details</summary><code>{line.technical}</code></details>
+            )}</dd>
           </div>
         ))}
       </dl>

@@ -169,16 +169,28 @@ export function App({ embedded = false }: AppOptions = {}) {
     const show = (event: Event) => {
       const tip = event.target instanceof Element ? event.target.closest("[data-tip]") : null;
       if (!(tip instanceof HTMLElement) || !root.contains(tip)) return;
-      active = tip; position();
+      if (active !== tip) active?.removeAttribute("data-tip-active");
+      active = tip;
+      active.setAttribute("data-tip-active", "");
+      position();
+    };
+    const leave = (event: PointerEvent) => {
+      const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest("[data-tip]") : null;
+      const tip = next ?? root.querySelector("[data-tip]:focus-visible");
+      if (!(tip instanceof HTMLElement) || !root.contains(tip)) return;
+      if (active !== tip) active?.removeAttribute("data-tip-active");
+      active = tip;
+      active.setAttribute("data-tip-active", "");
+      position();
     };
     const measure = () => root.style.setProperty("--embedded-toolbar-height", `${toolbar.getBoundingClientRect().height}px`);
     const observer = new ResizeObserver(measure);
     observer.observe(toolbar); measure();
-    root.addEventListener("pointerover", show); root.addEventListener("focusin", show);
+    root.addEventListener("pointerover", show); root.addEventListener("focusin", show); root.addEventListener("pointerout", leave);
     addEventListener("scroll", position, true); addEventListener("resize", position);
     return () => {
       observer.disconnect();
-      root.removeEventListener("pointerover", show); root.removeEventListener("focusin", show);
+      root.removeEventListener("pointerover", show); root.removeEventListener("focusin", show); root.removeEventListener("pointerout", leave);
       removeEventListener("scroll", position, true); removeEventListener("resize", position);
     };
   }, [embedded]);

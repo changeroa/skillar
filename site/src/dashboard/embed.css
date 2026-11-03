@@ -86,8 +86,9 @@
   z-index: 11; white-space: normal; width: max-content; max-width: min(40ch, calc(100vw - 2 * var(--s-6)));
   transition: opacity var(--t-micro), transform var(--t-micro), display var(--t-micro) allow-discrete;
 }
-.dash-embed :is(.top, .page) [data-tip]:hover::after, .dash-embed :is(.top, .page) [data-tip]:focus-visible::after { display: block; }
-.dash-embed :is(.top, .page) [data-tip][data-tip-offscreen]::after { display: none; opacity: 0; }
+.dash-embed :is(.top, .page) [data-tip][data-tip-active]:hover::after, .dash-embed :is(.top, .page) [data-tip][data-tip-active]:focus-visible::after { display: block; }
+.dash-embed :is(.top, .page) [data-tip]:not([data-tip-active])::after { display: none; opacity: 0; transition: none; }
+.dash-embed :is(.top, .page) [data-tip][data-tip-active][data-tip-offscreen]::after { display: none; opacity: 0; }
 @starting-style {
   .dash-embed :is(.top, .page) [data-tip]:is(:hover, :focus-visible)::after { opacity: 0; transform: translateY(2px); }
 }
