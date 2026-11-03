@@ -19,9 +19,25 @@ Account routes: `/login/` is the account page. Signed out, it offers a working "
 
 ## 2. Color
 
-Light: background #f4f4f0, surface #e9e9e3, ink #20211e, muted #54564e, accent #b73520, on-accent #ffffff.
-Dark: background #171916, surface #242720, ink #f0f1e9, muted #b8bdad, accent #ff9277, on-accent #251811.
-Code: background #20251f in light / #0f110e in dark, ink #eff2e7, muted #bbc4ad, syntax #ffa58b. The dark panel stays visibly below both background bands.
+Approved brand: round-1 **07 Prompt**, not round-2 Slab, with **Vermilion Refined**.
+The chevron and optically spaced lettering are outlined vectors, with no runtime
+font. Header wordmarks render at 120px wide inside the existing 44px minimum
+home-link target. Theme selection switches both ink and chevron colors; the
+chevron alone is the small-size mark. Keep at least one chevron height of clear
+space (52/500 of the wordmark width) around the visible artwork. Minimum sizes
+are 96px for the wordmark and 16px for the icon. Never stretch, recolor, or add a
+shadow to the artwork.
+
+Light: background #F5F4EF, surface #FFFFFF, ink #1F201D, muted #5F615B, accent #B4321C, on-accent #FFFFFF.
+Dark: background #171916, surface #212420, ink #F0F1E9, muted #A9ABA2, accent #FF8F70, on-accent #1F0E09.
+Code: background #F2F1EB / #0F100E, ink #1F201D / #E7E8E0,
+muted #5F615B / #A9ABA2, syntax #B4321C / #FF8F70 (light / dark).
+Semantic tokens: success #1F6F3C / #76D48C, warn #8A5300 / #F4BE55,
+error #B0123F / #FF7E9A, border #878983 / #6E716A. Error is crimson,
+distinct from the vermilion brand accent; status still requires a text label.
+These values map directly to the approved palette, including light code fields.
+The complete bilingual usage guide, ANSI mapping, chart ramps, and export sizes
+ship with the brand source package.
 Focus uses current ink; no status conveyed by color alone.
 
 ## 3. Typography
@@ -42,12 +58,12 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 
 - Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark near the main navigation on every route, one shared state and storage key; visible label, native keyboard behavior. System is the default when nothing is saved. Source order always matches visual order.
-- Code panel: dark field, readable tokens, filename header. Links use code-ink focus rings on the dark field in both themes. Copy action reports success/failure through a live region.
+- Code panel: theme-specific code field, readable tokens, filename header. Links use code-ink focus rings in both themes. Copy action reports success/failure through a live region.
 - Disclosure: native summary, 48px minimum target; native triangle indicator, visible focus.
 - Shell, cluster, split: reusable layout classes; paragraph measures provide content limiting and normal flow provides stacking. No bespoke per-section grids.
 - Compatibility list: real agent names, not endorsement logos.
 - Example switch: native select chooses an actual host configuration example; no invented remote URL.
-- Wordmark: home link keeps its type size; padding grows its hit area to at least 44x44px.
+- Wordmark: outlined 07 Prompt at 120px wide; its home link keeps a hit area of at least 44x44px. Light/dark exports follow the saved theme and system fallback without changing layout.
 
 ### 5a. Account primitives
 
@@ -103,18 +119,23 @@ Visible skip link, semantic landmarks, one h1 per page, visible labels, keyboard
 
 | Pair | Light | Dark |
 | --- | ---: | ---: |
-| ink / background | 14.68 | 15.55 |
-| ink / surface | 13.28 | 13.32 |
-| muted / background | 6.76 | 9.20 |
-| muted / surface | 6.11 | 7.88 |
-| accent text / background | 5.37 | 8.11 |
-| accent text / surface | 4.86 | 6.95 |
-| on-accent / accent | 5.93 | 7.91 |
-| code ink / code background | 13.76 | 16.74 |
-| code muted / code background | 8.63 | 10.49 |
-| syntax / code background | 8.18 | 9.94 |
+| ink / background | 14.87 | 15.55 |
+| ink / surface | 16.37 | 13.80 |
+| muted / background | 5.70 | 7.61 |
+| muted / surface | 6.27 | 6.75 |
+| accent text / background | 5.59 | 7.93 |
+| accent text / surface | 6.15 | 7.04 |
+| on-accent / accent | 6.15 | 8.37 |
+| code ink / code background | 14.47 | 15.46 |
+| code muted / code background | 5.54 | 8.21 |
+| syntax / code background | 5.44 | 8.55 |
+| success / background | 5.61 | 9.74 |
+| warn / background | 5.75 | 10.40 |
+| error / background | 6.35 | 7.33 |
+| border / background | 3.21 | 3.57 |
+| border / surface | 3.54 | 3.16 |
 
-- Accent text on surface (4.86 light) is the tightest pair; don't put accent text on anything lighter-contrast than surface.
+- Syntax on the light code field (5.44) is the tightest text pair. Do not apply alpha to text tokens or use chart ramp colors as small text.
 - Text reflows at 200% enlargement and at 320px width with no page-level horizontal scroll. Long example URLs break inside the code panel.
 - Keyboard: tab order follows reading order; the sign-in link, exploration link and sign-out button are ordinary controls in that order; Back and reload keep the current route and view.
 - Forced colors: borders, focus and current markers stay visible.
