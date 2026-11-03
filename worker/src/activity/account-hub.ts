@@ -184,7 +184,8 @@ export class AccountHub extends DurableObject<EventEnv> {
     socket.close(1008, "Unsupported client message");
   }
   async webSocketClose(socket: WebSocket, code: number): Promise<void> {
-    socket.close(code);
+    // No-status and abnormal-disconnect codes cannot be sent in a Close frame.
+    socket.close(code === 1005 || code === 1006 ? 1000 : code);
     await this.schedule();
   }
   async webSocketError(socket: WebSocket): Promise<void> {

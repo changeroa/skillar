@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import assert from "node:assert/strict";
 import test from "node:test";
-import { browser, fixture, paths } from "./helpers/activity-account-hub.mjs";
+import { browser, closed, fixture, paths } from "./helpers/activity-account-hub.mjs";
 
 test("native WebSockets fan out bare changes and suppress duplicate notifications", async t => {
   // Given two hibernatable sockets sharing the account, with message subscriptions installed.
@@ -127,4 +127,16 @@ test("paged replay drains beyond one page before acknowledging notify", async t 
   assert.equal((await first).seq, 1);
   for (let seq = 2; seq <= 103; seq++) assert.equal((await socket.messages.next()).seq, seq);
   assert.ok((await f.control("inspect")).attachments[0].cursor.endsWith(".1.103"));
+});
+
+for (const code of [undefined, 1000]) test(`client close receives a protocol reply for ${code ?? "no status"}`, async t => {
+  // Given
+  const f = await fixture(t), connection = await f.websocket();
+  const closing = closed(connection.socket);
+  // When
+  connection.socket.close(code);
+  // Then
+  const reply = await closing;
+  if (code === undefined) assert.ok(reply.code === 1000 || reply.code === 1005);
+  else assert.equal(reply.code, code);
 });
