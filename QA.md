@@ -70,4 +70,8 @@ prompt-*; the only account change is image fitting.
 - No Lighthouse score is claimed. Real-browser geometry and the production
   build are the performance/weight checks for this scoped image replacement.
 
-Independent visual gate, CI, merge and live deployment verification follow.
+Independent visual gate: APPROVE for 08cdd1b, no blocking findings. The reviewer
+opened all 12 final captures, compared every baseline width, inspected OG/icons
+and the profile fixture, and independently checked text contrast (minimum
+5.44:1). See gate-review.md. Feature push Site build CI passed (run 41582247735).
+PR checks, merge and live deployment verification follow.
