@@ -1,5 +1,10 @@
 # skillar landing
 
+See [deployment configuration](../docs/self-hosting.md) before deploying.
+The tracked Wrangler file is a template; use an ignored production copy.
+Example alias hosts below are sanitized and must be explicitly configured with
+`PUBLIC_ORIGIN_ALIAS` in both Pages and the activity Worker.
+
 Vite site with same-origin Cloudflare Pages Functions for Google sign-in.
 MCP provisioning and hosted activity remain previews. No analytics or external
 fonts. The owner-authorized production domain is `https://skillar.sh`.

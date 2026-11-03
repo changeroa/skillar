@@ -14,6 +14,8 @@ Connect the `SKILL.md` folders already on your machine to your coding agents. sk
 
 [Quick start](#quick-start) · [Supported runtimes](#supported-runtimes) · [Privacy](#privacy-and-storage) · [CLI & configuration](local/README.md)
 
+Hosting the site or Workers yourself? Use the [deployment templates and private configuration setup](docs/self-hosting.md).
+
 ## Quick start
 
 macOS or Linux · **Node.js 24.15+**

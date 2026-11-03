@@ -11,6 +11,7 @@ const now = 1_800_000_000;
 const origin = "https://skillar.sh";
 const config = {
   GOOGLE_CLIENT_ID: "fixture-client", GOOGLE_CLIENT_SECRET: "fixture-secret",
+  PUBLIC_ORIGIN_ALIAS: "https://site.example.test",
   SESSION_KEY: "fixture-session-key-at-least-32-characters", PUBLIC_ORIGIN: origin,
 };
 

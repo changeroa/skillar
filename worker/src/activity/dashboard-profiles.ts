@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deploymentOriginSchema, isDeploymentOrigin } from "../../../shared/deployment-origin.ts";
 import { accountIdSchema, contentKinds } from "../../../shared/activity-schema.ts";
 import { consentSchema, defaultConsent } from "../../../shared/activity-consent.ts";
 import { dashboardProfilesSchema, dashboardSourceHeadSchema } from "../../../shared/activity-dashboard.ts";
@@ -9,7 +10,7 @@ import { ActivityLedgerError } from "./types.ts";
 const browserSchema = z.strictObject({
   kind: z.literal("browser"), accountId: accountIdSchema, deviceId: z.null(),
   generation: z.number().int().positive(), shardId: z.literal("activity-00"),
-  issuer: z.enum(["https://skillar.sh", "https://site.example.test"]),
+  issuer: deploymentOriginSchema,
   sessionId: z.string().min(32),
   scopes: z.array(z.enum(["activity:read", "device:manage"])).min(1).max(2).readonly(),
 }).readonly();
@@ -33,6 +34,7 @@ async function browserFence(env: ContentEnv, principal: BrowserPrincipal) {
 /** Only the private Pages binding supplies the browser principal, never request JSON. */
 export async function dashboardProfiles(env: ContentEnv, identity: unknown) {
   const principal = browserSchema.parse(identity);
+  if (!isDeploymentOrigin(principal.issuer, env)) throw new ActivityLedgerError("forbidden");
   await browserFence(env, principal);
   const records = z.array(deviceSchema).parse((await env.ACCOUNTS.prepare(`SELECT
     d.device_id,d.created_at,d.revoked_at,c.version,c.consent_json FROM devices d

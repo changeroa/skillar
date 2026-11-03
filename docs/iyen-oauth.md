@@ -10,7 +10,7 @@ access tokens and refresh tokens. Only `skills:read` is accepted. GitHub login
 requests no organization or repository scope. `SKILLAR_GITHUB_USER_IDS` is a
 comma-separated allowlist of stable numeric GitHub IDs; account access is
 checked at login, MCP requests and refresh. The initial deployment permits
-`changeroa` (`123456`). Changing a username does not transfer access.
+the configured numeric user ID (example: `123456`). Changing a username does not transfer access.
 
 
 ## Compatibility
@@ -27,7 +27,7 @@ they preserve immutable commit and load identity across release changes.
 `00000000000000000000000000000000`, Worker `skillar-mcp`, the existing
 `example-skills-releases` bucket and dedicated `example-oauth` KV namespace.
 The personal GitHub OAuth app is
-[IYEN Skillar](https://github.com/settings/applications/0000000), with homepage
+[configured privately](https://github.com/settings/developers), with homepage
 `https://deployment-1.example.test` and callback `https://deployment-1.example.test/callback`.
 Provision `GITHUB_CLIENT_SECRET` as a Worker secret through stdin or a private
 file. Never commit it or print the secret/config contents during verification.

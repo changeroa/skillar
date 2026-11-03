@@ -1,5 +1,6 @@
 import ky, { HTTPError, TimeoutError } from 'ky';
 import { z } from 'zod';
+import { isDeploymentOrigin } from '../../../shared/dist/deployment-origin.js';
 import {
   AuthenticationError, configSchema, cookie, FLOW_COOKIE, FLOW_SECONDS, pkceChallenge,
   randomToken, readFlow, readSession, SESSION_COOKIE, SESSION_SECONDS, signCookie,
@@ -31,9 +32,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
     return Response.json({ error: 'Sign-in is temporarily unavailable.' }, { status: 503, headers: noStore });
   }
   // Keep the production Pages alias usable, but never accept arbitrary preview hosts.
-  if (url.origin !== parsed.data.PUBLIC_ORIGIN &&
-      !(parsed.data.PUBLIC_ORIGIN === 'https://skillar.sh' &&
-        url.origin === 'https://site.example.test')) {
+  if (!isDeploymentOrigin(url.origin, parsed.data)) {
     return Response.json({ error: 'Use the production sign-in URL.' }, { status: 403, headers: noStore });
   }
   // Each approved host owns its callback, cookie issuer and logout Origin.
