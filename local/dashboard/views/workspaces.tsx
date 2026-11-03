@@ -264,10 +264,10 @@ function ListEmpty({ filtered, route, navigate }: { filtered: boolean; route: Ro
   return (
     <section class="empty">
       <h2>No herdr workspaces recorded</h2>
-      <p>
+      {api.mode === "cloud" ? <p>This snapshot has no recorded herdr workspaces. Upload a newer snapshot from a source device with herdr activity, then reload sources.</p> : <p>
         skillar groups sessions by the herdr pane they ran in. Start a herdr workspace and run an agent in one of its
         panes, or run <code class="cmd">skillar doctor</code> to check the herdr connection.
-      </p>
+      </p>}
     </section>
   );
 }
@@ -368,7 +368,7 @@ function Steps({ comparison, specSteps, specError, uncertain }: { comparison: Fl
     <section class="card ws__block" aria-labelledby="ws-steps">
       <h2 class="ws__h" id="ws-steps">Steps</h2>
       {specError && <p class="notice" role="alert">Could not read step matching modes: {specError}</p>}
-      <ol class="steps">
+      <ol class="wssteps">
         {comparison.steps.map((step) => <StepRow key={step.stepId} step={step} specStep={specSteps.find((item) => item.id === step.stepId)} uncertain={uncertain} />)}
       </ol>
       {comparison.unplanned.length > 0 && (
@@ -684,7 +684,7 @@ const WORKSPACES_CSS = `
 .wsrow__meta { grid-area: meta; }
 .wsrow__sum { grid-area: sum; }
 
-.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.wssteps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .step { display: grid; gap: var(--s-1); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-sm); }
 .step__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .step__id { color: var(--ink); font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; }

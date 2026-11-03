@@ -97,6 +97,7 @@ test("historical reports use only the exact explicitly granted snapshot range an
 
 test("partial consent is unavailable to full reports but permits an explicitly saved query eval", async t => {
   const f = await fixture(t);
+  f.env.ACTIVITY_INGEST_ENABLED = "true";
   await f.consent(["query"]);
   assert.equal((await f.request("/api/dashboard/query", {
     profile, requestId: crypto.randomUUID(), query: { kind: "stats" },

@@ -69,7 +69,10 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
         throw new ApiError(401, "cloud_unauthorized", "Sign in to your cloud account again to view activity.");
       }
       signal.throwIfAborted();
-      if (!response.ok) throw new ApiError(response.status, `cloud_http_${response.status}`, "The cloud dashboard request failed. Check your sign-in and source consent, then retry.");
+      if (!response.ok) throw new ApiError(response.status, `cloud_http_${response.status}`,
+        response.status >= 500 ? "The cloud report service is temporarily unavailable. Try again later." :
+        response.status === 403 ? "This device or its consent no longer permits the report. Reload sources and review its consent." :
+        "The cloud dashboard request could not be completed. Reload sources and try again.");
       const value: unknown = await response.json();
       signal.throwIfAborted();
       return value;

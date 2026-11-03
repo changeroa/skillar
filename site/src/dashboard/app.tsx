@@ -162,6 +162,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     cloud.current = null;
   }, []);
   const select = (profile: DashboardProfile) => {
+    if (selected !== null && profileKey(selected) === profileKey(profile)) return;
     close();
     const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain }, {
       signal, onUnauthorized: expire,

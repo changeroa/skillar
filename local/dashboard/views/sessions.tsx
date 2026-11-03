@@ -153,6 +153,12 @@ function Row({ row, route, navigate }: { row: SessionListRow; route: Route; navi
 }
 
 function WaitingEmpty({ stats }: { stats: Stats }) {
+  if (api.mode === "cloud") return (
+    <section class="empty" aria-live="polite">
+      <h2>No activity in this snapshot</h2>
+      <p>Start a session on the source device, upload a newer snapshot, then reload sources to view it here.</p>
+    </section>
+  );
   const { ingest } = stats;
   return (
     <section class="empty" aria-live="polite">
@@ -200,7 +206,8 @@ function NoSessionsEmpty() {
   return (
     <section class="empty">
       <h2>No sessions recorded yet</h2>
-      <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>
+      {api.mode === "cloud" ? <p>This uploaded snapshot has events but no sessions. Upload a newer snapshot from the source device, then reload sources.</p> :
+        <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>}
     </section>
   );
 }
@@ -318,7 +325,7 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={rows === undefined}>
-      <p class="dim">Search and load counts are per request. No observed requests: not_attempted. Missing outcomes: unknown.</p>
+      <p class="dim">Search and load counts are per request. No request observed is different from an unknown outcome.</p>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
       {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
       {rows !== undefined && stats && <UsageNote stats={stats} />}

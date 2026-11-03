@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { Consent } from "../../../shared/dist/activity-consent.js";
 import { createGrant, describeFailure, isUnauthorized, revokeDevice, writeConsent } from "./api";
 import type { DeviceGrant } from "./api";
@@ -78,6 +78,13 @@ function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnauthorized }
   const [message, setMessage] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const keepButton = useRef<HTMLButtonElement | null>(null);
+  const revokeButton = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    if (!confirming) return;
+    keepButton.current?.focus();
+    return () => revokeButton.current?.focus();
+  }, [confirming]);
   const revoked = device.revokedAt !== null;
   const titleId = `device-${device.deviceId}`;
   const run = async (action: string, task: () => Promise<void>) => {
@@ -132,11 +139,11 @@ function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnauthorized }
           {confirming ? (
             <>
               <button class="button primary" type="button" disabled={busy} onClick={revoke}>Confirm revoke</button>
-              <button class="button secondary" type="button" disabled={busy} onClick={() => setConfirming(false)}>Keep device</button>
+              <button ref={keepButton} class="button secondary" type="button" disabled={busy} onClick={() => setConfirming(false)}>Keep device</button>
               <span class="note">Revoking stops uploads and ends the device's tokens. It cannot be undone.</span>
             </>
           ) : (
-            <button class="button secondary" type="button" disabled={busy} onClick={() => setConfirming(true)}>Revoke device{"\u2026"}</button>
+            <button ref={revokeButton} class="button secondary" type="button" disabled={busy} onClick={() => setConfirming(true)}>Revoke device{"\u2026"}</button>
           )}
           <span class="note" role="status" aria-live="polite">{message}</span>
         </div>

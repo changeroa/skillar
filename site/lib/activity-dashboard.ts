@@ -78,6 +78,9 @@ export async function dashboardRequest(
   if (request.method !== "POST") return activityError(404, "not_found");
   if (![dashboardPaths.query, dashboardPaths.reportStatus, dashboardPaths.reportResult,
     dashboardPaths.evalCases].some(route => route === path)) return activityError(404, "not_found");
+  if (path === dashboardPaths.evalCases && env.ACTIVITY_INGEST_ENABLED !== "true") {
+    return activityError(404, "not_found");
+  }
   const input = await readBody(request, 256 * 1024);
   const parsed = path === dashboardPaths.query ? dashboardQuerySchema.parse(input) :
     path === dashboardPaths.reportResult ? dashboardResultPartRequestSchema.parse(input) :

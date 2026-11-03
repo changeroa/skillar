@@ -60,7 +60,7 @@ export function profileKey(profile: Pick<DashboardProfile, "deviceId" | "sourceD
   return `${profile.deviceId}\u0000${profile.sourceDomain}`;
 }
 
-export type SnapshotLine = { readonly term: string; readonly detail: string; readonly tone?: "pending" | "stale" | "failed" };
+export type SnapshotLine = { readonly term: string; readonly detail: string; readonly technical?: string; readonly tone?: "pending" | "stale" | "failed" };
 
 export const REPORT_STATE_TEXT: Record<DashboardReportStatus["state"], string> = {
   preparing: "Preparing the report", queued: "Queued on the server", running: "Building the report",
@@ -99,17 +99,24 @@ export function snapshotLines(
     { term: "Source captured", detail: formatWhen(captured) },
     { term: "Received by skillar", detail: formatWhen(received) },
     { term: "Revision", detail: revision },
-    { term: "Report", detail: failure !== null ? "Request failed" : report === null ? "Not requested yet" : REPORT_STATE_TEXT[report.state],
+    { term: "Report", detail: failure !== null ? "Request failed" : report === null ? "Not requested yet" :
+      report.state === "failed" && report.error === "flow_not_found" ? "Some report data is unavailable" : REPORT_STATE_TEXT[report.state],
       ...(failure === null ? {} : { tone: "failed" as const }) },
   ];
   if (report?.pending) lines.push({ term: "Pending", tone: "pending", detail: "The report is still being processed and may not include the newest accepted upload." });
   if (report?.stale) lines.push({ term: "Stale", tone: "stale", detail: "This result may be out of date. Rebuild reports to check the latest processed upload." });
   if (report?.state === "failed") {
-    lines.push({ term: "Failure", tone: "failed", detail: report.error === null ? "The server could not build one report. Rebuild reports to retry." :
-      `The server reported ${report.error} for one report. Rebuild reports to retry.` });
+    lines.push({ term: "Failure", tone: "failed",
+      detail: report.error === "flow_not_found" ? "A workspace flow summary is unavailable for this snapshot. Other reports remain available." :
+        "The server could not build one report. Rebuild reports to retry.",
+      ...(report.error === null ? {} : { technical: report.error }) });
   }
   if (failure !== null) {
-    lines.push({ term: "Request failed", tone: "failed", detail: `The server answered ${failure.status} (${failure.code}) to a report request. Rebuild reports to retry.` });
+    lines.push({ term: "Request failed", tone: "failed",
+      detail: failure.status >= 500 ? "The cloud report service is temporarily unavailable. Try rebuilding reports later." :
+        failure.status === 403 ? "The device or its consent no longer permits this report. Reload sources and review its consent." :
+        "The cloud report request could not be completed. Reload sources and try again.",
+      technical: `${failure.status} (${failure.code})` });
   }
   return lines;
 }
