@@ -5,9 +5,9 @@
 - Product: root README, local CLI/MCP, server registry and Worker distribution. The local CLI ships today; managed provisioning, signup and pricing do not.
 - Taste: [tasteskill v2](https://github.com/leonxlnx/taste-skill/blob/main/skills/taste-skill/SKILL.md). Adopt subject-derived composition, full-ink copy, large type, a working example, and no invented proof. The subject's actual `SKILL.md` becomes the page's central artifact.
 - Spatial contract: StyleGallery `sg:layout/webpage-generation-workflow`, use-cases section and homepage recipe. One document scroll owner; hook, explain, prove, compare, convert. No nested vertical scrollers.
-- Reference shortlist: Vercel, Warp, Claude. Vercel selected for precise developer typography and readable code; its brand colors and logo are not copied. Native skillar workshop artwork supplies the project's own visual identity.
-- Direction: a skill workshop, not an abstract cloud. Huge utilitarian lettering, vermilion actions, neutral paper, a real instruction file and the repository's articulated-arm illustration. Hosted capability is kept distinct from working local tooling.
-- Existing brand artwork replaces generated concepts; no stock photography or invented product interface is needed.
+- Reference shortlist: Vercel, Warp, Claude. Vercel selected for precise developer typography and readable code; its brand colors and logo are not copied.
+- Direction: the approved Prompt brand made literal. A static terminal command, a Markdown file and an MCP handoff explain how skills reach an agent. Vermilion belongs to the prompt and transfer arrow; paper, ink and system monospace carry the illustration. Hosted capability stays distinct from working local tooling.
+- Hero revision: native HTML/CSS replaces the cropped workshop raster. No stock or generated raster art, invented metrics, customer marks or simulated hosted dashboard.
 - Google sign-in increment (owner brief, supersedes the earlier no-backend rule): `GET /auth/google` starts a code + PKCE OIDC flow, `GET /auth/session` returns `{user:null}` or the stored profile as no-store JSON, same-origin `POST /auth/logout` ends the session and redirects to `/login/`, and the callback lands on `/login/`, `/login/?error=cancelled` or `/login/?error=failed`. Sign-in is real and stores a minimal profile; MCP endpoint provisioning and dashboard activity remain previews.
 - Owner-authorized domain launch: `https://skillar.sh` is canonical. The exact production Pages alias remains usable with its own host-bound callback, signed cookies and logout Origin; branch previews remain unauthorized. Both hosts retain the same visual design.
 
@@ -51,7 +51,7 @@ Subhead 24px, body 18px, notes/code 15px. Weights 400, 500, 600.
 
 Base 4px; spacing 8, 12, 16, 24, 32, 48, 64, 96, 128.
 Max width 1280px; symmetric 48px gutters desktop, 24px phone.
-Hero text and source artwork share an asymmetric 1.15/1 grid. Workflow is an ordered editorial list. Skill example is split text/code. Comparison is a real table. FAQ uses native details.
+Hero text and illustration share an asymmetric 1.15/1 grid with zero-minimum tracks. The illustration keeps a 24px safe area, a maximum width of 576px and intrinsic height; no fixed-height crop, transforms, hidden overflow or cover fitting. Its file and MCP handoff remain readable at 360/390/768/1024/1440/1920px. Workflow is an ordered editorial list. Skill example is split text/code. Comparison is a real table. FAQ uses native details.
 At 760px all splits stack. Navigation wraps rather than disappearing. The document owns vertical scrolling. Code wraps long text rather than widening the page.
 
 ## 5. Primitives and states
@@ -64,6 +64,7 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 - Compatibility list: real agent names, not endorsement logos.
 - Example switch: native select chooses an actual host configuration example; no invented remote URL.
 - Wordmark: outlined 07 Prompt at 120px wide; its home link keeps a hit area of at least 44x44px. Light/dark exports follow the saved theme and system fallback without changing layout.
+- Prompt illustration: noninteractive, informative `role="img"` with one accessible description; its internal terminal/file/agent labels are hidden from assistive technology to avoid duplicate narration. Uses only existing surface, code, ink, muted, border and accent tokens, 15px notes/mono, 24px command (18px below 1000px), and the 8/12/16/24/32px spacing scale. A neutral dotted field and inset file panel provide depth without shadows or new colors. No motion or network requests. The caption distinguishes local availability from planned hosted service.
 
 ### 5a. Account primitives
 
@@ -75,7 +76,7 @@ These use the tokens above. No new colors, fonts or radii.
 - Preview link: an action-styled link whose label names the outcome. Signed out it is the secondary "Explore without signing in"; signed in it is the primary "Preview MCP setup". One accent action per visible state.
 - Session status line: a `.note` paragraph with `role="status"` under the lead. Text only: "Checking your account…", then "Not signed in." or a failure sentence; cleared when the signed-in card appears. Empty it has no height or margin but stays in the accessibility tree, so the change is announced.
 - Callback message: a second status paragraph filled from `?error=`: "Sign-in was cancelled. Nothing was stored." or "Sign-in didn't complete. You can try again." Unknown codes get the second sentence; the query value itself is never rendered.
-- Signed-in card: picture (48px square, `object-fit: cover`, `alt=""`, no-referrer, only for `https:` URLs, hidden on load error) beside "Signed in as", the name at subhead size and the email in muted small text (the email takes the name slot when Google sent no name). Below it a two-row status list for first and latest sign-in: `<time>` with an ISO `datetime` and locale-formatted text. The shared account schema validates the server response before rendering. Every value is set through `textContent`; never `innerHTML`.
+- Signed-in card: picture (48px square, `object-fit: contain` to preserve the complete source, `alt=""`, no-referrer, only for `https:` URLs, hidden on load error) beside "Signed in as", the name at subhead size and the email in muted small text (the email takes the name slot when Google sent no name). Below it a two-row status list for first and latest sign-in: `<time>` with an ISO `datetime` and locale-formatted text. The shared account schema validates the server response before rendering. Every value is set through `textContent`; never `innerHTML`.
 - Sign-out form: a plain `<form method="post" action="/auth/logout">` with a secondary action button "Sign out", followed by a note that it ends the browser session and does not delete the stored profile. No fetch and no script, so the browser sends the same-origin `Origin` header the service requires.
 - Account line: `data-account-line` text inside the connect status list and the dashboard connection help. Default "See the Account page for sign-in status." is true without JavaScript; the session check replaces it with "Checking your account…", "Signed in as {email}.", "Not signed in." or a sentence saying the status is unknown.
 - Status line: text first, e.g. "Not connected — preview". A neutral square marker may precede it; color never carries the meaning. No green. "Signed in" appears only after `/auth/session` returned a user; "connected", "live" and "synced" stay banned for MCP and dashboard.
