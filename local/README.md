@@ -10,7 +10,7 @@
 
 skillar is a local skill router for coding agents. One daemon on `127.0.0.1` indexes your existing `SKILL.md` folders, serves them over MCP, and records searches and reads in a local dashboard. Skill files stay in place.
 
-[Install](#install) · [Connect your agents](#connect-your-agents) · [Settings](#settings) · [MCP reference](#skills-over-mcp)
+[Install](#install) · [Connect your agents](#connect-your-agents) · [Private skills](#private-skills) · [Settings](#settings) · [MCP reference](#skills-over-mcp)
 
 ## Install
 
@@ -37,6 +37,12 @@ The package installs `skillar` and the compatibility command `gisool`. For sourc
 | On-demand reads | Hosts read the chosen `SKILL.md` and supporting files with MCP `resources/read`. |
 | Session history | Review searches, loads, supporting reads, native-use observations, and dashboard flows. |
 | Reversible setup | Preview configuration changes, keep per-run backups, and roll back with `init`. |
+
+## Private skills
+
+The optional web library keeps private, versioned skill packages in your account. Transfers are explicit: connecting a device or running activity sync does not publish skill directories. You can also download a package and preview, apply or roll back its local files without a daemon.
+
+See the [private skill transfer guide](https://github.com/changeroa/skillar/blob/main/local/docs/private-skills.md) for account permissions, publication review and local recovery.
 
 ## Supported runtimes
 

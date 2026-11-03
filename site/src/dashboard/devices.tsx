@@ -20,14 +20,16 @@ const LOCAL_ONLY: Consent = { mode: "local-only" };
 
 function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & { readonly origin: string }) {
   const [grant, setGrant] = useState<DeviceGrant | null>(null);
+  const [allowPrivateSkills, setAllowPrivateSkills] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const connect = async () => {
     setBusy(true);
     setMessage("Creating a device grant\u2026");
     try {
-      const created = await createGrant(signal);
+      const created = await createGrant(signal, allowPrivateSkills);
       setGrant(created);
+      setAllowPrivateSkills(false);
       setMessage("");
       onChanged();
     } catch (error) {
@@ -43,7 +45,15 @@ function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & {
   if (grant === null) {
     return (
       <div class="connect">
-        <p>Connecting a device creates a one-time grant for the skillar CLI. The grant links the device to your account; it allows no upload until you save consent for that device.</p>
+        <p>Connecting a device creates a one-time grant for the skillar CLI. Activity stays local-only until you save consent for that device. Private skill permissions are separate.</p>
+        <label class="choice">
+          <input type="checkbox" checked={allowPrivateSkills} disabled={busy}
+            onChange={event => setAllowPrivateSkills(event.currentTarget.checked)} />
+          <span>
+            <strong>Also allow this device to read and publish my private skills.</strong>
+            <span class="choice__detail">Optional. Private skill upload still requires an explicit CLI action.</span>
+          </span>
+        </label>
         <div class="cluster">
           <button class="button primary" type="button" onClick={connect} disabled={busy}>Connect a device</button>
           <span class="note" role="status" aria-live="polite">{message}</span>

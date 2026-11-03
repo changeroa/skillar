@@ -14,6 +14,7 @@ export default defineConfig({
         login: 'login/index.html',
         connect: 'connect/index.html',
         dashboard: 'dashboard/index.html',
+        skills: 'skills/index.html',
       },
     },
   },

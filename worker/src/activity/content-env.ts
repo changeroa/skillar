@@ -7,4 +7,6 @@ export interface ContentEnv {
   readonly CONTENT_KEYRING: string;
   readonly ACTIVITY_INGEST_ENABLED?: string;
   readonly ACCOUNT_HUB?: DurableObjectNamespace;
+  readonly PRIVATE_SKILL_CATALOG?: DurableObjectNamespace;
+  readonly PRIVATE_SKILLS_ENABLED?: string;
 }

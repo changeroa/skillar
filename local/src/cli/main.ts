@@ -33,6 +33,12 @@ Usage:
   skillar sync connect --grant-file <path>    connect a browser-authorized device (no upload consent)
   skillar sync status|prepare|run|backfill|pause|rollback|disconnect
   skillar sync restore --destination <db> --source-domain <id> --snapshot-id <id>
+  skillar skills preview --package <export.json> --destination-root <dir> --plan <file> [--allow-overwrite]
+  skillar skills push-preview --source-dir <dir> --plan <file> [--skill-id <uuid>]
+  skillar skills push --plan <file> --allow-private-upload
+  skillar skills pull --skill-id <uuid> --output <export.json> [--version <digest>]
+  skillar skills apply --plan <file>          apply locally; no cloud acknowledgement
+  skillar skills rollback --receipt <file>   restore only matching installed files
   skillar --help | --version
 `;
 
@@ -171,6 +177,8 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
       }
       case "sync":
         return await (await import("./sync.js")).runSync(rest, env, io);
+      case "skills":
+        return await (await import("./private-skills.js")).runPrivateSkills(rest, io, env);
       default:
         throw new UsageError(`unknown command ${command}`);
     }

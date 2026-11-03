@@ -33,6 +33,7 @@ import { accountEventsRequest } from "./account-events.ts";
 import { dispatchAccountEvents } from "./event-dispatch.ts";
 import { sweepAccountChanges } from "./event-replay.ts";
 import { dispatchAccountControls } from "./event-controls.ts";
+import { privateSkillsRequest } from "../private-skills/api.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -93,6 +94,8 @@ async function body(request: Request): Promise<unknown> {
  */
 export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
+  const privateResponse = await privateSkillsRequest(request, env);
+  if (privateResponse !== null) return privateResponse;
   if (url.pathname.startsWith("/v1/activity/events/")) {
     if (env.ACCOUNT_HUB === undefined) return Response.json({ error: "not_found" }, { status: 404, headers });
     return await accountEventsRequest(request, { ...env, ACCOUNT_HUB: env.ACCOUNT_HUB }) ??

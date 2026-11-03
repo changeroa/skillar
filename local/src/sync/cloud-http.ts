@@ -80,14 +80,17 @@ export class CloudHttp {
   }
   async request(
     path: string, options: {
-      readonly body?: string; readonly maxResponseBytes?: number; readonly attempt?: number;
+      readonly body?: string; readonly maxResponseBytes?: number; readonly maxRequestBytes?: number;
+      readonly attempt?: number;
     } = {},
   ): Promise<unknown> {
     const url = new URL(path, this.origin);
     if (url.origin !== this.origin || !path.startsWith("/v1/")) {
       throw new CloudSyncError("invalid_remote_target");
     }
-    if (options.body !== undefined && Buffer.byteLength(options.body) > 256 * 1024) {
+    const requestLimit = options.maxRequestBytes === undefined ? 256 * 1024 :
+      z.number().int().min(1).max(3 * 1024 * 1024).parse(options.maxRequestBytes);
+    if (options.body !== undefined && Buffer.byteLength(options.body) > requestLimit) {
       throw new CloudSyncError("request_too_large");
     }
     let response: Response;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { privateSkillScopes } from "../../../shared/dist/private-skills.js";
 import { dashboardPaths, dashboardProfilesSchema } from "../../../shared/dist/activity-dashboard.js";
 import type { DashboardProfiles } from "../../../shared/dist/activity-dashboard.js";
 import { consentSchema } from "../../../shared/dist/activity-consent.js";
@@ -132,8 +133,10 @@ export function writeConsent(
 }
 
 /** The grant is returned once, held in memory and offered as a file download; it never touches a URL or storage. */
-export function createGrant(signal?: AbortSignal): Promise<DeviceGrant> {
-  return call(routes.grants, grantSchema, { body: { scopes: GRANT_SCOPES }, signal });
+export function createGrant(signal?: AbortSignal, allowPrivateSkills = false): Promise<DeviceGrant> {
+  return call(routes.grants, grantSchema, {
+    body: { scopes: allowPrivateSkills ? [...GRANT_SCOPES, ...privateSkillScopes] : GRANT_SCOPES }, signal,
+  });
 }
 
 export async function revokeDevice(deviceId: string, signal?: AbortSignal): Promise<void> {

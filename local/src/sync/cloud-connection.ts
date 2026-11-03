@@ -12,7 +12,7 @@ import { consentSchema } from "./cloud-wire.js";
 export const deviceSelfSchema = z.strictObject({
   accountId: z.string().min(1), deviceId: z.string().min(1),
   generation: z.number().int().positive(), shardId: z.literal("activity-00"),
-  scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1),
+  scopes: z.array(z.enum(["activity:read", "activity:ingest", "skills:read", "skills:write"])).min(1),
   ingestEnabled: z.boolean(), version: z.number().int().nonnegative(),
   consent: consentSchema,
 });

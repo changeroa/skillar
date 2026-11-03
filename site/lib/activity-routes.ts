@@ -4,6 +4,8 @@ import {
   activityConfig, activityError, browserPrincipal, noStore,
 } from "./activity-auth.ts";
 import type { ActivityEnv } from "./activity-auth.ts";
+import { connectorScopeSchema } from "./activity-auth.ts";
+import { privateSkillPagesRequest } from "./private-skills.ts";
 import {
   exchangeDeviceGrant, issueDeviceGrant, readDevicePrincipal, revokeDevice,
 } from "./device-auth.ts";
@@ -13,7 +15,7 @@ import { dashboardRequest } from "./activity-dashboard.ts";
 import { eventRequest } from "./activity-events.ts";
 
 const grantRequestSchema = z.strictObject({
-  scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).max(2).readonly(),
+  scopes: z.array(connectorScopeSchema).min(1).max(4).readonly(),
 });
 const exchangeSchema = z.strictObject({ grant: z.string().min(32).max(128) });
 const deviceListSchema = z.array(z.strictObject({
@@ -67,7 +69,10 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
       // identity, never caller-supplied headers, cookies or authorization.
       const headers = new Headers({
         "content-type": request.headers.get("content-type") ?? "",
-        "x-skillar-principal": JSON.stringify(principal),
+        "x-skillar-principal": JSON.stringify({
+          ...principal,
+          scopes: principal.scopes.filter(scope => scope === "activity:read" || scope === "activity:ingest"),
+        }),
       });
       const forwarded = new Request(`https://activity.internal${path}`, request);
       return env.ACTIVITY_SERVICE.fetch(new Request(forwarded, { headers }));
@@ -122,6 +127,11 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
 
 export async function activityRequest(request: Request, env: ActivityEnv): Promise<Response> {
   try {
+    const path = new URL(request.url).pathname;
+    if (path === "/api/skills" || path.startsWith("/api/skills/") ||
+        path === "/v1/skills" || path.startsWith("/v1/skills/")) {
+      return await privateSkillPagesRequest(request, env);
+    }
     return await handle(request, env);
   } catch (error) {
     if (error instanceof AuthenticationError) return activityError(401, "unauthorized");

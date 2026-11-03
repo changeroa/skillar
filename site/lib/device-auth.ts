@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { AuthenticationError, pkceChallenge, randomToken } from "./auth.ts";
 import {
-  ACTIVITY_AUDIENCE, activityConfig, activityScopeSchema, browserPrincipalSchema,
+  ACTIVITY_AUDIENCE, activityConfig, connectorScopeSchema, browserPrincipalSchema,
   devicePrincipalSchema, validActivityOrigin,
 } from "./activity-auth.ts";
-import type { ActivityEnv, BrowserPrincipal, DevicePrincipal } from "./activity-auth.ts";
+import type { ActivityEnv, BrowserPrincipal, ConnectorScope, DevicePrincipal } from "./activity-auth.ts";
 
-const deviceScopes = z.array(activityScopeSchema.exclude(["device:manage"])).min(1).readonly();
+const deviceScopes = z.array(connectorScopeSchema).min(1).max(4).readonly();
 const credentialSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 const exchangeRowSchema = devicePrincipalSchema.unwrap().pick({ deviceId: true }).extend({
   expiresAt: z.number().int().positive(),
@@ -20,7 +20,7 @@ const grantScopes = `json_valid(g.scopes_json)
   AND json_array_length(CASE WHEN json_valid(g.scopes_json) THEN g.scopes_json ELSE '[]' END)>0
   AND NOT EXISTS (SELECT 1 FROM json_each(
     CASE WHEN json_valid(g.scopes_json) THEN g.scopes_json ELSE '[]' END)
-    WHERE type!='text' OR value NOT IN ('activity:read','activity:ingest'))`;
+    WHERE type!='text' OR value NOT IN ('activity:read','activity:ingest','skills:read','skills:write'))`;
 
 function managementPrincipal(principal: BrowserPrincipal): BrowserPrincipal {
   const parsed = browserPrincipalSchema.safeParse(principal);
@@ -30,7 +30,7 @@ function managementPrincipal(principal: BrowserPrincipal): BrowserPrincipal {
 
 export async function issueDeviceGrant(
   principal: BrowserPrincipal,
-  scopes: readonly ("activity:read" | "activity:ingest")[],
+  scopes: readonly ConnectorScope[],
   env: ActivityEnv,
 ): Promise<{ grant: string; deviceId: string; expiresAt: number }> {
   const browser = managementPrincipal(principal);
