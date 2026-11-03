@@ -31,6 +31,8 @@ const expectedChecks = [
   ["worker", "npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"]],
   ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"]],
   ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.activity.jsonc", "--dry-run"]],
+  ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp-auth.jsonc", "--dry-run"]],
+  ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp.jsonc", "--dry-run"]],
 ];
 
 test("shared verifier runs the CI checks from its supplied root", () => {

@@ -10,7 +10,16 @@ export function admitPrivateSkill(
   storage: DurableObjectStorage, principal: PrivateSkillPrincipal, category: PrivateRate,
 ): void {
   const minute = Math.floor(Date.now() / 60_000);
-  const credential = principal.kind === "browser" ? `sid:${principal.sessionId}` : `token:${principal.tokenHash}`;
+  let credential: string;
+  switch (principal.kind) {
+    case "browser": credential = `sid:${principal.sessionId}`; break;
+    case "device": credential = `token:${principal.tokenHash}`; break;
+    case "mcp": credential = `mcp:${principal.connectionId}:${principal.tokenHash}`; break;
+    default: {
+      const exhaustive: never = principal;
+      return exhaustive;
+    }
+  }
   storage.transactionSync(() => {
     storage.sql.exec(`CREATE TABLE IF NOT EXISTS private_skill_limits (
       category TEXT NOT NULL, credential TEXT NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL,

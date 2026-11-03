@@ -1,5 +1,50 @@
 # skillar.sh
 
+## P11 private MCP authorization increment
+
+This supersedes earlier MCP-preview restrictions only when the deployed MCP
+service is enabled. The account shell and all existing color, type, spacing,
+square-corner, focus and motion tokens stay unchanged. There is no new font.
+`/connections/` replaces the non-working example with the canonical endpoint
+returned by the authenticated service and actual OAuth/PAT connection facts.
+The old Connect MCP destination leads to that working route.
+
+- A connection is not a device-upload grant. It can read private skills the
+  person has already explicitly published. No write/manage capability is
+  offered in P11, and no local files are scanned or uploaded.
+- OAuth `/oauth/authorize` is a server-rendered, no-JavaScript consent page.
+  One h1 names the decision; the untrusted client name, verified CIMD domain
+  when available, requested read permission and exact redirect host precede
+  the form. A loopback redirect explicitly says any local process could be
+  listening; a registered client name is not presented as verified.
+- The consent page reuses the account wordmark, document scroll, 18px body,
+  15px note/code, 48px actions, ink focus and desktop/phone gutters. Its
+  surface is a single readable form, not a dialog over a fake app. Native
+  system light/dark applies without script; all text and labels wrap at390px.
+- Read access needs an explicit Allow action. Cancel stays a separate
+  secondary action; no automatic approval or remembered consent is added.
+  Recording this connection's server-readable search queries and resource
+  observations is a separate unchecked choice. OAuth state is bound to the
+  same Google session and account on submission.
+- Token issuance is an explicit form submission: label, default7-day expiry
+  (maximum30), fixed private-read permission, optional unchecked recording.
+  The returned token is a password field by default, with explicit reveal,
+  copy and dismiss. It is never stored in a URL, localStorage, screenshots
+  or logs. Dismiss clears it; later lists cannot recover it.
+- Connection rows show human name, OAuth/token type, permissions, recording,
+  locale-formatted expiry and revoked state. Revoke uses the existing
+  two-step confirmation pattern and keeps the safe action first in focus.
+  It removes access, not the separately retained activity history.
+- Loading is text, errors remain beside their action, and retry preserves
+  draft fields. Signed-out, disabled, unavailable, empty, active and revoked
+  are distinct states. No spinner, fake zero, optimistic success or timeout
+  dismissal is introduced. The service-returned endpoint is the copy value;
+  a browser cookie or connector bearer is never a suggested MCP credential.
+
+Private consent pages use noindex and a restrictive CSP rather than weakening
+privacy for a search-engine score. Existing light/dark, keyboard, phone,
+zoom/reflow and original-capture gates apply to both new surfaces.
+
 ## P10 private skills library increment
 
 This adds one account route, `/skills/`, and changes nothing about sign-in,

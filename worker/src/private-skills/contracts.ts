@@ -8,6 +8,8 @@ export interface PrivateSkillsEnv {
   readonly ACTIVITY_RAW: R2Bucket;
   readonly PRIVATE_SKILL_CATALOG?: DurableObjectNamespace;
   readonly PRIVATE_SKILLS_ENABLED?: string;
+  readonly ACTIVITY_INGEST_ENABLED?: string;
+  readonly CONTENT_KEYRING?: string;
   readonly PUBLIC_ORIGIN?: string;
   readonly PUBLIC_ORIGIN_ALIAS?: string;
 }

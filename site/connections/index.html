@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Connect Codex, Claude Code or any MCP client to the private skills in your skillar account with OAuth or a personal access token, and manage each connection.">
+    <meta name="theme-color" content="#171916">
+    <meta property="og:title" content="MCP connections — skillar">
+    <meta property="og:description" content="A home for your agent skills.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://skillar.sh/connections/">
+    <meta property="og:image" content="https://skillar.sh/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="skillar — A home for your agent skills.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://skillar.sh/og.png">
+    <link rel="canonical" href="https://skillar.sh/connections/">
+    <title>MCP connections — skillar</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
+      } catch (error) {
+        if (!(error instanceof DOMException)) throw error;
+      }
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="/src/account.css">
+    <link rel="stylesheet" href="/src/dashboard/dashboard.css">
+    <link rel="stylesheet" href="/src/mcp-connections.css">
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="shell header account-header">
+      <a class="wordmark" href="/" aria-label="skillar home"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <label class="theme-label">Theme
+        <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+      </label>
+      <nav aria-label="Account"><a href="/login/">Account</a><a href="/connections/" aria-current="page">Connections</a><a href="/dashboard/">Dashboard</a><a href="/skills/">Skills</a></nav>
+    </header>
+    <aside class="preview-notice" aria-label="What works today">
+      <div class="shell"><strong>Google sign-in, the activity dashboard, your private skills library and MCP connections work.</strong> A connection lets an agent read the private skills you have published; nothing is written over MCP, and nothing about the agent's use is recorded unless you turn recording on for that connection. <a href="/">Back to skillar ↗</a></div>
+    </aside>
+    <main id="main" class="shell account-main" tabindex="-1">
+      <div class="dashboard-heading"><div><h1>One endpoint.<br>Your connections.</h1><p class="account-lead">Give Codex, Claude Code or any MCP client read access to the skills in your account. Approve the agent with OAuth from inside the agent, or create a personal access token for one that can't open a browser. Every connection is listed below with what it may do and when it expires, and you can revoke it at any time.</p></div></div>
+      <noscript>
+        <p class="note">JavaScript is off. This page needs it to read your connections, create tokens and revoke access. Signing in and out still work.</p>
+        <div class="auth-actions">
+          <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Continue with Google <span aria-hidden="true">→</span></a>
+          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out of this browser</button></form>
+        </div>
+      </noscript>
+      <p id="connections-status" class="note session-status" role="status" aria-live="polite"></p>
+      <button id="retry" class="button secondary" type="button" hidden>Try again</button>
+      <div id="signed-out" class="auth-actions" hidden>
+        <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Continue with Google <span aria-hidden="true">→</span></a>
+        <p class="note">You come back to this page after signing in. Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained.</p>
+      </div>
+      <p id="disabled" class="note connections-unavailable" hidden>MCP connections aren't available on this deployment yet. Nothing was issued, and nothing on this page is stored.</p>
+      <div id="connections-app" hidden>
+        <section class="panel" aria-labelledby="endpoint-title">
+          <div class="panel__head"><h2 id="endpoint-title">Connect an agent with OAuth.</h2></div>
+          <p class="account-lead">Add the endpoint below to your agent as a remote HTTP MCP server. The agent opens skillar's approval page in your browser, where you sign in with Google and allow read access; no credential is typed or copied here. Your browser's sign-in cookie and device connector tokens are never MCP credentials.</p>
+          <dl class="account-status connections__facts">
+            <div><dt>Endpoint</dt><dd><code id="resource" data-resource></code></dd></div>
+            <div><dt>Permission</dt><dd>Read private skills (<code>skills:read</code>). No connection can change, publish or delete a skill.</dd></div>
+            <div><dt>Recording</dt><dd>Off unless you also allow <code>activity:record</code> on the approval page.</dd></div>
+          </dl>
+          <div class="connect connections__guide">
+            <h3>Claude Code</h3>
+            <pre class="command">claude mcp add --transport http skillar <span data-resource></span></pre>
+            <h3>JSON client configuration (<code>mcpServers</code>)</h3>
+            <pre class="command">{
+  "mcpServers": {
+    "skillar": { "type": "http", "url": "<span data-resource></span>" }
+  }
+}</pre>
+            <p class="note">Codex and other clients name this differently; use their remote HTTP MCP option with the same URL. When the agent asks you to sign in, approve read access in the browser window it opens. The approval appears in the list below as an OAuth connection.</p>
+          </div>
+        </section>
+        <section class="panel" aria-labelledby="pat-title">
+          <div class="panel__head"><h2 id="pat-title">Create a personal access token.</h2></div>
+          <p class="account-lead">For agents that can't open a browser. The token is shown once, right after you create it; skillar keeps only a hash, so it can't be shown again. It expires after the days you choose, at most 30, and you can revoke it below at any time.</p>
+          <form id="pat-form" class="pat-form" novalidate>
+            <div class="consent__fields pat-form__fields">
+              <label class="field-label">Name, so you can tell tokens apart
+                <input id="pat-name" class="text-field" type="text" maxlength="80" autocomplete="off" spellcheck="false">
+              </label>
+              <label class="field-label">Expires in days, 1 to 30
+                <input id="pat-days" class="text-field" type="number" inputmode="numeric" min="1" max="30" step="1" value="7">
+              </label>
+            </div>
+            <label class="choice"><input id="pat-record" type="checkbox"><span>Also record what this token's agent does<span class="choice__detail">Separate from reading. The searches the agent runs and the skills it opens are kept as observations in your activity dashboard, and skillar's server reads them to build those reports. Leave this off and nothing about the agent's use is stored.</span></span></label>
+            <div class="cluster pat-form__actions">
+              <button id="pat-create" class="button primary" type="submit">Create token</button>
+              <p id="pat-status" class="note" role="status" aria-live="polite"></p>
+            </div>
+            <ul id="pat-problems" class="problems" role="alert"></ul>
+          </form>
+          <section id="token-panel" class="token" aria-labelledby="token-title" hidden>
+            <h3 id="token-title" tabindex="-1">Your new token. Shown once.</h3>
+            <p class="note">Copy it into your agent now. Once you dismiss it, it is gone from this page and can't be shown again; create another token if you lose it.</p>
+            <label class="field-label" for="token">Token</label>
+            <input id="token" class="text-field token__value" type="password" readonly autocomplete="off" spellcheck="false" aria-describedby="token-status">
+            <div class="cluster token__actions">
+              <button id="token-toggle" class="button secondary" type="button" aria-pressed="false">Show token</button>
+              <button id="token-copy" class="button secondary" type="button">Copy token</button>
+              <button id="token-dismiss" class="button secondary" type="button">Dismiss token</button>
+            </div>
+            <p id="token-status" class="note" role="status" aria-live="polite"></p>
+            <p class="note">Agents send it as <code>Authorization: Bearer &lt;token&gt;</code>. Claude Code: <code>claude mcp add --transport http skillar <span data-resource></span> --header "Authorization: Bearer &lt;token&gt;"</code></p>
+          </section>
+        </section>
+        <section class="panel" aria-labelledby="connections-title">
+          <div class="panel__head"><h2 id="connections-title">Connections</h2></div>
+          <p class="account-lead">Every OAuth approval and token appears here with what it may do, whether it records activity, and when it expires. Revoking one takes effect immediately for the agent using it; activity it already recorded stays in your dashboard.</p>
+          <p id="list-status" class="note" role="status" aria-live="polite" tabindex="-1"></p>
+          <p id="connections-empty" class="note" hidden>No connections yet. Approve an agent with OAuth or create a token above, and it appears here.</p>
+          <ul id="connection-list" class="source-list connection-list"></ul>
+        </section>
+      </div>
+      <template id="connection-card">
+        <li class="source connection" data-id="">
+          <div class="source__head"><h3 data-name></h3><span class="source__state" data-status></span></div>
+          <dl class="account-status source__facts">
+            <div><dt>Kind</dt><dd data-kind></dd></div>
+            <div><dt>Permissions</dt><dd data-scopes></dd></div>
+            <div><dt>Recording</dt><dd data-recording></dd></div>
+            <div><dt>Created</dt><dd data-created></dd></div>
+            <div><dt>Expires</dt><dd data-expires></dd></div>
+          </dl>
+          <div class="cluster connection__actions">
+            <button class="button secondary" type="button" data-action="revoke">Revoke…</button>
+            <button class="button primary" type="button" data-action="confirm" hidden>Confirm revoke</button>
+            <button class="button secondary" type="button" data-action="keep" hidden>Keep connection</button>
+            <span class="note" data-consequence hidden>The agent using this connection loses access immediately. It cannot be undone; activity already recorded stays in your dashboard.</span>
+          </div>
+        </li>
+      </template>
+    </main>
+    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">Back to skillar</a><a class="text-link" href="/skills/">Private skills</a><a class="text-link" href="/dashboard/">Activity dashboard</a></div></footer>
+    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/mcp-connections.ts"></script>
+  </body>
+</html>

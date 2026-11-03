@@ -6,6 +6,9 @@ examples. Dry runs and tests use these templates; never deploy them unchanged.
 Historical documentation and evidence use replacement deployment identifiers
 and example hosts, not usable endpoints.
 
+For the Google-account private MCP authorization/resource Workers and their
+additional bindings, see [private account MCP](private-mcp.md).
+
 ## Local setup
 
 1. Copy `site/wrangler.jsonc.example` to ignored `site/wrangler.jsonc`. Pages

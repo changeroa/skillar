@@ -8,6 +8,8 @@ import type { SearchEntry, SearchOptions, SearchOutcome } from "../../../shared/
 export type PrivateSkillSearch = {
   readonly rebuild: (entries: readonly SearchEntry[], threshold?: number) => void;
   readonly search: (query: string, opts: SearchOptions) => SearchOutcome;
+  readonly page: (query: string, opts: SearchOptions & { readonly offset: number }) =>
+    SearchOutcome & { readonly total: number };
 };
 
 type EntryRow = {
@@ -79,6 +81,14 @@ export function createPrivateSkillSearch(storage: DurableObjectStorage): Private
       const started = performance.now();
       const traceId = crypto.randomUUID();
       return { traceId, query, mode: opts.mode, ...search(query, opts, threshold), elapsedMs: performance.now() - started };
+    },
+    page(query, opts) {
+      const started = performance.now(), traceId = crypto.randomUUID();
+      // Keep native channel limits and ranking intact; page only the complete ranked outcome.
+      const outcome = search(query, { mode: opts.mode, limit: Number.MAX_SAFE_INTEGER }, threshold);
+      return { traceId, query, mode: opts.mode, ...outcome, total: outcome.candidates.length,
+        candidates: outcome.candidates.slice(opts.offset, opts.offset + opts.limit),
+        elapsedMs: performance.now() - started };
     },
   };
 }

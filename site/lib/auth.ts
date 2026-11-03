@@ -22,10 +22,21 @@ export const configSchema = z.object({
 });
 export type Config = z.infer<typeof configSchema>;
 
+export const loginReturnPathSchema = z.string().max(8192).refine(value => {
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return false;
+  const url = new URL(value, 'https://return.invalid');
+  return url.origin === 'https://return.invalid' && url.hash === '' &&
+    ((url.pathname === '/oauth/authorize' && url.search !== '') ||
+      (url.pathname === '/connections/' && url.search === ''));
+}).transform(value => {
+  const url = new URL(value, 'https://return.invalid');
+  return url.pathname + url.search;
+}).pipe(z.string().max(8192));
 const flowSchema = z.object({
   state: z.string().min(32),
   nonce: z.string().min(32),
   verifier: z.string().min(43).max(128),
+  returnState: z.literal(true).optional(),
 });
 export type LoginFlow = z.infer<typeof flowSchema>;
 const sessionSchema = z.object({ sub: z.string().min(1), sid: z.string().min(32) });

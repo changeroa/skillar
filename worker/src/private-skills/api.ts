@@ -14,7 +14,7 @@ export async function privateSkillsRequest(request: Request, env: PrivateSkillsE
     }
     const principal = requestPrincipal(request, env);
     const read = request.method === "GET" ||
-      [`${prefix}/search`, `${prefix}/resources/read`].includes(path);
+      [`${prefix}/search`, `${prefix}/mcp/search`, `${prefix}/resources/read`].includes(path);
     await requireAuthority(env, principal, read ? "skills:read" : "skills:write");
     return await env.PRIVATE_SKILL_CATALOG.get(env.PRIVATE_SKILL_CATALOG.idFromName(principal.accountId)).fetch(request);
   } catch (error) { return privateFailure(error); }

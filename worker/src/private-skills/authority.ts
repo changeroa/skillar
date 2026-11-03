@@ -49,6 +49,25 @@ export function authority(principal: PrivateSkillPrincipal, scope: PrivateScope)
             WHERE type!='text' OR value NOT IN ('activity:read','activity:ingest','skills:read','skills:write')))`,
         args: [...args, principal.deviceId, principal.tokenHash, principal.issuer, Date.now() / 1000, scope],
       };
+    case "mcp":
+      return {
+        sql: `${account} AND EXISTS(SELECT 1 FROM mcp_connections c JOIN devices d
+          ON d.account_id=c.account_id AND d.device_id=c.device_id
+          WHERE c.account_id=a.account_id AND c.auth_generation=a.auth_generation
+          AND c.connection_id=? AND c.device_id=? AND c.revoked_at IS NULL
+          AND c.expires_at>? AND d.revoked_at IS NULL
+          AND ((c.kind='pat' AND c.token_hash=?) OR
+            (c.kind='oauth' AND EXISTS(SELECT 1 FROM mcp_credentials t
+              WHERE t.connection_id=c.connection_id AND t.token_hash=?
+              AND t.kind='access' AND t.revoked_at IS NULL AND t.expires_at>?
+              AND EXISTS(SELECT 1 FROM json_each(t.scopes_json) WHERE type='text' AND value=?))))
+          AND json_type(c.scopes_json)='array'
+          AND EXISTS(SELECT 1 FROM json_each(c.scopes_json) WHERE type='text' AND value=?)
+          AND NOT EXISTS(SELECT 1 FROM json_each(c.scopes_json)
+            WHERE type!='text' OR value NOT IN ('skills:read','activity:record','offline_access')))`,
+        args: [...args, principal.connectionId, principal.deviceId, Date.now() / 1000,
+          principal.tokenHash, principal.tokenHash, Date.now() / 1000, scope, scope],
+      };
     default: {
       const exhaustive: never = principal;
       return exhaustive;
@@ -56,7 +75,7 @@ export function authority(principal: PrivateSkillPrincipal, scope: PrivateScope)
   }
 }
 export async function requireAuthority(
-  env: PrivateSkillsEnv, principal: PrivateSkillPrincipal, scope: PrivateScope,
+  env: Pick<PrivateSkillsEnv, "ACCOUNTS">, principal: PrivateSkillPrincipal, scope: PrivateScope,
 ): Promise<void> {
   const fence = authority(principal, scope);
   if (await env.ACCOUNTS.prepare(fence.sql).bind(...fence.args).first() === null) {
