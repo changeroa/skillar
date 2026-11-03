@@ -17,8 +17,8 @@
   "d1_databases": [
     {
       "binding": "ACCOUNTS",
-      "database_name": "skillar-accounts",
-      "database_id": "d0a92a8b-1b58-4d59-87c8-62c743a82144",
+      "database_name": "example-accounts",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
   ]

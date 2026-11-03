@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "gisul-mcp",
-  "account_id": "8277c1acc712e4a9d00479255015c200",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-03",
   "workers_dev": true,
@@ -13,7 +12,7 @@
   "r2_buckets": [
     {
       "binding": "SKILLS_BUCKET",
-      "bucket_name": "gisul-skills-releases"
+      "bucket_name": "example-skills-bucket"
     }
   ],
   "compatibility_flags": [
@@ -21,19 +20,19 @@
   ],
   "vars": {
     "SKILLAR_NATIVE_TOOLS": "true",
-    "SKILLAR_PUBLIC_URL": "https://gisul.iyendev.com",
-    "SKILLAR_GITHUB_USER_IDS": "65930387",
-    "GITHUB_CLIENT_ID": "Ov23liaj8ZrnSwj4l9K0"
+    "SKILLAR_PUBLIC_URL": "https://skills.example.com",
+    "SKILLAR_GITHUB_USER_IDS": "123456",
+    "GITHUB_CLIENT_ID": "example-github-client-id"
   },
   "kv_namespaces": [
     {
       "binding": "OAUTH_KV",
-      "id": "bb3ef2930c8e403b9dbb4b0df03601b0"
+      "id": "00000000000000000000000000000000"
     }
   ],
   "routes": [
     {
-      "pattern": "gisul.iyendev.com",
+      "pattern": "skills.example.com",
       "custom_domain": true
     }
   ]

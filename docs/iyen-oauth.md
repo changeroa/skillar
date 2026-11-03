@@ -1,7 +1,7 @@
 # IYEN Skillar OAuth
 
 The IYEN Worker can serve read-only MCP clients through GitHub OAuth at
-`https://gisul.iyendev.com/mcp`. OAuth is enabled only when `SKILLAR_PUBLIC_URL`
+`https://deployment-1.example.test/mcp`. OAuth is enabled only when `SKILLAR_PUBLIC_URL`
 is set. The ordinary Wrangler config retains the existing token-only behavior.
 
 OAuth uses Cloudflare's pinned provider, S256 PKCE, explicit browser consent,
@@ -10,7 +10,7 @@ access tokens and refresh tokens. Only `skills:read` is accepted. GitHub login
 requests no organization or repository scope. `SKILLAR_GITHUB_USER_IDS` is a
 comma-separated allowlist of stable numeric GitHub IDs; account access is
 checked at login, MCP requests and refresh. The initial deployment permits
-`changeroa` (`65930387`). Changing a username does not transfer access.
+the configured numeric user ID (example: `123456`). Changing a username does not transfer access.
 
 
 ## Compatibility
@@ -24,11 +24,11 @@ they preserve immutable commit and load identity across release changes.
 ## Configuration and deployment
 
 `worker/wrangler.oauth.jsonc` explicitly targets account
-`8277c1acc712e4a9d00479255015c200`, Worker `skillar-mcp`, the existing
-`gisul-skills-releases` bucket and dedicated `gisul-iyen-oauth` KV namespace.
+`00000000000000000000000000000000`, Worker `skillar-mcp`, the existing
+`example-skills-releases` bucket and dedicated `example-oauth` KV namespace.
 The personal GitHub OAuth app is
-[IYEN Skillar](https://github.com/settings/applications/3896163), with homepage
-`https://gisul.iyendev.com` and callback `https://gisul.iyendev.com/callback`.
+[configured privately](https://github.com/settings/developers), with homepage
+`https://deployment-1.example.test` and callback `https://deployment-1.example.test/callback`.
 Provision `GITHUB_CLIENT_SECRET` as a Worker secret through stdin or a private
 file. Never commit it or print the secret/config contents during verification.
 
@@ -65,10 +65,10 @@ integration tests and the existing reader/writer/publication compatibility
 tests. Type checking, search benchmark and OAuth deployment dry run passed.
 Production OAuth was deployed on 2026-10-01 from source
 `3af736e8161152504fd339f496b474eb47ba258c`, after its PR CI passed.
-Cloudflare version: `5d67e2f4-1173-412f-9fdb-1df356aefbd0`.
+Cloudflare version: `00000000-0000-0000-0000-000000000014`.
 The canonical deployed checkout is retained on the Mac mini at
 `/Users/iyen/dev-tools/gisul-iyen-oauth/releases/3af736e8161152504fd339f496b474eb47ba258c`.
-The previous version, `baef02cb-a827-4cf3-98d4-cdc79dac9a92`, is recorded for rollback.
+The previous version, `00000000-0000-0000-0000-000000000011`, is recorded for rollback.
 
 Live health and OAuth metadata checks passed, and the pre-existing bearer
 connection still exposed its three read tools. GitHub browser login completed.

@@ -145,7 +145,7 @@ test("omo pack plan: mcp.json + extension files, merges existing, disables remot
   try {
     const agent = join(sb.home, ".omo", "agent");
     mkdirSync(agent, { recursive: true });
-    const remote = { command: "npx", args: ["--yes", "mcp-remote@0.14.3", "https://gisul.arkpoint.dev/mcp"] };
+    const remote = { command: "npx", args: ["--yes", "mcp-remote@0.14.3", "https://deployment-9.example.test/mcp"] };
     writeFileSync(join(agent, "mcp.json"), JSON.stringify({ mcpServers: { gisul: remote, other: { command: "x" } } }));
     const det = await omoPack.detect({ home: sb.home, env: sb.env });
     assert.equal(det.installed, true);

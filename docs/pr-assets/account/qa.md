@@ -1,15 +1,15 @@
 # Account preview QA
 
-Current preview: https://3c183402.skillar-site.pages.dev.
+Current preview: https://deployment-3.example.test.
 Initial account preview, before the skip correction:
-https://d8e5e0d5.skillar-site.pages.dev.
+https://deployment-4.example.test.
 Screen-only: no authentication, account, provisioned endpoint or activity data.
 `skillar.sh` remains unattached.
 
 ## Before and after provenance
 
 The `before-*` PNGs are actual previous-deployment URLs at
-https://d05b70a6.skillar-site.pages.dev. `/login/`, `/connect/` and `/dashboard/`
+https://deployment-2.example.test. `/login/`, `/connect/` and `/dashboard/`
 all served the landing fallback then. They do not depict earlier account UIs.
 The `after-*` images show the new route-specific production build at the same
 390/1440 CSS widths and light/dark settings. They are viewport captures;

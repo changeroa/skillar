@@ -1,5 +1,9 @@
 # Deployment
 
+For current deployment templates, private configuration, and self-hosted setup,
+see [deployment configuration](self-hosting.md). Historical identifiers below
+are sanitized examples, not usable production endpoints.
+
 > The former personal Cloudflare deployment was retired on 2026-10-29. Addresses and resource names below describe that historical installation, not an active endpoint. The current personal installation uses the local `skillar` npm package. Do not recreate the old Worker as part of the rename; configure your own deployment explicitly if you need the hosted runtime.
 
 For a self-hosted team OAuth Worker, see [team plugin setup](team-plugin.md). `worker/src/team.ts` serves native MCP tools and OAuth directly from Cloudflare. The Mac mini instructions below cover the personal deployment.
@@ -8,7 +12,7 @@ For a self-hosted team OAuth Worker, see [team plugin setup](team-plugin.md). `w
 
 The Worker in this checkout serves `/mcp` directly from `SKILLS_BUCKET`. It has no origin URL, tunnel, SSH connection, or filesystem dependency. `SKILLAR_BEARER_TOKEN` authenticates MCP readers; `SKILLAR_WRITE_TOKEN` authenticates read/write clients and `SKILLAR_GITHUB_TOKEN` lets the Worker commit only through its fixed skill-content API; `SKILLAR_PUBLISH_TOKEN` authenticates publication. These secrets are separate from the Cloudflare account credentials used by Wrangler. Keep the bucket's public access disabled.
 
-The production machine endpoint is `https://gisul-mcp.changeroa.workers.dev/mcp`; the publication origin is the same URL without `/mcp`. Its stable workers.dev route is enabled on the existing Worker, with bearer authentication enforced by the Worker. The custom domain `gisul.iyendev.com` also routes to this version, but its zone can return a browser challenge to unattended clients. GitHub Actions and the installed plugin use the stable workers.dev endpoint. Do not depend on a preview alias for ongoing publication or disable security across unrelated zone traffic.
+The production machine endpoint is `https://deployment-8.example.test/mcp`; the publication origin is the same URL without `/mcp`. Its stable workers.dev route is enabled on the existing Worker, with bearer authentication enforced by the Worker. The custom domain `deployment-1.example.test` also routes to this version, but its zone can return a browser challenge to unattended clients. GitHub Actions and the installed plugin use the stable workers.dev endpoint. Do not depend on a preview alias for ongoing publication or disable security across unrelated zone traffic.
 
 Production activation requires a gated real release published by GitHub Actions, actual installed-plugin reads, and matching Langfuse evidence. Structural migration of unchanged content uses Git-byte and manifest parity; model evaluations and human ratings are optional under the 2026-09-21 user policy. Validation, integrity, latest-main and conditional activation remain required. Local fixture tests do not establish those production results.
 
@@ -23,7 +27,7 @@ The direct Worker supports MCP `2026-07-28` with `server/discover`, per-request 
 Install the production client over HTTPS:
 
 ```sh
-node clients/codex/install.mjs --plugin --http-url https://gisul-mcp.changeroa.workers.dev/mcp --bearer-token-file "$HOME/.config/gisul-worker-dev-tools/mcp-bearer"
+node clients/codex/install.mjs --plugin --http-url https://deployment-8.example.test/mcp --bearer-token-file "$HOME/.config/gisul-worker-dev-tools/mcp-bearer"
 ```
 
 Reader credentials expose search, load and verified file reads. A write credential additionally exposes create_skill, update_skill and get_skill_write_status. Content changes go through `changeroa/iyen-skills` main and its gated `publish-r2.yml` GitHub Actions workflow on Ubuntu. Neither serving nor publishing requires the Mac mini. The Mac mini is only used as an authenticated Wrangler deployment workstation. Its old Node service is retained separately for rollback and is not in the production request path.

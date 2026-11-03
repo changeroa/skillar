@@ -11,7 +11,7 @@ includes `worker/test/parity-platform.test.mjs`, which runs the real workerd D1
 implementation and compares weighted trigram BM25 values against Node SQLite.
 The shared fixtures are inputs and explicit expected results for later adapters.
 
-The isolated `skillar-parity-probes` D1 database contains synthetic data only.
+The isolated `example-parity-probes` D1 database contains synthetic data only.
 It is not ACCOUNTS or an activity shard. Reproduce its schema with:
 
 ```sh

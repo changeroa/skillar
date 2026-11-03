@@ -161,7 +161,7 @@ test("a remote skillar registration is a warning, not a failure", async (t) => {
   assert.equal(init.code, 0, init.output);
   const settingsPath = join(sb.home, ".gemini", "settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
-  settings.mcpServers.gisul = { httpUrl: "https://gisul.arkpoint.dev/mcp" };
+  settings.mcpServers.gisul = { httpUrl: "https://deployment-9.example.test/mcp" };
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
 
   const r = await runCli(["doctor", "--json"], sb.env);

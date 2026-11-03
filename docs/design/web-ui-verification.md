@@ -120,10 +120,10 @@ report is retained; a delta approval is required before merge.
 
 Landing PR40: merged `37eda19648d8cc0ec7f72b3f64648a76abd2edde` after gate
 `st_01a19a41` APPROVE, three current-head checks and live preview/image readbacks.
-Landing preview: https://d05b70a6.skillar-site.pages.dev.
+Landing preview: https://deployment-2.example.test.
 
-Corrected account preview: https://3c183402.skillar-site.pages.dev
-(initial version: https://d8e5e0d5.skillar-site.pages.dev).
+Corrected account preview: https://deployment-3.example.test
+(initial version: https://deployment-4.example.test).
 Four direct routes returned HTTP200, correct distinct HTML and current built
 asset names. Root drove landing -> login -> setup -> all four views, then
 back/forward/direct reentry on this host; exact current view, theme persistence

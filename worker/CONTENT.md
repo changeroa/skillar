@@ -170,8 +170,8 @@ ledger, retention release gate and complete recovery policy.
 
 ## Resources and activation gate
 
-Private R2 bucket: `skillar-activity-raw`, iyen account
-`8277c1acc712e4a9d00479255015c200`, APAC location **hint**, Standard class.
+Private R2 bucket: `example-activity-raw`, iyen account
+`00000000000000000000000000000000`, APAC location **hint**, Standard class.
 Public r2.dev access is disabled and no custom domains are connected. A location
 hint is not a contractual residency guarantee.
 

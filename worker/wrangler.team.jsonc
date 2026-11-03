@@ -15,7 +15,7 @@
   "r2_buckets": [
     {
       "binding": "SKILLS_BUCKET",
-      "bucket_name": "skillar-team-releases"
+      "bucket_name": "example-skills-bucket"
     }
   ],
   "vars": {
