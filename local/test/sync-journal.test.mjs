@@ -6,7 +6,43 @@ import { distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { addSession, journalHead, logicalSnapshot, openDb, readJournal, seedAll } from "./helpers/sync.mjs";
 
 const { targetTables } = await distImport("sync/tables.js");
+const { createStore } = await distImport("store/index.js");
 const all = (db, after = 0, through = journalHead(db).cut) => readJournal(db, { after, through });
+
+test("session upserts journal only effective row changes", t => {
+  const db = openDb(":memory:");
+  t.after(() => db.close());
+  const store = createStore(db);
+  const ref = { runtime: "claude-code", runtimeSessionId: "stable-session" };
+  const id = store.upsertSession(ref, 100);
+  const row = () => ({ ...db.prepare("SELECT * FROM sessions WHERE id=?").get(id) });
+  const original = row(), firstCut = journalHead(db).cut;
+  assert.equal(store.upsertSession(ref, 100), id);
+  assert.equal(store.upsertSession(ref, 200), id);
+  assert.deepEqual(row(), original);
+  assert.equal(journalHead(db).cut, firstCut);
+  assert.deepEqual(all(db, firstCut), []);
+
+  assert.equal(store.upsertSession(ref, 50), id);
+  assert.equal(row().started_at, 50);
+  assert.equal(all(db, firstCut).length, 1);
+  const earlierCut = journalHead(db).cut;
+  const enriched = { ...ref, conversationId: "conversation", clientName: "fixture-client", cwd: "/fixture" };
+  assert.equal(store.upsertSession(enriched, 75), id);
+  const populated = row(), changed = all(db, earlierCut);
+  assert.equal(populated.started_at, 50);
+  assert.equal(populated.conversation_id, "conversation");
+  assert.equal(populated.client_name, "fixture-client");
+  assert.equal(populated.cwd, "/fixture");
+  assert.equal(changed.length, 1);
+  assert.deepEqual(changed[0].values, populated);
+
+  const populatedCut = journalHead(db).cut;
+  assert.equal(store.upsertSession({ ...ref, conversationId: "replacement", clientName: "other", cwd: "/other" }, 80), id);
+  assert.equal(store.upsertSession({ runtime: "claude-code", conversationId: "conversation" }, 90), id);
+  assert.deepEqual(row(), populated);
+  assert.equal(journalHead(db).cut, populatedCut);
+});
 
 test("CDC captures every target table, final derived values, key moves and deletes", t => {
   const db = openDb(":memory:");
