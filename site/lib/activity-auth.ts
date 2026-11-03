@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isDeploymentOrigin } from "../../shared/dist/deployment-origin.js";
 import {
   accountIdSchema, deviceIdSchema,
 } from "../../shared/dist/activity-schema.js";
@@ -45,8 +46,7 @@ export function activityConfig(request: Request, env: ActivityEnv): Config | nul
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) return null;
   const origin = new URL(request.url).origin;
-  if (origin !== parsed.data.PUBLIC_ORIGIN &&
-      !(parsed.data.PUBLIC_ORIGIN === "https://skillar.sh" && origin === "https://site.example.test")) return null;
+  if (!isDeploymentOrigin(origin, parsed.data)) return null;
   return { ...parsed.data, PUBLIC_ORIGIN: origin };
 }
 

@@ -16,6 +16,7 @@ const config = {
   GOOGLE_CLIENT_SECRET: 'test-secret',
   SESSION_KEY: 'test-session-key-at-least-32-characters',
   PUBLIC_ORIGIN: origin,
+  PUBLIC_ORIGIN_ALIAS: origin,
 };
 const { privateKey, publicKey } = await generateKeyPair('RS256');
 const publicJwk = { ...await exportJWK(publicKey), kid: 'test-google-key', alg: 'RS256', use: 'sig' };

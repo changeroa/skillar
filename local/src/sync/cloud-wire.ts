@@ -1,5 +1,6 @@
 // This entrypoint is bundled by build-cloud.mjs. The published local package
 // never depends on a sibling shared/ checkout at runtime.
+export { deploymentOriginSchema } from "../../../shared/dist/deployment-origin.js";
 export {
   authorizeUpload, consentSchema,
 } from "../../../shared/dist/activity-consent.js";
