@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { consentSchema } from "../../shared/dist/activity-consent.js";
 import { contentKinds } from "../../shared/dist/activity-schema.js";
-import { GRANT_SCOPES, routes } from "../src/dashboard/api.ts";
+import { createGrant, GRANT_SCOPES, routes } from "../src/dashboard/api.ts";
 import { buildConsent, draftFromConsent, emptyDraft, projectIdFor } from "../src/dashboard/consent.ts";
 import { connectSteps, grantFileName, grantFileText } from "../src/dashboard/grant.ts";
 import { AVAILABILITY_COPY, mergeReports, snapshotLines } from "../src/dashboard/status.ts";
@@ -14,6 +14,22 @@ const profile = {
   deviceId, sourceDomain: "source-a", sourceSequence: 4, journalThrough: 40, runtimeSequence: 2,
   capturedAtMs: now - 5000, receivedAtMs: now - 4000, availability: "ready",
 };
+
+for (const allowPrivateSkills of [false, true]) {
+  test(`device grant private scopes are explicitly selected: ${allowPrivateSkills}`, async t => {
+    // Given
+    let received;
+    t.mock.method(globalThis, "fetch", async (_url, options) => {
+      received = JSON.parse(options.body);
+      return Response.json({ grant: "g".repeat(43), deviceId, expiresAt: now / 1000 + 600 });
+    });
+    // When
+    await (allowPrivateSkills ? createGrant(undefined, true) : createGrant());
+    // Then
+    assert.deepEqual(received.scopes, allowPrivateSkills ?
+      ["activity:read", "activity:ingest", "skills:read", "skills:write"] : GRANT_SCOPES);
+  });
+}
 
 test("the default draft is local only with nothing preselected", () => {
   const draft = emptyDraft();

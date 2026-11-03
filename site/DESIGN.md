@@ -1,5 +1,158 @@
 # skillar.sh
 
+## P10 private skills library increment
+
+This adds one account route, `/skills/`, and changes nothing about sign-in,
+the dashboard or the P9 transport rules. MCP remains an explicitly labeled
+preview until P11: nothing on this route says an agent can read a private
+skill, and the availability notice says so. Private skills are files a person
+chooses and publishes; the page never scans a filesystem and never renders a
+skill document as HTML.
+
+### P10 route and shell
+
+`/skills/` uses the account shell: skip link, wordmark, theme select, the
+account nav (Account, Connect MCP, Dashboard, Skills) with `aria-current` on
+Skills, the availability notice band, one `main`, one h1 ("Your private
+skills."), the account footer. Skills is a destination, not a stage of the
+account journey, so the step list is omitted here and unchanged elsewhere; the
+only edit to the other account routes is the fourth nav link. Availability
+notice text: "Google sign-in, the activity dashboard and your private skills
+library work. MCP setup is still a screen-only preview: no endpoint is
+assigned, and agents cannot read private skills over MCP yet."
+
+The page is one document scroll owner with stacked panels in reading order:
+account line (Signed in as, Sign out), Library, the Skill panel once a skill is
+opened (directly under the card that opened it), then Publish a skill. Opening
+a skill sets the hash `#skill/<uuid>`, so Back returns to the library; a hash
+for a skill that is not in the catalog shows a not-found note in the Skill
+panel, never a blank. Focus moves to the Skill panel heading only when the
+person opened it from this page, never on browser Back or a pasted link.
+
+### P10 primitives
+
+All reuse the tokens above and the P8 primitives (`.panel`, `.panel__head`,
+`.account-status` facts, `.choice`, `.field-label`, `.text-field`,
+`.problems`, `.command`, `.button`, `.note`). Nothing new in color, type,
+radius or motion. New names:
+
+- Skill card: a surface block in the `.source-list` grid. h3 at body size for
+  the name, description in ink with a 70ch measure, a facts list (Revision,
+  Updated), one secondary "Open" action at 48px. The opened card carries
+  `aria-current="true"` and the 2px inset ink ring the source card uses.
+- File picker: two 48px secondary actions, "Choose a skill folder…"
+  (`webkitdirectory`) and "Choose files…", each opening its own hidden native
+  file input; one sentence before them says what is read and when. A
+  selected-files list follows: path in `code`, size and media type in muted
+  small text, a 44px "Remove" per row. Paths keep their folder structure; the
+  selected folder's own name is stripped. Hidden entries (a dot-leading name)
+  and files over the per-file limit are skipped by name and reported in a
+  status list before any byte is read; a selection over 400 entries is refused
+  outright. Archives are refused with the fixed sentence from the shared
+  contract error, named per file.
+- Document field: a `textarea.document-field` for `SKILL.md` text. Code font
+  at 15px, code field colors, 1px muted border, square, 18 rows minimum,
+  vertical resize only, `spellcheck="false"`, ink focus ring. It is the only
+  way skill text appears; no Markdown is ever rendered to HTML.
+- Upload acknowledgement: a `.choice` checkbox row, unchecked on every visit
+  and after every publish, labeled "Upload these files to my private skillar
+  library." with the detail that this is separate from device activity
+  consent, that only the listed files are sent, and that they are stored under
+  the account until deleted. Publish stays enabled; an unchecked box is
+  reported as a problem next to the action, not as a disabled control.
+- Resource list: `dl.account-status` rows per manifest resource: path in
+  `code`, then size and media type. Read-only.
+- Version row: a surface row per version in a list. Digest in `code` wrapped
+  with `overflow-wrap: anywhere`, created `time`, text labels "Current" and
+  "Pinned" at weight 600 (never color alone), then an action cluster: Make
+  current, Pin or Unpin, Export JSON, Delete version. A row that is current or
+  pinned shows why Delete version is unavailable in a note instead of a
+  disabled control.
+- Secondary action on a surface block: the secondary action is an ink wash
+  relative to its parent, so inside a surface-colored block (skill card,
+  version row, search result, file picker) it uses the page background
+  instead of the surface color; on the page background it stays surface.
+- Confirm step: destructive actions (Delete skill, Delete version) swap the
+  trigger for "Confirm delete" (primary) and "Keep" (secondary) plus one
+  sentence on the consequence; focus moves to Keep and returns to the trigger
+  on cancel, exactly like device revocation. Enter never deletes by default.
+- Search field (optional capability, server-backed): a labeled text field and
+  a secondary "Search" action under the cards; each result is a surface row
+  with name, description, matched words and an "Open" action. An abstained
+  search shows the shared contract's fixed hint sentence as a note; a 404 from
+  the search route is reported as search not being available yet.
+- Status placement: every action reports next to itself. The Skill panel has
+  one status line under the publish actions, one above the version list and
+  one beside the delete actions; the line under the heading carries only
+  loading and open-failure text. "Technical details" is a compact native
+  disclosure after the sentence.
+- CJK text: names, descriptions, facts and the document field use
+  `word-break: keep-all` so Korean wraps at spaces, with `overflow-wrap:
+  anywhere` still breaking a digest or a path that would otherwise overflow.
+
+### P10 copy and data rules
+
+- Name and description are read by the server from `SKILL.md` front matter;
+  the page shows the values it finds in the draft as "will be published as" and
+  lists a problem when `name:` or `description:` is missing. It never asks for
+  a separate name field, so there is nothing to drift.
+- A new skill gets a client-generated UUID (`crypto.randomUUID()`); the page
+  shows it in `code` after the first publish.
+- Sizes are shown in bytes under 1 KB, otherwise in KB (or MB) with one
+  decimal; times are locale-formatted from epoch milliseconds; digests are
+  shown in full in `code` at 15px, never smaller.
+- Export downloads the server's export JSON unchanged, named
+  `skill-<name-slug>-<first 8 digest chars>.json`, offered only after the
+  export response parsed against the shared schema.
+- Publishing sends `{ base, acknowledgePrivateUpload: true, package }` where
+  `package` comes from `createPrivateSkillPackage` over the retained supporting
+  files plus the current document text, so quota, path, archive and digest
+  rules are checked in the browser before any request. Editing loads the head
+  package from the export route and verifies it with
+  `verifyPrivateSkillPackage` before any byte is shown.
+- Responses are parsed with the shared schemas; a response that does not parse
+  is a failure, never partial data. Server text is never echoed; the fixed code
+  is available under "Technical details".
+
+### P10 states
+
+| State | Rule |
+| --- | --- |
+| Checking | "Checking your account…" status text; no spinner |
+| Signed out / unreachable / unexpected | The dashboard's signed-out block: fixed sentence, real "Continue with Google" link, privacy note. No library content |
+| Expired (401 on any call) | Library and drafts are cleared; the signed-out block says the session ended |
+| Not available (404 on the catalog) | One note: private skills are not available on this deployment yet, nothing is uploaded; no publish form. Covers the environment flag being off and an undeployed route alike |
+| Loading | "Loading your skills…" status text; existing content stays |
+| Load failed | Fixed sentence by cause plus a "Try again" secondary action; prior content stays |
+| Empty | "You haven't published a private skill yet." with one sentence pointing at the Publish panel |
+| Populated | Skill cards, newest update first |
+| Draft problems | `.problems` list beside Publish: missing `SKILL.md`, missing front matter fields, archive, quota, path, unchecked acknowledgement |
+| Publishing | Status text "Publishing…"; actions disabled; nothing is shown as published |
+| Published | Status text names the new revision; acknowledgement unchecks; the draft clears only after the parsed response |
+| Conflict (409 `head_conflict`) | The draft and files stay. Note: the skill changed elsewhere; a "Review current version" secondary action re-reads the skill and states the new head. Nothing is overwritten silently |
+| Protected (409 `version_protected`) | The current or a pinned version cannot be deleted; the note says which to change first |
+| Gone (404 on a skill) | The skill was deleted elsewhere; the draft stays visible for copying; a "Back to library" action reloads the catalog |
+| Rate limited (429) | "Too many requests; wait a minute and try again." |
+| Too large (413) / invalid (400) | Fixed sentences; the draft stays |
+| Unavailable (503) | "Private skills are unavailable right now." |
+| Offline (network error) | "Couldn't reach skillar." plus retry |
+| No JavaScript | The page explains the library needs JavaScript; sign-in and sign-out forms still work |
+
+Not used: optimistic updates, spinners, skeletons, toasts, disabled primary
+actions without an adjacent reason, color-only status, HTML rendering of any
+skill content.
+
+### P10 accessibility and debt
+
+Every control is at least 44x44 CSS px and actions are 48px; all text uses the
+token pairs above, so 4.5:1 holds in both themes. The document field keeps
+the 3px ink focus ring. Live regions are `role="status"` paragraphs; problems
+use `role="alert"` lists. Accepted debt: resources other than `SKILL.md` are
+listed but not previewed; the search field depends on the server outcome and is
+hidden when the catalog is unavailable; a 404 from a disabled flag and from an
+undeployed route are indistinguishable to the browser and share one honest
+sentence; the library needs JavaScript.
+
 ## P9 durable live connection increment
 
 This supersedes P8's snapshot-only transport restriction, not its consent or

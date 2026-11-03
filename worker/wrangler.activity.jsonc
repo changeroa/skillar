@@ -6,12 +6,18 @@
   "workers_dev": false,
   "preview_urls": false,
   "routes": [],
-  "vars": { "ACTIVITY_INGEST_ENABLED": "false" },
+  "vars": { "ACTIVITY_INGEST_ENABLED": "false", "PRIVATE_SKILLS_ENABLED": "false" },
   "triggers": { "crons": ["* * * * *", "*/15 * * * *"] },
   "durable_objects": {
-    "bindings": [{ "name": "ACCOUNT_HUB", "class_name": "AccountHub" }]
+    "bindings": [
+      { "name": "ACCOUNT_HUB", "class_name": "AccountHub" },
+      { "name": "PRIVATE_SKILL_CATALOG", "class_name": "PrivateSkillCatalog" }
+    ]
   },
-  "migrations": [{ "tag": "v1-account-hub", "new_sqlite_classes": ["AccountHub"] }],
+  "migrations": [
+    { "tag": "v1-account-hub", "new_sqlite_classes": ["AccountHub"] },
+    { "tag": "v2-private-skill-catalog", "new_sqlite_classes": ["PrivateSkillCatalog"] }
+  ],
   "workflows": [{
     "binding": "REPORT_FLOW",
     "name": "skillar-report-flow",

@@ -11,10 +11,15 @@ export interface ActivityEnv extends Config {
   readonly ACCOUNTS: D1Database;
   readonly ACTIVITY_ENABLED?: string;
   readonly ACTIVITY_INGEST_ENABLED?: string;
+  readonly PRIVATE_SKILLS_ENABLED?: string;
   readonly ACTIVITY_SERVICE?: Fetcher;
 }
 export const activityScopes = ["activity:read", "activity:ingest", "device:manage"] as const;
 export const activityScopeSchema = z.enum(activityScopes);
+export const connectorScopeSchema = z.enum([
+  "activity:read", "activity:ingest", "skills:read", "skills:write",
+]);
+export type ConnectorScope = z.infer<typeof connectorScopeSchema>;
 export type ActivityScope = z.infer<typeof activityScopeSchema>;
 const base = {
   accountId: accountIdSchema,
@@ -28,6 +33,7 @@ export const browserPrincipalSchema = z.strictObject({
 }).readonly();
 export const devicePrincipalSchema = z.strictObject({
   ...base, kind: z.literal("device"), sessionId: z.null(), deviceId: deviceIdSchema,
+  scopes: z.array(connectorScopeSchema).readonly(),
 }).readonly();
 export const principalSchema = z.discriminatedUnion("kind", [
   browserPrincipalSchema.unwrap(), devicePrincipalSchema.unwrap(),

@@ -6,7 +6,8 @@
   "vars": {
     "PUBLIC_ORIGIN": "https://skillar.sh",
     "ACTIVITY_ENABLED": "true",
-    "ACTIVITY_INGEST_ENABLED": "true"
+    "ACTIVITY_INGEST_ENABLED": "true",
+    "PRIVATE_SKILLS_ENABLED": "false"
   },
   "services": [
     {
