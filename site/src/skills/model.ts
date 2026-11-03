@@ -7,6 +7,7 @@ import type {
 } from "../../../shared/dist/private-skills.js";
 import { createPrivateSkillPackage, verifyPrivateSkillPackage } from "../../../shared/dist/private-skill-package.js";
 import { privateSkillMediaType as mediaTypeFor } from "../../../shared/dist/private-skill-media.js";
+import { splitSkillMarkdown } from "../../../shared/dist/skill-fields.js";
 export { mediaTypeFor };
 
 export const ENTRYPOINT = "SKILL.md";
@@ -14,7 +15,7 @@ export const ENTRYPOINT_MAX_BYTES = 64 * 1024;
 export const ENTRYPOINT_MEDIA_TYPE = "text/markdown";
 
 const encoder = new TextEncoder();
-const utf8 = new TextDecoder("utf-8", { fatal: true });
+const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 export type Picked = { readonly name: string; readonly relativePath: string };
 
@@ -29,25 +30,11 @@ export function relativePaths(picked: readonly Picked[]): readonly string[] {
 export type FrontMatter = { readonly name: string | null; readonly description: string | null };
 
 export function readFrontMatter(text: string): FrontMatter {
-  const block = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1];
-  if (block === undefined) return { name: null, description: null };
-  const lines = block.split(/\r?\n/);
+  // Match the server's metadata decode without changing the stored document.
+  const { frontmatter } = splitSkillMarkdown(text.replace(/^\uFEFF/, ""), { rejectAliases: true });
   const field = (key: string): string | null => {
-    const index = lines.findIndex(line => line.startsWith(`${key}:`));
-    const first = lines[index];
-    if (index < 0 || first === undefined) return null;
-    let value = first.slice(key.length + 1).trim();
-    if (/^[>|][+-]?$/.test(value)) {
-      const folded: string[] = [];
-      for (let next = index + 1; next < lines.length; next += 1) {
-        const line = lines[next];
-        if (line === undefined || !/^\s+\S/.test(line)) break;
-        folded.push(line.trim());
-      }
-      value = folded.join(" ");
-    }
-    value = value.replace(/^(["'])(.*)\1$/, "$2").trim();
-    return value === "" ? null : value;
+    const value = frontmatter?.[key];
+    return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
   };
   return { name: field("name"), description: field("description") };
 }

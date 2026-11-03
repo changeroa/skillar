@@ -4,6 +4,7 @@ import {
   privateSkillExportSchema, privateSkillPublishSchema, privateSkillResourceSchema,
 } from "../../shared/dist/private-skills.js";
 import { createPrivateSkillPackage, verifyPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
+import { splitSkillMarkdown, extractFields } from "../../shared/dist/skill-fields.js";
 import { classifyFailure, routes, SkillsRequestError } from "../src/skills/api.ts";
 import {
   buildPackage, draftFromExport, draftProblems, emptyDraft, exportFileName, mediaTypeFor, mergePickedFiles, readFrontMatter,
@@ -99,6 +100,45 @@ test("a compressed archive among the files is refused by name without a request"
   assert.equal(built.ok, false);
   assert.equal(built.problems.length, 1);
   assert.equal(built.problems[0].startsWith("guide.txt"), true);
+});
+
+test("a picked BOM-prefixed entrypoint retains its exact bytes and digest", async () => {
+  // Given
+  const bytes = text.encode(`\uFEFF${document}`);
+  const original = await createPrivateSkillPackage([{ path: "SKILL.md", mediaType: "text/markdown", bytes }]);
+  const { draft } = mergePickedFiles(emptyDraft(skillId), [{ path: "SKILL.md", mediaType: "text/markdown", bytes }]);
+  // When
+  const built = await buildPackage({ ...draft, acknowledged: true });
+  // Then
+  assert.equal(built.ok, true);
+  assert.deepEqual(built.package, original);
+});
+
+test("an unchanged exported BOM-prefixed entrypoint retains its exact package", async () => {
+  // Given
+  const original = await createPrivateSkillPackage([
+    { path: "SKILL.md", mediaType: "text/markdown", bytes: text.encode(`\uFEFF${document}`) }, supporting,
+  ]);
+  const exported = { skillId, version: { digest: original.manifestDigest, createdAt: 0, pinned: false }, package: original };
+  const draft = await draftFromExport(exported, { digest: original.manifestDigest, revision: 1 });
+  // When
+  const built = await buildPackage({ ...draft, acknowledged: true });
+  // Then
+  assert.equal(built.ok, true);
+  assert.deepEqual(built.package, original);
+});
+
+test("browser publication accepts quoted YAML keys accepted by shared skill parsing", async () => {
+  // Given
+  const quoted = '---\n"name": synthetic\n"description": A fixture skill\n---\nBody text.\n';
+  const markdown = splitSkillMarkdown(quoted, { rejectAliases: true });
+  assert.notEqual(extractFields(markdown.frontmatter, markdown.body), null);
+  // When
+  const built = await buildPackage({ ...readyDraft(), document: quoted });
+  // Then
+  assert.equal(built.ok, true);
+  const verified = await verifyPrivateSkillPackage(built.package);
+  assert.deepEqual(verified.files.get("SKILL.md"), text.encode(quoted));
 });
 
 test("an export round-trips into an editable draft whose unchanged publish reproduces the same manifest digest", async () => {
