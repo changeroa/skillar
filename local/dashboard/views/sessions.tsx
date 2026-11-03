@@ -223,7 +223,8 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
         update({ q: q || undefined });
       }}
     >
-      <input class="field field--search" type="search" name="q" placeholder="Search prompts and skills" aria-label="Search prompts and skills" value={filter.q ?? ""} />
+      <label class="toolbar__label" for="session-search">Search prompts and skills</label>
+      <input id="session-search" class="field field--search" type="search" name="q" placeholder="e.g. pr-review" value={filter.q ?? ""} />
       <select class="field field--select" aria-label="Runtime" value={filter.runtime?.length === 1 ? filter.runtime[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as RuntimeId | ""; update({ runtime: v ? [v] : undefined }); }}>
         <option value="">All runtimes</option>
         {RUNTIME_IDS.map((id) => <option key={id} value={id}>{RUNTIME_LABEL[id]}</option>)}

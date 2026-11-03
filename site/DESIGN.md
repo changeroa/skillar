@@ -1,5 +1,75 @@
 # skillar.sh
 
+## P8 connected dashboard increment
+
+This section supersedes the dashboard-only preview restrictions below. Google
+sign-in and the workshop visual system stay unchanged. MCP remains an explicitly
+labeled preview until P11.
+
+The hosted dashboard reuses the local Preact Sessions, Workspaces, Flow and
+Heatmap views, including trace/workspace details, filters, reports and eval-case
+creation. The site shell supplies account navigation, theme, source selection,
+connection instructions and consent controls; there is one main landmark and
+one document scroll owner. Keep the existing palette, system type, 44px targets,
+48px actions and 4.5:1 minimum for every text size.
+
+Signed-out people see a Google sign-in link, never activity. Signed-in people
+start local-only. Device grant creation connects a device but does not grant
+upload consent. Consent is a separate deliberate submission: show the seven
+content categories, server-readable processing, default 30-day retention,
+backup maximum 30 days, and optional historical snapshot identity/cut/range.
+No checkbox is preselected to authorize content. Explain the private grant-file
+CLI steps without exposing bearer credentials in URLs or persistent browser
+storage. Consent withdrawal and device revocation have separate actions.
+
+Source profiles state local-only, metadata-only, partial coverage, awaiting
+runtime, ready or revoked. Unavailable content has an explanation and next
+action, not fabricated zero counts. P8 displays snapshots, not live transport:
+show source capture/receipt time, report revision, pending work and stale
+results separately. Queued/running work uses plain status text; failure offers
+an explicit retry. Offline, expired-session and logout states clear protected
+content and explain recovery. Profile changes must not retain another profile's
+results. Private activity and credentials never enter localStorage or caches;
+only the existing theme preference persists.
+
+Acceptance includes a keyboard-only user connecting a fixture device and making
+an informed opt-in; a phone user switching all four views and opening details;
+and a returning user distinguishing pending/stale data from empty data. Verify
+light/dark at phone and desktop sizes, text zoom/reflow, visible focus, signed
+out, consent, pending, failure, populated and empty states. No accessibility
+debt is accepted by this increment.
+
+### P8 embedded primitives
+
+The source/device card, snapshot status list, text field and native choice row
+reuse the workshop surface, square corners, ink focus ring and 48px actions.
+Choice rows include both the checkbox/radio and its visible explanation.
+Historical upload remains unchecked by default. Once explicitly enabled, offer
+either all available history in that exact prepared snapshot or a custom local
+date range; saved all-history consent preserves the exact full range.
+
+The embedded views inherit background/surface/ink/accent. Additional light/dark
+text tokens are ink-3 #5f615a/#a2a79a, accent-2 #8f2917/#ffb3a0, success
+#176333/#5fd38a, warning #74430a/#e9b65c and error #9c2416/#ff8c7a. Derived ink
+washes are 5%/10%, lines 14%/30%, and accent wash 14% light/20% dark. Embedded
+type uses 18px titles, 16px body, 15px secondary and 14px captions; on phones,
+body text is at least 17px. Existing chart metadata may use 13px but not controls.
+Popover shadow is 0 4px 16px black at 18% light/50% dark. Feedback transitions
+use 120ms ease-out; no decorative animation is added.
+
+Embedded detail titles are h2 beneath the page h1. Heatmap date targets remain
+44px with a chart-owned horizontal scroller instead of widening the document.
+Inline help tooltips render above sticky navigation. Chart values also remain
+available through keyboard focus and each cell's accessible label.
+Changing an embedded activity route brings its content below the sticky tabs
+and focuses the named activity region. Background refreshes retain scroll;
+the standalone local dashboard keeps its existing navigation behavior.
+Tooltips use measured viewport coordinates outside chart scroll clips, keep a
+24px edge inset and 8px anchor gap, and disappear when their anchor leaves view.
+Their fade is interruptible; reduced motion keeps the fade without translation.
+Focused content controls clear the measured sticky toolbar.
+Opaque consent identifiers wrap without truncating or changing their value.
+
 ## 0. Research log
 
 - Product: root README, local CLI/MCP, server registry and Worker distribution. The local CLI ships today; managed provisioning, signup and pricing do not.

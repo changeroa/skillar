@@ -5,18 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && tsc -p tsconfig.functions.json && vite build",
+    "build": "tsc --noEmit && tsc -p tsconfig.dashboard.json && tsc -p tsconfig.functions.json && vite build",
     "test": "node --test test/*.test.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "dev:pages": "wrangler pages dev dist --port 8788"
   },
   "dependencies": {
+    "d3-sankey": "0.12.3",
     "jose": "^6.1.0",
     "ky": "^1.14.0",
+    "preact": "^10.27.2",
     "zod": "^4.1.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260903.1",
+    "@types/d3-sankey": "^0.12.4",
+    "@types/node": "^24.3.0",
+    "postcss-prefix-selector": "^2.2.1",
     "vite": "^7.3.1",
     "typescript": "^5.9.3",
     "wrangler": "4.128.0"
