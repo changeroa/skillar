@@ -1,6 +1,6 @@
 # Deployment configuration
 
-Tracked `site/wrangler.jsonc` and `worker/wrangler*.jsonc` are templates, not
+Tracked `site/wrangler.jsonc.example` and `worker/wrangler*.jsonc` are templates, not
 production configuration. Resource IDs are synthetic and bucket names are
 examples. Dry runs and tests use these templates; never deploy them unchanged.
 Historical documentation and evidence use replacement deployment identifiers
@@ -8,8 +8,10 @@ and example hosts, not usable endpoints.
 
 ## Local setup
 
-1. Copy each required template beside itself with `.production` before `.jsonc`
-   (for example, `worker/wrangler.activity.production.jsonc`). These files,
+1. Copy `site/wrangler.jsonc.example` to ignored `site/wrangler.jsonc`. Pages
+   requires this default filename; it does not support a custom `--config`.
+   Copy required Worker templates beside themselves with `.production` before
+   `.jsonc` (for example, `worker/wrangler.activity.production.jsonc`). These files,
    `.dev.vars` and their variants are ignored. Keep a separate private backup.
 2. Set your account, Worker/project names, D1 IDs, private R2 bucket names,
    OAuth KV namespace and exact domain routes in these private copies. Provision
@@ -38,7 +40,7 @@ included:
 npm --prefix shared ci && npm --prefix shared run build
 cd site
 npm ci && npm test && npm run build
-npx wrangler pages deploy dist --config wrangler.production.jsonc --branch main
+npx wrangler pages deploy dist --branch main
 ```
 
 For the service-binding-only activity Worker:
