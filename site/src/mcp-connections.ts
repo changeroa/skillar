@@ -182,7 +182,7 @@ function mount(): void {
   const render = () => {
     const phase = model.phase;
     status.textContent = phase === "checking" ? "Checking your connections\u2026" : phase === "loading" ? "Loading your connections\u2026"
-      : phase === "ready" || phase === "disabled" ? "" : FAILURE_TEXT[phase];
+      : phase === "ready" ? "" : FAILURE_TEXT[phase];
     retry.hidden = ["checking", "loading", "ready", "signed-out", "disabled"].includes(phase);
     signedOut.hidden = phase !== "signed-out";
     disabled.hidden = phase !== "disabled";

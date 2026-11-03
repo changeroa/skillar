@@ -44,7 +44,7 @@ code { font-family: ui-monospace, monospace; font-size: 15px; }
 .choice small { display: block; font-size: 15px; color: var(--muted); margin-top: var(--s1); }
 .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
 button { border: 0; border-radius: 0; font: 600 15px/1.4 Arial, sans-serif; min-height: 48px; padding: var(--s2) var(--s4); cursor: pointer; }
-button:active { opacity: .8; }
+button:active { box-shadow: inset 0 0 0 2px currentColor; }
 .primary { background: var(--accent); color: var(--on-accent); }
 .secondary { background: var(--surface); color: var(--ink); }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--ink); outline-offset: 5px; }

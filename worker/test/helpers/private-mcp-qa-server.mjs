@@ -15,6 +15,7 @@ const root = resolve(import.meta.dirname, "../../../site/dist");
 const session = await fixture.forward("session", origin, { method: "GET" });
 const sessionCookie = session.body.cookie;
 const audit = [];
+let visualFault = null;
 const types = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png",
@@ -23,6 +24,15 @@ const types = {
 const server = createServer(async (request, response) => {
   try {
     const local = new URL(request.url, "http://127.0.0.1");
+    if (local.pathname === "/__qa/visual-fault" && request.method === "POST") {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      const { status } = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      if (![null, 404, 503].includes(status)) throw new Error("Invalid visual fault");
+      visualFault = status;
+      response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      response.end(JSON.stringify({ status })); return;
+    }
     if (local.pathname === "/__qa/client-access" && request.method === "POST") {
       const issued = await fixture.pat(false);
       const catalog = await fixture.api("", "GET");
@@ -57,6 +67,12 @@ const server = createServer(async (request, response) => {
     }
     if (/^\/(?:api|auth|oauth)\//.test(local.pathname) ||
         local.pathname === "/mcp" || local.pathname.startsWith("/.well-known/")) {
+      // Visual-only fault injection. Security/protocol acceptance uses the native services.
+      if (local.pathname.startsWith("/api/mcp/connections") && visualFault !== null) {
+        response.writeHead(visualFault, { "content-type": "application/json", "cache-control": "no-store" });
+        response.end(JSON.stringify({ error: visualFault === 404 ? "not_found" : "bridge_unavailable" }));
+        return;
+      }
       const chunks = [];
       let size = 0;
       for await (const chunk of request) {

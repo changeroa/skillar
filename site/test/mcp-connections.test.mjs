@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { mcpConnectionsSchema, mcpPatRequestSchema, mcpPatResponseSchema } from "../../shared/dist/mcp-auth.js";
 import {
   checkDraft, classifyFailure, connectionStatus, createPat, emptyDraft, initialModel, readConnections, revokeConnection, routes,
@@ -10,6 +11,13 @@ const now = 1_800_000_000;
 const resource = "https://skillar.sh/mcp";
 const connectionId = "11223344-1122-4122-8122-112233445566";
 const otherId = "11223344-1122-4122-8122-000000000002";
+test("pointer confirmation puts the safe action before the destructive action", async () => {
+  const html = await readFile(new URL("../connections/index.html", import.meta.url), "utf8");
+  const card = /<template id="connection-card">([\s\S]*?)<\/template>/.exec(html)?.[1];
+  assert.ok(card);
+  assert.deepEqual([...card.matchAll(/\bdata-action="([^"]+)"/g)].map(match => match[1]),
+    ["revoke", "keep", "confirm"]);
+});
 const pat = {
   connectionId, kind: "pat", name: "laptop agent", scopes: ["skills:read"], recordActivity: false,
   createdAt: now, expiresAt: now + 7 * 86_400, revokedAt: null,

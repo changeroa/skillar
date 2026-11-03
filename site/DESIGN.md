@@ -354,7 +354,7 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 
 ## 5. Primitives and states
 
-- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
+- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active inset ring without fading text, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark near the main navigation on every route, one shared state and storage key; visible label, native keyboard behavior. System is the default when nothing is saved. Source order always matches visual order.
 - Code panel: theme-specific code field, readable tokens, filename header. Links use code-ink focus rings in both themes. Copy action reports success/failure through a live region.
 - Disclosure: native summary, 48px minimum target; native triangle indicator, visible focus.
@@ -389,7 +389,7 @@ These use the tokens above. No new colors, fonts or radii.
 
 | State | Where | Rule |
 | --- | --- | --- |
-| Rest, hover, active, focus | all controls | Existing rules: underline on hover, opacity on press, 3px focus outline in current ink (code-ink on code panels) |
+| Rest, hover, active, focus | all controls | Existing rules: underline on hover, contrast-preserving inset ring on action press, 3px focus outline in current ink (code-ink on code panels) |
 | Checking | session status line, account lines | Plain text "Checking your account…" while `/auth/session` is in flight. No spinner, skeleton or dimming; the sign-in and exploration links stay usable |
 | Signed out | login | Status "Not signed in."; sign-in action, privacy note and exploration link visible |
 | Signed in | login, account lines | The card, sign-out form and onward preview link replace the sign-in action; connect and dashboard lines read "Signed in as {email}." |
@@ -406,7 +406,7 @@ Not used: disabled sign-in, connected, synced, spinners, skeletons, progress bar
 
 ## 6. Motion
 
-No decorative animation. Control hover is an immediate underline; press opacity communicates activation. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly, and so does the swap from the sign-in action to the signed-in card; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
+No decorative animation. Control hover is an immediate underline; a pressed action gains an inset ring without reducing text contrast. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly, and so does the swap from the sign-in action to the signed-in card; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
 
 ## 7. Accessibility constraints
 
