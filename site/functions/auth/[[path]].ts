@@ -6,9 +6,11 @@ import {
   randomToken, readFlow, readSession, SESSION_COOKIE, SESSION_SECONDS, signCookie,
   userSchema, verifyGoogleToken,
 } from '../../lib/auth.ts';
-import type { Config } from '../../lib/auth.ts';
+import { browserPrincipal } from '../../lib/activity-auth.ts';
+import type { ActivityEnv } from '../../lib/activity-auth.ts';
+import { revokeEventSession } from '../../lib/activity-events.ts';
 
-interface Env extends Config {
+interface Env extends ActivityEnv {
   readonly ACCOUNTS: D1Database;
 }
 
@@ -122,8 +124,11 @@ async function handle(request: Request, env: Env): Promise<Response> {
     }
     const session = await readSession(request, config, now);
     if (session) {
+      const principal = env.ACTIVITY_ENABLED === 'true' && env.ACTIVITY_SERVICE !== undefined ?
+        await browserPrincipal(request, env) : null;
       await env.ACCOUNTS.prepare('DELETE FROM sessions WHERE id = ? AND user_sub = ?')
         .bind(session.sid, session.sub).run();
+      if (principal !== null) await revokeEventSession(env, principal);
     }
     return redirect('/login/', [cookie(SESSION_COOKIE, '', 0), cookie(FLOW_COOKIE, '', 0)]);
   }

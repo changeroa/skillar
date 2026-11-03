@@ -10,6 +10,7 @@ import {
 import { currentDeviceConsent, readDeviceConsent, setDeviceConsent } from "./activity-consent.ts";
 import { ActivityRequestError, readBody } from "./activity-body.ts";
 import { dashboardRequest } from "./activity-dashboard.ts";
+import { eventRequest } from "./activity-events.ts";
 
 const grantRequestSchema = z.strictObject({
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).max(2).readonly(),
@@ -83,6 +84,7 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
   }
   const principal = await browserPrincipal(request, env);
   if (principal === null) return activityError(401, "unauthorized");
+  if (path === "/api/changes" || path.startsWith("/api/events/")) return eventRequest(request, env, principal);
   if (path.startsWith("/api/dashboard/")) return dashboardRequest(request, env, principal);
   if (path === "/api/activity/status" && request.method === "GET") {
     return Response.json({

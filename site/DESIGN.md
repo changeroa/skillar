@@ -1,5 +1,21 @@
 # skillar.sh
 
+## P9 durable live connection increment
+
+This supersedes P8's snapshot-only transport restriction, not its consent or
+data-freshness rules. The embedded views reuse the existing connecting/live/
+offline text and dot; no new color, animation or component is introduced.
+Live means an authenticated update connection is available. It never claims
+the device is running, the uploaded snapshot is current, or a report is complete.
+Capture/receipt times, pending reports and stale results remain independently
+visible. Background invalidations refresh REST-backed views without moving
+focus, changing the selected source or resetting scroll.
+
+WebSocket is primary, SSE is the compatibility path, and reconnect/visibility
+return replays durable changes. Expired cursors refresh the current snapshot.
+Session expiry clears private activity and stops connections. MCP remains a
+preview until P11; device upload still requires separate explicit consent.
+
 ## P8 connected dashboard increment
 
 This section supersedes the dashboard-only preview restrictions below. Google

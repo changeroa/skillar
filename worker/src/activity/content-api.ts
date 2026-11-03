@@ -29,6 +29,10 @@ import { dashboardServicePaths } from "../../../shared/activity-dashboard.ts";
 import { dashboardProfiles } from "./dashboard-profiles.ts";
 import { DashboardEvalError, storeDashboardEvalCase } from "./dashboard-eval.ts";
 import { sweepDashboardEvalCases } from "./dashboard-eval-cleanup.ts";
+import { accountEventsRequest } from "./account-events.ts";
+import { dispatchAccountEvents } from "./event-dispatch.ts";
+import { sweepAccountChanges } from "./event-replay.ts";
+import { dispatchAccountControls } from "./event-controls.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -89,6 +93,11 @@ async function body(request: Request): Promise<unknown> {
  */
 export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname.startsWith("/v1/activity/events/")) {
+    if (env.ACCOUNT_HUB === undefined) return Response.json({ error: "not_found" }, { status: 404, headers });
+    return await accountEventsRequest(request, { ...env, ACCOUNT_HUB: env.ACCOUNT_HUB }) ??
+      Response.json({ error: "not_found" }, { status: 404, headers });
+  }
   const readOnly = url.pathname === dashboardServicePaths.profiles || url.pathname === "/v1/activity/migrations/status" ||
     url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export" ||
     url.pathname === "/v1/activity/query" || url.pathname === "/v1/activity/reports/status" ||
@@ -167,11 +176,26 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
 }
 
 export default {
-  fetch: activityContentRequest,
-  scheduled(_event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
+  async fetch(request: Request, env: ReportEnv, context: ExecutionContext) {
+    const response = await activityContentRequest(request, env);
+    if (response.ok && request.method === "POST" && env.ACCOUNT_HUB !== undefined &&
+        !new URL(request.url).pathname.startsWith("/v1/activity/events/")) {
+      context.waitUntil(dispatchAccountEvents({ ...env, ACCOUNT_HUB: env.ACCOUNT_HUB }));
+    }
+    return response;
+  },
+  scheduled(event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
+    if (event.cron === "* * * * *") {
+      if (env.ACCOUNT_HUB !== undefined) {
+        const hub = env.ACCOUNT_HUB;
+        context.waitUntil(dispatchAccountControls(env).then(() =>
+          dispatchAccountEvents({ ...env, ACCOUNT_HUB: hub })));
+      }
+      return;
+    }
     context.waitUntil(Promise.all([
       sweepContent(env.ACTIVITY, env.ACTIVITY_RAW), sweepReports(env), dispatchPendingReports(env),
-      sweepDashboardEvalCases(env),
+      sweepDashboardEvalCases(env), sweepAccountChanges(env.ACTIVITY),
     ]));
   },
 };
