@@ -101,6 +101,12 @@ Public discovery is served at `/.well-known/oauth-authorization-server` and
 `/login/` destination. A bounded MCP return URL is stored under a hashed flow
 state in primary D1, not inside the browser cookie.
 
+The existing manual production workflow also accepts `mcp-auth` and `mcp`
+targets. Its sealed `SKILLAR_PRODUCTION_CONFIGS` repository secret must contain
+both additional private configuration paths as well as the six existing paths.
+It remains a path-to-file-content JSON object; do not replace production
+credentials or the content keyring when updating it.
+
 Only private service-binding RPC can supply a verified browser principal.
 Public identity headers are discarded. Primary connection and credential
 fences apply independently of OAuth KV consistency, including refresh rotation

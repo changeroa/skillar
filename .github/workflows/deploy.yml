@@ -7,7 +7,7 @@ on:
         description: Existing deployment to update
         type: choice
         required: true
-        options: [pages, activity, oauth, team]
+        options: [pages, activity, oauth, team, mcp-auth, mcp]
 
 permissions:
   contents: read
@@ -44,6 +44,8 @@ jobs:
             'worker/wrangler.oauth.production.jsonc',
             'worker/wrangler.parity-probes.production.jsonc',
             'worker/wrangler.team.production.jsonc',
+            'worker/wrangler.mcp-auth.production.jsonc',
+            'worker/wrangler.mcp.production.jsonc',
           ]) writeFileSync(path, configs[path], { mode: 0o600 });
           JS
       - run: npm ci && npm run build
