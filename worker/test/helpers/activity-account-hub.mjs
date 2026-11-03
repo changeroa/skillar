@@ -145,7 +145,7 @@ export async function fixture(t, { origins = {} } = {}) {
   for (const file of (await readdir(migrations)).filter(file => file.endsWith(".sql")).sort()) {
     await migrate(db, new URL(file, migrations));
   }
-  for (const file of ["0001_accounts.sql", "0002_activity_accounts.sql"]) {
+  for (const file of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql", "0004_account_events.sql"]) {
     await migrate(accounts, new URL(`../../../site/migrations/${file}`, import.meta.url));
   }
   const seed = async (who = browser(), expires = Math.floor(Date.now() / 1000) + 3600) => {

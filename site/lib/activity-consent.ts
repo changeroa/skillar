@@ -60,6 +60,7 @@ export async function setDeviceConsent(
       JSON.stringify(consent), nowMs, principal.accountId, principal.generation,
       device, principal.sessionId, Math.floor(nowMs / 1000),
       principal.accountId, device, request.baseVersion).run();
-  if (result.meta.changes !== 1) return activityError(409, "consent_conflict");
+  // D1 also counts the notification trigger's write.
+  if (result.meta.changes === 0) return activityError(409, "consent_conflict");
   return Response.json({ version, consent }, { headers: noStore });
 }

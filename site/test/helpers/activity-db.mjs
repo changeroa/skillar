@@ -16,8 +16,8 @@ export async function activityDb(t) {
     const before = db.prepare('SELECT total_changes() AS changes').get().changes;
     const results = query.columns().length ? query.all(...args) : [];
     const info = query.columns().length ? null : query.run(...args);
-    const changes = info?.changes ??
-      db.prepare('SELECT total_changes() AS changes').get().changes - before;
+    // D1 reports total changes, including writes performed by triggers.
+    const changes = db.prepare('SELECT total_changes() AS changes').get().changes - before;
     return {
       success: true, results,
       meta: {

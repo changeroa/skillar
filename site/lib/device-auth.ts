@@ -142,5 +142,5 @@ export async function revokeDevice(
       AND EXISTS (SELECT 1 FROM devices WHERE account_id=? AND device_id=? AND revoked_at IS NOT NULL)`)
       .bind(now, browser.accountId, deviceId, ...live, browser.accountId, deviceId),
   ]);
-  return results[0]?.meta.changes === 1;
+  return (results[0]?.meta.changes ?? 0) > 0;
 }
