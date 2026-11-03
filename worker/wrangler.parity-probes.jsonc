@@ -1,11 +1,12 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "skillar-parity-probes",
-  "account_id": "8277c1acc712e4a9d00479255015c200",
+  "name": "example-parity-probes",
   "compatibility_date": "2026-09-03",
-  "d1_databases": [{
-    "binding": "PROBE",
-    "database_name": "skillar-parity-probes",
-    "database_id": "8f744925-7fa9-42a7-a0d8-813b63669f3d"
-  }]
+  "d1_databases": [
+    {
+      "binding": "PROBE",
+      "database_name": "example-probe",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ]
 }

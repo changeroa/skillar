@@ -11,6 +11,7 @@ const now = 1_800_000_000;
 const origin = "https://skillar.sh";
 const config = {
   GOOGLE_CLIENT_ID: "fixture-client", GOOGLE_CLIENT_SECRET: "fixture-secret",
+  PUBLIC_ORIGIN_ALIAS: "https://site.example.test",
   SESSION_KEY: "fixture-session-key-at-least-32-characters", PUBLIC_ORIGIN: origin,
 };
 
@@ -70,7 +71,7 @@ test("approved-host cookies cannot cross issuer or accept hostile mutation origi
   const f = await fixture(t);
   const user = await f.login("person");
   // When
-  const wrongIssuer = await f.request("/api/activity/status", { ...user, requestOrigin: "https://skillar-site.pages.dev" });
+  const wrongIssuer = await f.request("/api/activity/status", { ...user, requestOrigin: "https://site.example.test" });
   const hostile = await f.request("/api/devices/grants", {
     ...user, method: "POST", origin: "https://evil.example", body: { scopes: ["activity:read"] },
   });

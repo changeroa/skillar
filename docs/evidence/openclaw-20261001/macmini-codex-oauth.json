@@ -2,7 +2,7 @@
   "verified": true,
   "observed_at": "2026-10-01T09:04:02.098685+00:00",
   "codex_version": "0.155.1",
-  "endpoint": "https://gisul.iyendev.com/mcp",
+  "endpoint": "https://deployment-1.example.test/mcp",
   "transport": "native Streamable HTTP OAuth",
   "registration": "DCR",
   "server_source": "3af736e8161152504fd339f496b474eb47ba258c",

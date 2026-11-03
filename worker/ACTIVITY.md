@@ -68,8 +68,8 @@ duplicate notifications and raw-object crash windows are later acceptance gates.
 
 ## Resources and migration
 
-The new isolated D1 database is `skillar-activity-00`, initially with no tenants.
-It is separate from `skillar-accounts` and the synthetic P0 probe. Apply its
+The new isolated D1 database is `example-activity`, initially with no tenants.
+It is separate from `example-accounts` and the synthetic P0 probe. Apply its
 additive migration only through the dedicated configuration:
 
 ```sh

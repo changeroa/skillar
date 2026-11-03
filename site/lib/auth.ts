@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, errors, jwtVerify, SignJWT } from 'jose';
 import type { JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
+import { deploymentOriginSchema } from '../../shared/dist/deployment-origin.js';
 import { userSchema } from './account.ts';
 
 export { userSchema } from './account.ts';
@@ -16,9 +17,8 @@ export const configSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   SESSION_KEY: z.string().min(32),
-  PUBLIC_ORIGIN: z.url().refine(value =>
-    value === 'https://skillar.sh' || value === 'https://skillar-site.pages.dev' ||
-    value === 'http://localhost:8788'),
+  PUBLIC_ORIGIN: deploymentOriginSchema,
+  PUBLIC_ORIGIN_ALIAS: deploymentOriginSchema.optional(),
 });
 export type Config = z.infer<typeof configSchema>;
 

@@ -3,7 +3,7 @@
     "verified": true,
     "observed_at": "2026-10-01T08:49:05.544Z",
     "mode": "installed bundle only through native OpenClaw MCP runtime",
-    "endpoint": "https://gisul.iyendev.com/mcp",
+    "endpoint": "https://deployment-1.example.test/mcp",
     "server_source": "3af736e8161152504fd339f496b474eb47ba258c",
     "client_source": "b5eddedfa03e94dde8791e01934f5d8014ca6564",
     "tools": [
@@ -37,7 +37,7 @@
       "gisul.read_skill_file"
     ],
     "result_sha256": "f8f8c2568d0e14db8883f27ce5c47c46fed6c36b13fb77b32ebe7ede0aa68da4",
-    "reported_result": "OAuth 전환 읽기 검증 완료했어요.\n\n- origin: `https://gisul.iyendev.com`\n- server_version: `3af736e8161152504fd339f496b474eb47ba258c`\n- release: `20260929.38`\n- commit: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c`\n- skill_uri: `skill://gisul/gisul/dont-make-me-think/SKILL.md`\n- load_id: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c.7f89d8d826ec66bf4d9f3fb364e76abd4ea47e4c982ec7981268e7545fff8be6`\n- 읽은 파일 URI: `skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md`\n\n채널 메시지 전송이나 QA 작업 실행은 하지 않았어요.",
+    "reported_result": "OAuth 전환 읽기 검증 완료했어요.\n\n- origin: `https://deployment-1.example.test`\n- server_version: `3af736e8161152504fd339f496b474eb47ba258c`\n- release: `20260929.38`\n- commit: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c`\n- skill_uri: `skill://gisul/gisul/dont-make-me-think/SKILL.md`\n- load_id: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c.7f89d8d826ec66bf4d9f3fb364e76abd4ea47e4c982ec7981268e7545fff8be6`\n- 읽은 파일 URI: `skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md`\n\n채널 메시지 전송이나 QA 작업 실행은 하지 않았어요.",
     "delivery": false,
     "gisul_skill_visible": true
   }

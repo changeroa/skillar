@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { deploymentOriginSchema } from "./cloud-wire.js";
 import { CloudSyncError } from "./cloud-blobs.js";
 
-export const cloudOriginSchema = z.enum(["https://skillar.sh", "https://skillar-site.pages.dev"]);
+export const cloudOriginSchema = deploymentOriginSchema.refine(value => value.startsWith("https://"));
 export type CloudState = "auth-required" | "consent-required" | "retry" | "quarantined" | "disabled";
 export class CloudRequestError extends CloudSyncError {
   constructor(

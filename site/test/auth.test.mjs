@@ -10,12 +10,13 @@ import {
 import { onRequest } from '../functions/auth/[[path]].ts';
 
 const now = 1_800_000_000;
-const origin = 'https://skillar-site.pages.dev';
+const origin = 'https://site.example.test';
 const config = {
   GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
   GOOGLE_CLIENT_SECRET: 'test-secret',
   SESSION_KEY: 'test-session-key-at-least-32-characters',
   PUBLIC_ORIGIN: origin,
+  PUBLIC_ORIGIN_ALIAS: origin,
 };
 const { privateKey, publicKey } = await generateKeyPair('RS256');
 const publicJwk = { ...await exportJWK(publicKey), kid: 'test-google-key', alg: 'RS256', use: 'sig' };
@@ -403,7 +404,7 @@ for (const publicOrigin of [origin, 'https://skillar.sh']) {
     const f = await fixture(t, publicOrigin);
     // When
     const response = await onRequest({
-      request: new Request('https://branch.skillar-site.pages.dev/auth/google'), env: f.env,
+      request: new Request('https://deployment-10.example.test/auth/google'), env: f.env,
     });
     // Then
     assert.equal(response.status, 403);

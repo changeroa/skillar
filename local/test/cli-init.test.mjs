@@ -140,7 +140,7 @@ test("invalid JSON in ~/.claude/settings.json makes init exit non-zero, name the
 test("init --disable-remote --dry-run shows the planned Codex disable edit", async (t) => {
   const sb = cliSandbox({ runtimes: [".codex"] });
   t.after(sb.cleanup);
-  writeFileSync(join(sb.home, ".codex", "config.toml"), '[mcp_servers.gisul]\nurl = "https://gisul.arkpoint.dev/mcp"\n');
+  writeFileSync(join(sb.home, ".codex", "config.toml"), '[mcp_servers.gisul]\nurl = "https://deployment-9.example.test/mcp"\n');
   const r = await runCli(["init", "--dry-run", "--disable-remote", "--no-service"], sb.env);
   assert.equal(r.code, 0, r.output);
   assert.match(r.stdout, /runtime codex: detected .*remoteSkillarRegistered=true/);

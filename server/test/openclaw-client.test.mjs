@@ -32,7 +32,7 @@ function execute(args, env, input = "", script = bridge) {
 test("prepared OAuth bundle uses the selected endpoint for both login and runtime", async t => {
   const root = await fixture(t), output = join(root, "extensions/skillar-openclaw");
   await mkdir(join(root, "extensions"));
-  await prepareOAuth(output, "https://gisul.iyendev.com/mcp");
+  await prepareOAuth(output, "https://deployment-1.example.test/mcp");
   const script = join(output, "scripts/bridge.mjs");
   const runtimeResult = await execute(["--dry-run"], {}, "", script);
   const loginResult = await execute(["--login", "--dry-run"], {}, "", script);
@@ -40,11 +40,11 @@ test("prepared OAuth bundle uses the selected endpoint for both login and runtim
   assert.equal(loginResult.code, 0, loginResult.stderr);
   const runtime = JSON.parse(runtimeResult.stdout);
   const login = JSON.parse(loginResult.stdout);
-  assert.equal(runtime.args[2], "https://gisul.iyendev.com/mcp");
+  assert.equal(runtime.args[2], "https://deployment-1.example.test/mcp");
   assert.equal(login.args[3], runtime.args[2]);
   assert.equal(runtime.env.MCP_REMOTE_CONFIG_DIR, join(root, "skillar/auth"));
   assert.deepEqual(runtime.env, login.env);
-  await assert.rejects(prepareOAuth(output, "https://gisul.iyendev.com/mcp"), { code: "EEXIST" });
+  await assert.rejects(prepareOAuth(output, "https://deployment-1.example.test/mcp"), { code: "EEXIST" });
   for (const endpoint of ["http://host/mcp", "https://user:secret@host/mcp", "https://host/mcp?token=x", "https://host/other", "https://host/mcp#x"]) {
     await assert.rejects(prepareOAuth(join(root, "invalid"), endpoint));
   }

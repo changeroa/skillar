@@ -1,8 +1,8 @@
 # Authenticated HTTP skill writes — 2026-09-21
 
 Production Worker source: `bc6ba43045fb6303c3b1a631e28a40381be63ad2`.
-Worker version at 100%: `baef02cb-a827-4cf3-98d4-cdc79dac9a92`.
-Endpoint: https://gisul-mcp.changeroa.workers.dev/mcp
+Worker version at 100%: `00000000-0000-0000-0000-000000000011`.
+Endpoint: https://deployment-8.example.test/mcp
 Canonical runtime source: `/Users/victor/dev-tools/gisul` (main).
 Permanent deployment checkout: `/Users/iyen/dev-tools/gisul-cloudflare-production` on macmini, detached at the runtime commit.
 

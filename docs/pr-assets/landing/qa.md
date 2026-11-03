@@ -50,7 +50,7 @@ practices and SEO in every run. The final build also passed independently.
 Unscored image-delivery/render-blocking suggestions remain optimization notes,
 not hidden failures. The Pages preview intentionally has `noindex`.
 
-Preview: https://0322ceda.skillar-site.pages.dev (HTTP 200). Its asset names
+Preview: https://deployment-5.example.test (HTTP 200). Its asset names
 `index-4a3AN8Vr.js` and `index-BkmpFg-4.css` match the local final build, and its
 theme-storage and scoped telemetry disclosures were read back from deployed HTML.
 

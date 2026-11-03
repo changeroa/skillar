@@ -143,9 +143,9 @@ The rename does not recreate or deploy any of these resources:
 | Identity | Where / reason |
 | --- | --- |
 | `gisul-mcp`, `gisul-arkpoint` | Retired personal / separate organization Cloudflare Workers in `worker/wrangler*.jsonc` |
-| `gisul-skills-releases`, `gisul-arkpoint-releases` | Existing R2 bucket names; immutable releases stay in place |
-| `gisul-mcp.changeroa.workers.dev` | Retired personal machine endpoint in deployment documentation |
-| `gisul.iyendev.com`, `gisul.arkpoint.dev` | Existing custom domains and OAuth callback hosts |
+| `example-skills-releases`, `example-private-bucket-3` | Existing R2 bucket names; immutable releases stay in place |
+| `deployment-8.example.test` | Retired personal machine endpoint in deployment documentation |
+| `deployment-1.example.test`, `deployment-9.example.test` | Existing custom domains and OAuth callback hosts |
 | `gisul-arkpoint-production` | Existing workflow concurrency identity, preserving serialization |
 | `Ark-Point/gisul`, `Ark-Point/gisul-skills` | Existing organization deployment/fork identities, separate from the renamed changeroa repositories |
 | `~/gisul`, `com.iyendev.gisul-mcp` | Existing Mac mini deployment root/launchd label defaults; explicit deploy overrides remain available |

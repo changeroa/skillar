@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deploymentOriginSchema, isDeploymentOrigin } from "../../../shared/deployment-origin.ts";
 import {
   accountIdSchema, ActivityContractError, deviceIdSchema, MAX_BATCH_BYTES, sourceDomainSchema,
 } from "../../../shared/activity-schema.ts";
@@ -32,7 +33,7 @@ import { sweepDashboardEvalCases } from "./dashboard-eval-cleanup.ts";
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
   generation: z.number().int().positive(), shardId: z.literal("activity-00"),
-  issuer: z.enum(["https://skillar.sh", "https://skillar-site.pages.dev"]),
+  issuer: deploymentOriginSchema,
   sessionId: z.null(),
   scopes: z.array(z.enum(["activity:read", "activity:ingest"])).min(1).readonly(),
 }).readonly();
@@ -105,6 +106,7 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
       return Response.json(await dashboardProfiles(env, JSON.parse(identity)), { headers });
     }
     const principal = internalPrincipalSchema.parse(JSON.parse(identity));
+    if (!isDeploymentOrigin(principal.issuer, env)) throw new ActivityLedgerError("forbidden");
     const path = url.pathname;
     if (path === dashboardServicePaths.evalCases) {
       return Response.json(await storeDashboardEvalCase(env, principal, await body(request)), { status: 201, headers });

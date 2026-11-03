@@ -2,31 +2,43 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "skillar-activity-foundation",
   "main": "./src/activity/report-worker.ts",
-  "account_id": "8277c1acc712e4a9d00479255015c200",
   "compatibility_date": "2026-09-03",
   "workers_dev": false,
   "preview_urls": false,
   "routes": [],
-  "vars": { "ACTIVITY_INGEST_ENABLED": "false" },
-  "triggers": { "crons": ["*/15 * * * *"] },
-  "workflows": [{
-    "binding": "REPORT_FLOW",
-    "name": "skillar-report-flow",
-    "class_name": "ReportFlow"
-  }],
-  "d1_databases": [{
-    "binding": "ACTIVITY",
-    "database_name": "skillar-activity-00",
-    "database_id": "df7e7bab-1ea5-475e-9196-04172851dcfa",
-    "migrations_dir": "activity-migrations"
-  }, {
-    "binding": "ACCOUNTS",
-    "database_name": "skillar-accounts",
-    "database_id": "d0a92a8b-1b58-4d59-87c8-62c743a82144",
-    "migrations_dir": "../site/migrations"
-  }],
-  "r2_buckets": [{
-    "binding": "ACTIVITY_RAW",
-    "bucket_name": "skillar-activity-raw"
-  }]
+  "vars": {
+    "ACTIVITY_INGEST_ENABLED": "false"
+  },
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"
+    ]
+  },
+  "workflows": [
+    {
+      "binding": "REPORT_FLOW",
+      "name": "skillar-report-flow",
+      "class_name": "ReportFlow"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "ACTIVITY",
+      "database_name": "example-activity",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "activity-migrations"
+    },
+    {
+      "binding": "ACCOUNTS",
+      "database_name": "example-accounts",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "../site/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ACTIVITY_RAW",
+      "bucket_name": "example-activity-raw"
+    }
+  ]
 }

@@ -8,7 +8,7 @@ import {
 } from '../lib/device-auth.ts';
 
 const now = 1_800_000_000;
-const origin = 'https://skillar-site.pages.dev';
+const origin = 'https://site.example.test';
 async function fixture(t) {
   t.mock.method(Date, 'now', () => now * 1000);
   const { db, accounts } = await activityDb(t);

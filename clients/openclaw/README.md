@@ -129,7 +129,7 @@ plugin has no dependency on OpenClaw's internal module paths. Run the checks
 after an OpenClaw upgrade; format changes may require updating the adapters.
 
 Later on 2026-10-01, the Mac mini was migrated to the full OAuth bundle targeting
-`https://gisul.iyendev.com/mcp`, after IYEN's own OAuth server was deployed.
+`https://deployment-1.example.test/mcp`, after IYEN's own OAuth server was deployed.
 The installed client source is `b5eddedfa03e94dde8791e01934f5d8014ca6564`;
 the deployed server source is `3af736e8161152504fd339f496b474eb47ba258c`.
 GitHub login, OAuth cache reuse from a new process, installed-bundle-only native

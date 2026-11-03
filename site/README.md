@@ -1,5 +1,10 @@
 # skillar landing
 
+See [deployment configuration](../docs/self-hosting.md) before deploying.
+The tracked Wrangler file is a template; use an ignored production copy.
+Example alias hosts below are sanitized and must be explicitly configured with
+`PUBLIC_ORIGIN_ALIAS` in both Pages and the activity Worker.
+
 Vite site with same-origin Cloudflare Pages Functions for Google sign-in.
 MCP provisioning and hosted activity remain previews. No analytics or external
 fonts. The owner-authorized production domain is `https://skillar.sh`.
@@ -15,7 +20,7 @@ npm run dev:pages
 Pages project: `skillar-site`. Build command: `npm run build` from `site`;
 output: `site/dist`. Run deployments from `site` so Wrangler includes
 `functions/`. Production is the `main` branch at
-`https://skillar.sh`, with `https://skillar-site.pages.dev` retained as a working
+`https://skillar.sh`, with `https://site.example.test` retained as a working
 production alias. Only `/auth/*` runs Functions; account HTML
 and assets remain static and contain no personal data.
 
@@ -27,7 +32,7 @@ Configure these exact Google-authorized origins and callback URLs:
 | Environment | Origin | Redirect URI |
 | --- | --- | --- |
 | Canonical production | `https://skillar.sh` | `https://skillar.sh/auth/google/callback` |
-| Production alias | `https://skillar-site.pages.dev` | `https://skillar-site.pages.dev/auth/google/callback` |
+| Production alias | `https://site.example.test` | `https://site.example.test/auth/google/callback` |
 | Local | `http://localhost:8788` | `http://localhost:8788/auth/google/callback` |
 
 Google does not support wildcard callback URLs. Branch preview hosts cannot
@@ -45,7 +50,7 @@ Set **production** Pages secrets using Wrangler (never commit their values):
 npx wrangler pages secret put GOOGLE_CLIENT_ID --project-name skillar-site
 npx wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name skillar-site
 npx wrangler pages secret put SESSION_KEY --project-name skillar-site
-npx wrangler d1 migrations apply skillar-accounts --remote
+npx wrangler d1 migrations apply example-accounts --remote
 ```
 
 Generate `SESSION_KEY` with at least 32 cryptographically random bytes. Google
@@ -55,7 +60,7 @@ Store the OAuth credentials in the `claw` 1Password vault as well.
 For local development put `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `SESSION_KEY`, and `PUBLIC_ORIGIN=http://localhost:8788` in ignored `.dev.vars`.
 Use the localhost URL, not `127.0.0.1`. Apply local D1 migrations with
-`npx wrangler d1 migrations apply skillar-accounts --local`, build once, then
+`npx wrangler d1 migrations apply example-accounts --local`, build once, then
 run `npm run dev:pages`. Vite alone does not serve the auth routes.
 
 The flow uses authorization code + S256 PKCE, signed browser-bound state and
@@ -70,7 +75,7 @@ refresh or ID tokens are retained. Expired sessions are pruned on login.
 Rotating `SESSION_KEY` invalidates all existing browser sessions.
 
 The apex `skillar.sh` domain is attached to this Pages project with a proxied
-CNAME to `skillar-site.pages.dev`. Its exact Google origin and callback are
+CNAME to `site.example.test`. Its exact Google origin and callback are
 registered alongside the Pages alias and localhost. Verify active HTTPS and
 real login/logout on the canonical domain after deployment.
 

@@ -62,10 +62,10 @@ local file outside the plugin and repository (owner-readable only):
 
 ```sh
 node clients/codex/install.mjs --plugin --dry-run \
-  --http-url https://YOUR_WORKER.workers.dev/mcp \
+  --http-url https://deployment-7.example.test/mcp \
   --bearer-token-file /absolute/private/path/skillar-token
 node clients/codex/install.mjs --plugin \
-  --http-url https://YOUR_WORKER.workers.dev/mcp \
+  --http-url https://deployment-7.example.test/mcp \
   --bearer-token-file /absolute/private/path/skillar-token
 ```
 
