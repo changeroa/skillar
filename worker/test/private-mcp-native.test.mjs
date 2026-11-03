@@ -35,6 +35,7 @@ test("real resource Worker challenges bearers and rejects foreign origins and qu
 test("native MCP preserves complete Unicode frontmatter and exact BOM text and binary bytes", async t => {
   const f = await fixture(t), value = await packet(markdown, [
     { path: "data.bin", mediaType: "application/octet-stream", bytes: Uint8Array.of(0, 255, 128, 1) },
+    { path: "json", mediaType: "application/json", bytes: new TextEncoder().encode('{"fixture":true}') },
   ]);
   assert.equal((await f.publish(value)).status, 200);
   const issued = await f.pat();
@@ -55,8 +56,11 @@ test("native MCP preserves complete Unicode frontmatter and exact BOM text and b
   const binaryUri = wire(value).replace("SKILL.md", "data.bin");
   assert.equal(completed(await f.mcp(issued.token, "resources/read", { uri: binaryUri })).contents[0].blob,
     Buffer.from([0, 255, 128, 1]).toString("base64"));
+  const extensionlessUri = wire(value).replace("SKILL.md", "json");
+  assert.equal(completed(await f.mcp(issued.token, "resources/read", { uri: extensionlessUri })).contents[0].blob,
+    Buffer.from('{"fixture":true}').toString("base64"));
   const resources = completed(await f.mcp(issued.token, "resources/list")).resources;
-  assert.deepEqual(new Set(resources.map(file => file.uri)), new Set([wire(value), binaryUri]));
+  assert.deepEqual(new Set(resources.map(file => file.uri)), new Set([wire(value), binaryUri, extensionlessUri]));
   assert.equal((await f.db.prepare("SELECT count(*) AS n FROM device_streams").first()).n, 0);
 });
 
@@ -141,7 +145,8 @@ test("only explicit recording writes remote MCP observations through the account
   assert.equal((await f.rows("SELECT record_activity FROM mcp_connections"))[0].record_activity, 1);
 });
 
-test("real Pages bridge derives Google-session authority and completes native OAuth through the resource Worker", async t => {
+for (const recordActivity of [false, true]) test(
+  `real Pages bridge completes native OAuth with explicit recording=${recordActivity}`, async t => {
   const f = await fixture(t);
   const session = await f.forward("session", origin, { method: "GET" });
   const cookie = session.body.cookie;
@@ -180,7 +185,8 @@ test("real Pages bridge derives Google-session authority and completes native OA
   const nativeCookies = consent.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
   const approved = await pages("/oauth/authorize", { method: "POST",
     headers: { origin, cookie: `${cookie}; ${nativeCookies}`, "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ handle, decision: "approve" }).toString() });
+    body: new URLSearchParams({ handle, decision: "approve",
+      ...(recordActivity ? { recordActivity: "yes" } : {}) }).toString() });
   assert.equal(approved.status, 302);
   const code = new URL(approved.headers.get("location")).searchParams.get("code");
   assert.ok(code);
@@ -194,10 +200,21 @@ test("real Pages bridge derives Google-session authority and completes native OA
   await f.publish(value);
   const listed = completed(await f.mcp(tokens.body.access_token, "skills/list"));
   assert.equal(listed.skills[0].uri, wire(value));
+  const found = completed(await f.mcp(tokens.body.access_token, "tools/call", {
+    name: "search_skills", arguments: { query: "quartz" },
+  }));
+  completed(await f.mcp(tokens.body.access_token, "resources/read", {
+    uri: wire(value), _meta: { "app.skillar/traceId": found.structuredContent.trace_id },
+  }));
+  const observationCount = await f.db.prepare("SELECT count(*) AS n FROM device_streams").first();
+  assert.equal(observationCount.n, recordActivity ? 1 : 0);
+  if (recordActivity) {
+    assert.equal((await f.db.prepare("SELECT sequence FROM device_streams").first()).sequence, 2);
+  }
   const connections = await pages("/api/mcp/connections");
   assert.equal(connections.status, 200);
   assert.equal(connections.body.connections[0].kind, "oauth");
-  assert.equal(connections.body.connections[0].recordActivity, false);
+  assert.equal(connections.body.connections[0].recordActivity, recordActivity);
   const revoked = await pages(`/api/mcp/connections/${connections.body.connections[0].connectionId}`, {
     method: "DELETE", headers: { origin },
   });

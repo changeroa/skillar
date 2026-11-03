@@ -126,7 +126,9 @@ export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext)
     const bytes = decodePrivateSkillBytes(result.body);
     const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
     const encoded = new TextEncoder().encode(text);
-    const isText = textExtensions.has(path.split(".").at(-1)?.toLowerCase() ?? "") &&
+    const name = path.slice(path.lastIndexOf("/") + 1);
+    const extension = name.includes(".") ? name.slice(name.lastIndexOf(".") + 1).toLowerCase() : "";
+    const isText = textExtensions.has(extension) &&
       bytes.length === encoded.length && bytes.every((byte, index) => byte === encoded[index]);
     await backend.observe("read", {
       uri: uri.href, skillUri: mcpUri(`skillar://private/${skillId}/${digest}/SKILL.md`),
