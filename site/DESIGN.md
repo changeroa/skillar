@@ -10,6 +10,9 @@ the device is running, the uploaded snapshot is current, or a report is complete
 Capture/receipt times, pending reports and stale results remain independently
 visible. Background invalidations refresh REST-backed views without moving
 focus, changing the selected source or resetting scroll.
+The embedded connection dot stays static while idle; its text distinguishes
+connecting, live and offline states. A failed background report refresh keeps
+the last valid report and its disclosures visible with an inline error.
 
 WebSocket is primary, SSE is the compatibility path, and reconnect/visibility
 return replays durable changes. Expired cursors refresh the current snapshot.

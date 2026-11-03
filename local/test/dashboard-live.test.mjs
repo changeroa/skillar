@@ -101,6 +101,25 @@ const find = (root, predicate) => {
 const classed = (root, name) => find(root, (node) => (node.attrs.class ?? "").split(" ").includes(name));
 const click = (node) => node.listeners.click.call(node, { type: "click", target: node, currentTarget: node });
 
+test("cloud transport states have distinct accessible labels and recover their live label", async (t) => {
+  // Given
+  const h = host(t, "#/sessions", {
+    events(next) { next.onState("connecting"); return () => {}; },
+  });
+  await h.mount();
+  const label = () => classed(h.root, "live").textContent;
+  const connecting = label();
+  // When
+  await h.state("live");
+  const live = label();
+  await h.state("offline");
+  const offline = label();
+  await h.state("live");
+  // Then
+  assert.equal(new Set([connecting, live, offline]).size, 3);
+  assert.equal(label(), live);
+});
+
 test("a live update preserves a populated Flow's selected unit and mounted controls", async (t) => {
   // Given
   const h = host(t, "#/flow");
@@ -171,7 +190,7 @@ test("a healthy cloud event transport does not change an unended historical trac
   assert.equal(duration(), historicalDuration);
 });
 
-test("generic refresh reconciles a workspace report with unchanged session rows and retains its disclosure", async (t) => {
+for (const rejectFirst of [false, true]) test(`generic refresh reconciles a workspace report and retains its disclosure${rejectFirst ? " through failure and recovery" : ""}`, async (t) => {
   // Given
   const server = await startTestServer();
   t.after(() => server.stop());
@@ -195,8 +214,18 @@ test("generic refresh reconciles a workspace report with unchanged session rows 
   const refreshed = h.refresh();
   await selected.take();
   assert.ok(classed(h.root, "ws__title").textContent === report.label, "the previous report remains visible while its replacement loads");
-  replacement.resolve({ ...report, label: "updated workspace fixture" });
-  await refreshed;
+  if (rejectFirst) {
+    replacement.reject(new Error("fixture background report failure"));
+    await refreshed;
+    assert.ok(find(h.root, (node) => node.attrs["data-pane"] !== undefined) === disclosure);
+    assert.equal(disclosure.open, false);
+    assert.ok(h.root.textContent.includes("fixture background report failure"));
+    h.read("flowReport", async () => ({ ...report, label: "updated workspace fixture" }));
+    await h.refresh();
+  } else {
+    replacement.resolve({ ...report, label: "updated workspace fixture" });
+    await refreshed;
+  }
   // Then
   assert.equal(classed(h.root, "ws__title").textContent, "updated workspace fixture");
   assert.ok(find(h.root, (node) => node.attrs["data-pane"] !== undefined) === disclosure);

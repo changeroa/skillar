@@ -641,7 +641,7 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
     return () => { cancelled = true; };
   }, [flowId, queryKey, refresh]);
 
-  if (error !== undefined) {
+  if (error !== undefined && report === undefined) {
     return (
       <section class="ws">
         <p class="notice" role="alert">Could not load this flow: {error}</p>
@@ -655,6 +655,7 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
   return (
     <section class="ws" aria-busy="false">
       <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded} />
+      {error !== undefined && <p class="notice" role="alert">Could not refresh this flow: {error}</p>}
       {report.executionScope && <aside class="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
       <UnresolvedLoadNotice loads={report.unattributedLoads} />
       {report.comparison && <Steps comparison={report.comparison} specSteps={specSteps} specError={specError} uncertain={report.unattributedLoads.count > 0} />}

@@ -203,7 +203,7 @@ export function App({ embedded = false }: AppOptions = {}) {
             {!embedded && <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>}
             <span class={`live live--${live.state}`} role="status" aria-live="polite">
               <span class="live__dot" aria-hidden="true" />
-              {api.mode === "cloud" ? "snapshot" : LIVE_TEXT[live.state]}
+              {LIVE_TEXT[live.state]}
             </span>
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
