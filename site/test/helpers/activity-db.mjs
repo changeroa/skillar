@@ -7,7 +7,8 @@ export async function activityDb(t) {
   const db = new DatabaseSync(':memory:');
   t.after(() => db.close());
   db.exec('PRAGMA foreign_keys=ON');
-  for (const migration of ['0001_accounts.sql', '0002_activity_accounts.sql', '0003_activity_consent.sql']) {
+  for (const migration of ['0001_accounts.sql', '0002_activity_accounts.sql', '0003_activity_consent.sql',
+    '0004_account_events.sql']) {
     db.exec(await readFile(new URL(`../../migrations/${migration}`, import.meta.url), 'utf8'));
   }
   const execute = (sql, args) => {
@@ -15,8 +16,8 @@ export async function activityDb(t) {
     const before = db.prepare('SELECT total_changes() AS changes').get().changes;
     const results = query.columns().length ? query.all(...args) : [];
     const info = query.columns().length ? null : query.run(...args);
-    const changes = info?.changes ??
-      db.prepare('SELECT total_changes() AS changes').get().changes - before;
+    // D1 reports total changes, including writes performed by triggers.
+    const changes = db.prepare('SELECT total_changes() AS changes').get().changes - before;
     return {
       success: true, results,
       meta: {

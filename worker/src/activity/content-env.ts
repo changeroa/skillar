@@ -6,4 +6,5 @@ export interface ContentEnv {
   readonly ACTIVITY_RAW: R2Bucket;
   readonly CONTENT_KEYRING: string;
   readonly ACTIVITY_INGEST_ENABLED?: string;
+  readonly ACCOUNT_HUB?: DurableObjectNamespace;
 }

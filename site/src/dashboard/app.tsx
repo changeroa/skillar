@@ -165,7 +165,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     if (selected !== null && profileKey(selected) === profileKey(profile)) return;
     close();
     const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain }, {
-      signal, onUnauthorized: expire,
+      signal, onUnauthorized: expire, live: {},
       onReport: status => setReports(current => new Map(current).set(status.jobId, status)),
       fetch: async (input, init) => {
         const response = await fetch(input, init);

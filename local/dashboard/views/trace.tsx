@@ -241,7 +241,7 @@ function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads, e
   let duration: string;
   if (bounds.startedAt === undefined) duration = "-";
   else if (bounds.endedAt !== undefined) duration = formatDuration(bounds.endedAt - bounds.startedAt);
-  else if (liveState === "live") duration = `in progress \u00b7 ${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} so far`;
+  else if (api.mode !== "cloud" && liveState === "live") duration = `in progress \u00b7 ${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} so far`;
   else duration = `${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} (no end recorded)`;
   const attribution = row
     ? row.attribution === "none"
@@ -552,12 +552,17 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
   const [row, setRow] = useState<SessionListRow>();
   const [report, setReport] = useState<SessionSkillReportDto>();
   const [error, setError] = useState<string>();
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
     setSteps(undefined);
     setRow(undefined);
     setReport(undefined);
+    setError(undefined);
+  }, [sessionId]);
+
+  useEffect(() => {
+    let cancelled = false;
     Promise.all([api.trace(sessionId), api.sessions({}), skillReportOf(sessionId)])
       .then(([trace, rows, skillReport]) => {
         if (cancelled) return;
@@ -570,23 +575,11 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       });
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, [sessionId, refresh]);
 
   useEffect(() => {
-    if (live.seq === 0 || !live.last || live.last.id !== sessionId) return;
-    setRow(live.last);
-    let cancelled = false;
-    Promise.all([api.trace(sessionId), skillReportOf(sessionId)])
-      .then(([trace, skillReport]) => {
-        if (cancelled) return;
-        setSteps(trace);
-        setReport(skillReport);
-        setError(undefined);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => { cancelled = true; };
+    if (live.seq === 0 || (live.last && live.last.id !== sessionId)) return;
+    setRefresh((n) => n + 1);
   }, [live.seq, sessionId]);
 
   if (steps === undefined) {

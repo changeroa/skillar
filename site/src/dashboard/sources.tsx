@@ -74,7 +74,7 @@ export function SnapshotSection({ profile, report, failure, onRebuild, onClose, 
           <button class="button secondary" type="button" onClick={onClose}>Close snapshot</button>
         </div>
       </div>
-      <p class="note">Reports are built from the newest processed upload. Nothing on this page updates live.</p>
+      <p class="note">Reports refresh when new uploads arrive. Capture and report times show freshness; a live connection does not mean the source device is running.</p>
       <dl class="account-status snapshot__facts" aria-live="polite">
         {snapshotLines(profile, report, failure).map(line => (
           <div key={line.term} {...(line.tone === undefined ? {} : { "data-tone": line.tone })}>

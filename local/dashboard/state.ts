@@ -20,7 +20,7 @@ export type FilterKey = (typeof FILTER_KEYS)[number];
 
 export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap";
 export type Route = { view: View; sessionId?: string; flowId?: string; filter: Filter };
-/** One shared SSE subscription: `seq` increments per `session` event, `last` is that event's row. */
+/** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
 /** Props every mounted view receives from main.tsx (trace/flow/heatmap stubs are replaced by todos 15-17). */
 export type ViewProps = { route: Route; navigate: (next: Route) => void; live: LiveInfo; readonly embedded?: boolean };

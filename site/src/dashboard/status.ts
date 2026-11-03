@@ -28,7 +28,7 @@ export const AVAILABILITY_COPY: Record<Availability, AvailabilityCopy> = {
   },
   ready: {
     label: "Snapshot available", selectable: true,
-    explanation: "The newest upload has been processed. Reports are built from that snapshot, not live data.",
+    explanation: "Reports use uploaded snapshots. A live connection refreshes views when newer uploads arrive.",
     next: null,
   },
   revoked: {
