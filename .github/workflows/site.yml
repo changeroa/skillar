@@ -5,11 +5,15 @@ on:
     paths:
       - 'site/**'
       - 'shared/**'
+      - 'local/dashboard/**'
+      - 'local/src/**'
       - '.github/workflows/site.yml'
   pull_request:
     paths:
       - 'site/**'
       - 'shared/**'
+      - 'local/dashboard/**'
+      - 'local/src/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 

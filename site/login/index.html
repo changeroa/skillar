@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Sign in to skillar with Google. The MCP endpoint and remote dashboard for your account are still screen-only previews.">
+    <meta name="description" content="Sign in to skillar with Google and view activity snapshots uploaded with your consent. Hosted MCP setup remains a preview.">
     <meta name="theme-color" content="#171916">
     <meta property="og:title" content="Account — skillar">
     <meta property="og:description" content="A home for your agent skills.">
@@ -41,14 +41,14 @@
       <nav aria-label="Account"><a href="/login/" aria-current="page">Account</a><a href="/connect/">Connect MCP</a><a href="/dashboard/">Dashboard</a></nav>
     </header>
     <aside class="preview-notice" aria-label="What works today">
-      <div class="shell"><strong>Google sign-in is live.</strong> MCP setup and the dashboard are still screen-only previews: no endpoint is assigned and no activity is recorded. <a href="/">Back to skillar ↗</a></div>
+      <div class="shell"><strong>Google sign-in and the activity dashboard work.</strong> The dashboard shows snapshots your devices uploaded with your consent, never live activity. MCP setup is still a screen-only preview: no endpoint is assigned. <a href="/">Back to skillar ↗</a></div>
     </aside>
     <main id="main" class="shell account-main">
       <ol class="steps" aria-label="Account journey"><li aria-current="step">Account</li><li>Connect MCP</li><li>Dashboard</li></ol>
       <div class="account-grid">
         <section aria-labelledby="account-title">
           <h1 id="account-title">Your skills.<br>Your account.</h1>
-          <p class="account-lead">Sign in with Google to open your skillar account. The MCP endpoint for your agents and the remote activity dashboard are still previews.</p>
+          <p class="account-lead">Sign in with Google to open your account and activity dashboard. Each device starts local only; connecting it does not grant upload consent.</p>
           <p id="auth-result" class="note session-status" role="status"></p>
           <p id="session-status" class="note session-status" role="status" aria-live="polite"></p>
           <noscript>
@@ -59,7 +59,7 @@
             <a class="button primary" href="/auth/google">Continue with Google <span aria-hidden="true">→</span></a>
             <p class="note">Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained.</p>
             <a class="button secondary" href="/connect/">Explore without signing in <span aria-hidden="true">→</span></a>
-            <p class="note">See example MCP setup and the empty dashboard. The previews need no sign-in.</p>
+            <p class="note">Inspect MCP setup examples without signing in. Your activity dashboard requires sign-in and uploads you explicitly allow.</p>
           </div>
           <div id="signed-in" class="auth-actions" hidden>
             <div class="account-user">
@@ -74,15 +74,15 @@
               <div><dt>First sign-in</dt><dd><time id="user-created"></time></dd></div>
               <div><dt>Latest sign-in</dt><dd><time id="user-last"></time></dd></div>
             </dl>
-            <a class="button primary" href="/connect/">Preview MCP setup <span aria-hidden="true">→</span></a>
+            <a class="button primary" href="/dashboard/">Open activity dashboard <span aria-hidden="true">→</span></a>
             <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out</button></form>
             <p class="note">Signing out ends your session in this browser. It doesn't delete your stored profile: Google ID, email, name, picture and sign-in times.</p>
           </div>
         </section>
         <aside class="account-aside" aria-labelledby="next-title">
           <h2 id="next-title">From account to agent.</h2>
-          <p>Next, inspect the proposed account endpoint and client configuration. Then explore Sessions, Workspaces, Flow and Heatmap without sample activity.</p>
-          <p class="note">MCP endpoint provisioning and the hosted dashboard are coming soon. Pricing is not announced.</p>
+          <p>Connect a device from the dashboard, choose its upload consent, then inspect its snapshots in Sessions, Workspaces, Flow and Heatmap.</p>
+          <p class="note">Hosted MCP endpoint provisioning remains a preview. Pricing is not announced.</p>
           <a class="text-link" href="/#local-setup">Use skillar locally today ↗</a>
           <p class="note">Run <code>skillar open</code> after local setup to inspect your real local activity. Signing in here does not access it.</p>
         </aside>

@@ -20,6 +20,8 @@ export const activityFilterSchema = z.strictObject({
 const filter = activityFilterSchema.default({});
 const range = { from: timestampSchema, to: timestampSchema };
 export const activityQuerySchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("skills") }),
+  z.strictObject({ kind: z.literal("workflow-versions"), name: z.string().min(1).max(64) }),
   z.strictObject({ kind: z.literal("sessions"), filter }),
   z.strictObject({ kind: z.literal("trace"), sessionId: z.string().min(1) }),
   z.strictObject({

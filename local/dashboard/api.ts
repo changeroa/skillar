@@ -12,10 +12,14 @@ export type EvalCaseInput = { query: string; expectedUri?: string; fromTraceId?:
 /** GET /api/flows takes its own range and page size, not the full session Filter. */
 export type FlowsQuery = { from?: number; to?: number; limit?: number; automated?: AutomatedMode };
 export const FLOWS_PAGE_LIMIT = 20;
-export type EventHandlers = { onSession?: (row: SessionListRow) => void; onState?: (state: LiveState) => void };
+export type EventHandlers = {
+  onSession?: (row: SessionListRow) => void; onState?: (state: LiveState) => void;
+  onRefresh?: () => void; onInvalidate?: () => void;
+};
 
 export type Api = {
-  mode: "http" | "fixtures";
+  mode: "http" | "fixtures" | "cloud";
+  dispose?: () => void;
   sessions(filter: Filter): Promise<SessionListRow[]>;
   trace(sessionId: string): Promise<TraceStep[]>;
   flow(filter: Filter, opts?: { unit?: FlowDto["unit"]; top?: number }): Promise<FlowDto>;
@@ -211,4 +215,9 @@ function fixtureApi(variant: FixtureVariant): Api {
 }
 
 const variant = fixtureVariant();
-export const api: Api = variant ? fixtureApi(variant) : httpApi;
+export let api: Api = variant ? fixtureApi(variant) : httpApi;
+/** Configure before importing/mounting main; unmount the old App before replacing. */
+export function configureApi(next: Api): void {
+  if (api !== next) api.dispose?.();
+  api = next;
+}

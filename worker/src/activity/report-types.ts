@@ -12,7 +12,7 @@ export class ReportError extends Error {
   constructor(readonly code:
     | "source_missing" | "source_gap" | "report_missing" | "report_conflict"
     | "report_pending" | "report_expired" | "report_busy" | "report_fenced"
-    | "report_integrity" | "report_pressure" | "analysis_version" | "report_unavailable",
+    | "report_integrity" | "report_pressure" | "analysis_version" | "report_unavailable" | "spec_not_found",
   readonly status: 403 | 404 | 409 | 410 | 503 = 409) {
     super(code);
     this.name = "ReportError";

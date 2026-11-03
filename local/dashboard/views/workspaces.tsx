@@ -528,7 +528,8 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
   );
 }
 
-export function Header({ report, backHref, onRefresh, busy }: { report: FlowReportDto; backHref: string; onRefresh: () => void; busy: boolean }) {
+export function Header({ report, backHref, onRefresh, busy, embedded = false }: { report: FlowReportDto; backHref: string; onRefresh: () => void; busy: boolean; readonly embedded?: boolean }) {
+  const Title = embedded ? "h2" : "h1";
   const panes = report.tree.tabs.reduce((n, tab) => n + tab.panes.length, 0);
   const history = report.tree.tabs.some((tab) => tab.panes.some((pane) => pane.sessions.some((link) =>
     link.session !== null && !sessionInWindow(link.session, report.flow))));
@@ -538,7 +539,7 @@ export function Header({ report, backHref, onRefresh, busy }: { report: FlowRepo
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         Workspaces
       </a>
-      <h1 class="ws__title">{report.label ?? report.workspaceId}</h1>
+      <Title class="ws__title">{report.label ?? report.workspaceId}</Title>
       <dl class="ws__meta">
         {report.kind !== "outside_herdr" && <>
         <div>
@@ -583,7 +584,7 @@ export function Header({ report, backHref, onRefresh, busy }: { report: FlowRepo
   );
 }
 
-export function WorkspaceView({ route }: ViewProps) {
+export function WorkspaceView({ route, embedded = false }: ViewProps) {
   const flowId = route.flowId ?? "";
   const backHref = buildHash({ view: "workspaces", filter: route.filter });
   const query = flowsQuery(route);
@@ -647,7 +648,7 @@ export function WorkspaceView({ route }: ViewProps) {
   const { findings, usageBySpan } = reportIndex(report);
   return (
     <section class="ws" aria-busy="false">
-      <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} />
+      <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded} />
       {report.executionScope && <aside class="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
       <UnresolvedLoadNotice loads={report.unattributedLoads} />
       {report.comparison && <Steps comparison={report.comparison} specSteps={specSteps} specError={specError} uncertain={report.unattributedLoads.count > 0} />}

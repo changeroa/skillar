@@ -14,6 +14,7 @@ import type { ContentEnv } from "./content-env.ts";
 import { ContentStorageError, readContentKey, writeContentKey } from "./content-keys.ts";
 import { decryptContent, encryptContent } from "./crypto.ts";
 import type { IngestPrincipal } from "./types.ts";
+import { initializeContentAccount } from "./content-account.ts";
 
 export async function readChunkBytes(
   env: ContentEnv, principal: IngestPrincipal,
@@ -40,6 +41,7 @@ export async function storeContentChunk(
 ) {
   const chunk = parseContentChunkUpload(input);
   streamIdentity(principal, chunk);
+  await initializeContentAccount(env, principal, contentScope(chunk));
   await activeFence(env.ACTIVITY, principal);
   const consent = await requireContentConsent(env.ACCOUNTS, principal, contentScope(chunk));
   const bytes = await verifyContentChunkUpload(chunk);
