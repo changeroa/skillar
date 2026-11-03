@@ -61,9 +61,26 @@
             <a class="button secondary" href="#local-setup">Run locally <span aria-hidden="true">↓</span></a>
           </div>
         </div>
-        <figure class="workshop">
-          <img src="/workshop-1200-optimized.webp" srcset="/workshop-600-optimized.webp 600w, /workshop-1200-optimized.webp 1200w" sizes="(max-width: 760px) calc(100vw - 48px), 45vw" width="1200" height="1200" fetchpriority="high" alt="An articulated arm brings a skill instruction card from a shared cabinet to an agent's workbench.">
-          <figcaption>Your skills. Ready when your agents need them.</figcaption>
+        <figure class="prompt-figure">
+          <div class="prompt-art" role="img" aria-label="A local terminal runs skillar serve. A SKILL.md file of Markdown instructions is served over MCP to your agent, which reads skills on demand.">
+            <div class="prompt-terminal" aria-hidden="true">
+              <div class="prompt-bar"><span class="prompt-window-mark">›_</span><span>local / terminal</span></div>
+              <div class="prompt-body">
+                <div class="prompt-command"><span>›</span>skillar serve</div>
+                <div class="prompt-file">
+                  <div class="prompt-file-title">
+                    <svg viewBox="0 0 32 40" width="32" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2h14l8 8v28H5zM19 2v9h8M10 19h12M10 25h12M10 31h8"/></svg>
+                    <span>SKILL.md<small>Markdown instructions</small></span>
+                  </div>
+                  <div class="prompt-source"><span>---</span><br>name: skillar<br><span>---</span></div>
+                  <div class="prompt-lines"><i></i><i></i><i></i></div>
+                </div>
+                <div class="prompt-handoff"><span>MCP</span><span class="prompt-arrow">→</span><span>Your agent</span></div>
+                <div class="prompt-demand">Read skills on demand.</div>
+              </div>
+            </div>
+          </div>
+          <figcaption>Local today. Hosted MCP coming soon.</figcaption>
         </figure>
       </section>
 
