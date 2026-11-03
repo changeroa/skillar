@@ -30,7 +30,7 @@ function useLive(): LiveInfo & { invalidated?: boolean } {
   useEffect(() => api.events({
     onState: (state: LiveState) => setLive((prev) => (prev.state === state ? prev : { ...prev, state })),
     onSession: (row: SessionListRow) => setLive((prev) => ({ ...prev, seq: prev.seq + 1, last: row })),
-    onRefresh: () => setLive((prev) => ({ ...prev, seq: prev.seq + 1 })),
+    onRefresh: () => setLive((prev) => ({ state: prev.state, seq: prev.seq + 1 })),
     onInvalidate: () => setLive({ state: "offline", seq: 0, invalidated: true }),
   }), []);
   return live;
@@ -217,7 +217,7 @@ export function App({ embedded = false }: AppOptions = {}) {
           </nav>
         </div>
       </Header>
-      <Content class="page wrap" key={api.mode === "cloud" ? live.seq : undefined}
+      <Content class="page wrap"
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
         tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
         aria-label={embedded ? `${activeTab} snapshot` : undefined}>

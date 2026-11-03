@@ -78,6 +78,9 @@ export class ReplayEngine {
     }
     if (this.cursor === undefined) {
       this.cursor = target;
+      // Initial reports may have pinned an older source revision before this head was read.
+      // Reconcile after adopting the baseline; mounted views cancel superseded reads.
+      this.sink.onRefresh();
       return;
     }
     let cursor = this.cursor;

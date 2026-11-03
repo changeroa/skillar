@@ -10,6 +10,11 @@ class Node {
     this.attrs = {};
     this.listeners = {};
     this.style = { setProperty() {} };
+    this.onclick = null;
+    this.oninput = null;
+    this.onchange = null;
+    this.ontoggle = null;
+    if (localName === "input" || localName === "select") this.value = "";
   }
   get firstChild() { return this.childNodes[0] ?? null; }
   get nextSibling() {
@@ -17,8 +22,13 @@ class Node {
     return siblings[siblings.indexOf(this) + 1] ?? null;
   }
   get textContent() { return this.nodeType === 3 ? this.data : this.childNodes.map((node) => node.textContent).join(""); }
+  set textContent(value) {
+    for (const child of [...this.childNodes]) this.removeChild(child);
+    if (value !== "") this.appendChild(new Node(null, String(value)));
+  }
   get attributes() { return Object.entries(this.attrs).map(([name, value]) => ({ name, value })); }
   appendChild(node) { return this.insertBefore(node, null); }
+  append(node) { this.appendChild(node); }
   insertBefore(node, before) {
     node.parentNode?.removeChild(node);
     const index = before === null ? -1 : this.childNodes.indexOf(before);
@@ -44,12 +54,14 @@ export function descendants(node) {
 }
 
 export function installDom() {
-  const roots = [];
+  const head = new Node("head");
+  const roots = [head];
   globalThis.document = {
+    head,
     createElement: (name) => new Node(name),
     createElementNS: (_ns, name) => new Node(name),
     createTextNode: (data) => new Node(null, data),
-    getElementById: (id) => roots.flatMap(descendants).find((node) => node.attrs.id === id) ?? null,
+    getElementById: (id) => roots.flatMap(descendants).find((node) => (node.attrs.id ?? node.id) === id) ?? null,
   };
   globalThis.HTMLDetailsElement = Node;
   return () => {

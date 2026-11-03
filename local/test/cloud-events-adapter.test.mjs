@@ -10,6 +10,7 @@ async function connectAdapter(h, head = 4) {
   const socket = await h.sockets.take();
   ready(socket, h.scheduler.now() + 300_000);
   assert.equal(await sub.states.take(), "live");
+  await sub.refresh.take();
   return { sub, socket };
 }
 

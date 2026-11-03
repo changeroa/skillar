@@ -121,7 +121,7 @@ test("report completions never trigger reads and skills only refresh", async () 
   frame(socket, change(1, 7, "consent"));
   (await h.calls.sessions.take()).resolve([]);
   await h.events.refresh.take();
-  assert.deepEqual(h.log, ["state:connecting", "state:live", "refresh", "refresh"]);
+  assert.deepEqual(h.log, ["state:connecting", "refresh", "state:live", "refresh", "refresh"]);
   h.live.stop();
 });
 

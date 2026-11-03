@@ -214,6 +214,8 @@ function NoSessionsEmpty() {
 
 function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps["navigate"]; count: number | undefined }) {
   const { filter } = route;
+  const [draft, setDraft] = useState(filter.q ?? "");
+  useEffect(() => setDraft(filter.q ?? ""), [filter.q]);
   const update = (patch: Filter) => {
     const next: Filter = { ...filter, ...patch };
     for (const key of Object.keys(next) as (keyof Filter)[]) if (next[key] === undefined) delete next[key];
@@ -231,7 +233,7 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
       }}
     >
       <label class="toolbar__label" for="session-search">Search prompts and skills</label>
-      <input id="session-search" class="field field--search" type="search" name="q" placeholder="e.g. pr-review" value={filter.q ?? ""} />
+      <input id="session-search" class="field field--search" type="search" name="q" placeholder="e.g. pr-review" value={draft} onInput={(event) => setDraft(event.currentTarget.value)} />
       <select class="field field--select" aria-label="Runtime" value={filter.runtime?.length === 1 ? filter.runtime[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as RuntimeId | ""; update({ runtime: v ? [v] : undefined }); }}>
         <option value="">All runtimes</option>
         {RUNTIME_IDS.map((id) => <option key={id} value={id}>{RUNTIME_LABEL[id]}</option>)}

@@ -136,6 +136,7 @@ export async function connected(h, head = 4) {
   const socket = await h.sockets.take();
   ready(socket, h.scheduler.now() + 300_000);
   assert.equal(await h.events.state.take(), "live");
+  await h.events.refresh.take();
   return socket;
 }
 
@@ -166,8 +167,7 @@ export function cloudHarness() {
   return h;
 }
 
-export function reportWire(payload) {
-  const revision = { sequence: 2, journalThrough: 3, runtimeSequence: 1 };
+export function reportWire(payload, revision = { sequence: 2, journalThrough: 3, runtimeSequence: 1 }) {
   const bytes = Buffer.from(JSON.stringify({
     generatedAt: 100, inputRevision: revision, analysisVersion: 1, coverage: { complete: true, fromMs: 0, toMs: 200 },
     sourceCapturedAt: 90, sourceReceivedAt: 95, pending: false, payload,

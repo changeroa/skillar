@@ -202,7 +202,7 @@ function Runtime({ runtime }: { runtime: RuntimeId }) {
 type SummaryState = { status: "loading" } | { status: "ready"; summary: FlowSummary } | { status: "error" };
 
 /** Reads one flow report per row, SUMMARY_CONCURRENCY at a time, and drops what is in flight when the list changes. */
-function useFlowSummaries(ids: readonly string[], query: FlowsQuery): Record<string, SummaryState> {
+function useFlowSummaries(ids: readonly string[], query: FlowsQuery, refresh: number): Record<string, SummaryState> {
   const key = ids.join("\n");
   const queryKey = JSON.stringify(query);
   const [summaries, setSummaries] = useState<Record<string, SummaryState>>({});
@@ -212,7 +212,7 @@ function useFlowSummaries(ids: readonly string[], query: FlowsQuery): Record<str
       return;
     }
     let cancelled = false;
-    setSummaries(Object.fromEntries(ids.map((id) => [id, { status: "loading" } as SummaryState])));
+    setSummaries((prev) => Object.fromEntries(ids.map((id) => [id, prev[id] ?? { status: "loading" } as SummaryState])));
     const queue = [...ids];
     const worker = async (): Promise<void> => {
       for (let next = queue.shift(); next !== undefined && !cancelled; next = queue.shift()) {
@@ -228,7 +228,7 @@ function useFlowSummaries(ids: readonly string[], query: FlowsQuery): Record<str
     };
     void Promise.all(Array.from({ length: Math.min(SUMMARY_CONCURRENCY, ids.length) }, worker));
     return () => { cancelled = true; };
-  }, [key, queryKey]);
+  }, [key, queryKey, refresh]);
   return summaries;
 }
 
@@ -299,7 +299,7 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
     return () => { cancelled = true; };
   }, [queryKey, refresh]);
 
-  const summaries = useFlowSummaries(flows?.map((entry) => entry.id) ?? [], query);
+  const summaries = useFlowSummaries(flows?.map((entry) => entry.id) ?? [], query, refresh);
   const filtered = query.from !== undefined || query.to !== undefined;
 
   return (
@@ -584,7 +584,7 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
   );
 }
 
-export function WorkspaceView({ route, embedded = false }: ViewProps) {
+export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
   const flowId = route.flowId ?? "";
   const backHref = buildHash({ view: "workspaces", filter: route.filter });
   const query = flowsQuery(route);
@@ -595,6 +595,12 @@ export function WorkspaceView({ route, embedded = false }: ViewProps) {
   const [busy, setBusy] = useState(true);
   const [specSteps, setSpecSteps] = useState<WorkflowSpec["steps"]>([]);
   const [specError, setSpecError] = useState<string>();
+
+  useEffect(() => {
+    if (live.seq === 0) return;
+    const timer = setTimeout(() => setRefresh((n) => n + 1), LIVE_REFRESH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [live.seq]);
 
   useEffect(() => {
     setReport(undefined);
