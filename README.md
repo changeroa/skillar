@@ -2,11 +2,13 @@
 
 This dedicated branch contains review images, not application source.
 The refreshed candidate images correspond to application commit
-`623c5a4906575dad027a77acaf5fc641a21e2c26` (PR #59). Anonymous P7 before images
-are unchanged.
+`091d3f1367e81fc591ea37f28addf69ba90ce1d8` (PR #59), rebased on brand
+`7aa0b04`. Anonymous before images were recaptured after that brand deploy
+was confirmed live, before P8 activation. Both sides use the same new palette
+and `›skillar` header, with matching viewport and top-of-page framing.
 
-- `before/`: the existing P7 production site at `https://skillar.sh/dashboard/`,
-  captured anonymously before the P8 deployment.
+- `before/`: the existing P7 feature baseline plus brand PR60 in production at
+  `https://skillar.sh/dashboard/`, captured anonymously before P8 deployment.
 - `after/`: the P8 candidate build's anonymous dashboard, at the same viewport
   and color theme, served by the loopback QA harness.
 - `fixture/`: the candidate's authenticated views and consent controls. Every

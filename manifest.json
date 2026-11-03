@@ -1,97 +1,99 @@
 {
-  "candidate": "623c5a4906575dad027a77acaf5fc641a21e2c26",
-  "provenance": "Anonymous P7 production before; P8 loopback candidate after; synthetic native authenticated fixtures only. No owner data or credentials. Not production activation evidence.",
+  "candidate": "091d3f1367e81fc591ea37f28addf69ba90ce1d8",
+  "brandBase": "7aa0b04c79681895b044f18ecbd904c5ebb5730f",
+  "before": "Anonymous brand-live production, Pages b64bec21, before P8 activation",
+  "after": "Anonymous loopback P8 candidate; authenticated native synthetic fixtures only; not proof of production activation",
   "images": [
     {
       "path": "before/iphone-14-light-dashboard.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 220338,
-      "gitBlobSha": "c1f69a79dc19c5ed243a80a06d705e3b5a1286d8"
+      "bytes": 210711,
+      "gitBlobSha": "f6c17ab58d821feeb72cf1dd221d36e9f95889ee"
     },
     {
       "path": "after/iphone-14-light-signed-out.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 264325,
-      "gitBlobSha": "a5d1ab23d6e85345dc027bb30943f7ed3f3d1b54"
+      "bytes": 272586,
+      "gitBlobSha": "a23ec5bcbbfd974f6f8cf04709e5007a96248fff"
     },
     {
       "path": "before/iphone-14-dark-dashboard.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 213564,
-      "gitBlobSha": "889ed38ce9bed98656a16f01a7237210cc8cb9ca"
+      "bytes": 210028,
+      "gitBlobSha": "726d4d499b3995556a76d3432b31dd59c22b9523"
     },
     {
       "path": "after/iphone-14-dark-signed-out.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 265220,
-      "gitBlobSha": "96024d3adc41b45d7af951d61119e4ba2275309e"
+      "bytes": 269224,
+      "gitBlobSha": "b282ad4f4d8e6506b44f507eb6acbc39790f8b82"
     },
     {
       "path": "before/desktop-1440-light-dashboard.png",
       "width": 1440,
       "height": 900,
-      "bytes": 88519,
-      "gitBlobSha": "db433cfd5cff8e9185debd1f4ef44879d8f6bb36"
+      "bytes": 87161,
+      "gitBlobSha": "c9b56e157942c4859c240ee7c42585e8ebd493d5"
     },
     {
       "path": "after/desktop-1440-light-signed-out.png",
       "width": 1440,
       "height": 900,
-      "bytes": 87226,
-      "gitBlobSha": "d4156091a32b9bfd89438ebaf41c520aaae44da3"
+      "bytes": 104720,
+      "gitBlobSha": "7895d0ca51de1adb80e168e5fffb6cf4a1923527"
     },
     {
       "path": "before/desktop-1440-dark-dashboard.png",
       "width": 1440,
       "height": 900,
-      "bytes": 87644,
-      "gitBlobSha": "7a2cfcbaaa0a61a032083d09a28e3f3105c195ba"
+      "bytes": 86505,
+      "gitBlobSha": "7412c539a7af9d782ea8b8d9e6571c166a8db81e"
     },
     {
       "path": "after/desktop-1440-dark-signed-out.png",
       "width": 1440,
       "height": 900,
-      "bytes": 86505,
-      "gitBlobSha": "f4de44a551c03bf411717f9d4c6080e2080b0fc9"
+      "bytes": 102928,
+      "gitBlobSha": "2bfae8d1682bdfa6804f006d5340f141e6247e34"
     },
     {
       "path": "fixture/iphone-14-light-trace-start.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 199635,
-      "gitBlobSha": "3f749603179c200146886705daaba27a22eb162c"
+      "bytes": 200780,
+      "gitBlobSha": "bdbcf6b0b4ca7af9a091fdf9ffe1b9586d050841"
     },
     {
       "path": "fixture/iphone-14-dark-flow-start.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 311598,
-      "gitBlobSha": "dd31c129537a17d910705cea92a3a305bc4cbc77"
+      "bytes": 308228,
+      "gitBlobSha": "29250b94e2b783710980127b0a9f751a13ab1c08"
     },
     {
       "path": "fixture/iphone-14-dark-heatmap-start.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 121190,
-      "gitBlobSha": "618b68ef1c1f3c6b3d24e4eb5e12a57d7171220f"
+      "bytes": 120520,
+      "gitBlobSha": "a99be7a1175d60e161a6773c0576472dd9df9982"
     },
     {
       "path": "fixture/desktop-1440-light-workspace-start.png",
       "width": 1440,
       "height": 900,
-      "bytes": 100198,
-      "gitBlobSha": "298ecfede04e871930a8705478b6faa7b5ad611e"
+      "bytes": 102636,
+      "gitBlobSha": "d4a6b3d80661916ae574ef96b63d7d2e6e6ed88e"
     },
     {
       "path": "fixture/iphone-14-light-new-device-managed-unchecked.png",
       "width": 1170,
       "height": 2532,
-      "bytes": 240358,
-      "gitBlobSha": "2068b31d4aa12c31bef9f090c0f6f7377975055b"
+      "bytes": 239247,
+      "gitBlobSha": "ec22d2476b56659b72087624c8d705137af3c8a1"
     }
   ]
 }
