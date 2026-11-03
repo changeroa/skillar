@@ -21,7 +21,7 @@
 .session-status:empty { margin: 0; }
 .account-main noscript > .note { margin-top: var(--s3); }
 .account-user { display: flex; align-items: center; gap: var(--s4); }
-.account-user img { flex: none; width: var(--s6); height: var(--s6); object-fit: cover; }
+.account-user img { flex: none; width: var(--s6); height: var(--s6); object-fit: contain; }
 .account-user img[hidden] { display: none; }
 .account-user > div { min-width: 0; }
 .account-user p + p { margin-top: 0; }
