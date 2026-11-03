@@ -4,8 +4,16 @@
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-09-03",
   "vars": {
-    "PUBLIC_ORIGIN": "https://skillar.sh"
+    "PUBLIC_ORIGIN": "https://skillar.sh",
+    "ACTIVITY_ENABLED": "true",
+    "ACTIVITY_INGEST_ENABLED": "true"
   },
+  "services": [
+    {
+      "binding": "ACTIVITY_SERVICE",
+      "service": "skillar-activity-foundation"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "ACCOUNTS",

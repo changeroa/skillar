@@ -153,6 +153,12 @@ function Row({ row, route, navigate }: { row: SessionListRow; route: Route; navi
 }
 
 function WaitingEmpty({ stats }: { stats: Stats }) {
+  if (api.mode === "cloud") return (
+    <section class="empty" aria-live="polite">
+      <h2>No activity in this snapshot</h2>
+      <p>Start a session on the source device, upload a newer snapshot, then reload sources to view it here.</p>
+    </section>
+  );
   const { ingest } = stats;
   return (
     <section class="empty" aria-live="polite">
@@ -200,7 +206,8 @@ function NoSessionsEmpty() {
   return (
     <section class="empty">
       <h2>No sessions recorded yet</h2>
-      <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>
+      {api.mode === "cloud" ? <p>This uploaded snapshot has events but no sessions. Upload a newer snapshot from the source device, then reload sources.</p> :
+        <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>}
     </section>
   );
 }
@@ -223,7 +230,8 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
         update({ q: q || undefined });
       }}
     >
-      <input class="field field--search" type="search" name="q" placeholder="Search prompts and skills" aria-label="Search prompts and skills" value={filter.q ?? ""} />
+      <label class="toolbar__label" for="session-search">Search prompts and skills</label>
+      <input id="session-search" class="field field--search" type="search" name="q" placeholder="e.g. pr-review" value={filter.q ?? ""} />
       <select class="field field--select" aria-label="Runtime" value={filter.runtime?.length === 1 ? filter.runtime[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as RuntimeId | ""; update({ runtime: v ? [v] : undefined }); }}>
         <option value="">All runtimes</option>
         {RUNTIME_IDS.map((id) => <option key={id} value={id}>{RUNTIME_LABEL[id]}</option>)}
@@ -317,7 +325,7 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={rows === undefined}>
-      <p class="dim">Search and load counts are per request. No observed requests: not_attempted. Missing outcomes: unknown.</p>
+      <p class="dim">Search and load counts are per request. No request observed is different from an unknown outcome.</p>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
       {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
       {rows !== undefined && stats && <UsageNote stats={stats} />}

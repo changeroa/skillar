@@ -251,6 +251,8 @@ button, input, select { font: inherit; color: inherit; }
   margin-bottom: var(--s-3);
 }
 
+.toolbar__label { flex-basis: 100%; }
+
 .field {
   height: 32px;
   padding: 0 var(--s-3);

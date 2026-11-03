@@ -1,5 +1,5 @@
 import { render } from "preact";
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { Filter } from "../src/types.js";
 import { api, type LiveState, type SessionListRow } from "./api";
 import {
@@ -25,11 +25,13 @@ function useRoute(): [Route, (next: Route) => void] {
   return [route, navigate];
 }
 
-function useLive(): LiveInfo {
-  const [live, setLive] = useState<LiveInfo>({ state: "connecting", seq: 0 });
+function useLive(): LiveInfo & { invalidated?: boolean } {
+  const [live, setLive] = useState<LiveInfo & { invalidated?: boolean }>({ state: "connecting", seq: 0 });
   useEffect(() => api.events({
     onState: (state: LiveState) => setLive((prev) => (prev.state === state ? prev : { ...prev, state })),
     onSession: (row: SessionListRow) => setLive((prev) => ({ ...prev, seq: prev.seq + 1, last: row })),
+    onRefresh: () => setLive((prev) => ({ ...prev, seq: prev.seq + 1 })),
+    onInvalidate: () => setLive({ state: "offline", seq: 0, invalidated: true }),
   }), []);
   return live;
 }
@@ -122,20 +124,86 @@ export const TAB_OF: Record<View, View> = {
   sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap",
 };
 
-function App() {
+export type AppOptions = { embedded?: boolean };
+export function App({ embedded = false }: AppOptions = {}) {
   const [route, navigate] = useRoute();
   const live = useLive();
+  const contentRef = useRef<HTMLElement | null>(null);
+  const firstRoute = useRef(true);
   const activeTab: View = TAB_OF[route.view];
-  const props = { route, navigate, live };
+  const props = { route, navigate, live, embedded };
+  const Header = embedded ? "div" : "header";
+  const Content = embedded ? "div" : "main";
+  useLayoutEffect(() => {
+    if (!embedded) return;
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    const content = contentRef.current;
+    if (content === null) return;
+    const header = content.previousElementSibling;
+    if (header === null) return;
+    content.style.scrollMarginTop = `${header.getBoundingClientRect().height}px`;
+    content.scrollIntoView({ block: "start" });
+    content.focus({ preventScroll: true });
+  }, [embedded, route.view, route.sessionId, route.flowId]);
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (!embedded || content === null) return;
+    const root = content.parentElement, toolbar = content.previousElementSibling;
+    if (root === null || toolbar === null) return;
+    const spacing = getComputedStyle(root);
+    const inset = parseFloat(spacing.getPropertyValue("--s-6")), gap = parseFloat(spacing.getPropertyValue("--s-2"));
+    let active: HTMLElement | null = null;
+    const position = () => {
+      const tip = active;
+      if (tip === null || !tip.isConnected || !tip.matches(":hover, :focus-visible")) return;
+      const rect = tip.getBoundingClientRect(), clip = (tip.closest(".hm") ?? root).getBoundingClientRect();
+      const outside = rect.right <= Math.max(0, clip.left) || rect.left >= Math.min(innerWidth, clip.right)
+        || rect.bottom <= Math.max(0, clip.top) || rect.top >= Math.min(innerHeight, clip.bottom);
+      tip.toggleAttribute("data-tip-offscreen", outside);
+      if (outside) return;
+      const style = getComputedStyle(tip, "::after"), width = parseFloat(style.width), height = parseFloat(style.height);
+      const above = rect.top - gap - height;
+      tip.style.setProperty("--tip-left", `${Math.max(inset, Math.min(rect.left, innerWidth - inset - width))}px`);
+      tip.style.setProperty("--tip-top", `${Math.max(inset, Math.min(above >= inset ? above : rect.bottom + gap, innerHeight - inset - height))}px`);
+    };
+    const show = (event: Event) => {
+      const tip = event.target instanceof Element ? event.target.closest("[data-tip]") : null;
+      if (!(tip instanceof HTMLElement) || !root.contains(tip)) return;
+      if (active !== tip) active?.removeAttribute("data-tip-active");
+      active = tip;
+      active.setAttribute("data-tip-active", "");
+      position();
+    };
+    const leave = (event: PointerEvent) => {
+      const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest("[data-tip]") : null;
+      const tip = next ?? root.querySelector("[data-tip]:focus-visible");
+      if (!(tip instanceof HTMLElement) || !root.contains(tip)) return;
+      if (active !== tip) active?.removeAttribute("data-tip-active");
+      active = tip;
+      active.setAttribute("data-tip-active", "");
+      position();
+    };
+    const measure = () => root.style.setProperty("--embedded-toolbar-height", `${toolbar.getBoundingClientRect().height}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(toolbar); measure();
+    root.addEventListener("pointerover", show); root.addEventListener("focusin", show); root.addEventListener("pointerout", leave);
+    addEventListener("scroll", position, true); addEventListener("resize", position);
+    return () => {
+      observer.disconnect();
+      root.removeEventListener("pointerover", show); root.removeEventListener("focusin", show); root.removeEventListener("pointerout", leave);
+      removeEventListener("scroll", position, true); removeEventListener("resize", position);
+    };
+  }, [embedded]);
+  if (live.invalidated) return <p role="status">Cloud activity is unavailable. Sign in or select a source again.</p>;
   return (
     <>
-      <header class="top">
+      <Header class="top">
         <div class="wrap">
           <div class="top__row">
-            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>
+            {!embedded && <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>}
             <span class={`live live--${live.state}`} role="status" aria-live="polite">
               <span class="live__dot" aria-hidden="true" />
-              {LIVE_TEXT[live.state]}
+              {api.mode === "cloud" ? "snapshot" : LIVE_TEXT[live.state]}
             </span>
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
@@ -148,18 +216,25 @@ function App() {
             ))}
           </nav>
         </div>
-      </header>
-      <main class="page wrap">
+      </Header>
+      <Content class="page wrap" key={api.mode === "cloud" ? live.seq : undefined}
+        ref={(node: HTMLElement | null) => { contentRef.current = node; }}
+        tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
+        aria-label={embedded ? `${activeTab} snapshot` : undefined}>
         {route.view === "sessions" && <SessionsView {...props} />}
         {route.view === "trace" && <TraceView {...props} />}
         {route.view === "workspaces" && <WorkspacesView {...props} />}
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
-      </main>
+      </Content>
     </>
   );
 }
 
-const el = document.getElementById("app");
-if (el) render(<App />, el);
+export function mount(element: Element, options: AppOptions = {}): () => void {
+  render(<App {...options} />, element);
+  return () => render(null, element);
+}
+const el = typeof document === "undefined" ? null : document.getElementById("app");
+if (el && api.mode !== "cloud") mount(el);
