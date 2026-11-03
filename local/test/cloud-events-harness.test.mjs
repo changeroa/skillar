@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { build } from "esbuild";
+import { EVENT_SSE_LIFETIME_MS } from "../../shared/dist/activity-events.js";
 
 // Shared fixtures for the cloud-events suites; this file deliberately registers no tests.
 const bundled = await build({
   stdin: {
-    contents: 'export * from "./cloud-events.ts"; export { createCloudApi } from "./cloud.ts"; export { ApiError } from "./api.ts";',
+    contents: 'export * from "./cloud-events.ts"; export { browserConnect } from "./cloud-events-transport.ts"; export { createCloudApi } from "./cloud.ts"; export { ApiError } from "./api.ts";',
     resolveDir: new URL("../dashboard/", import.meta.url).pathname, loader: "ts", sourcefile: "harness-entry.ts",
   },
   bundle: true, write: false, format: "esm", platform: "browser", target: "es2022",
@@ -41,11 +42,14 @@ export function channel(label) {
 export function fakeScheduler(start = 1_700_000_000_000) {
   let now = start;
   const timers = [];
+  const scheduled = channel("scheduled timer");
   return {
+    scheduled,
     now: () => now,
     schedule(delayMs, task) {
       const timer = { at: now + delayMs, delayMs, task, active: true };
       timers.push(timer);
+      scheduled.push(timer);
       return () => { timer.active = false; };
     },
     pending: () => timers.filter((timer) => timer.active),
@@ -134,7 +138,7 @@ export async function connected(h, head = 4) {
   assert.equal(first.args[0], null);
   first.resolve(replay({ head }));
   const socket = await h.sockets.take();
-  ready(socket, h.scheduler.now() + 300_000);
+  ready(socket, h.scheduler.now() + (socket.target.kind === "sse" ? EVENT_SSE_LIFETIME_MS : 300_000));
   assert.equal(await h.events.state.take(), "live");
   await h.events.refresh.take();
   return socket;

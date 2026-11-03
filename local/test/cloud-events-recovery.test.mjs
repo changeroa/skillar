@@ -1,6 +1,64 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { change, connected, cursor, frame, liveHarness, params, ready, replay } from "./cloud-events-harness.test.mjs";
+import { EVENT_SSE_LIFETIME_MS, EVENT_SSE_COOLDOWN_MS } from "../../shared/dist/activity-events.js";
+
+test("SSE has a finite client deadline followed by cooldown instead of lease extension", async () => {
+  // Given
+  const h = liveHarness({ transports: ["sse"] });
+  const socket = await connected(h);
+  // When
+  assert.equal((await h.scheduler.scheduled.take()).delayMs, EVENT_SSE_LIFETIME_MS);
+  h.scheduler.fire();
+  // Then
+  assert.equal(await h.events.state.take(), "connecting");
+  assert.equal(socket.closed, true);
+  assert.equal(h.calls.lease.size, 0);
+  assert.deepEqual(h.scheduler.pending().map(timer => timer.delayMs), [EVENT_SSE_COOLDOWN_MS, 15_000]);
+  h.live.stop();
+  assert.equal(h.scheduler.pending().length, 0);
+  assert.equal(h.visibility.listeners, 0);
+});
+
+test("SSE cooldown survives visibility return while REST replay advances the reconnect cursor", async () => {
+  // Given
+  const h = liveHarness({ transports: ["sse"] });
+  const start = h.scheduler.now(), socket = await connected(h);
+  await h.scheduler.scheduled.take();
+  h.scheduler.fire();
+  await h.events.state.take();
+  const reconnect = await h.scheduler.scheduled.take();
+  await h.scheduler.scheduled.take();
+  h.visibility.set(true);
+  const visibleReplay = await h.calls.changes.take();
+  assert.equal(h.scheduler.pending().includes(reconnect), true);
+  // When an idle-gap poll queues behind the visibility comparison.
+  assert.equal(h.scheduler.fire().delayMs, 15_000);
+  visibleReplay.resolve(replay({ head: 4 }));
+  const poll = await h.calls.changes.take();
+  poll.resolve(replay({ head: 5, changes: [change(1, 5)] }));
+  (await h.calls.sessions.take()).resolve([]);
+  await h.events.refresh.take();
+  await h.scheduler.scheduled.take();
+  for (let index = 0; index < 6; index++) {
+    assert.equal(h.scheduler.fire().delayMs, 15_000);
+    (await h.calls.changes.take()).resolve(replay({ head: 5 }));
+    await h.scheduler.scheduled.take();
+    assert.equal(h.sockets.size, 0);
+  }
+  assert.equal(h.scheduler.fire(), reconnect);
+  (await h.calls.changes.take()).resolve(replay({ head: 5 }));
+  // Then only the budgeted reconnect opens a new source, at the replayed cursor.
+  const next = await h.sockets.take();
+  assert.equal(socket.closed, true);
+  assert.equal(h.scheduler.now() - start, EVENT_SSE_LIFETIME_MS + EVENT_SSE_COOLDOWN_MS);
+  assert.equal(params(next).get("since"), cursor(1, 5));
+  assert.notEqual(params(next).get("connectionId"), params(socket).get("connectionId"));
+  ready(next, h.scheduler.now() + EVENT_SSE_LIFETIME_MS);
+  assert.equal(await h.events.state.take(), "live");
+  h.live.stop();
+  assert.equal(h.scheduler.pending().length, 0);
+});
 
 test("a server close reconnects after backoff with a fresh connection at the compared head", async () => {
   // Given
@@ -69,7 +127,7 @@ test("two websocket handshakes without ready fall back to the SSE stream route",
   assert.equal(fallback.target.kind, "sse");
   assert.equal(new URL(fallback.target.url, "https://skillar.sh").pathname, "/api/events/stream");
   assert.equal(params(fallback).get("since"), cursor(1, 4));
-  ready(fallback, h.scheduler.now() + 300_000);
+  ready(fallback, h.scheduler.now() + EVENT_SSE_LIFETIME_MS);
   assert.equal(await h.events.state.take(), "live");
   h.live.stop();
 });
@@ -89,12 +147,13 @@ for (const [name, violate] of [
   // Then
   assert.equal(await h.events.state.take(), "connecting");
   assert.equal(socket.closed, true);
-  assert.deepEqual(h.scheduler.pending().map((timer) => timer.delayMs), [1000]);
+  assert.deepEqual(h.scheduler.pending().map((timer) => timer.delayMs),
+    [EVENT_SSE_LIFETIME_MS + EVENT_SSE_COOLDOWN_MS, 15_000]);
   assert.equal(h.calls.sessions.size, 0);
   h.live.stop();
 });
 
-test("an interrupted EventSource shows connecting and its reopened ready compares head before live", async () => {
+test("an interrupted connector compares head on ready without extending the SSE deadline", async () => {
   // Given
   const h = liveHarness({ transports: ["sse"] });
   const socket = await connected(h, 4);
@@ -102,13 +161,13 @@ test("an interrupted EventSource shows connecting and its reopened ready compare
   socket.events.onInterrupted();
   // Then
   assert.equal(await h.events.state.take(), "connecting");
-  assert.equal(h.scheduler.pending().length, 0);
-  ready(socket, h.scheduler.now() + 300_000);
+  assert.deepEqual(h.scheduler.pending().map((timer) => timer.delayMs), [EVENT_SSE_LIFETIME_MS]);
+  ready(socket, h.scheduler.now() + EVENT_SSE_LIFETIME_MS);
   const compare = await h.calls.changes.take();
   assert.equal(compare.args[0], cursor(1, 4));
   compare.resolve(replay({ head: 4 }));
   assert.equal(await h.events.state.take(), "live");
-  assert.deepEqual(h.scheduler.pending().map((timer) => timer.delayMs), [150_000]);
+  assert.deepEqual(h.scheduler.pending().map((timer) => timer.delayMs), [EVENT_SSE_LIFETIME_MS]);
   h.live.stop();
 });
 

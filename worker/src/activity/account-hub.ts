@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { DurableObject } from "cloudflare:workers";
 import {
-  EVENT_LEASE_MS, eventCursorSchema, eventLeaseRequestSchema, eventPrincipalSchema,
+  EVENT_LEASE_MS, EVENT_SSE_LIFETIME_MS, EVENT_SSE_COOLDOWN_MS,
+  eventCursorSchema, eventLeaseRequestSchema, eventPrincipalSchema,
   eventServicePaths,
 } from "../../../shared/activity-events.ts";
 import type { AccountReplay, EventPrincipal } from "../../../shared/activity-events.ts";
@@ -15,6 +16,7 @@ import type { HubAttachment, HubConnection } from "./account-hub-connections.ts"
 import { readAccountChanges } from "./event-replay.ts";
 
 const notifySchema = eventPrincipalSchema.unwrap().pick({ accountId: true, generation: true });
+type SseWindow = { readonly endsAtMs: number; readonly nextAllowedAtMs: number };
 
 /** One object per principal.accountId; D1, not notify payloads, owns the change history. */
 export class AccountHub extends DurableObject<EventEnv> {
@@ -74,7 +76,8 @@ export class AccountHub extends DurableObject<EventEnv> {
       const { connectionId } = eventLeaseRequestSchema.parse(await eventJson(request));
       const connection = this.connections.all().find(value => value.attachment.connectionId === connectionId);
       if (connection === undefined || connection.attachment.sessionId !== principal.sessionId ||
-          connection.attachment.generation !== principal.generation || !await this.live(connection)) {
+          connection.attachment.generation !== principal.generation || !await this.live(connection) ||
+          this.connections.streams.has(connectionId)) {
         throw new EventRequestError(409, "connection_expired");
       }
       const expiresAtMs = Math.min(Date.now() + EVENT_LEASE_MS, sessionExpiry);
@@ -113,9 +116,23 @@ export class AccountHub extends DurableObject<EventEnv> {
     }
     const replay = await readAccountChanges(this.env.ACTIVITY, principal, since);
     const current = await authenticateEventRequest(request, this.env.ACCOUNTS, this.env);
+    let deadline = Date.now() + EVENT_LEASE_MS;
+    if (!websocket) {
+      // fetch's concurrency gate makes admission atomic across sessions and tabs.
+      let window = await this.ctx.storage.get<SseWindow>("sse-window");
+      const now = Date.now();
+      if (window === undefined || now >= window.nextAllowedAtMs) {
+        const endsAtMs = now + EVENT_SSE_LIFETIME_MS;
+        window = { endsAtMs, nextAllowedAtMs: endsAtMs + EVENT_SSE_COOLDOWN_MS };
+        await this.ctx.storage.put("sse-window", window);
+      } else if (now >= window.endsAtMs) {
+        throw new EventRequestError(429, "sse_cooldown");
+      }
+      deadline = window.endsAtMs;
+    }
     const attachment: HubAttachment = {
       accountId: principal.accountId, sessionId: principal.sessionId, generation: principal.generation,
-      expiresAtMs: Math.min(Date.now() + EVENT_LEASE_MS, sessionExpiry, current.sessionExpiry), connectionId,
+      expiresAtMs: Math.min(deadline, sessionExpiry, current.sessionExpiry), connectionId,
       cursor: replay.state === "ok" && since !== null ? since : replay.cursor,
     };
     let connection: HubConnection;

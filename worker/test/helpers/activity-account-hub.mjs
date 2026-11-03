@@ -17,6 +17,14 @@ const source = `
 import { AccountHub } from "./src/activity/account-hub.ts";
 import { accountEventsRequest } from "./src/activity/account-events.ts";
 const realNow=Date.now.bind(Date);
+const realSetTimeout=globalThis.setTimeout.bind(globalThis);
+const realClearTimeout=globalThis.clearTimeout.bind(globalThis);
+const timers=new Set();
+globalThis.setTimeout=(callback,delay,...args)=>{
+  const timer=realSetTimeout(()=>{timers.delete(timer);callback(...args);},delay);
+  timers.add(timer);return timer;
+};
+globalThis.clearTimeout=timer=>{timers.delete(timer);realClearTimeout(timer);};
 let now;
 Date.now=()=>now??realNow();
 export class TestHub extends AccountHub {
@@ -32,9 +40,12 @@ export class TestHub extends AccountHub {
       boot:this.boot,now,alarm:await this.ctx.storage.getAlarm(),
       attachments:this.ctx.getWebSockets().map(ws=>ws.deserializeAttachment()),
       streams:this.connections.streams.size,checkpoint:await this.ctx.storage.get("notification"),
+      streamAttachments:[...this.connections.streams.values()].map(value=>value.attachment),
+      timers:timers.size,sseWindow:await this.ctx.storage.get("sse-window"),
     });
     if(path==="/__test/time") {now=(await request.json()).now;return Response.json({now});}
     if(path==="/__test/alarm") {await super.alarm();return Response.json({ok:true});}
+    if(path==="/__test/disarm-alarm") {await this.ctx.storage.deleteAlarm();return Response.json({ok:true});}
     if(path==="/__test/arm-empty") {this.empty=Promise.withResolvers();return Response.json({ok:true});}
     if(path==="/__test/empty") {await this.empty.promise;return Response.json({empty:true});}
     if(path==="/__test/native-stream") {
@@ -78,10 +89,10 @@ const bundle = build({
   external: ["cloudflare:workers"],
 });
 
-export function bounded(promise, label = "event") {
+export function bounded(promise, label = "event", timeout = 5000) {
   let timer;
   return Promise.race([promise, new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Timed out awaiting ${label}`)), 5000);
+    timer = setTimeout(() => reject(new Error(`Timed out awaiting ${label}`)), timeout);
   })]).finally(() => clearTimeout(timer));
 }
 
@@ -215,9 +226,9 @@ export async function sse(f, options = {}) {
   const reader = response.body.getReader(), decoder = new TextDecoder();
   f.cleanup.push(() => options.signal?.aborted ? undefined : reader.cancel());
   let buffer = "";
-  const next = async () => {
+  const next = async (timeout) => {
     while (!buffer.includes("\n\n")) {
-      const part = await bounded(reader.read(), "SSE frame");
+      const part = await bounded(reader.read(), "SSE frame", timeout);
       if (part.done) return null;
       buffer += decoder.decode(part.value, { stream: true });
     }

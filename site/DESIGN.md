@@ -16,6 +16,17 @@ the last valid report and its disclosures visible with an inline error.
 
 WebSocket is primary, SSE is the compatibility path, and reconnect/visibility
 return replays durable changes. Expired cursors refresh the current snapshot.
+Idle WebSockets use Durable Object Hibernation and native ping autoresponses.
+SSE is not an always-awake substitute: all streams in one account share a
+five-second window, followed by at least 120 seconds without another SSE
+window. Renewals cannot extend that deadline. The browser closes native
+EventSource reconnects and owns cursor-based reconnect after the cooldown;
+visibility changes cannot bypass it. REST replay every 15 seconds during the
+gap keeps reports recoverable without holding a Durable Object awake.
+The existing connecting label applies while that event transport is absent;
+report/capture freshness remains independent. Before merge, compare actual
+GB*s for two idle fixture accounts before/after and project 30 days, with a
+conservative target below ten percent of the shared 400k GB*s allowance.
 Session expiry clears private activity and stops connections. MCP remains a
 preview until P11; device upload still requires separate explicit consent.
 

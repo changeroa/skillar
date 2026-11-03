@@ -1,6 +1,36 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { change, connected, cursor, frame, liveHarness, params, replay } from "./cloud-events-harness.test.mjs";
+import { change, connected, cursor, frame, liveHarness, modules, params, replay } from "./cloud-events-harness.test.mjs";
+
+test("EventSource errors close native automatic retries and notify the budgeted controller only once", (t) => {
+  // Given a native source that would otherwise retry while CONNECTING.
+  const original = globalThis.EventSource;
+  t.after(() => {
+    if (original === undefined) delete globalThis.EventSource;
+    else globalThis.EventSource = original;
+  });
+  let source, closes = 0, interrupted = 0;
+  globalThis.EventSource = class extends EventTarget {
+    readyState = 0;
+    closeCalls = 0;
+    constructor() { super(); source = this; }
+    close() { this.readyState = 2; this.closeCalls++; }
+  };
+  const socket = modules.browserConnect({ kind: "sse", url: "/api/events/stream" }, {
+    onFrame() { assert.fail("unexpected frame"); },
+    onClose() { closes++; },
+    onInterrupted() { interrupted++; },
+  });
+  // When
+  source.onerror();
+  source.onerror();
+  socket.close();
+  // Then
+  assert.equal(source.readyState, 2);
+  assert.equal(source.closeCalls, 1);
+  assert.equal(closes, 1);
+  assert.equal(interrupted, 0);
+});
 
 test("opens the websocket at the authenticated head and goes live only on the server ready", async () => {
   // Given

@@ -17,6 +17,8 @@ export const eventServicePaths = {
   revoke: "/v1/activity/events/revoke",
 } as const;
 export const EVENT_LEASE_MS = 5 * 60 * 1000;
+export const EVENT_SSE_LIFETIME_MS = 5_000;
+export const EVENT_SSE_COOLDOWN_MS = 120_000;
 export const EVENT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 export const EVENT_PAGE_SIZE = 100;
 const integer = z.number().int().nonnegative().safe();

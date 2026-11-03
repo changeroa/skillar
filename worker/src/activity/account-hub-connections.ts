@@ -53,9 +53,11 @@ export class HubConnections {
     const encoder = new TextEncoder();
     let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
     let closed = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const finish = (cancelled: boolean) => {
       if (closed) return;
       closed = true;
+      clearTimeout(timer);
       this.streams.delete(attachment.connectionId);
       request.signal.removeEventListener("abort", aborted);
       if (!cancelled) controller?.close();
@@ -79,6 +81,7 @@ export class HubConnections {
       cancel() { finish(true); },
     }, { highWaterMark: 64 * 1024, size: chunk => chunk.byteLength });
     this.streams.set(attachment.connectionId, connection);
+    timer = setTimeout(() => finish(false), Math.max(0, attachment.expiresAtMs - Date.now()));
     request.signal.addEventListener("abort", aborted, { once: true });
     if (request.signal.aborted) aborted();
     return { connection, response: new Response(stream, {

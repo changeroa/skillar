@@ -64,6 +64,7 @@ test("native SSE response cancellation releases its connection and expiration al
   assert.deepEqual(await empty, { empty: true });
   const state = await f.control("inspect");
   assert.equal(state.streams, 0);
+  assert.equal(state.timers, 0);
   assert.equal(state.alarm, null);
 });
 
@@ -79,21 +80,135 @@ test("request abort closes SSE and removes its live subscription", async t => {
   // Then the stream ends and the hub forgets its subscription.
   assert.equal(await end, null);
   assert.deepEqual(await empty, { empty: true });
-  assert.equal((await f.control("inspect")).streams, 0);
+  const state = await f.control("inspect");
+  assert.equal(state.streams, 0);
+  assert.equal(state.timers, 0);
+  assert.equal(state.alarm, null);
 });
 
-test("SSE lease renewal recovers a lost notification and revoke ends the stream", async t => {
+test("SSE lease renewal cannot extend its deadline and revoke ends the stream", async t => {
   // Given an authenticated live SSE stream and a missed notification.
   const f = await fixture(t);
   const stream = await sse(f);
   await f.append("consent");
   const change = stream.next();
-  // When the browser renews through the separate authenticated HTTP route.
+  // When the browser attempts renewal through the authenticated HTTP route.
   const response = await f.send(paths.lease, { body: { connectionId: stream.ready.data.connectionId } });
-  // Then replay is live, and the same sid revoke terminates this non-hibernating transport.
-  assert.equal(response.status, 200);
+  // Then renewal is rejected, but notify and same-sid revoke retain their authority.
+  assert.equal(response.status, 409);
+  assert.equal((await f.control("inspect")).streamAttachments[0].expiresAtMs, stream.ready.data.expiresAtMs);
+  assert.equal((await f.notify()).status, 200);
   assert.deepEqual((await change).data, { generation: 1, seq: 1, invalidationKind: "consent" });
   const end = stream.next();
   assert.equal((await f.send(paths.revoke, { body: { sessionId: browser().sessionId } })).status, 200);
   assert.equal(await end, null);
+});
+
+test("idle SSE reaches native deadline EOF without an alarm or another request", async t => {
+  // Given a native stream with no changes or client activity.
+  const f = await fixture(t);
+  const stream = await sse(f);
+  const { now } = await f.control("inspect");
+  assert.equal(stream.ready.data.expiresAtMs, now + 5_000);
+  await f.control("disarm-alarm");
+  await f.control("arm-empty");
+  const empty = bounded(f.control("empty"), "deadline cleanup", 10_000);
+  // When the actual five-second deadline fires, await EOF rather than sleeping.
+  const end = stream.next(10_000);
+  // Then the native timer finishes the response and leaves no scheduled work.
+  assert.equal(await end, null);
+  assert.deepEqual(await empty, { empty: true });
+  const state = await f.control("inspect");
+  assert.equal(state.streams, 0);
+  assert.equal(state.timers, 0);
+  assert.equal(state.alarm, null);
+});
+
+test("concurrent account SSE clients and later joins share one hard deadline", async t => {
+  // Given simultaneous admission attempts for separate sessions in the same account.
+  const f = await fixture(t);
+  const other = browser({ sessionId: "b".repeat(40) });
+  await f.seed(other);
+  const [a, b] = await Promise.all([sse(f), sse(f, { who: other })]);
+  const deadline = a.ready.data.expiresAtMs;
+  // When another tab joins later within that window.
+  await f.control("time", { now: deadline - 1_000 });
+  const c = await sse(f);
+  // Then admission and stored attachments all retain the first deadline.
+  assert.equal(b.ready.data.expiresAtMs, deadline);
+  assert.equal(c.ready.data.expiresAtMs, deadline);
+  const state = await f.control("inspect");
+  assert.ok(state.streamAttachments.every(value => value.expiresAtMs === deadline));
+  assert.deepEqual(state.sseWindow, { endsAtMs: deadline, nextAllowedAtMs: deadline + 120_000 });
+});
+
+test("SSE cooldown survives reconnect and eviction until the explicit next window", async t => {
+  // Given an ended window and a durable cooldown record.
+  const f = await fixture(t);
+  const stream = await sse(f);
+  const deadline = stream.ready.data.expiresAtMs;
+  await f.control("time", { now: deadline });
+  await f.control("arm-empty");
+  const empty = bounded(f.control("empty"), "expired window cleanup");
+  await f.control("alarm");
+  assert.equal(await stream.next(), null);
+  await empty;
+  const before = await f.control("inspect");
+  // When reconnect attempts straddle a real eviction during cooldown.
+  const denied = await f.send(paths.stream);
+  await f.evict();
+  const after = await f.control("inspect");
+  const deniedAfter = await f.send(paths.stream);
+  // Then both are bare 429 failures, and exactly the boundary permits a fresh window.
+  assert.equal(denied.status, 429);
+  assert.deepEqual(await denied.json(), { error: "sse_cooldown" });
+  assert.notEqual(before.boot, after.boot);
+  assert.deepEqual(after.sseWindow, before.sseWindow);
+  assert.equal(deniedAfter.status, 429);
+  assert.deepEqual(await deniedAfter.json(), { error: "sse_cooldown" });
+  await f.control("time", { now: deadline + 120_000 - 1 });
+  assert.equal((await f.send(paths.stream)).status, 429);
+  await f.control("time", { now: deadline + 120_000 });
+  const next = await sse(f);
+  assert.equal(next.ready.data.expiresAtMs, deadline + 125_000);
+});
+
+test("aborting every SSE client cannot restart the account window", async t => {
+  // Given a stream that ends before its account-wide deadline.
+  const f = await fixture(t);
+  const stream = await sse(f);
+  const deadline = stream.ready.data.expiresAtMs;
+  const end = stream.next();
+  await f.control("arm-empty");
+  const empty = bounded(f.control("empty"), "early abort cleanup");
+  await f.control("abort");
+  assert.equal(await end, null);
+  await empty;
+  // When a new tab reconnects after every prior stream has gone.
+  await f.control("time", { now: deadline - 1_000 });
+  const resumed = await sse(f);
+  // Then the persisted account window is reused rather than extended.
+  assert.equal(resumed.ready.data.expiresAtMs, deadline);
+});
+
+test("SSE ends at an earlier authoritative session expiry", async t => {
+  // Given a session expiring before the account-wide five-second window.
+  const f = await fixture(t);
+  const { now } = await f.control("inspect");
+  const expires = Math.floor(now / 1000) + 2;
+  await f.accounts.prepare("UPDATE sessions SET expires_at=?").bind(expires).run();
+  // When the native SSE response is opened.
+  const stream = await sse(f);
+  // Then the attachment and actual EOF obey session expiry, not the later window end.
+  assert.equal(stream.ready.data.expiresAtMs, expires * 1000);
+  assert.ok(stream.ready.data.expiresAtMs < (await f.control("inspect")).sseWindow.endsAtMs);
+  await f.control("disarm-alarm");
+  await f.control("arm-empty");
+  const empty = bounded(f.control("empty"), "session deadline cleanup");
+  assert.equal(await stream.next(), null);
+  await empty;
+  const state = await f.control("inspect");
+  assert.equal(state.streams, 0);
+  assert.equal(state.timers, 0);
+  assert.equal(state.alarm, null);
 });

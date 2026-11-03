@@ -7,7 +7,7 @@ export type LiveFrame = { readonly data: string; readonly cursor: string | null 
 export type LiveSocket = { readonly close: () => void };
 export type LiveSocketEvents = {
   readonly onFrame: (frame: LiveFrame) => void;
-  /** The browser EventSource is retrying by itself with Last-Event-ID; a new ready or onClose follows. */
+  /** A custom connector temporarily interrupted delivery; a new ready or onClose follows. */
   readonly onInterrupted: () => void;
   /** Closed by the server or the network; never fired for a client close. */
   readonly onClose: () => void;
@@ -68,10 +68,9 @@ function openEventSource(url: string, events: LiveSocketEvents): LiveSocket {
   for (const name of SSE_EVENTS) source.addEventListener(name, frame);
   source.onerror = () => {
     if (!open) return;
-    if (source.readyState === EventSource.CLOSED) {
-      open = false;
-      events.onClose();
-    } else events.onInterrupted();
+    open = false;
+    source.close();
+    events.onClose();
   };
   return { close() { if (!open) return; open = false; source.close(); } };
 }
