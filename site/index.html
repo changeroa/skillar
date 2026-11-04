@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Serve your agent skills from one place. Use skillar locally today, self-host a team registry, or follow the upcoming hosted skill server.">
+    <meta name="description" content="Serve agent skills locally, self-host a registry, or author and version private skills at skillar.sh/skills. Connect Codex and Claude Code over hosted MCP with OAuth.">
     <meta name="theme-color" content="#171916">
     <meta property="og:title" content="skillar — A home for your agent skills">
-    <meta property="og:description" content="Write once. Serve over MCP. Bring your own agent. Local now; hosted servers coming soon.">
+    <meta property="og:description" content="Write once. Serve over MCP. Connect Codex and Claude Code to https://skillar.sh/mcp with OAuth.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skillar.sh/">
     <meta property="og:image" content="https://skillar.sh/og.png">
@@ -54,8 +54,8 @@
       <section class="shell hero" aria-labelledby="hero-title">
         <div class="hero-copy">
           <h1 id="hero-title">A home for<br>your agent skills.</h1>
-          <p class="intro">Serve Markdown instructions to your agents through the Model Context Protocol (MCP). Run your own server today, or explore the planned hosted account flow.</p>
-          <p class="note">Available now: local, self-hosted, Google sign-in and consented activity snapshots. Hosted MCP endpoints: coming soon.</p>
+          <p class="intro">Serve Markdown instructions to your agents through the Model Context Protocol (MCP). Run locally, self-host, or author and version private skills at skillar.sh/skills.</p>
+          <p class="note">Hosted MCP is live at https://skillar.sh/mcp. Connect Codex or Claude Code with OAuth.</p>
           <div class="cluster actions">
             <a class="button primary" href="/login/">Sign in with Google <span aria-hidden="true">→</span></a>
             <a class="button secondary" href="#local-setup">Run locally <span aria-hidden="true">↓</span></a>
@@ -80,21 +80,21 @@
               </div>
             </div>
           </div>
-          <figcaption>Local today. Hosted MCP coming soon.</figcaption>
+          <figcaption>Local and hosted MCP, available now.</figcaption>
         </figure>
       </section>
 
       <section class="hosting-section" id="hosting" aria-labelledby="hosting-title">
         <div class="shell">
-          <div class="split hosting-intro"><h2 id="hosting-title">Choose how<br>you run skillar.</h2><p>Use the open-source tools on your own infrastructure, or explore the planned managed service. The choice is who runs the server, not whether your skills stay in Markdown.</p></div>
+          <div class="split hosting-intro"><h2 id="hosting-title">Choose how<br>you run skillar.</h2><p>Use the open-source tools on your own infrastructure, or publish private skills to your hosted account. The choice is who runs the server, not whether your skills stay in Markdown.</p></div>
           <div class="table-wrap">
             <table>
-              <caption class="sr-only">Available local and self-hosted options compared with planned managed hosting</caption>
+              <caption class="sr-only">Available local, self-hosted and hosted account options</caption>
               <thead><tr><th scope="col">Setup</th><th scope="col">Local / self-hosted</th><th scope="col">Hosted account</th></tr></thead>
               <tbody>
-                <tr><th scope="row">Availability</th><td>Available in the repository</td><td>Google sign-in and activity dashboard available; MCP endpoint coming soon</td></tr>
-                <tr><th scope="row">Endpoint</th><td>Your local or self-hosted URL</td><td>Account-scoped MCP endpoint planned</td></tr>
-                <tr><th scope="row">Operations</th><td>Your config, deployment and credentials</td><td>Managed provisioning planned</td></tr>
+                <tr><th scope="row">Availability</th><td>Available in the repository</td><td>Hosted MCP with OAuth; private skill authoring and versions</td></tr>
+                <tr><th scope="row">Endpoint</th><td>Your local or self-hosted URL</td><td>https://skillar.sh/mcp</td></tr>
+                <tr><th scope="row">Operations</th><td>Your config, deployment and credentials</td><td>Private skills at skillar.sh/skills; managed OAuth connections</td></tr>
                 <tr><th scope="row">Pricing</th><td>Open-source software; your infrastructure costs</td><td>Not announced</td></tr>
               </tbody>
             </table>
@@ -109,7 +109,7 @@
           <div>
             <h2 id="preview-title">Your account.<br>Your activity.</h2>
             <p>Sign in with Google, connect a device, and choose what it may upload. Review its uploaded snapshots in the remote dashboard. Every device starts local only.</p>
-            <p class="note">Signing in stores your Google ID, email, name, picture and sign-in times. No MCP endpoint or server is provisioned. Hosted pricing is not announced.</p>
+            <p class="note">Author and version private skills at skillar.sh/skills, then approve Codex or Claude Code over MCP with OAuth. Signing in stores your Google ID, email, name, picture and sign-in times. Hosted pricing is not announced.</p>
             <div class="cluster">
               <a class="text-link" href="#local-setup">Run locally now&nbsp;<span aria-hidden="true">↓</span></a>
               <a class="text-link" href="/login/">Open the account page&nbsp;<span aria-hidden="true">↗</span></a>
@@ -137,7 +137,7 @@
         <div><h2 id="how-title">Write. Serve.<br>Put it to work.</h2><p>Instructions stay in files you own. Agents find the right skill and read it when the task calls for it.</p></div>
         <ol class="workflow">
           <li><h3>Start with a skill</h3><p>A skill is a folder with a <code>SKILL.md</code> file: a name, a description and the instructions your agent reads when a task calls for them.</p></li>
-          <li><h3>Give it a home</h3><p>Index existing folders locally, or configure your own remote registry. Managed skill servers are coming soon.</p></li>
+          <li><h3>Give it a home</h3><p>Index existing folders locally, configure your own remote registry, or author and version private skills at skillar.sh/skills.</p></li>
           <li><h3>Connect your agents</h3><p>Search through <code>search_skills</code>. Read the selected skill through MCP resources. Load the details on demand, not the whole library.</p></li>
         </ol>
       </section>
@@ -189,7 +189,7 @@ skillar open</code></pre><p class="code-foot">Prefer a foreground process? Inste
         <div class="faq">
           <details><summary>What is an agent skill?</summary><p>A folder containing a <code>SKILL.md</code> instruction file and optional supporting files. The name and description help an agent discover it; the body carries the actual instructions.</p></details>
           <details><summary>Can I use skillar today?</summary><p>Yes. Install the local CLI with <code>npm install -g skillar</code>. Run <code>skillar init --dry-run</code> to preview setup changes. macOS or Linux and Node.js 24.15+ are required. If you are upgrading from gisool, read the <a href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">migration guide</a> first.</p></details>
-          <details><summary>Is the hosted service live?</summary><p>Google sign-in and the activity dashboard work. Sign-in stores your Google ID, email, name, picture and sign-in times. Activity uploads require a connected device and separate explicit consent. Managed MCP provisioning remains a preview; hosted pricing is not announced. The <a href="#hosted-preview">hosted accounts section</a> describes the journey.</p></details>
+          <details><summary>Is the hosted service live?</summary><p>Yes. Author and version private skills at skillar.sh/skills. Connect Codex or Claude Code to https://skillar.sh/mcp with OAuth to read the skills you publish. Activity uploads require a connected device and separate explicit consent. Hosted pricing is not announced. The <a href="#hosted-preview">hosted accounts section</a> describes the journey.</p></details>
           <details><summary>Does every MCP client work?</summary><p>Skills require a host that can discover and read MCP resources. The repository includes runtime-specific integrations; compatibility and capture coverage vary. Check the <a href="https://github.com/changeroa/skillar/blob/main/local/README.md">protocol and compatibility guide</a> for your client.</p></details>
           <details><summary>Where does my local data go?</summary><p>The local daemon listens on loopback, uses a local bearer token, and stores indexed skills and captured session activity in local SQLite. Cloud uploads are off by default. Connect a device and save explicit upload consent in the dashboard to enable them. Your connected agent and model provider handle data separately.</p></details>
           <details><summary>Can I host a registry for my team?</summary><p>Yes. The repository includes a Node.js registry and a Cloudflare Worker for authenticated distribution from private R2 releases. You provide infrastructure and credentials. See the <a href="https://github.com/changeroa/skillar/blob/main/docs/deployment.md">deployment guide</a>.</p></details>
@@ -202,7 +202,7 @@ skillar open</code></pre><p class="code-foot">Prefer a foreground process? Inste
       <div class="footer-top"><p>From <span lang="ko">기술</span> — skill, craft, technique.</p><div class="cluster"><a href="https://github.com/changeroa/skillar">Source&nbsp;<span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md">MIT / AGPL licenses&nbsp;<span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar#documentation">Documentation&nbsp;<span aria-hidden="true">↗</span></a></div>
       </div>
       <div class="footer-word" aria-hidden="true">skillar.sh</div>
-      <p class="note">Open source today. Hosted servers coming soon.</p>
+      <p class="note">Open source. Hosted MCP is live.</p>
     </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
