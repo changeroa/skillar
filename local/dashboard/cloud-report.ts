@@ -19,25 +19,25 @@ export async function readCloudReport<T>(
   status: DashboardReportStatus, part: (index: number) => Promise<unknown>, signal: AbortSignal,
 ): Promise<T> {
   const result = status.result;
-  if (!result || result.bytes > 512 * 1024 * 1024) throw cloudError("cloud_integrity", "Invalid cloud report manifest.");
+  if (!result || result.bytes > 512 * 1024 * 1024) throw cloudError("cloud_integrity", "클라우드 보고서 구성 정보가 올바르지 않습니다.");
   const bytes = new Uint8Array(result.bytes);
   let offset = 0;
   for (let index = 0; index < result.parts; index++) {
     signal.throwIfAborted();
     const value = dashboardResultPartSchema.parse(await part(index));
     if (value.index !== index || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value.body)) {
-      throw cloudError("cloud_integrity", "Invalid cloud report part.");
+      throw cloudError("cloud_integrity", "클라우드 보고서의 일부 데이터가 올바르지 않습니다.");
     }
     const binary = atob(value.body);
     const chunk = Uint8Array.from(binary, (char) => char.charCodeAt(0));
     if (chunk.length !== value.bytes || offset + chunk.length > bytes.length || await hash(chunk) !== value.hash) {
-      throw cloudError("cloud_integrity", "Cloud report part verification failed.");
+      throw cloudError("cloud_integrity", "클라우드 보고서의 일부 데이터 검증에 실패했습니다.");
     }
     bytes.set(chunk, offset);
     offset += chunk.length;
   }
   if (offset !== result.bytes || await hash(bytes) !== result.hash) {
-    throw cloudError("cloud_integrity", "Cloud report verification failed.");
+    throw cloudError("cloud_integrity", "클라우드 보고서 검증에 실패했습니다.");
   }
   signal.throwIfAborted();
   const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -47,7 +47,7 @@ export async function readCloudReport<T>(
       envelope.inputRevision.journalThrough !== status.inputRevision.journalThrough ||
       envelope.inputRevision.runtimeSequence !== status.inputRevision.runtimeSequence ||
       envelope.sourceCapturedAt !== status.sourceCapturedAt || envelope.sourceReceivedAt !== status.sourceReceivedAt) {
-    throw cloudError("cloud_integrity", "Cloud report revision verification failed.");
+    throw cloudError("cloud_integrity", "클라우드 보고서 버전 검증에 실패했습니다.");
   }
   // DTOs are produced by the same shared analysis implementation as the local API.
   const decoded: { payload: T } = JSON.parse(text);

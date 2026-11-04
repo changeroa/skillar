@@ -213,7 +213,7 @@ export function App({ embedded = false }: AppOptions = {}) {
       removeEventListener("scroll", position, true); removeEventListener("resize", position);
     };
   }, [embedded]);
-  if (live.invalidated) return <p role="status">Cloud activity is unavailable. Sign in or select a source again.</p>;
+  if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
     <>
       <Header class="top">

@@ -43,7 +43,7 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
   const interval = options.pollIntervalMs ?? 1000;
   const timeout = options.timeoutMs ?? 180_000;
   if (!Number.isInteger(maxPolls) || maxPolls < 0 || !Number.isFinite(interval) || interval < 0 ||
-      !Number.isFinite(timeout) || timeout <= 0) throw cloudError("cloud_options", "Invalid cloud polling options.");
+      !Number.isFinite(timeout) || timeout <= 0) throw cloudError("cloud_options", "클라우드 조회 설정이 올바르지 않습니다.");
   let unauthorized = false;
   let liveState: LiveState = "connecting";
   let snapshot: { readonly filter: Filter; readonly rows: readonly SessionListRow[] } | undefined;
@@ -90,13 +90,13 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
           invalidate();
           options.onUnauthorized();
         }
-        throw new ApiError(401, "cloud_unauthorized", "Sign in to your cloud account again to view activity.");
+        throw new ApiError(401, "cloud_unauthorized", "활동 기록을 보려면 클라우드 계정에 다시 로그인해 주세요.");
       }
       signal.throwIfAborted();
       if (!response.ok) throw new ApiError(response.status, `cloud_http_${response.status}`,
-        response.status >= 500 ? "The cloud report service is temporarily unavailable. Try again later." :
-        response.status === 403 ? "This device or its consent no longer permits the report. Reload sources and review its consent." :
-        "The cloud dashboard request could not be completed. Reload sources and try again.");
+        response.status >= 500 ? "클라우드 보고서 서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요." :
+        response.status === 403 ? "이 기기나 동의 설정으로는 보고서를 볼 수 없습니다. 출처를 새로 불러오고 동의 설정을 확인해 주세요." :
+        "클라우드 대시보드 요청을 완료하지 못했습니다. 출처를 새로 불러온 뒤 다시 시도해 주세요.");
       const value: unknown = await response.json();
       signal.throwIfAborted();
       return value;
@@ -109,11 +109,11 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
     } catch (error) {
       if (error instanceof ApiError) throw error;
       if (signal.aborted) {
-        if (unauthorized) throw new ApiError(401, "cloud_unauthorized", "Sign in to your cloud account again to view activity.");
-        if (lifetime.signal.aborted || extra?.aborted) throw new DOMException("Cloud dashboard request cancelled.", "AbortError");
-        throw cloudError("cloud_timeout", "The cloud report timed out. Refresh to retry.");
+        if (unauthorized) throw new ApiError(401, "cloud_unauthorized", "활동 기록을 보려면 클라우드 계정에 다시 로그인해 주세요.");
+        if (lifetime.signal.aborted || extra?.aborted) throw new DOMException("클라우드 대시보드 요청이 취소되었습니다.", "AbortError");
+        throw cloudError("cloud_timeout", "클라우드 보고서 요청 시간이 초과되었습니다. 새로고침해 다시 시도해 주세요.");
       }
-      throw cloudError("cloud_report", "The cloud report could not be read. Check your cloud connection and retry.");
+      throw cloudError("cloud_report", "클라우드 보고서를 읽지 못했습니다. 클라우드 연결을 확인하고 다시 시도해 주세요.");
     } finally {
       clearTimeout(timer);
     }
@@ -134,17 +134,17 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
       const jobId = status.jobId;
       let polls = 0;
       for (;;) {
-        if (status.jobId !== jobId) throw cloudError("cloud_integrity", "Cloud report identity changed.");
+        if (status.jobId !== jobId) throw cloudError("cloud_integrity", "클라우드 보고서 식별 정보가 변경되었습니다.");
         signal.throwIfAborted();
         options.onReport?.(status);
         signal.throwIfAborted();
         switch (status.state) {
-          case "failed": throw cloudError(status.error ?? "cloud_failed", "The cloud report failed. Check source availability and retry.");
+          case "failed": throw cloudError(status.error ?? "cloud_failed", "클라우드 보고서 생성에 실패했습니다. 출처를 사용할 수 있는지 확인하고 다시 시도해 주세요.");
           case "complete":
-            if (status.pending) throw cloudError("cloud_integrity", "Invalid cloud report completion.");
+            if (status.pending) throw cloudError("cloud_integrity", "클라우드 보고서의 완료 상태가 올바르지 않습니다.");
             return readCloudReport<T>(status, (part) => post(dashboardPaths.reportResult, { profile, jobId, part }), signal);
           case "preparing": case "queued": case "running":
-            if (polls++ >= maxPolls) throw cloudError("cloud_pending", "The cloud report is still pending. Refresh to retry.");
+            if (polls++ >= maxPolls) throw cloudError("cloud_pending", "클라우드 보고서가 아직 준비 중입니다. 새로고침해 다시 시도해 주세요.");
             await (options.wait ?? wait)(interval, signal);
             signal.throwIfAborted();
             status = dashboardReportStatusSchema.parse(await post(dashboardPaths.reportStatus, { profile, jobId }));
