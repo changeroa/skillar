@@ -7,7 +7,7 @@ import type { WorkflowSpec } from "../src/workflow/spec.js";
 export type Stats = ReturnType<Store["stats"]>;
 /** The API may attach the attribution reason for unattributed rows; SessionRow itself does not carry it. */
 export type SessionListRow = SessionRow & { attributionReason?: NonNullable<Attribution["reason"]> };
-export type LiveState = "connecting" | "live" | "offline" | "fixtures";
+export type LiveState = "connecting" | "live" | "paused" | "offline" | "fixtures";
 export type EvalCaseInput = { query: string; expectedUri?: string; fromTraceId?: string };
 /** GET /api/flows takes its own range and page size, not the full session Filter. */
 export type FlowsQuery = { from?: number; to?: number; limit?: number; automated?: AutomatedMode };

@@ -36,7 +36,7 @@ function useLive(): LiveInfo & { invalidated?: boolean } {
   return live;
 }
 
-const LIVE_TEXT: Record<LiveState, string> = { connecting: "connecting", live: "live", offline: "offline", fixtures: "fixtures" };
+const LIVE_TEXT: Record<LiveState, string> = { connecting: "connecting", live: "live", paused: "paused", offline: "offline", fixtures: "fixtures" };
 
 const dateTime = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 

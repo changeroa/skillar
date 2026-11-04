@@ -143,6 +143,7 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .live--live .live__dot { animation: pulse 2.4s ease-in-out infinite; }
+.live--paused { color: var(--ink-2); }
 .live--offline .live__dot { background: var(--bad); }
 
 @keyframes pulse {

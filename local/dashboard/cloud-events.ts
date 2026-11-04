@@ -35,6 +35,7 @@ export type CloudLive = { readonly start: () => void; readonly stop: () => void 
 const HANDSHAKE_FAILURES_BEFORE_FALLBACK = 2;
 const MIN_LEASE_DELAY_MS = 15_000;
 const SSE_REPLAY_POLL_MS = 15_000;
+const HIDDEN_PAUSE_MS = 60_000;
 
 export const browserScheduler: LiveScheduler = {
   now: () => Date.now(),
@@ -68,6 +69,9 @@ class LiveRun {
   private cancelLease: (() => void) | undefined;
   private cancelReconnect: (() => void) | undefined;
   private cancelReplay: (() => void) | undefined;
+  private cancelPause: (() => void) | undefined;
+  private paused = false;
+  private connectionEpoch = 0;
   private sseDeadline = 0;
   private sseNotBefore = 0;
   private chain: Promise<void> = Promise.resolve();
@@ -78,6 +82,7 @@ class LiveRun {
     this.unsubscribe = deps.visibility.subscribe(() => this.onVisibility());
     deps.sink.onState(this.transport === undefined ? "offline" : "connecting");
     if (this.transport !== undefined) this.enqueue(() => this.connect());
+    this.onVisibility();
   }
   private get signal(): AbortSignal { return this.abort.signal; }
 
@@ -87,6 +92,7 @@ class LiveRun {
     this.cancelLease?.();
     this.cancelReconnect?.();
     this.cancelReplay?.();
+    this.cancelPause?.();
     this.handle?.close();
     this.handle = undefined;
     this.socket = undefined;
@@ -94,7 +100,13 @@ class LiveRun {
 
   /** Frames and REST replay run serialized so a gap fill cannot interleave with later frames. */
   private enqueue(task: () => Promise<void>): void {
-    this.chain = this.chain.then(() => (this.signal.aborted ? undefined : task().catch((error: unknown) => this.recover(error))));
+    const epoch = this.connectionEpoch;
+    this.chain = this.chain.then(() => {
+      if (this.signal.aborted || this.paused || epoch !== this.connectionEpoch) return;
+      return task().catch((error: unknown) => {
+        if (epoch === this.connectionEpoch) this.recover(error);
+      });
+    });
   }
   private recover(error: unknown): void {
     if (this.signal.aborted) return;
@@ -109,9 +121,10 @@ class LiveRun {
       this.scheduleReconnect();
       return;
     }
+    const epoch = this.connectionEpoch;
     await this.engine.sync();
     const since = this.engine.since;
-    if (this.signal.aborted || this.transport === undefined || since === null) return;
+    if (this.signal.aborted || this.paused || epoch !== this.connectionEpoch || this.transport === undefined || since === null) return;
     const socket: Socket = { connectionId: crypto.randomUUID(), readies: 0 };
     if (this.transport === "sse") {
       this.sseDeadline = 0;
@@ -219,13 +232,48 @@ class LiveRun {
       this.cancelReplay = undefined;
       this.enqueue(async () => {
         if (this.socket !== undefined || this.cancelReconnect === undefined) return;
+        const epoch = this.connectionEpoch;
         await this.engine.sync();
-        if (!this.signal.aborted && this.socket === undefined && this.cancelReconnect !== undefined) this.scheduleReplay();
+        if (!this.signal.aborted && !this.paused && epoch === this.connectionEpoch &&
+          this.socket === undefined && this.cancelReconnect !== undefined) this.scheduleReplay();
       });
     });
   }
   private onVisibility(): void {
-    if (this.signal.aborted || !this.deps.visibility.visible()) return;
+    if (this.signal.aborted || this.transport === undefined) return;
+    if (!this.deps.visibility.visible()) {
+      if (this.paused || this.cancelPause !== undefined) return;
+      this.cancelPause = this.deps.scheduler.schedule(HIDDEN_PAUSE_MS, () => {
+        this.cancelPause = undefined;
+        if (this.signal.aborted || this.deps.visibility.visible()) return;
+        this.paused = true;
+        this.connectionEpoch++;
+        this.cancelLease?.();
+        this.cancelLease = undefined;
+        this.cancelReconnect?.();
+        this.cancelReconnect = undefined;
+        this.cancelReplay?.();
+        this.cancelReplay = undefined;
+        const handle = this.handle;
+        this.handle = undefined;
+        this.socket = undefined;
+        handle?.close();
+        this.deps.sink.onState("paused");
+      });
+      return;
+    }
+    this.cancelPause?.();
+    this.cancelPause = undefined;
+    if (this.paused) {
+      this.paused = false;
+      this.attempts = 0;
+      this.deps.sink.onState("connecting");
+      if (this.transport === "sse" && this.deps.scheduler.now() < this.sseNotBefore) {
+        this.scheduleReconnect();
+        this.enqueue(() => this.engine.sync());
+      } else this.enqueue(() => this.connect());
+      return;
+    }
     if (this.cancelReconnect !== undefined) {
       if (this.transport === "sse") {
         this.enqueue(() => this.engine.sync());
