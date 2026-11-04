@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createCatalog } from "../catalog/index.js";
 import { loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
+import type { CaptureProbeReport, CaptureRuntime } from "../diagnostics/capture.js";
 import { PACKS } from "../packs/registry.js";
 import { selfCheck } from "../store/db.js";
 import type { SkillarConfig } from "../types.js";
@@ -14,7 +15,8 @@ import { type Io, currentServicePlatform, dbPath, packageVersion, serviceLoaded,
 export type CheckStatus = "ok" | "warn" | "fail" | "skip";
 export type DoctorCheck = { name: string; status: CheckStatus; code?: string; detail: string };
 export type SkillFamily = { id: string; members: string[] };
-export type DoctorReport = { ok: boolean; version: string; checks: DoctorCheck[]; families: SkillFamily[] };
+export type DoctorReport = { ok: boolean; version: string; checks: DoctorCheck[]; families: SkillFamily[]; captureTests?: CaptureProbeReport[] };
+export type DoctorOptions = { json?: boolean; captureTest?: boolean; runtimes?: CaptureRuntime[] };
 
 const HOOK_LIMIT_S = 5;
 const HERDR_TIMEOUT_MS = 2000;
@@ -226,7 +228,40 @@ function lastBackupCheck(skillarHome: string, now: number): DoctorCheck {
   return { name: "last_backup", status: "ok", detail: `${latest.dir} (${ageH} h ago)` };
 }
 
-export async function collectDoctor(env: NodeJS.ProcessEnv): Promise<DoctorReport> {
+async function captureTest(runtime: CaptureRuntime, port: number, skillarHome: string): Promise<{ check: DoctorCheck; report?: CaptureProbeReport }> {
+  const name = `${runtime}: capture_round_trip`;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/diagnostics/capture`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${readFileSync(join(skillarHome, "token"), "utf8").trim()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ runtime }), signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return { check: { name, status: "fail",
+      code: response.status === 401 || response.status === 403 ? "capture_unauthorized" : "capture_unavailable",
+      detail: `daemon capture test returned HTTP ${response.status}; no agent was launched` } };
+    const value: unknown = await response.json();
+    const stages = ["transport", "authentication", "storage", "attribution"];
+    if (!isObj(value) || value.runtime !== runtime || value.scope !== "daemon_ingest" || typeof value.ok !== "boolean"
+      || typeof value.id !== "string" || typeof value.startedAt !== "number" || typeof value.completedAt !== "number"
+      || !Array.isArray(value.checks) || value.checks.length !== stages.length
+      || !value.checks.every((check, index) => isObj(check) && check.stage === stages[index]
+        && ["passed", "failed", "not_run"].includes(String(check.status)))) {
+      return { check: { name, status: "fail", code: "bad_capture_report", detail: "daemon returned an invalid capture test report" } };
+    }
+    const report = value as CaptureProbeReport;
+    if (report.ok !== report.checks.every((check) => check.status === "passed")) {
+      return { check: { name, status: "fail", code: "bad_capture_report", detail: "daemon capture status contradicts its stage results" } };
+    }
+    const failure = report.checks.find((check) => check.status === "failed");
+    return { report, check: { name, status: report.ok ? "ok" : "fail",
+      ...(failure ? { code: failure.code ?? `capture_${failure.stage}` } : {}),
+      detail: `${report.checks.map((check) => `${check.stage}=${check.status}`).join(", ")} (synthetic daemon ingest; agent exporter not exercised)` } };
+  } catch (error) {
+    return { check: { name, status: "fail", code: "capture_unreachable", detail: `daemon capture test could not complete (${(error as Error).message})` } };
+  }
+}
+
+export async function collectDoctor(env: NodeJS.ProcessEnv, opts: DoctorOptions = {}): Promise<DoctorReport> {
   const home = resolveHome(env);
   const skillarHome = resolveSkillarHome(env);
   const config = loadConfig(env);
@@ -235,10 +270,12 @@ export async function collectDoctor(env: NodeJS.ProcessEnv): Promise<DoctorRepor
 
   const remote: string[] = [];
   const packChecks: DoctorCheck[] = [];
+  const detected: CaptureRuntime[] = [];
   for (const pack of PACKS) {
     const d = await pack.detect({ home, env });
     if (d.remoteSkillarRegistered) remote.push(pack.id);
     if (!d.installed || config.runtimes[pack.id]?.enabled === false) continue;
+    if (pack.id !== "unknown") detected.push(pack.id);
     for (const c of await pack.doctorChecks({ home, env, port: config.port })) {
       packChecks.push({ name: `${pack.id}: ${c.name}`, status: c.ok ? "ok" : "fail", detail: c.detail });
     }
@@ -248,11 +285,23 @@ export async function collectDoctor(env: NodeJS.ProcessEnv): Promise<DoctorRepor
     : { name: "remote_skillar", status: "ok", detail: "no remote skillar registration found" });
   const catalogResult = await catalogChecks(config, skillarHome);
   checks.push(tokenCheck(skillarHome), ftsCheck(), ...catalogResult.checks, ...packChecks, hookTimeoutCheck(home, env), lastBackupCheck(skillarHome, Date.now()));
-  return { ok: checks.every((c) => c.status !== "fail"), version: packageVersion(), checks, families: catalogResult.families };
+  const captureTests: CaptureProbeReport[] = [];
+  if (opts.captureTest) {
+    const runtimes = [...new Set(opts.runtimes?.length ? opts.runtimes : detected)];
+    if (runtimes.length === 0) checks.push({ name: "capture_round_trip", status: "warn", code: "capture_no_runtime",
+      detail: "no enabled runtime detected; select one with --runtime to test daemon ingest" });
+    for (const runtime of runtimes) {
+      const result = await captureTest(runtime, config.port, skillarHome);
+      checks.push(result.check);
+      if (result.report) captureTests.push(result.report);
+    }
+  }
+  return { ok: checks.every((c) => c.status !== "fail"), version: packageVersion(), checks, families: catalogResult.families,
+    ...(opts.captureTest ? { captureTests } : {}) };
 }
 
-export async function runDoctor(opts: { json?: boolean }, env: NodeJS.ProcessEnv, io: Io): Promise<number> {
-  const report = await collectDoctor(env);
+export async function runDoctor(opts: DoctorOptions, env: NodeJS.ProcessEnv, io: Io): Promise<number> {
+  const report = await collectDoctor(env, opts);
   if (opts.json) io.out(JSON.stringify(report, null, 2) + "\n");
   else {
     for (const c of report.checks) io.out(`[${c.status}] ${c.name}: ${c.detail}${c.code ? ` (${c.code})` : ""}\n`);

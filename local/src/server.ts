@@ -5,12 +5,14 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
+import { registerCaptureRoutes } from "./api/capture.js";
 import { registerRoutes } from "./api/routes.js";
 import { authGate, deny, localOnly, requireJson } from "./api/security.js";
 import { createSseHub } from "./api/sse.js";
 import { registerStatic } from "./api/static.js";
 import { createCatalog } from "./catalog/index.js";
 import { ensureSkillarHome, ensureToken, resolveSkillarHome, resolveHome } from "./config.js";
+import { createCaptureDiagnostics } from "./diagnostics/capture.js";
 import { createFsWatchdog } from "./fs-watchdog.js";
 import { startHerdrSync } from "./herdr/sync.js";
 import { createIngestDeps } from "./ingest/pipeline.js";
@@ -127,9 +129,20 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
     const sse = createSseHub(lookupRow, log);
     cleanup.push(() => sse.close());
 
+    let boundPort = config.port;
+    const captureDiagnostics = createCaptureDiagnostics(db, {
+      post: (runtime, payload, signal) => fetch(`http://${HOST}:${boundPort}/ingest/hook/${runtime}`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload), signal,
+      }),
+    });
+    cleanup.push(() => captureDiagnostics.close());
     const ingestDeps = createIngestDeps(ownStore, {
       captureLevel: config.captureLevel,
-      publish: (change) => sse.notify(change.sessionId),
+      isDiagnostic: (event) => captureDiagnostics.isProbe(event),
+      publish: (change) => {
+        if (!captureDiagnostics.observe(change)) sse.notify(change.sessionId);
+      },
       sessionChanged: (sessionId) => {
         // Ingest batches are synchronous; coalesce their notifications into one linking pass.
         if (!herdr) return;
@@ -163,7 +176,6 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
       }),
     });
 
-    let boundPort = config.port;
     const app = express();
     app.disable("x-powered-by");
     // Routes match exactly as authGate classifies them; `/API/...` must not reach an `/api/...` handler.
@@ -193,6 +205,7 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
     }));
 
     registerRoutes(app, { store: ownStore, catalog, ingest: ingestDeps, sse, version, log, fsHealth: () => watchdog.health() });
+    registerCaptureRoutes(app, captureDiagnostics);
     registerMcp(app, { catalog, search, store: ownStore, ingest: ingestDeps, token });
     registerStatic(app, { token, ...(deps.dashboardDir ? { dir: deps.dashboardDir } : {}) });
     app.use((_req: Request, res: Response) => deny(res, 404, "not_found"));

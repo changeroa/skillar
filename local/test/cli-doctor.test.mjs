@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { distImport } from "./_helpers.mjs";
 import { cliSandbox, runCli } from "./helpers/cli.mjs";
+import { startTestServer } from "./helpers/api.mjs";
 
 const { openDb } = await distImport("store/db.js");
 const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
@@ -211,6 +212,45 @@ test("doctor sends this install's bearer token to /api/stats and reports ok on 2
   const token = readFileSync(join(sb.env.SKILLAR_HOME, "token"), "utf8").trim();
   assert.ok(token.length > 0);
   assert.equal(auth, "Bearer " + token);
+});
+
+test("doctor opt-in capture checks use the real daemon and report every completed stage", async (t) => {
+  const sb = cliSandbox({ runtimes: [] });
+  const daemon = await startTestServer({ captureLevel: "metadata" });
+  const herdr = await fakeHerdr(sb);
+  t.after(async () => { await daemon.stop(); await herdr.close(); sb.cleanup(); });
+  prepareHome(sb, daemon.port);
+  writeFileSync(join(sb.env.SKILLAR_HOME, "token"), daemon.token, { mode: 0o600 });
+  const result = await runCli(["doctor", "--capture-test", "--runtime", "codex,gemini", "--json"], sb.env);
+  assert.equal(result.code, 0, result.output);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.captureTests.map((entry) => entry.runtime), ["codex", "gemini"]);
+  assert.ok(report.captureTests.every((entry) => entry.ok && entry.scope === "daemon_ingest"));
+  assert.ok(report.captureTests.every((entry) => entry.checks.length === 4 && entry.checks.every((stage) => stage.status === "passed")));
+  assert.equal(check(report, "codex: capture_round_trip").status, "ok");
+  assert.equal(check(report, "gemini: capture_round_trip").status, "ok");
+});
+
+test("doctor reports an unavailable diagnostic route rather than accepting an older daemon's health response", async (t) => {
+  const sb = cliSandbox({ runtimes: [] });
+  const daemon = await fakeSkillar();
+  const herdr = await fakeHerdr(sb);
+  t.after(async () => { await daemon.close(); await herdr.close(); sb.cleanup(); });
+  prepareHome(sb, daemon.port);
+  const result = await runCli(["doctor", "--capture-test", "--runtime", "codex", "--json"], sb.env);
+  assert.equal(result.code, 1, result.output);
+  const report = JSON.parse(result.stdout);
+  assert.equal(check(report, "codex: capture_round_trip").code, "capture_unavailable");
+  assert.deepEqual(report.captureTests, []);
+});
+
+test("doctor validates capture runtime options before starting diagnostics", async (t) => {
+  const sb = cliSandbox({ runtimes: [] });
+  t.after(sb.cleanup);
+  for (const args of [["doctor", "--runtime", "codex"], ["doctor", "--capture-test", "--runtime", "unknown"]]) {
+    const result = await runCli(args, sb.env);
+    assert.equal(result.code, 2);
+  }
 });
 
 test("doctor herdr check accepts a pong from the configured unix socket", async (t) => {

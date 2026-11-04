@@ -4,6 +4,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Filter, RuntimeId } from "../../src/types.js";
 import { api, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
+import { CaptureHealthPanel } from "../components/capture-health";
 import {
   ATTRIBUTION_LABEL, RUNTIME_IDS, RUNTIME_LABEL, RUNTIME_MARK,
   buildHash, isEmptyFilter, serializeFilter, skillName, type Route, type ViewProps,
@@ -331,6 +332,7 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
       {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
       {rows !== undefined && stats && <UsageNote stats={stats} />}
+      <CaptureHealthPanel revision={refresh} />
       {body}
     </section>
   );
