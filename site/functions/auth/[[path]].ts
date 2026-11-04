@@ -5,6 +5,7 @@ import {
   AuthenticationError, configSchema, cookie, FLOW_COOKIE, FLOW_SECONDS, pkceChallenge,
   randomToken, readFlow, readSession, SESSION_COOKIE, SESSION_SECONDS, signCookie,
   userSchema, verifyGoogleToken,
+  loginReturnPathSchema,
 } from '../../lib/auth.ts';
 import { browserPrincipal } from '../../lib/activity-auth.ts';
 import type { ActivityEnv } from '../../lib/activity-auth.ts';
@@ -43,7 +44,22 @@ async function handle(request: Request, env: Env): Promise<Response> {
   const path = url.pathname.replace(/\/$/, '');
 
   if (path === '/auth/google' && request.method === 'GET') {
-    const flow = { state: randomToken(), nonce: randomToken(), verifier: randomToken() };
+    const suppliedReturn = url.searchParams.get('returnTo');
+    const target = suppliedReturn === null ? null : loginReturnPathSchema.safeParse(suppliedReturn);
+    if (target !== null && !target.success) {
+      return Response.json({ error: 'Invalid return path.' }, { status: 400, headers: noStore });
+    }
+    const flow = {
+      state: randomToken(), nonce: randomToken(), verifier: randomToken(),
+      ...(target === null ? {} : { returnState: true as const }),
+    };
+    if (target !== null) {
+      await env.ACCOUNTS.batch([
+        env.ACCOUNTS.prepare('DELETE FROM google_login_returns WHERE expires_at<=?').bind(now),
+        env.ACCOUNTS.prepare(`INSERT INTO google_login_returns(state_hash,return_path,expires_at)
+          VALUES(?,?,?)`).bind(await pkceChallenge(flow.state), target.data, now + FLOW_SECONDS),
+      ]);
+    }
     const google = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     google.search = new URLSearchParams({
       client_id: config.GOOGLE_CLIENT_ID,
@@ -64,7 +80,13 @@ async function handle(request: Request, env: Env): Promise<Response> {
     const clearFlow = cookie(FLOW_COOKIE, '', 0);
     try {
       const flow = await readFlow(request, config, now);
-      if (url.searchParams.has('error')) return redirect('/login/?error=cancelled', [clearFlow]);
+      const returnHash = flow.returnState === true ? await pkceChallenge(flow.state) : null;
+      if (url.searchParams.has('error')) {
+        if (returnHash !== null) await env.ACCOUNTS.prepare(
+          'DELETE FROM google_login_returns WHERE state_hash=?',
+        ).bind(returnHash).run();
+        return redirect('/login/?error=cancelled', [clearFlow]);
+      }
       const code = url.searchParams.get('code');
       if (!code || code.length > 4096) throw new AuthenticationError();
       const response = await ky.post('https://oauth2.googleapis.com/token', {
@@ -82,6 +104,15 @@ async function handle(request: Request, env: Env): Promise<Response> {
       const tokens = tokenResponseSchema.safeParse(response);
       if (!tokens.success) throw new AuthenticationError();
       const profile = await verifyGoogleToken(tokens.data.id_token, config.GOOGLE_CLIENT_ID, flow.nonce, now);
+      let returnPath = '/login/';
+      if (returnHash !== null) {
+        const row = await env.ACCOUNTS.prepare(
+          'SELECT return_path FROM google_login_returns WHERE state_hash=? AND expires_at>?',
+        ).bind(returnHash, now).first();
+        const saved = z.object({ return_path: loginReturnPathSchema }).safeParse(row);
+        if (!saved.success) throw new AuthenticationError();
+        returnPath = saved.data.return_path;
+      }
       const sid = randomToken();
       const session = await signCookie({ sub: profile.sub, sid }, 'session', config, now);
       await env.ACCOUNTS.batch([
@@ -94,8 +125,11 @@ async function handle(request: Request, env: Env): Promise<Response> {
         env.ACCOUNTS.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
         env.ACCOUNTS.prepare('INSERT INTO sessions (id, user_sub, expires_at) VALUES (?, ?, ?)')
           .bind(sid, profile.sub, now + SESSION_SECONDS),
+        ...(returnHash === null ? [] : [
+          env.ACCOUNTS.prepare('DELETE FROM google_login_returns WHERE state_hash=?').bind(returnHash),
+        ]),
       ]);
-      return redirect('/login/', [
+      return redirect(returnPath, [
         clearFlow,
         cookie(SESSION_COOKIE, session, SESSION_SECONDS),
       ]);

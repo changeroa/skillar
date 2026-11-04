@@ -6,6 +6,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import {
   AuthenticationError, cookie, FLOW_COOKIE, FLOW_SECONDS, pkceChallenge, randomToken,
   readFlow, readSession, SESSION_COOKIE, SESSION_SECONDS, signCookie, verifyGoogleToken,
+  loginReturnPathSchema,
 } from '../lib/auth.ts';
 import { onRequest } from '../functions/auth/[[path]].ts';
 
@@ -180,6 +181,10 @@ async function fixture(t, requestOrigin = origin, publicOrigin = requestOrigin) 
   t.mock.method(Date, 'now', () => now * 1000);
   const db = new DatabaseSync(':memory:');
   db.exec(await readFile(new URL('../migrations/0001_accounts.sql', import.meta.url), 'utf8'));
+  for (const name of ['0002_activity_accounts.sql', '0003_activity_consent.sql',
+    '0004_account_events.sql', '0005_private_skills.sql', '0006_mcp_connections.sql']) {
+    db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
+  }
   t.after(() => db.close());
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
@@ -424,4 +429,83 @@ test('missing OAuth configuration returns an unavailable state instead of starti
   assert.equal(response.status, 503);
   assert.equal(response.headers.has('location'), false);
   assert.equal(response.headers.get('cache-control'), 'no-store');
+});
+
+test('keeps long MCP authorization returns in primary storage, not the flow cookie', async t => {
+  // Given a legitimate authorization request larger than a browser cookie.
+  const f = await fixture(t);
+  const target = `/oauth/authorize?client_id=${'a'.repeat(5000)}&response_type=code`;
+  // When Google sign-in starts with that bounded same-origin return.
+  const response = await f.request(`/auth/google?returnTo=${encodeURIComponent(target)}`);
+  const google = new URL(response.headers.get('location'));
+  const signed = response.headers.getSetCookie()[0].split(';')[0].slice(FLOW_COOKIE.length + 1);
+  const saved = f.db.prepare('SELECT * FROM google_login_returns').get();
+  // Then the cookie carries only a boolean marker and random flow values.
+  assert.equal(response.status, 303);
+  assert.ok(signed.length < 4096);
+  const storedFlow = await readFlow(callbackRequest(signed, google.searchParams.get('state')), config, now);
+  assert.equal(storedFlow.returnState, true);
+  assert.equal(saved.state_hash, await pkceChallenge(storedFlow.state));
+  assert.notEqual(saved.state_hash, storedFlow.state);
+  assert.equal(saved.return_path, target);
+  assert.equal(saved.expires_at, now + FLOW_SECONDS);
+  assert.equal(Buffer.from(signed.split('.')[1], 'base64url').toString().includes('client_id'), false);
+});
+
+for (const target of ['/connections/', `/oauth/authorize?client_id=${'b'.repeat(5000)}&state=opaque`]) {
+  test(`Google callback restores the stored ${target.startsWith('/connections') ? 'connections' : 'long MCP'} return`, async t => {
+    // Given a signed flow with a primary return record bound to its hashed state.
+    const f = await fixture(t);
+    f.db.prepare('INSERT INTO google_login_returns VALUES (?,?,?)')
+      .run(await pkceChallenge(flow.state), target, now + FLOW_SECONDS);
+    const signed = await signCookie({ ...flow, returnState: true }, 'oauth', config, now);
+    // When the real callback validates a signed Google-shaped token.
+    const response = await f.request(`/auth/google/callback?state=${flow.state}&code=google-code`, {
+      headers: { cookie: `${FLOW_COOKIE}=${signed}` },
+    });
+    // Then it creates a normal revocable session and consumes only that return.
+    assert.equal(response.headers.get('location'), target);
+    assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 1);
+    assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM google_login_returns').get().n, 0);
+    assert.equal(response.headers.getSetCookie().some(value => value.startsWith(`${SESSION_COOKIE}=`)), true);
+  });
+}
+
+test('cancelling Google sign-in consumes its return without contacting Google', async t => {
+  const f = await fixture(t);
+  f.db.prepare('INSERT INTO google_login_returns VALUES (?,?,?)')
+    .run(await pkceChallenge(flow.state), '/connections/', now + FLOW_SECONDS);
+  const signed = await signCookie({ ...flow, returnState: true }, 'oauth', config, now);
+  const response = await f.request(`/auth/google/callback?state=${flow.state}&error=access_denied`, {
+    headers: { cookie: `${FLOW_COOKIE}=${signed}` },
+  });
+  assert.equal(response.headers.get('location'), '/login/?error=cancelled');
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM google_login_returns').get().n, 0);
+  assert.deepEqual(f.outbound, []);
+});
+
+for (const saved of [null, { path: '/connections/', expires: now }, { path: '//attacker.test/', expires: now + FLOW_SECONDS }]) {
+  test(`a ${saved === null ? 'missing' : saved.expires === now ? 'expired' : 'tampered'} Google return cannot create a session`, async t => {
+    const f = await fixture(t);
+    if (saved !== null) f.db.prepare('INSERT INTO google_login_returns VALUES (?,?,?)')
+      .run(await pkceChallenge(flow.state), saved.path, saved.expires);
+    const signed = await signCookie({ ...flow, returnState: true }, 'oauth', config, now);
+    const response = await f.request(`/auth/google/callback?state=${flow.state}&code=google-code`, {
+      headers: { cookie: `${FLOW_COOKIE}=${signed}` },
+    });
+    assert.equal(response.headers.get('location'), '/login/?error=failed');
+    assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0);
+  });
+}
+
+test('Google return paths reject open redirects, unrelated routes, fragments and oversized input', async t => {
+  const f = await fixture(t);
+  for (const path of ['https://attacker.test/', '//attacker.test/', '/\\attacker.test/',
+    '/dashboard/', '/connections/?next=elsewhere', '/oauth/authorize', '/connections/#x',
+    `/oauth/authorize?state=${'x'.repeat(8192)}`]) {
+    assert.equal(loginReturnPathSchema.safeParse(path).success, false);
+    assert.equal((await f.request(`/auth/google?returnTo=${encodeURIComponent(path)}`)).status, 400);
+  }
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM google_login_returns').get().n, 0);
+  assert.deepEqual(f.outbound, []);
 });

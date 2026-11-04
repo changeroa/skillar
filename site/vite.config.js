@@ -13,6 +13,7 @@ export default defineConfig({
         landing: 'index.html',
         login: 'login/index.html',
         connect: 'connect/index.html',
+        connections: 'connections/index.html',
         dashboard: 'dashboard/index.html',
         skills: 'skills/index.html',
       },

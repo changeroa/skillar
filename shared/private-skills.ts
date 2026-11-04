@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { accountIdSchema, deviceIdSchema } from "./activity-schema.js";
 import { deploymentOriginSchema } from "./deployment-origin.js";
+import { mcpPrivatePrincipalSchema } from "./mcp-auth.js";
 
 export const PRIVATE_SKILL_MAX_RESOURCE_BYTES = 512 * 1024;
 export const PRIVATE_SKILL_MAX_BYTES = 2 * 1024 * 1024;
@@ -134,6 +135,7 @@ export const privateSkillPrincipalSchema = z.discriminatedUnion("kind", [
     ...principal, kind: z.literal("device"), sessionId: z.null(), deviceId: deviceIdSchema,
     tokenHash: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   }),
+  mcpPrivatePrincipalSchema,
 ]).readonly();
 
 export type PrivateSkillId = z.infer<typeof privateSkillIdSchema>;

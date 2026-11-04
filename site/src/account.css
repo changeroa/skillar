@@ -38,6 +38,7 @@
 .account-status dt { font-weight: 600; }
 .account-status dd { margin: 0; overflow-wrap: anywhere; }
 .onward { margin-top: var(--s5); }
+a.onward + .note { margin-top: var(--s3); }
 .config-panel { margin-top: var(--s4); }
 .copy-example { background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--code-muted); }
 .copy-example:focus-visible { outline-color: var(--code-ink); }

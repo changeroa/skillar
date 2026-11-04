@@ -3,43 +3,6 @@ import ky, { HTTPError, TimeoutError } from 'ky';
 import { sessionResponseSchema } from '../lib/account';
 import type { SessionUser } from '../lib/account';
 
-const clientSelect = document.querySelector<HTMLSelectElement>('#client-example');
-const exampleConfig = document.querySelector<HTMLElement>('#example-config');
-const configLabel = document.querySelector<HTMLElement>('#config-label');
-const copyExample = document.querySelector<HTMLButtonElement>('#copy-example');
-const exampleStatus = document.querySelector<HTMLElement>('#example-status');
-
-if (clientSelect && exampleConfig && configLabel && copyExample && exampleStatus) {
-  const codexConfig = exampleConfig.textContent;
-  clientSelect.disabled = false;
-  copyExample.hidden = false;
-  clientSelect.addEventListener('change', () => {
-    const claude = clientSelect.value === 'claude-code';
-    exampleConfig.textContent = claude
-      ? 'claude mcp add --transport http skillar-preview https://account.skillar.example/mcp'
-      : codexConfig;
-    configLabel.textContent = claude ? 'Claude Code CLI · illustrative command' : 'Codex plugin · .mcp.json';
-    exampleStatus.textContent = '';
-  });
-  copyExample.addEventListener('click', async () => {
-    if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(exampleConfig.textContent ?? '');
-        exampleStatus.textContent = 'Example copied. It is not a working endpoint.';
-        return;
-      } catch (error) {
-        if (!(error instanceof DOMException)) throw error;
-      }
-    }
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(exampleConfig);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-    exampleStatus.textContent = "Couldn't copy. The example is selected; copy it manually.";
-  });
-}
-
 const emptyViews = Array.from(document.querySelectorAll<HTMLElement>('.empty-state'));
 const viewLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.view-nav a'));
 const recovery = document.querySelector<HTMLElement>('#view-recovery');

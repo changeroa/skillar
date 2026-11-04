@@ -34,6 +34,7 @@ import { dispatchAccountEvents } from "./event-dispatch.ts";
 import { sweepAccountChanges } from "./event-replay.ts";
 import { dispatchAccountControls } from "./event-controls.ts";
 import { privateSkillsRequest } from "../private-skills/api.ts";
+import { privateMcpObservationRequest } from "../private-mcp/telemetry-api.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -94,6 +95,8 @@ async function body(request: Request): Promise<unknown> {
  */
 export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
+  const observationResponse = await privateMcpObservationRequest(request, env);
+  if (observationResponse !== null) return observationResponse;
   const privateResponse = await privateSkillsRequest(request, env);
   if (privateResponse !== null) return privateResponse;
   if (url.pathname.startsWith("/v1/activity/events/")) {

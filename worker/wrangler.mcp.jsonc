@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "skillar-mcp",
+  "main": "./src/private-mcp/resource-server.ts",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "vars": { "PUBLIC_ORIGIN": "https://skillar.sh", "MCP_ENABLED": "false" },
+  "services": [
+    { "binding": "MCP_AUTH", "service": "skillar-mcp-auth" },
+    { "binding": "ACTIVITY_SERVICE", "service": "skillar-activity-foundation" }
+  ]
+}

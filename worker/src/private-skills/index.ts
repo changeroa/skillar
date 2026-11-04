@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   PRIVATE_SKILL_SERVICE_PREFIX, PRIVATE_SKILL_MAX_URI_LENGTH, privateSkillIdSchema, privateSkillDigestSchema,
 } from "../../../shared/private-skills.ts";
-import { requestPrincipal } from "./authority.ts";
+import { requestPrincipal, requireAuthority } from "./authority.ts";
 import { PrivateSkillError, privateHeaders } from "./contracts.ts";
 import type { CatalogEnv } from "./contracts.ts";
 import { privateFailure, privateJson } from "./http.ts";
@@ -15,6 +15,9 @@ import { exportVersion, readResource } from "./objects.ts";
 import { createPrivateSkillSearch } from "./search-index.ts";
 import type { PrivateSkillSearch } from "./search-index.ts";
 import { admitPrivateSkill } from "./rate-limit.ts";
+import { mcpCatalog } from "./mcp.ts";
+import { mcpSearchSchema } from "../private-mcp/catalog-contracts.ts";
+import { mcpObservationPath, recordMcpObservation } from "../private-mcp/telemetry-api.ts";
 import { dispatchAccountControls } from "../activity/event-controls.ts";
 export { privateSkillsRequest } from "./api.ts";
 
@@ -43,13 +46,22 @@ export class PrivateSkillCatalog extends DurableObject<CatalogEnv> {
   private async dispatch(request: Request): Promise<Response> {
     if (this.env.PRIVATE_SKILLS_ENABLED !== "true") throw new PrivateSkillError(404, "not_found");
     const principal = requestPrincipal(request, this.env), url = new URL(request.url);
-    if (!handles(url.pathname)) throw new PrivateSkillError(404, "not_found");
+    const observation = url.pathname === mcpObservationPath;
+    if (!handles(url.pathname) && !observation) throw new PrivateSkillError(404, "not_found");
     if (!this.env.PRIVATE_SKILL_CATALOG.idFromName(principal.accountId).equals(this.ctx.id)) {
       throw new PrivateSkillError(403, "wrong_account");
     }
     if (url.search) throw new PrivateSkillError(400, "invalid_request");
+    if (observation) {
+      await requireAuthority(this.env, principal, "skills:read");
+      admitPrivateSkill(this.ctx.storage, principal, "read");
+      const response = await recordMcpObservation(request, this.env, principal);
+      await requireAuthority(this.env, principal, "skills:read");
+      return response;
+    }
     const path = url.pathname.slice(prefix.length), method = request.method;
-    const search = path === "/search" && method === "POST";
+    const mcpSearch = path === "/mcp/search" && method === "POST";
+    const search = (path === "/search" && method === "POST") || mcpSearch;
     const resource = path === "/resources/read" && method === "POST";
     const read = method === "GET" || search || resource;
     const store = new PrivateSkillStore(this.env, principal, read ? "skills:read" : "skills:write");
@@ -62,15 +74,19 @@ export class PrivateSkillCatalog extends DurableObject<CatalogEnv> {
       deviceId: principal.deviceId, scopes: principal.scopes,
     };
     else if ((path === "" || path === "/") && method === "GET") output = await store.catalog();
+    else if (path === "/mcp/catalog" && method === "GET") output = await mcpCatalog(store);
     else if (search) {
-      const value = searchSchema.parse(await privateJson(request));
+      const body = await privateJson(request);
+      const value = mcpSearch ? mcpSearchSchema.parse(body) : searchSchema.parse(body);
       const catalog = await store.catalog();
       const revision = `${principal.generation}:${catalog.revision}`;
       if (this.projection !== revision) {
         this.search.rebuild(await store.projection());
         this.projection = revision;
       }
-      output = this.search.search(value.query, { mode: value.mode, limit: value.limit });
+      output = "offset" in value
+        ? this.search.page(value.query ?? "", value)
+        : this.search.search(value.query, { mode: value.mode, limit: value.limit });
     } else if (resource) output = await readResource(store, resourceSchema.parse(await privateJson(request)).uri);
     else {
       const segments = path.split("/");

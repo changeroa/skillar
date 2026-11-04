@@ -28,6 +28,8 @@ export function verify({ root = fileURLToPath(new URL("../", import.meta.url)), 
     ["worker", "npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"]],
     ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"]],
     ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.activity.jsonc", "--dry-run"]],
+    ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp-auth.jsonc", "--dry-run"]],
+    ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp.jsonc", "--dry-run"]],
   ];
   for (const [directory, command, args] of checks) {
     console.log(`Running ${command} ${args.join(" ")} (${directory})`);

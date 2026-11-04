@@ -7,12 +7,21 @@
     "PUBLIC_ORIGIN": "https://skillar.sh",
     "ACTIVITY_ENABLED": "true",
     "ACTIVITY_INGEST_ENABLED": "true",
-    "PRIVATE_SKILLS_ENABLED": "false"
+    "PRIVATE_SKILLS_ENABLED": "false",
+    "MCP_ENABLED": "false"
   },
   "services": [
     {
       "binding": "ACTIVITY_SERVICE",
       "service": "skillar-activity-foundation"
+    },
+    {
+      "binding": "MCP_AUTH",
+      "service": "skillar-mcp-auth"
+    },
+    {
+      "binding": "MCP_RESOURCE",
+      "service": "skillar-mcp"
     }
   ],
   "d1_databases": [

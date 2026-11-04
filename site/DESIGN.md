@@ -1,5 +1,58 @@
 # skillar.sh
 
+## P11 private MCP authorization increment
+
+This supersedes earlier MCP-preview restrictions only when the deployed MCP
+service is enabled. The account shell and all existing color, type, spacing,
+square-corner, focus and motion tokens stay unchanged. There is no new font.
+`/connections/` replaces the non-working example with the canonical endpoint
+returned by the authenticated service and actual OAuth/PAT connection facts.
+The old Connect MCP destination leads to that working route.
+
+- A connection is not a device-upload grant. It can read private skills the
+  person has already explicitly published. No write/manage capability is
+  offered in P11, and no local files are scanned or uploaded.
+- OAuth `/oauth/authorize` is a server-rendered, no-JavaScript consent page.
+  One h1 names the decision; the untrusted client name, verified CIMD domain
+  when available, requested read permission and exact redirect host precede
+  the form. A loopback redirect explicitly says any local process could be
+  listening; a registered client name is not presented as verified.
+- The consent page reuses the account wordmark, document scroll, 18px body,
+  15px note/code, 48px actions, ink focus and desktop/phone gutters. Its
+  surface is a single readable form, not a dialog over a fake app. Native
+  system light/dark applies without script; all text and labels wrap at390px.
+- Browser authorization failures retain that document shell, explain an ended
+  sign-in, invalid/expired request or unavailable service, and link back to
+  Connections. Restarting in the agent creates a fresh approval request.
+  This HTML recovery applies only to authorization documents requesting HTML;
+  API errors and MCP bearer challenges retain their protocol responses.
+- Consent documents use `Referrer-Policy: same-origin` so the browser's native
+  form POST retains the required Origin. External client referrers remain
+  suppressed; API responses retain no-referrer and null Origin is rejected.
+- Read access needs an explicit Allow action. Cancel stays a separate
+  secondary action; no automatic approval or remembered consent is added.
+  Recording this connection's server-readable search queries and resource
+  observations is a separate unchecked choice. OAuth state is bound to the
+  same Google session and account on submission.
+- Token issuance is an explicit form submission: label, default7-day expiry
+  (maximum30), fixed private-read permission, optional unchecked recording.
+  The returned token is a password field by default, with explicit reveal,
+  copy and dismiss. It is never stored in a URL, localStorage, screenshots
+  or logs. Dismiss clears it; later lists cannot recover it.
+- Connection rows show human name, OAuth/token type, permissions, recording,
+  locale-formatted expiry and revoked state. Revoke uses the existing
+  two-step confirmation pattern and keeps the safe action first in focus.
+  It removes access, not the separately retained activity history.
+- Loading is text, errors remain beside their action, and retry preserves
+  draft fields. Signed-out, disabled, unavailable, empty, active and revoked
+  are distinct states. No spinner, fake zero, optimistic success or timeout
+  dismissal is introduced. The service-returned endpoint is the copy value;
+  a browser cookie or connector bearer is never a suggested MCP credential.
+
+Private consent pages use noindex and a restrictive CSP rather than weakening
+privacy for a search-engine score. Existing light/dark, keyboard, phone,
+zoom/reflow and original-capture gates apply to both new surfaces.
+
 ## P10 private skills library increment
 
 This adds one account route, `/skills/`, and changes nothing about sign-in,
@@ -309,7 +362,7 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 
 ## 5. Primitives and states
 
-- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active opacity, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
+- Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active inset ring without fading text, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark near the main navigation on every route, one shared state and storage key; visible label, native keyboard behavior. System is the default when nothing is saved. Source order always matches visual order.
 - Code panel: theme-specific code field, readable tokens, filename header. Links use code-ink focus rings in both themes. Copy action reports success/failure through a live region.
 - Disclosure: native summary, 48px minimum target; native triangle indicator, visible focus.
@@ -344,7 +397,7 @@ These use the tokens above. No new colors, fonts or radii.
 
 | State | Where | Rule |
 | --- | --- | --- |
-| Rest, hover, active, focus | all controls | Existing rules: underline on hover, opacity on press, 3px focus outline in current ink (code-ink on code panels) |
+| Rest, hover, active, focus | all controls | Existing rules: underline on hover, contrast-preserving inset ring on action press, 3px focus outline in current ink (code-ink on code panels) |
 | Checking | session status line, account lines | Plain text "Checking your account…" while `/auth/session` is in flight. No spinner, skeleton or dimming; the sign-in and exploration links stay usable |
 | Signed out | login | Status "Not signed in."; sign-in action, privacy note and exploration link visible |
 | Signed in | login, account lines | The card, sign-out form and onward preview link replace the sign-in action; connect and dashboard lines read "Signed in as {email}." |
@@ -361,7 +414,7 @@ Not used: disabled sign-in, connected, synced, spinners, skeletons, progress bar
 
 ## 6. Motion
 
-No decorative animation. Control hover is an immediate underline; press opacity communicates activation. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly, and so does the swap from the sign-in action to the signed-in card; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
+No decorative animation. Control hover is an immediate underline; a pressed action gains an inset ring without reducing text contrast. All content visible without JavaScript. Reduced motion needs no separate reveal behavior. Route and view changes swap content instantly, and so does the swap from the sign-in action to the signed-in card; focus moves only in response to the person's action (to the new view heading). No spinners, progress bars or fake transitions.
 
 ## 7. Accessibility constraints
 
