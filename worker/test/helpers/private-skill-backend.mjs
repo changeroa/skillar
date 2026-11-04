@@ -105,6 +105,7 @@ export async function fixture(t) {
       ...(value === undefined ? {} : { body: typeof value === "string" ? value : JSON.stringify(value) }),
     });
     const text = await response.text();
+    assert.ok(!text || response.headers.get("content-type")?.includes("application/json"), text);
     return { status: response.status, body: text ? JSON.parse(text) : null, headers: response.headers };
   };
   const rows = async (db, sql, ...args) => (await db.prepare(sql).bind(...args).all()).results;

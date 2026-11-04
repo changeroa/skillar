@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   privateSkillExportSchema, privateSkillPublishSchema, privateSkillResourceSchema,
+  PRIVATE_SKILL_MAX_RESOURCE_BYTES,
 } from "../../shared/dist/private-skills.js";
 import { createPrivateSkillPackage, verifyPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
 import { splitSkillMarkdown, extractFields } from "../../shared/dist/skill-fields.js";
@@ -70,8 +71,21 @@ test("a complete acknowledged draft has no problems and each guard adds exactly 
   assert.equal(draftProblems({ ...draft, document: "# no front matter" }).length, 2);
   assert.equal(draftProblems({ ...draft, files: [{ ...supporting, path: "archive.zip" }] }).length, 1);
   assert.equal(draftProblems({ ...draft, files: [{ ...supporting, path: "SKILL.md" }] }).length, 1);
-  assert.equal(draftProblems({ ...draft, files: [{ ...supporting, bytes: new Uint8Array(512 * 1024 + 1) }] }).length, 1);
+  assert.equal(draftProblems({ ...draft, files: [{ ...supporting, bytes: new Uint8Array(PRIVATE_SKILL_MAX_RESOURCE_BYTES + 1) }] }).length, 2);
   assert.equal(draftProblems(emptyDraft()).length, 2);
+});
+
+test("a document above 64 KiB and 511 supporting files form a complete package", async () => {
+  // Given
+  const draft = { ...readyDraft(), document: document + "x".repeat(64 * 1024),
+    files: Array.from({ length: 511 }, (_, i) => ({ ...supporting, path: `notes/${i}.txt` })) };
+  // When
+  const built = await buildPackage(draft);
+  // Then
+  assert.equal(built.ok, true);
+  assert.equal((await verifyPrivateSkillPackage(built.package)).files.size, 512);
+  assert.equal(built.package.manifest.resources.find(resource => resource.path === "SKILL.md").bytes,
+    text.encode(draft.document).length);
 });
 
 test("a built package verifies, keeps supporting paths and bytes, and forms a valid publish body", async () => {

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  PRIVATE_SKILL_MAX_BYTES, PRIVATE_SKILL_MAX_RESOURCE_BYTES,
+  PRIVATE_SKILL_MAX_BYTES, PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_REQUEST_BYTES,
+  privateSkillBodySchema,
   privateSkillDigestSchema, privateSkillIdSchema, privateSkillPathSchema,
   privateSkillUri, parsePrivateSkillUri, privateSkillPublishSchema,
 } from "../dist/private-skills.js";
@@ -10,6 +11,57 @@ import { createPrivateSkillPackage, verifyPrivateSkillPackage } from "../dist/pr
 const text = new TextEncoder();
 const file = (path, body = "synthetic") => ({ path, mediaType: "text/plain", bytes: text.encode(body) });
 const skill = file("SKILL.md", "---\nname: synthetic\ndescription: fixture\n---\nFixture");
+
+test("all 512 local collector resources round trip without truncation", async () => {
+  // Given
+  const files = [skill, ...Array.from({ length: 511 }, (_, i) => file(`notes/${i}.txt`, String(i)))];
+  // When
+  const verified = await verifyPrivateSkillPackage(await createPrivateSkillPackage(files));
+  // Then
+  assert.equal(verified.files.size, 512);
+  for (const resource of files) assert.deepEqual(verified.files.get(resource.path), resource.bytes);
+});
+
+for (const path of ["SKILL.md", "asset.bin"]) {
+  test(`the local collector 16 MiB total can reside in ${path}`, async () => {
+    // Given
+    const bytes = new Uint8Array(16 * 1024 * 1024 - (path === "SKILL.md" ? 0 : skill.bytes.length)).fill(97);
+    const files = path === "SKILL.md" ? [{ ...skill, bytes }] : [skill,
+      { path, mediaType: "application/octet-stream", bytes }];
+    // When
+    const verified = await verifyPrivateSkillPackage(await createPrivateSkillPackage(files));
+    // Then
+    assert.deepEqual(verified.files.get(path), bytes);
+  });
+}
+
+test("the 513th resource is explicitly refused rather than dropped", async () => {
+  // Given
+  const files = [skill, ...Array.from({ length: 512 }, (_, i) => file(`notes/${i}.txt`))];
+  // When / Then
+  await assert.rejects(createPrivateSkillPackage(files), { code: "invalid_resource" });
+});
+
+test("the request envelope holds maximum bytes with long Unicode paths and per-file padding", async () => {
+  // Given
+  const paths = Array.from({ length: 511 }, (_, i) => `${"한".repeat(500)}/${String(i).padStart(3, "0")}.txt`);
+  const files = paths.map(path => file(path, "a"));
+  files.push({ ...skill, bytes: new Uint8Array(16 * 1024 * 1024 - 511).fill(97) });
+  // When
+  const packet = await createPrivateSkillPackage(files);
+  const request = text.encode(JSON.stringify({ base: { digest: "a".repeat(64), revision: Number.MAX_SAFE_INTEGER },
+    acknowledgePrivateUpload: true, package: packet }));
+  // Then
+  assert.ok(request.length < PRIVATE_SKILL_MAX_REQUEST_BYTES);
+  assert.equal(packet.manifest.resources.length, 512);
+});
+
+for (const body of ["A", "AAA", "A===", "=AAA", "AA=A", "AA-=", "AA\n="]) {
+  test(`malformed base64 ${JSON.stringify(body)} remains denied`, () => {
+    // Given / When / Then
+    assert.equal(privateSkillBodySchema.safeParse(body).success, false);
+  });
+}
 
 test("UUID inputs normalize before canonical private URI construction", () => {
   // Given

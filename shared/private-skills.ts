@@ -3,10 +3,13 @@ import { accountIdSchema, deviceIdSchema } from "./activity-schema.js";
 import { deploymentOriginSchema } from "./deployment-origin.js";
 import { mcpPrivatePrincipalSchema } from "./mcp-auth.js";
 
-export const PRIVATE_SKILL_MAX_RESOURCE_BYTES = 512 * 1024;
-export const PRIVATE_SKILL_MAX_BYTES = 2 * 1024 * 1024;
-export const PRIVATE_SKILL_MAX_RESOURCES = 128;
-export const PRIVATE_SKILL_MAX_REQUEST_BYTES = 3 * 1024 * 1024;
+// Match local/src/catalog/scanner.ts: every file counts, with no smaller per-file quota.
+export const PRIVATE_SKILL_MAX_BYTES = 16 * 1024 * 1024;
+export const PRIVATE_SKILL_MAX_RESOURCE_BYTES = PRIVATE_SKILL_MAX_BYTES;
+export const PRIVATE_SKILL_MAX_RESOURCES = 512;
+// Base64 (including per-file padding), two 512-character paths per file,
+// media types, digests and JSON framing fit within this bounded envelope.
+export const PRIVATE_SKILL_MAX_REQUEST_BYTES = 24 * 1024 * 1024;
 export const PRIVATE_SKILL_MAX_URI_LENGTH = 8192;
 export const PRIVATE_SKILL_SERVICE_PREFIX = "/v1/private-skills";
 export const privateSkillIdSchema = z.string().uuid().toLowerCase().brand<"PrivateSkillId">();
@@ -37,7 +40,6 @@ export const privateSkillManifestSchema = z.strictObject({
   if (!paths.some(path => path === "SKILL.md") ||
       new Set(folded).size !== paths.length ||
       folded.some(path => folded.some(other => other.startsWith(`${path}/`))) ||
-      manifest.resources.some(resource => resource.path === "SKILL.md" && resource.bytes > 64 * 1024) ||
       paths.some((path, index) => index > 0 && path <= (paths[index - 1] ?? "")) ||
       manifest.resources.reduce((sum, resource) => sum + resource.bytes, 0) > PRIVATE_SKILL_MAX_BYTES) {
     context.addIssue({ code: "custom", message: "invalid resource membership, order or total" });
@@ -45,7 +47,9 @@ export const privateSkillManifestSchema = z.strictObject({
 }).readonly();
 export const privateSkillBodySchema = z.string()
   .max(4 * Math.ceil(PRIVATE_SKILL_MAX_RESOURCE_BYTES / 3))
-  .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/);
+  // A repeated four-character capture can exhaust the regexp stack on large files.
+  .refine(body => body.length <= 4 * Math.ceil(PRIVATE_SKILL_MAX_RESOURCE_BYTES / 3) &&
+    body.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(body));
 export const privateSkillPackageSchema = z.strictObject({
   manifest: privateSkillManifestSchema,
   manifestDigest: privateSkillDigestSchema,

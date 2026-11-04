@@ -2,6 +2,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import {
   PRIVATE_SKILL_MAX_BYTES, PRIVATE_SKILL_MAX_REQUEST_BYTES, PRIVATE_SKILL_MAX_RESOURCE_BYTES,
+  PRIVATE_SKILL_MAX_RESOURCES,
   privateSkillExportSchema, privateSkillPathSchema, verifyPrivateSkillPackage,
 } from "./package.js";
 import {
@@ -10,7 +11,7 @@ import {
 } from "./fs.js";
 import type { Directory } from "./fs.js";
 
-export const MAX_PLAN_BYTES = 4 * 1024 * 1024;
+export const MAX_PLAN_BYTES = PRIVATE_SKILL_MAX_REQUEST_BYTES + 1024 * 1024;
 export const directorySchema = z.strictObject({
   path: z.string().max(4096), identity: identitySchema.nullable(),
 }).readonly();
@@ -20,7 +21,7 @@ export const planSchema = z.strictObject({
   directories: z.array(directorySchema).min(1).max(1024).readonly(),
   files: z.array(z.strictObject({
     path: privateSkillPathSchema, before: stateSchema.nullable(),
-  }).readonly()).min(1).max(128).readonly(),
+  }).readonly()).min(1).max(PRIVATE_SKILL_MAX_RESOURCES).readonly(),
 }).readonly();
 export type SkillPlan = z.infer<typeof planSchema>;
 

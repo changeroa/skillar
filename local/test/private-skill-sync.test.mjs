@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { makeTempDir, removeDir } from "./_helpers.mjs";
 import { atomicCloudJson } from "../dist/sync/cloud-connection.js";
@@ -9,10 +9,61 @@ import { CloudHttp } from "../dist/sync/cloud-http.js";
 import { capturePrivateSkill } from "../dist/skills/capture.js";
 import { previewPrivatePublication } from "../dist/skills/cloud-plan.js";
 import { pullPrivateSkill, pushPrivateSkill } from "../dist/skills/transfer.js";
-import { verifyPrivateSkillPackage } from "../dist/skills/package.js";
+import { PRIVATE_SKILL_MAX_REQUEST_BYTES, verifyPrivateSkillPackage } from "../dist/skills/package.js";
+import { collectSkillRelativeFiles } from "../dist/catalog/scanner.js";
+import { previewSkill } from "../dist/skills/plan.js";
+import { applySkill } from "../dist/skills/apply.js";
+import { rollbackSkill } from "../dist/skills/rollback.js";
 
 const skillId = "11223344-1122-4122-8122-112233445566";
 const now = 1_800_000_000_000;
+
+test("collector-sized sources publish pull apply and roll back without dropping bytes or files", async t => {
+  // Given: exactly the collector's 512 resources and 16 MiB, above every former quota.
+  const f = fixture(t);
+  const markdown = "---\nname: fixture\ndescription: Synthetic fixture\n---\n" + "a".repeat(64 * 1024);
+  writeFileSync(join(f.root, "SKILL.md"), markdown);
+  for (let i = 0; i < 509; i++) writeFileSync(join(f.root, "notes", `${i}.txt`), "a");
+  const large = new Uint8Array(16 * 1024 * 1024 - Buffer.byteLength(markdown) - 3 - 509).fill(97);
+  writeFileSync(join(f.root, "large.bin"), large);
+  const collected = await collectSkillRelativeFiles(f.root);
+  assert.equal(collected.length, 512);
+  assert.equal(collected.reduce((sum, file) => sum + file.size, 0), 16 * 1024 * 1024);
+  const directory = realpathSync(f.directory);
+  const destination = join(directory, "destination"), outputPath = join(directory, "export.json");
+  mkdirSync(destination);
+  // Exercise the large before-file backup as well as incoming bytes.
+  writeFileSync(join(destination, "large.bin"), large);
+  // When
+  const publication = await f.preview();
+  await pushPrivateSkill(f.home, f.planPath, true, f.fetcher);
+  await pullPrivateSkill(f.home, { skillId, digest: publication.package.manifestDigest, outputPath }, f.fetcher);
+  const planPath = join(directory, "apply.json");
+  const plan = await previewSkill({ packagePath: outputPath, destinationRoot: destination, planPath, allowOverwrite: true });
+  const applied = await applySkill(planPath);
+  // Then
+  assert.equal(plan.files.length, 512);
+  assert.equal(applied.status, "applied");
+  for (const resource of collected) {
+    assert.deepEqual(readFileSync(join(destination, resource.relative)), readFileSync(join(f.root, resource.relative)));
+  }
+  assert.equal((await rollbackSkill(applied.receipt)).status, "rolled_back");
+  assert.deepEqual(readFileSync(join(destination, "large.bin")), Buffer.from(large));
+  assert.equal(existsSync(join(destination, "SKILL.md")), false);
+});
+
+for (const excess of ["count", "bytes"]) test(`capture refuses excess ${excess} before metadata or upload`, async t => {
+  // Given
+  const f = fixture(t);
+  if (excess === "count") {
+    for (let i = 0; i < 511; i++) writeFileSync(join(f.root, "notes", `${i}.txt`), "");
+  } else writeFileSync(join(f.root, "large.bin"), new Uint8Array(16 * 1024 * 1024));
+  // When / Then
+  await assert.rejects(f.preview(), { code: "quota" });
+  assert.deepEqual(f.state.requests, []);
+  assert.equal(existsSync(f.planPath), false);
+});
+
 function fixture(t) {
   const directory = makeTempDir("private-skill-sync-");
   t.after(() => removeDir(directory));
@@ -241,9 +292,24 @@ test("a private upload can explicitly opt into the larger bounded transport limi
     requests.push(options.body);
     return Response.json({});
   });
-  const body = JSON.stringify({ data: "x".repeat(300 * 1024) });
+  const body = JSON.stringify({ data: "x".repeat(3 * 1024 * 1024) });
   // When
-  await http.request("/v1/skills/resource/versions", { body, maxRequestBytes: 3 * 1024 * 1024 });
+  await http.request("/v1/skills/resource/versions", { body, maxRequestBytes: PRIVATE_SKILL_MAX_REQUEST_BYTES });
   // Then
   assert.deepEqual(requests, [body]);
+});
+
+test("larger private limits do not raise default or activity request limits", async () => {
+  // Given
+  const requests = [];
+  const http = new CloudHttp("https://skillar.sh", "t".repeat(43), async url => {
+    requests.push(url);
+    return Response.json({});
+  });
+  // When / Then
+  await assert.rejects(http.request("/v1/skills/resource/versions", { body: "x".repeat(256 * 1024 + 1) }),
+    { code: "request_too_large" });
+  await assert.rejects(http.request("/v1/activity/batches", { maxRequestBytes: PRIVATE_SKILL_MAX_REQUEST_BYTES }),
+    { name: "ZodError" });
+  assert.deepEqual(requests, []);
 });
