@@ -108,6 +108,10 @@ It remains a path-to-file-content JSON object; do not replace production
 credentials or the content keyring when updating it.
 
 Only private service-binding RPC can supply a verified browser principal.
+Consent HTML uses `Referrer-Policy: same-origin`: real browser form submissions
+retain their same-origin `Origin` header, while cross-origin client referrers
+remain suppressed. API responses retain `no-referrer`; the strict POST Origin
+check is not relaxed to accept `null`.
 Public identity headers are discarded. Primary connection and credential
 fences apply independently of OAuth KV consistency, including refresh rotation
 and access-token versus refresh-grant revocation. Scheduled cleanup processes

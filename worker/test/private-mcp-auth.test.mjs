@@ -18,6 +18,7 @@ async function register(f) {
       token_endpoint_auth_method: "none",
     }) });
   assert.equal(response.status, 201);
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
   assert.equal(response.body.token_endpoint_auth_method, "none");
   return response.body.client_id;
 }
@@ -35,7 +36,7 @@ async function consent(f, clientId, principal = browser()) {
   assert.match(page.headers.get("content-type"), /^text\/html\b/);
   assert.equal(page.headers.get("x-frame-options"), "DENY");
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
-  assert.equal(page.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(page.headers.get("referrer-policy"), "same-origin");
   const policy = page.headers.get("content-security-policy");
   assert.ok(policy);
   assert.equal(/[\r\n]/.test(policy), false);

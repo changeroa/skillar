@@ -27,6 +27,9 @@ export default class McpAuthorizationServer extends WorkerEntrypoint<McpAuthEnv>
     try {
       const response = await action(), headers = new Headers(response.headers);
       for (const [name, value] of Object.entries(mcpNoStore)) headers.set(name, value);
+      // no-referrer makes browser form POSTs send Origin:null.
+      // Keep strict Origin checks without referring approval URLs to clients.
+      if (headers.get("content-type")?.startsWith("text/html")) headers.set("referrer-policy", "same-origin");
       return new Response(response.body, { status: response.status, headers });
     } catch (error) {
       if (error instanceof AuthorizationError && error.redirectTo !== undefined) {

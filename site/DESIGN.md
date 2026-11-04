@@ -26,6 +26,9 @@ The old Connect MCP destination leads to that working route.
   Connections. Restarting in the agent creates a fresh approval request.
   This HTML recovery applies only to authorization documents requesting HTML;
   API errors and MCP bearer challenges retain their protocol responses.
+- Consent documents use `Referrer-Policy: same-origin` so the browser's native
+  form POST retains the required Origin. External client referrers remain
+  suppressed; API responses retain no-referrer and null Origin is rejected.
 - Read access needs an explicit Allow action. Cancel stays a separate
   secondary action; no automatic approval or remembered consent is added.
   Recording this connection's server-readable search queries and resource
