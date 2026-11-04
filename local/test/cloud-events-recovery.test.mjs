@@ -184,7 +184,7 @@ test("returning to a visible tab compares head and skips a pending reconnect del
   socket.events.onClose();
   await h.events.state.take();
   h.visibility.set(false);
-  assert.equal(h.scheduler.pending().length, 1);
+  assert.deepEqual(h.scheduler.pending().map(timer => timer.delayMs), [1000, 60_000]);
   assert.equal(h.calls.changes.size, 0);
   h.visibility.set(true);
   assert.equal(h.scheduler.pending().length, 0);

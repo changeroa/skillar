@@ -48,7 +48,7 @@ Light and dark values swap under `prefers-color-scheme: dark`. Washes are derive
 | Status ok | `--ok` | #1f8f45 | #3ccb6a | `succeeded` (including `no_candidates`) |
 | Status warn | `--warn` | #a8690f | #e0a84a | `in_progress` |
 | Status bad | `--bad` | #c0392b | #ef6b6b | `failed`, ingest errors, offline dot |
-| Status neutral | `--neutral` | #8a8f98 | #7f848d | `cancelled`, `unknown`, `not_attempted`, unattributed |
+| Status neutral | `--neutral` | #8a8f98 | #7f848d | `cancelled`, `unknown`, `not_attempted`, unattributed, paused live connection |
 
 Rules
 - Accent never marks state on a border. Selected / active / hover are `--wash` / `--wash-2`

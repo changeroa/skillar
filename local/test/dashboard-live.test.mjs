@@ -112,11 +112,15 @@ test("cloud transport states have distinct accessible labels and recover their l
   // When
   await h.state("live");
   const live = label();
+  await h.state("paused");
+  const paused = label();
+  assert.ok(classed(h.root, "live--paused"));
+  assert.ok(paused.length > 0);
   await h.state("offline");
   const offline = label();
   await h.state("live");
   // Then
-  assert.equal(new Set([connecting, live, offline]).size, 3);
+  assert.equal(new Set([connecting, live, paused, offline]).size, 4);
   assert.equal(label(), live);
 });
 
