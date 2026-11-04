@@ -49,7 +49,7 @@ test("packed CLI, cloud wire and private search execute without an unpublished s
   const status = await exec(process.execPath, [join(installed, "dist/cli/main.js"), "sync", "status"], {
     cwd: installed, env,
   });
-  assert.deepEqual(JSON.parse(status.stdout), { connected: false, deviceId: null, progress: null });
+  assert.deepEqual(JSON.parse(status.stdout), { connected: false, deviceId: null, commandsEnabled: false, progress: null });
   const wire = await exec(process.execPath, ["--input-type=module", "-e", `
     const {DatabaseSync}=await import("node:sqlite");
     const {readFileSync}=await import("node:fs");

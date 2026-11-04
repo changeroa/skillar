@@ -16,6 +16,7 @@ import type { McpResourceEnv } from "./contracts.ts";
 import type { McpCatalog } from "./catalog-contracts.ts";
 import { mcpSearchSchema } from "./catalog-contracts.ts";
 import { mcpBackend, mcpUri, storageUri } from "./backend.ts";
+import { privatePackSearchSchema, privatePackLoadSchema } from "../../../shared/private-packs.ts";
 
 const cache = { ttlMs: 60_000, cacheScope: "private" } as const;
 const instructions =
@@ -113,6 +114,37 @@ export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext)
       ...(result.abstained === undefined ? {} : { abstained: result.abstained }),
       total: result.total,
       note: "Search does not activate skills. Read a chosen SKILL.md URI using the host's resource reader on this server.",
+    };
+    return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
+  });
+  server.registerTool("search_packs", {
+    description: "Find published private packs and pinned skill references. " +
+      "Use the returned URI and digest with load_pack; search grants no execution permission.",
+    inputSchema: privatePackSearchSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async (input, ctx) => {
+    const result = await backend.searchPacks(input, ctx.mcpReq.signal);
+    const body = { ...result, packs: result.packs.map(pack => ({
+      ...pack, members: pack.members.map(member => ({ ...member, uri: mcpUri(member.uri) })),
+    })) };
+    return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
+  });
+  server.registerTool("load_pack", {
+    description: "Compose one to eight pinned private packs, preserving member conditions and phases. " +
+      "Read member URIs separately; composition grants no execution or delegation permission.",
+    inputSchema: privatePackLoadSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async (input, ctx) => {
+    const result = await backend.loadPacks(input, ctx.mcpReq.signal);
+    const body = {
+      ...result,
+      packs: result.packs.map(pack => ({ ...pack, definition: {
+        ...pack.definition, members: pack.definition.members.map(member => ({ ...member, uri: mcpUri(member.uri) })),
+      } })),
+      members: result.members.map(member => ({
+        ...member, uri: mcpUri(member.uri),
+        requirements: member.requirements.map(requirement => ({ ...requirement, uri: mcpUri(requirement.uri) })),
+      })),
     };
     return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
   });

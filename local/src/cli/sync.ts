@@ -6,6 +6,7 @@ import { prepareCloudSnapshot } from "../sync/cloud-prepare.js";
 import { rollbackCloud } from "../sync/cloud-rollback.js";
 import { restoreCloud } from "../sync/cloud-restore.js";
 import { cloudStatus, pauseCloud, runCloudStep } from "../sync/cloud.js";
+import { approveSourceCommands, sourceCommandsEnabled } from "../sync/command-control.js";
 import type { Io } from "./serve.js";
 
 export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): Promise<number> {
@@ -29,8 +30,18 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
       out({
         connected: connection !== null,
         deviceId: connection?.deviceId ?? null,
+        commandsEnabled: sourceCommandsEnabled(home),
         progress: cloudStatus(home),
       });
+      return 0;
+    }
+    case "commands": {
+      const { values } = parseArgs({ args, options: {
+        enable: { type: "boolean", default: false }, disable: { type: "boolean", default: false },
+      } });
+      if (values.enable === values.disable) throw new Error("sync commands needs exactly one of --enable or --disable");
+      approveSourceCommands(home, values.enable);
+      out({ commandsEnabled: sourceCommandsEnabled(home) });
       return 0;
     }
     case "prepare":
@@ -80,6 +91,6 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
       out({ connected: false });
       return 0;
     default:
-      throw new Error("sync needs connect, status, prepare, run, backfill, restore, pause, rollback, or disconnect");
+      throw new Error("sync needs connect, status, commands, prepare, run, backfill, restore, pause, rollback, or disconnect");
   }
 }

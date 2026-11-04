@@ -154,3 +154,63 @@ test("consent withdrawal or device revocation during a result read discards the 
     assert.equal((await result.text()).includes("c2VjcmV0"), false);
   }
 });
+
+test("source commands require the ingest switch and full owned-device consent", async t => {
+  // Given a signed-in owner with only query consent.
+  const f = await fixture(t);
+  await f.consent(["query"]);
+  const body = {
+    profile, commandId: crypto.randomUUID(), baseRevision: 12,
+    operation: { kind: "eval.add", query: "synthetic source-local query" },
+  };
+  // When command enqueue crosses the browser boundary.
+  assert.equal((await f.request("/api/dashboard/commands", body)).status, 404);
+  f.env.ACTIVITY_INGEST_ENABLED = "true";
+  assert.equal((await f.request("/api/dashboard/commands", body)).status, 403);
+  // Then no source command was forwarded without its authority.
+  assert.equal(f.calls.length, 0);
+});
+
+test("source command enqueue replaces caller identity and preserves its idempotency key", async t => {
+  // Given a managed-content device owned by the current Google session.
+  const f = await fixture(t);
+  f.env.ACTIVITY_INGEST_ENABLED = "true";
+  await f.consent();
+  const body = {
+    profile, commandId: crypto.randomUUID(), baseRevision: 12,
+    operation: { kind: "flow.end", flowId: "synthetic-flow" },
+  };
+  // When caller-supplied bearer and identity headers accompany the command.
+  const response = await f.request("/api/dashboard/commands", body, {
+    authorization: "Bearer attacker", "x-skillar-principal": '{"accountId":"victim"}',
+  });
+  // Then only server-created authority and the exact command request cross the binding.
+  assert.equal(response.status, 404);
+  const call = f.calls[0];
+  assert.equal(call.request.url, "https://activity.internal/v1/activity/commands/enqueue");
+  assert.equal(call.request.headers.get("authorization"), null);
+  assert.equal(call.request.headers.get("cookie"), null);
+  assert.equal(call.identity.accountId, f.accountId);
+  assert.deepEqual(call.identity.scopes, ["activity:read"]);
+  assert.deepEqual(call.input, body);
+});
+
+test("command status is readable with ingest disabled but not after logout during release", async t => {
+  // Given an existing command and a valid source profile.
+  const f = await fixture(t);
+  await f.consent();
+  f.env.ACTIVITY_SERVICE.fetch = async request => {
+    assert.equal(request.url, "https://activity.internal/v1/activity/commands/status");
+    f.db.prepare("DELETE FROM sessions WHERE id=?").run(f.sid);
+    return Response.json({
+      commandId: body.commandId, state: "applied", baseRevision: 12, sourceRevision: 13,
+      result: { id: "protected-source-result" }, error: null,
+    });
+  };
+  const body = { profile, commandId: crypto.randomUUID() };
+  // When logout invalidates the session during the read.
+  const response = await f.request("/api/dashboard/commands/status", body);
+  // Then protected command results are discarded.
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "unauthorized" });
+});

@@ -1,5 +1,60 @@
 # skillar.sh
 
+## P12 remote mutation increment
+
+The dashboard keeps the existing document scroll owner, tokens and account
+shell. Source commands and private-pack publication are separate operations;
+neither uploads local skill files or grants execution permission.
+
+- Source commands live in a native disclosure beneath the selected source.
+  Reuse the field, document-field, choice, wrapping action cluster and facts
+  primitives from Section 5. Every operation names its source and base journal
+  revision. An explicit submission creates a command ID; nothing applies
+  optimistically.
+- Pending means the server holds a command, not that the source applied it.
+  Explain the existing sync cadence, offline behavior and the source-side
+  `skillar sync commands --enable` opt-in, which is off by default.
+  Applied, conflict, rejected, uncertain and definitely refused outcomes have
+  distinct text and recovery actions. Needs-attention text never relies on
+  color alone. Technical codes stay in a native disclosure.
+- Retrying an uncertain submission preserves its exact ID and content.
+  A definitely refused or conflicted command needs a fresh source read before
+  a new ID is offered. A higher reported source revision must be visible first;
+  an equal revision is sufficient when another command completed without
+  changing source data. Completed-load counters and profile data change in
+  the same state transition. Manual ID lookup recovers durable statuses after
+  reload; browser drafts and source data are not persisted.
+- Private packs use a stacked panel and native authoring disclosure. The JSON
+  picker reads only a chosen definition, checks its pinned member references,
+  and waits for a separate unchecked publication acknowledgement. Reuse
+  `.field-label`, `.text-field`, `.choice` and the intrinsic fields grid.
+  The file input must shrink with its column; no unnamed, unreset fieldset
+  may impose an intrinsic minimum width.
+- Pack catalog entries use a named heading and `.account-status` facts for
+  Pack URI and Digest, never concatenated inline identifiers. Long values
+  wrap without truncation. The `.private-packs` panel inherits
+  `overflow-wrap: anywhere` through names and selected-file notes, including
+  a valid 128-character unbroken display name; it must not expand the mobile
+  layout viewport. The update action copies the current digest;
+  it also opens authoring and focuses the file picker. The definition still
+  determines the target pack. Explain a locked request
+  beside unavailable authoring or update actions.
+- A publication request fixes its ID, definition and expected digest until
+  a terminal receipt is read. Accepted is explicitly not published.
+  Published states the immutable revision and current searchability; a failed
+  request keeps its definition and directs the person to review both the
+  digest and pinned members. Retry sends the identical request.
+- With no active draft, a labeled publication-request ID field reads a durable
+  receipt without a file or upload acknowledgement. It is read-only recovery,
+  not a new publication. Results name their request and pack URI. Reload
+  clears the draft but does not prevent this lookup.
+
+All additions reuse square surfaces, 44px fields, 48px actions, ink focus,
+existing contrast pairs and no decorative motion. Loading and failures use
+inline status/alert text; disabled actions have an adjacent reason. Test the
+unchanged document scroll at phone, tablet and desktop widths, light/dark,
+keyboard focus, text reflow, long IDs, pending and terminal outcomes.
+
 ## P11 private MCP authorization increment
 
 This supersedes earlier MCP-preview restrictions only when the deployed MCP
@@ -362,6 +417,8 @@ At 760px all splits stack. Navigation wraps rather than disappearing. The docume
 
 ## 5. Primitives and states
 
+- Remote command and publication facts, immutable pending requests, explicit
+  recovery and private-pack catalog rows follow the P12 increment above.
 - Action: square, 48px minimum target, primary accent fill / secondary ink wash. Hover underline, active inset ring without fading text, focus-visible 3px outline. A disabled CTA, if one returns, uses native disabled semantics with an adjacent explanation.
 - Theme select: system/light/dark near the main navigation on every route, one shared state and storage key; visible label, native keyboard behavior. System is the default when nothing is saved. Source order always matches visual order.
 - Code panel: theme-specific code field, readable tokens, filename header. Links use code-ink focus rings in both themes. Copy action reports success/failure through a live region.

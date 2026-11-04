@@ -14,6 +14,9 @@ import {
 import type { ActivityEnv, BrowserPrincipal } from "./activity-auth.ts";
 import { currentDeviceConsent } from "./activity-consent.ts";
 import { readBody } from "./activity-body.ts";
+import {
+  sourceCommandRequestSchema, commandStatusRequestSchema, commandStatusSchema,
+} from "../../shared/dist/activity-commands.js";
 
 async function ownedConsent(env: ActivityEnv, principal: BrowserPrincipal, profile: DashboardSource) {
   const owned = await sourceNamespace(principal, { ...profile, sourceId: "dashboard" }, env.ACCOUNTS);
@@ -77,12 +80,16 @@ export async function dashboardRequest(
   }
   if (request.method !== "POST") return activityError(404, "not_found");
   if (![dashboardPaths.query, dashboardPaths.reportStatus, dashboardPaths.reportResult,
-    dashboardPaths.evalCases].some(route => route === path)) return activityError(404, "not_found");
-  if (path === dashboardPaths.evalCases && env.ACTIVITY_INGEST_ENABLED !== "true") {
+    dashboardPaths.evalCases, "/api/dashboard/commands", "/api/dashboard/commands/status"]
+    .some(route => route === path)) return activityError(404, "not_found");
+  if ((path === dashboardPaths.evalCases || path === "/api/dashboard/commands") &&
+      env.ACTIVITY_INGEST_ENABLED !== "true") {
     return activityError(404, "not_found");
   }
   const input = await readBody(request, 256 * 1024);
   const parsed = path === dashboardPaths.query ? dashboardQuerySchema.parse(input) :
+    path === "/api/dashboard/commands" ? sourceCommandRequestSchema.parse(input) :
+    path === "/api/dashboard/commands/status" ? commandStatusRequestSchema.parse(input) :
     path === dashboardPaths.reportResult ? dashboardResultPartRequestSchema.parse(input) :
     path === dashboardPaths.evalCases ? dashboardEvalRequestSchema.parse(input) :
     dashboardReferenceSchema.parse(input);
@@ -100,6 +107,16 @@ export async function dashboardRequest(
   let body: unknown;
   let schema: z.ZodType;
   switch (path) {
+    case "/api/dashboard/commands":
+      body = sourceCommandRequestSchema.parse(input);
+      servicePath = "/v1/activity/commands/enqueue";
+      schema = commandStatusSchema;
+      break;
+    case "/api/dashboard/commands/status":
+      body = commandStatusRequestSchema.parse(input);
+      servicePath = "/v1/activity/commands/status";
+      schema = commandStatusSchema;
+      break;
     case dashboardPaths.query: {
       const query = dashboardQuerySchema.parse(input);
       const backfill = consent.backfill;

@@ -111,7 +111,7 @@ async function profiles(principal) {
   return { schemaVersion: 1, ingestEnabled: true, devices: list, profiles: sources };
 }
 
-const service = {
+export const service = {
   async fetch(request) {
     const input = await request.json();
     const principal = JSON.parse(request.headers.get("x-skillar-principal"));
@@ -129,7 +129,7 @@ const service = {
     }
   },
 };
-const env = {
+export const env = {
   GOOGLE_CLIENT_ID: "fixture", GOOGLE_CLIENT_SECRET: "fixture", SESSION_KEY: "fixture-session-key-at-least-32-characters",
   PUBLIC_ORIGIN: origin, ACCOUNTS: accounts, ACTIVITY_ENABLED: "true", ACTIVITY_INGEST_ENABLED: "true", ACTIVITY_SERVICE: service,
 };

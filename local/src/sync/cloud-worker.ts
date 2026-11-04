@@ -5,9 +5,11 @@ import { z } from "zod";
 import { atomicCloudJson, cloudHome } from "./cloud-connection.js";
 import { runCloudStep } from "./cloud.js";
 import { requestRuntimeCapture, runCloudRuntimeStep } from "./cloud-runtime.js";
+import { requestCommandApply, runCloudCommandStep } from "./cloud-commands.js";
 
-const { home, source, captureRuntime } = z.strictObject({
+const { home, source, captureRuntime, applyCommands } = z.strictObject({
   home: z.string(), source: z.string(), captureRuntime: z.boolean().default(false),
+  applyCommands: z.boolean().default(false),
 }).parse(workerData);
 let busy = false, again = false, timer: NodeJS.Timeout | undefined;
 const wake = () => {
@@ -17,6 +19,8 @@ const wake = () => {
   void runCloudStep(home, source).then(progress =>
     captureRuntime ? runCloudRuntimeStep(home, source, progress,
       request => requestRuntimeCapture(parentPort, request)) : progress,
+  ).then(progress => applyCommands ? runCloudCommandStep(home, progress,
+    (command, instanceId) => requestCommandApply(parentPort, command, instanceId)) : progress,
   ).then(progress => {
     parentPort?.postMessage(progress);
     busy = false;
@@ -46,7 +50,7 @@ const sourceWatch = watch(dirname(source), (_event, filename) => {
   if (filename === basename(source) || filename === `${basename(source)}-wal`) wake();
 });
 const controlWatch = watch(cloudHome(home), (_event, filename) => {
-  if (filename === "control.json" || filename === "connection.json") wake();
+  if (filename === "control.json" || filename === "connection.json" || filename === "commands.json") wake();
 });
 parentPort?.on("message", value => { if (value === "wake") wake(); });
 wake();

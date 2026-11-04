@@ -26,9 +26,10 @@ const HISTORY_TABLES: Record<string, string[]> = {
 };
 // recording_clock is deliberately local. Row provenance and flow cuts travel
 // through shared columns; insert triggers add destination arrival provenance.
-// v7 adds local CDC/outbox state, not additional portable history tables.
+// v7 adds local CDC/outbox state; v8 adds connector command receipts.
+// Neither adds portable history tables.
 // Never import its receipts, spool, or source identity into another lineage.
-const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6, 7];
+const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 type ExportedEvalCase = { query: string; expectedUri?: string; fromTraceId?: string };
 export type ExportDoc = { version: 1; config: Record<string, unknown>; roots: { id: string; path: string }[]; evalCases: ExportedEvalCase[];
