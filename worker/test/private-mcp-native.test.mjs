@@ -222,6 +222,38 @@ for (const recordActivity of [false, true]) test(
   assert.equal((await f.mcp(tokens.body.access_token, "skills/list")).status, 401);
 });
 
+test("browser authorization failures recover in HTML without changing API errors or native challenges", async t => {
+  const f = await fixture(t);
+  const session = await f.forward("session", origin, { method: "GET" });
+  for (const signedIn of [false, true]) {
+    const response = await f.rawForward("pages", `${origin}/oauth/authorize`, {
+      method: "POST",
+      headers: { origin, accept: "text/html", "content-type": "application/x-www-form-urlencoded",
+        ...(signedIn ? { cookie: session.body.cookie } : {}) },
+      body: new URLSearchParams({ handle: "invalid-synthetic-handle", decision: "approve" }).toString(),
+    });
+    assert.equal(response.status, signedIn ? 400 : 401);
+    assert.match(response.headers.get("content-type"), /^text\/html/);
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    const html = await response.text();
+    assert.match(html, /<main id="main">/);
+    assert.match(html, /href="\/connections\/"/);
+    assert.doesNotMatch(html, /invalid-synthetic-handle/);
+  }
+  const protocol = await f.rawForward("pages", `${origin}/mcp`, {
+    method: "POST", headers: { accept: "text/html", "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
+  });
+  assert.equal(protocol.status, 401);
+  assert.match(protocol.headers.get("www-authenticate"), /oauth-protected-resource\/mcp/);
+  assert.notEqual(protocol.headers.get("content-type"), "text/html; charset=utf-8");
+  const api = await f.rawForward("pages", `${origin}/api/mcp/connections`, {
+    method: "GET", headers: { accept: "text/html" },
+  });
+  assert.equal(api.status, 401);
+  assert.match(api.headers.get("content-type"), /^application\/json/);
+});
+
 test("concurrent consented MCP calls serialize native recording cuts without dropping observations", async t => {
   const f = await fixture(t), issued = await f.pat(true);
   await f.publish(await packet());

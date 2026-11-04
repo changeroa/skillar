@@ -107,10 +107,38 @@ export async function mcpPagesRequest(request: Request, env: McpPagesEnv): Promi
 }
 
 export async function mcpPagesBoundary(request: Request, env: McpPagesEnv): Promise<Response> {
-  try { return await mcpPagesRequest(request, env); }
+  let response: Response;
+  try { response = await mcpPagesRequest(request, env); }
   catch (error) {
     if (!(error instanceof Error)) throw error;
     console.error("skillar.mcp.bridge_unavailable", { name: error.name });
-    return activityError(503, "mcp_unavailable");
+    response = activityError(503, "mcp_unavailable");
   }
+  if (new URL(request.url).pathname !== "/oauth/authorize" || response.status < 400 ||
+      !request.headers.get("accept")?.includes("text/html")) return response;
+  const message = response.status === 401 ?
+    "Your sign-in ended before this connection was approved. Sign in from Connections, then start the connection again in your agent." :
+    response.status >= 500 ?
+      "The connection service is unavailable. Return to Connections, then try starting the connection again in your agent." :
+      "This approval request is invalid or has expired. Start the connection again in your agent to get a new approval request.";
+  return new Response(`<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Connection not completed - skillar</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/mcp-consent.css">
+</head><body><a class="skip" href="#main">Skip to content</a>
+<header><a class="wordmark" href="/login/" aria-label="skillar account">
+<img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt="">
+<img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+<a href="/connections/">Your connections</a></header>
+<main id="main"><p class="eyebrow">PRIVATE MCP CONNECTION</p>
+<h1>Connection not<br>completed.</h1><p>${message}</p>
+<p class="note">Review your connections before retrying. Restart in your agent rather than resubmitting this page.</p>
+<div class="actions"><a class="primary" href="/connections/">Return to connections</a></div></main>
+<footer><a href="/skills/">Your private skills</a><a href="/login/">Account</a></footer>
+</body></html>`, {
+    status: response.status,
+    headers: { ...noStore, "content-type": "text/html; charset=utf-8", "x-frame-options": "DENY",
+      "content-security-policy": "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+    },
+  });
 }

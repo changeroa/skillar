@@ -21,6 +21,11 @@ The old Connect MCP destination leads to that working route.
   15px note/code, 48px actions, ink focus and desktop/phone gutters. Its
   surface is a single readable form, not a dialog over a fake app. Native
   system light/dark applies without script; all text and labels wrap at390px.
+- Browser authorization failures retain that document shell, explain an ended
+  sign-in, invalid/expired request or unavailable service, and link back to
+  Connections. Restarting in the agent creates a fresh approval request.
+  This HTML recovery applies only to authorization documents requesting HTML;
+  API errors and MCP bearer challenges retain their protocol responses.
 - Read access needs an explicit Allow action. Cancel stays a separate
   secondary action; no automatic approval or remembered consent is added.
   Recording this connection's server-readable search queries and resource

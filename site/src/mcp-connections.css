@@ -1,4 +1,5 @@
 #connections-app[hidden], #connections-app [hidden], #signed-out[hidden], #retry[hidden], #connections-empty[hidden], #disabled[hidden] { display: none; }
+.account-main { min-height: 100svh; }
 .account-main > #connections-status { margin-top: var(--s4); }
 .account-main > #retry { margin-top: var(--s3); }
 .connections-unavailable { margin-top: var(--s5); max-width: 70ch; }
