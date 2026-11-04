@@ -1,5 +1,35 @@
 # skillar.sh
 
+## Evidence Console V2 foundations (PR1)
+
+Owner chose04 (Ev0CEN1JB875); lead authorized Phase C on2026-11-04. This visual contract supersedes earlier workshop/Linear color, typography, radius and target-size drawings below. Existing routing, auth, consent, command recovery, request outcomes, unknown values and all other behavior contracts remain unchanged. Approved source: /Users/iyen/.dori/state/lane-results/skillar-redesign/v2/sheets/04-evidence/DESIGN.md.
+
+|Role|Light|Dark|
+|---|---|---|
+|bg|#FFFFFF|#171916|
+|surface|#F3F5F2|#22261F|
+|ink|#20231E|#F0F1E9|
+|muted|#565C51|#B3BAAA|
+|accent|#B4321C|#FF8F70|
+|onAccent|#FFFFFF|#23110C|
+|border|#7D8279|#7A8273|
+|rule|#D9DDD6|#3C4336|
+|success|#23603B|#8BD2A0|
+|warn|#805000|#EAC477|
+|error|#AC2045|#FF9CB4|
+
+The exact07 Prompt SVG retains its own #1F201D/#F0F1E9 wordmark ink and vermilion exports. No artwork geometry changes. Code uses surface/ink/muted roles. UI edges use border; decorative separators use rule. No gradient, glow or elevated shadow. A static live dot retains its connection-state meaning; no pulse.
+
+Typography: Helvetica Neue / Apple SD Gothic Neo / system-ui / sans-serif; mono ui-monospace / SF Mono / Menlo / Consolas. No fetched font. App title28, section22, subheading18, body/UI16, all metadata/code at least14px. Site long-form body18, landing display36–64 and section28–36 during incremental rollout; no decorative negative tracking. Korean body leading1.65, UI1.5, headings1.2–1.4.
+
+Primitive geometry: 0px flat data boundaries, 2px controls/cards/tags; no pills. Buttons, inputs, selects, tabs and filter removal controls at least44px, including fold actions. Data-only badges/tags at least26px,14px text; do not imply a button target. Neutral row selection, accent underline for current navigation, 2px accent keyboard focus with2px offset. Hover and pressed states remain visible without fading text or moving the control. Tooltip is a flat bounded inverse surface, not a diffuse shadow.
+
+Spacing follows existing4/8/12/16/20/24/32/48/64/96 scale. Native local dashboard content max1600px with20px phone/32px desktop gutters. Preserve document scroll owner, responsive table-to-card behavior, wrapping navigation and filter behavior. The hosted embed inherits the site's palette but keeps its own scoped styles and zero extra inner gutter.
+
+PR1 is foundations only: no session/search/skill/auth/landing behavior change. Existing page compositions are restyled in the subsequent approved PRs. site/src/skills/* is locked until lead confirms P14 merge; inherit base tokens there but do not edit its controls yet.
+
+
+
 ## P12 remote mutation increment
 
 The dashboard keeps the existing document scroll owner, tokens and account

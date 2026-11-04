@@ -1,58 +1,27 @@
-/* Token bridge for the embedded local views (local/dashboard/styles.css is scoped to .dash-embed at build time).
-   --bg, --surface, --ink and --accent inherit the skillar.sh workshop palette; everything else below is derived
-   from it. Status colors and --ink-3 are chosen at >= 4.5:1 against --surface and their 12% tints in both themes. */
+/* Evidence Console token bridge. Palette roles inherit the site theme; no parallel dark palette. */
 .dash-embed {
-  --surface-2: color-mix(in srgb, var(--surface) 90%, var(--ink));
-  --ink-2: var(--muted);
-  --ink-3: #5f615a;
-  --line: color-mix(in srgb, var(--ink) 14%, transparent);
-  --line-2: color-mix(in srgb, var(--ink) 30%, transparent);
-  --wash: color-mix(in srgb, var(--ink) 5%, transparent);
-  --wash-2: color-mix(in srgb, var(--ink) 10%, transparent);
-  --accent-2: #8f2917;
-  --accent-wash: color-mix(in srgb, var(--accent) 14%, transparent);
-  --ok: #176333;
-  --warn: #74430a;
-  --bad: #9c2416;
-  --neutral: var(--ink-3);
-  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.18);
-  --font-sans: Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
-  --fs-title: 18px;
-  --fs-body: 16px;
-  --fs-sm: 15px;
-  --fs-cap: 14px;
-  --fs-micro: 13px;
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-8: 32px;
-  --s-12: 48px;
-  --max-w: none;
-  --gutter: 0px;
-  --r-sm: 0;
-  --r-md: 0;
-  --r-full: 0;
-  --t-micro: 120ms ease-out;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .dash-embed {
-    --ink-3: #a2a79a; --accent-2: #ffb3a0; --ok: #5fd38a; --warn: #e9b65c; --bad: #ff8c7a;
-    --accent-wash: color-mix(in srgb, var(--accent) 20%, transparent);
-    --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5);
-  }
-}
-:root[data-theme="dark"] .dash-embed {
-  --ink-3: #a2a79a; --accent-2: #ffb3a0; --ok: #5fd38a; --warn: #e9b65c; --bad: #ff8c7a;
-  --accent-wash: color-mix(in srgb, var(--accent) 20%, transparent);
-  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --surface-2: var(--bg); --ink-2: var(--muted); --ink-3: var(--muted);
+  --line: var(--rule); --line-2: var(--border); --wash: var(--surface); --wash-2: var(--surface);
+  --accent-2: var(--accent); --accent-wash: var(--surface);
+  --ok: var(--success); --bad: var(--error); --neutral: var(--muted); --shadow-pop: none;
+  --font-sans: "Helvetica Neue", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-title: 28px; --fs-section: 22px; --fs-subhead: 18px;
+  --fs-body: 16px; --fs-sm: 16px; --fs-cap: 14px; --fs-micro: 14px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-12: 48px;
+  --max-w: none; --gutter: 0px;
+  --r-sm: 2px; --r-md: 2px; --r-full: 2px; --t-micro: 120ms ease-out;
 }
 
 /* Site element rules that would otherwise reach into the embedded views. */
-:where(.dash-embed) h1, :where(.dash-embed) h2, :where(.dash-embed) h3 { font-size: var(--fs-title); letter-spacing: -0.01em; line-height: 1.3; font-weight: 600; }
+.dash-embed h1, .dash-embed h2, .dash-embed h3 { letter-spacing: 0; line-height: 1.4; font-weight: 600; }
+.dash-embed h1 { font-size: var(--fs-title); }
+.dash-embed h2 { font-size: var(--fs-section); }
+.dash-embed h3 { font-size: var(--fs-subhead); }
+.dash-embed .button { font-size: var(--ui); font-weight: 600; }
+.dash-embed .button.primary:not(:disabled) { color: var(--on-accent); }
+.dash-embed .text-field { font-size: var(--ui); font-weight: 400; }
 :where(.dash-embed) p { max-width: none; }
 :where(.dash-embed) p + p { margin-top: 0; }
 :where(.dash-embed) thead th { background: transparent; font-size: var(--fs-cap); letter-spacing: 0; line-height: 1.4; }
@@ -61,9 +30,9 @@
 :where(.dash-embed) pre { padding: 0; line-height: 1.5; }
 :where(.dash-embed) details { background: transparent; padding: 0; }
 :where(.dash-embed) summary { font-weight: 500; padding-block: var(--s-2); min-height: 44px; }
-:where(.dash-embed) select { border-radius: 0; }
+:where(.dash-embed) select { border-radius: var(--r-sm); }
 
-/* Targets and focus follow the site's accessibility constraints: 44px controls, ink focus ring. */
+/* Targets and focus follow the site's accessibility constraints: 44px controls, accent focus ring. */
 .dash-embed .btn, .dash-embed .field, .dash-embed .seg__btn, .dash-embed .seg__b { min-height: 44px; height: auto; }
 .dash-embed .tab { min-height: 44px; }
 .dash-embed .trace__back, .dash-embed .ws__back, .dash-embed .rowlink { min-height: 44px; }
@@ -71,10 +40,10 @@
 .dash-embed .chip__x::before, .dash-embed .foldbtn::before, .dash-embed .usage__why::before, .dash-embed .attr--none::before {
   content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; min-width: 100%; transform: translate(-50%, -50%);
 }
-.dash-embed :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.dash-embed :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dash-embed .live--live .live__dot { animation: none; }
 .dash-embed .live--offline .live__dot { background: var(--neutral); }
-.dash-embed .top { border-bottom-color: var(--muted); }
+.dash-embed .top { border-bottom-color: var(--rule); }
 .dash-embed .card, .dash-embed .callout, .dash-embed .chip, .dash-embed .tag, .dash-embed .skill, .dash-embed .rt__mark { border-color: var(--line-2); }
 .dash-embed .card { overflow-x: auto; }
 .dash-embed .hm-stack { --hm-cell: 44px; }
@@ -97,9 +66,6 @@
   .dash-embed :is(.top, .page) [data-tip]::after {
     transform: none; transition: opacity var(--t-micro), display var(--t-micro) allow-discrete !important;
   }
-}
-@media (max-width: 760px) {
-  .dash-embed { --fs-body: 17px; }
 }
 @media (max-width: 639.98px) {
   .dash-embed .hm--skills { grid-template-columns: repeat(var(--hm-cols), minmax(44px, 1fr)) max-content; }
