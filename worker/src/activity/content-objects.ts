@@ -15,11 +15,13 @@ import { ContentStorageError, readContentKey, writeContentKey } from "./content-
 import { decryptContent, encryptContent } from "./crypto.ts";
 import type { IngestPrincipal } from "./types.ts";
 import { initializeContentAccount } from "./content-account.ts";
+import { requireChunkReadable } from "./content-retention.ts";
 
 export async function readChunkBytes(
   env: ContentEnv, principal: IngestPrincipal,
   stored: Pick<StoredChunk, "object_key" | "key_version" | "revision" | "plaintext_hash" | "bytes">,
 ): Promise<Uint8Array> {
+  await requireChunkReadable(env, principal, stored.object_key);
   const object = await env.ACTIVITY_RAW.get(stored.object_key);
   if (object === null) throw new ContentStorageError("content_missing", 409);
   const key = await readContentKey(env.ACTIVITY, principal, env.CONTENT_KEYRING,
@@ -32,6 +34,7 @@ export async function readChunkBytes(
   if (bytes.byteLength !== stored.bytes || await contentDigest(bytes) !== stored.plaintext_hash) {
     throw new ContentStorageError("content_conflict", 409);
   }
+  await requireChunkReadable(env, principal, stored.object_key);
   return bytes;
 }
 

@@ -15,6 +15,7 @@ import { readChunkBytes } from "./content-objects.ts";
 import {
   findRuntime, runtimeChunks, runtimeCommit, runtimeMetadata, RuntimeError, saveRuntime,
 } from "./runtime-store.ts";
+import type { RuntimeRow } from "./runtime-store.ts";
 import { ActivityLedgerError } from "./types.ts";
 import type { IngestPrincipal } from "./types.ts";
 
@@ -35,6 +36,28 @@ async function permission(
   if (commit.capturedAtMs < commit.range.fromMs || commit.capturedAtMs >= commit.range.toMs) {
     throw new ContentConsentError();
   }
+  return consent;
+}
+
+/** Receipt age, not source time: authorized backfills may have historical captures. */
+export async function requireRuntimeReadable(
+  env: ContentEnv, principal: IngestPrincipal, row: RuntimeRow, nowMs = Date.now(),
+): Promise<void> {
+  await activeFence(env.ACTIVITY, principal);
+  const commit = runtimeCommit(row);
+  const consent = await permission(env, principal, commit, true);
+  if (nowMs - row.received_at_ms >=
+      Math.min(consent.retention.contentDays, consent.retention.projectionDays) * 86_400_000) {
+    throw new RuntimeError("runtime_missing");
+  }
+  // A terminal upload intent denies reads even if consent is subsequently restored
+  // or a timed-out PUT lands after DELETE. Immutable receipts remain retryable.
+  const purged = await env.ACTIVITY.prepare(`SELECT 1 FROM content_uploads
+    WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND batch_id=?
+      AND state IN ('purging','purged') LIMIT 1`)
+    .bind(principal.accountId, principal.generation, principal.deviceId, commit.sourceDomain,
+      commit.batchId).first();
+  if (purged !== null) throw new RuntimeError("runtime_missing");
 }
 async function contextBytes(
   env: ContentEnv, principal: IngestPrincipal, commit: RuntimeCommit, chunks: readonly StoredChunk[],
@@ -56,7 +79,10 @@ async function contextBytes(
   return context;
 }
 
-export async function commitRuntime(env: ContentEnv, principal: IngestPrincipal, input: unknown) {
+export async function commitRuntime(
+  env: ContentEnv, principal: IngestPrincipal, input: unknown,
+  options: { readonly now?: () => number } = {},
+) {
   const commit = runtimeCommitSchema.parse(input);
   reader(principal);
   streamIdentity(principal, commit);
@@ -81,7 +107,7 @@ export async function commitRuntime(env: ContentEnv, principal: IngestPrincipal,
   })) throw new ContentStorageError("content_conflict", 409);
   await contextBytes(env, principal, commit, chunks);
   await permission(env, principal, commit);
-  await saveRuntime(env.ACTIVITY, principal, commit, payloadHash, chunks);
+  await saveRuntime(env.ACTIVITY, principal, commit, payloadHash, chunks, options.now?.() ?? Date.now());
   await activeFence(env.ACTIVITY, principal);
   await permission(env, principal, commit);
   return { sequence: commit.sequence, sourceCut: commit.sourceCut, contentHash: commit.contentHash };
@@ -89,12 +115,18 @@ export async function commitRuntime(env: ContentEnv, principal: IngestPrincipal,
 
 export async function latestRuntimeRevision(
   env: ContentEnv, principal: IngestPrincipal, sourceDomain: string,
+  options: { readonly now?: () => number } = {},
 ) {
   reader(principal);
   await activeFence(env.ACTIVITY, principal);
   const row = await findRuntime(env.ACTIVITY, principal, sourceDomain);
   if (row === null) return null;
-  await permission(env, principal, runtimeCommit(row), true);
+  try {
+    await requireRuntimeReadable(env, principal, row, options.now?.() ?? Date.now());
+  } catch (error) {
+    if (error instanceof RuntimeError && error.code === "runtime_missing") return null;
+    throw error;
+  }
   await activeFence(env.ACTIVITY, principal);
   return runtimeMetadata(row);
 }
@@ -102,15 +134,16 @@ export async function latestRuntimeRevision(
 export async function readRuntimeContext(
   env: ContentEnv, principal: IngestPrincipal,
   input: { readonly sourceDomain: string; readonly sequence?: number },
+  options: { readonly now?: () => number } = {},
 ) {
   reader(principal);
   await activeFence(env.ACTIVITY, principal);
   const row = await findRuntime(env.ACTIVITY, principal, input.sourceDomain, input.sequence);
   if (row === null) throw new RuntimeError("runtime_missing");
   const commit = runtimeCommit(row);
-  await permission(env, principal, commit, true);
+  await requireRuntimeReadable(env, principal, row, options.now?.() ?? Date.now());
   const context = await contextBytes(env, principal, commit, runtimeChunks(row));
   await activeFence(env.ACTIVITY, principal);
-  await permission(env, principal, commit, true);
+  await requireRuntimeReadable(env, principal, row, options.now?.() ?? Date.now());
   return { context, ...runtimeMetadata(row) };
 }

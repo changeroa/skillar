@@ -14,6 +14,7 @@ import { ActivityRequestError, readBody } from "./activity-body.ts";
 import { dashboardRequest } from "./activity-dashboard.ts";
 import { eventRequest } from "./activity-events.ts";
 import { privatePackPagesRequest } from "./private-packs.ts";
+import { activityDeletionRequest } from "./activity-deletion.ts";
 
 const grantRequestSchema = z.strictObject({
   scopes: z.array(connectorScopeSchema).min(1).max(4).readonly(),
@@ -130,6 +131,9 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
 export async function activityRequest(request: Request, env: ActivityEnv): Promise<Response> {
   try {
     const path = new URL(request.url).pathname;
+    if (path.replace(/\/$/, "") === "/api/activity/deletion") {
+      return await activityDeletionRequest(request, env);
+    }
     if (path.startsWith("/api/packs/") || path.startsWith("/v1/packs/")) {
       return await privatePackPagesRequest(request, env);
     }

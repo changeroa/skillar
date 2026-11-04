@@ -14,13 +14,13 @@ export class RuntimeError extends Error {
     this.name = "RuntimeError";
   }
 }
-const rowSchema = z.object({
+export const runtimeRowSchema = z.object({
   sequence: z.number().int().positive(), source_sequence: z.number().int().nonnegative(),
   source_cut: z.number().int().nonnegative(), captured_at_ms: timestampSchema,
   received_at_ms: timestampSchema,
   payload_hash: z.string(), content_hash: z.string(), commit_json: z.string(), chunks_json: z.string(),
 });
-export type RuntimeRow = z.infer<typeof rowSchema>;
+export type RuntimeRow = z.infer<typeof runtimeRowSchema>;
 export function runtimeMetadata(row: RuntimeRow) {
   return { sequence: row.sequence, sourceSequence: row.source_sequence,
     sourceCut: row.source_cut, capturedAtMs: row.captured_at_ms, receivedAtMs: row.received_at_ms };
@@ -41,11 +41,11 @@ export async function findRuntime(
       AND (? IS NULL OR sequence=?) ORDER BY sequence DESC LIMIT 1`)
     .bind(principal.accountId, principal.generation, principal.deviceId, source,
       sequence ?? null, sequence ?? null).first();
-  return result === null ? null : rowSchema.parse(result);
+  return result === null ? null : runtimeRowSchema.parse(result);
 }
 export async function saveRuntime(
   db: D1Database, principal: IngestPrincipal, commit: RuntimeCommit,
-  payloadHash: string, chunks: readonly StoredChunk[],
+  payloadHash: string, chunks: readonly StoredChunk[], receivedAtMs = Date.now(),
 ): Promise<void> {
   const identity = [principal.accountId, principal.generation, principal.deviceId, commit.sourceDomain];
   const source = await db.prepare(`SELECT sequence FROM device_streams
@@ -66,7 +66,7 @@ export async function saveRuntime(
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(account_id,generation,device_id,source_domain,sequence) DO NOTHING`)
       .bind(...identity, commit.sequence, commit.batchId, payloadHash, commit.contentHash,
-        sourceSequence, commit.sourceCut, commit.capturedAtMs, Date.now(), JSON.stringify(commit),
+        sourceSequence, commit.sourceCut, commit.capturedAtMs, receivedAtMs, JSON.stringify(commit),
         JSON.stringify(chunks)).run();
   } catch (error) {
     if (error instanceof Error) {

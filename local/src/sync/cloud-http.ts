@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { deploymentOriginSchema } from "./cloud-wire.js";
 import { CloudSyncError } from "./cloud-blobs.js";
+import { PRIVATE_SKILL_MAX_REQUEST_BYTES } from "../skills/package.js";
 
 export const cloudOriginSchema = deploymentOriginSchema.refine(value => value.startsWith("https://"));
 export type CloudState = "auth-required" | "consent-required" | "retry" | "quarantined" | "disabled";
@@ -89,7 +90,8 @@ export class CloudHttp {
       throw new CloudSyncError("invalid_remote_target");
     }
     const requestLimit = options.maxRequestBytes === undefined ? 256 * 1024 :
-      z.number().int().min(1).max(3 * 1024 * 1024).parse(options.maxRequestBytes);
+      z.number().int().min(1).max(url.pathname.startsWith("/v1/skills/") ?
+        PRIVATE_SKILL_MAX_REQUEST_BYTES : 3 * 1024 * 1024).parse(options.maxRequestBytes);
     if (options.body !== undefined && Buffer.byteLength(options.body) > requestLimit) {
       throw new CloudSyncError("request_too_large");
     }

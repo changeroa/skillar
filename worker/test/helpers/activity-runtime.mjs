@@ -8,11 +8,12 @@ export { principal, kinds } from "./activity-content.mjs";
 
 const source = `
 import { commitRuntime,readRuntimeContext,latestRuntimeRevision } from "./src/activity/runtime-api.ts";
+import { sweepRuntimeContexts } from "./src/activity/runtime-cleanup.ts";
 import { storeContentChunk } from "./src/activity/content-objects.ts";
 import { sweepContent } from "./src/activity/content-db.ts";
 import { activityContentRequest } from "./src/activity/content-api.ts";
 import { ActivityContractError } from "../shared/activity-schema.ts";
-let latePut,armed=false;
+let latePut,armed=false,nowMs;
 export default {async fetch(request,bindings) {
   const env={...bindings,CONTENT_KEYRING:JSON.stringify({current:1,keys:{
     1:"${Buffer.alloc(32, 7).toString("base64url")}"}}),ACTIVITY_INGEST_ENABLED:"true"};
@@ -21,9 +22,11 @@ export default {async fetch(request,bindings) {
     return activityContentRequest(new Request("https://activity.internal"+path,request),env);
   }
   const {principal,input}=await request.json();
+  const clock={now:()=>nowMs??Date.now()};
   try {
     let value;
     switch(path) {
+      case "/clock": nowMs=input.nowMs;value={nowMs};break;
       case "/arm": armed=true;value={armed:true};break;
       case "/release": await bindings.ACTIVITY_RAW.put(...latePut);value={released:true};break;
       case "/chunk": {
@@ -35,21 +38,27 @@ export default {async fetch(request,bindings) {
         value=await storeContentChunk(env,principal,input);break;
       }
       case "/commit":
-        value=await commitRuntime(env,principal,input);break;
-      case "/read": case "/readThenRevoke": {
-        if(path==="/readThenRevoke") {
+        value=await commitRuntime(env,principal,input,clock);break;
+      case "/read": case "/readThenRevoke": case "/readThenExpire": {
+        if(path==="/readThenRevoke"||path==="/readThenExpire") {
           const bucket=bindings.ACTIVITY_RAW;
           env.ACTIVITY_RAW={async get(...args) {
             const object=await bucket.get(...args);
-            await bindings.ACCOUNTS.prepare("UPDATE devices SET revoked_at=1").run();
+            if(path==="/readThenRevoke")
+              await bindings.ACCOUNTS.prepare("UPDATE devices SET revoked_at=1").run();
+            else nowMs=input.expireAtMs;
             return object;
           }};
         }
-        value=await readRuntimeContext(env,principal,input);break;
+        value=await readRuntimeContext(env,principal,input,clock);break;
       }
       case "/latest":
         env.ACTIVITY_RAW={get:()=>{throw new Error("latest_must_not_decrypt");}};
-        value=await latestRuntimeRevision(env,principal,input.sourceDomain);break;
+        value=await latestRuntimeRevision(env,principal,input.sourceDomain,clock);break;
+      case "/runtimeSweep": case "/runtimeSweepFailDelete":
+        if(path==="/runtimeSweepFailDelete")
+          env.ACTIVITY_RAW={delete:()=>{throw new Error("fixture_delete_failed");}};
+        value=await sweepRuntimeContexts(env,{...input,...clock});break;
       case "/sweep": value=await sweepContent(env.ACTIVITY,env.ACTIVITY_RAW,input);break;
       case "/sweepLatePin": {
         const db=bindings.ACTIVITY;

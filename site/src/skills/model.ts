@@ -11,7 +11,7 @@ import { splitSkillMarkdown } from "../../../shared/dist/skill-fields.js";
 export { mediaTypeFor };
 
 export const ENTRYPOINT = "SKILL.md";
-export const ENTRYPOINT_MAX_BYTES = 64 * 1024;
+export const ENTRYPOINT_MAX_BYTES = PRIVATE_SKILL_MAX_RESOURCE_BYTES;
 export const ENTRYPOINT_MEDIA_TYPE = "text/markdown";
 
 const encoder = new TextEncoder();

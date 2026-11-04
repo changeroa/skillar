@@ -20,6 +20,13 @@ export async function resourceBytes(store: PrivateSkillStore, key: string, resou
   readonly bytes: number; readonly digest: string;
 }): Promise<Uint8Array> {
   await store.live();
+  const bytes = await verifiedResourceBytes(store, key, resource);
+  await store.live();
+  return bytes;
+}
+async function verifiedResourceBytes(store: PrivateSkillStore, key: string, resource: {
+  readonly bytes: number; readonly digest: string;
+}): Promise<Uint8Array> {
   const object = await store.env.ACTIVITY_RAW.get(key);
   if (object === null) throw new PrivateSkillError(409, "resource_missing");
   if (object.size !== resource.bytes) throw new PrivateSkillError(409, "resource_integrity");
@@ -27,7 +34,6 @@ export async function resourceBytes(store: PrivateSkillStore, key: string, resou
   if (bytes.length !== resource.bytes || await hashContent(bytes) !== resource.digest) {
     throw new PrivateSkillError(409, "resource_integrity");
   }
-  await store.live();
   return bytes;
 }
 export async function putPackage(store: PrivateSkillStore, skillId: PrivateSkillId, packet: {
@@ -56,18 +62,21 @@ export async function putPackage(store: PrivateSkillStore, skillId: PrivateSkill
       onlyIf: { etagDoesNotMatch: "*" }, httpMetadata: { contentType: resource.mediaType },
     });
     // Conditional PUT retries must verify the pre-existing object rather than trust its key.
-    await resourceBytes(store, key, resource);
+    await verifiedResourceBytes(store, key, resource);
   }
+  await store.live();
 }
 export async function exportVersion(store: PrivateSkillStore, skillId: PrivateSkillId, digest: string) {
   const version = await store.version(skillId, digest);
   const manifest = privateSkillManifestSchema.parse(JSON.parse(version.manifest_json));
   const contents = [];
   for (const resource of manifest.resources) {
-    const bytes = await resourceBytes(store, resourceKey(store, { skillId, version: digest, digest: resource.digest }), resource);
+    await store.live();
+    const bytes = await verifiedResourceBytes(store, resourceKey(store, { skillId, version: digest, digest: resource.digest }), resource);
     contents.push({ path: resource.path, body: encodePrivateSkillBytes(bytes) });
   }
   const packet = await verifyPrivateSkillPackage({ manifest, manifestDigest: digest, contents });
+  await store.live();
   return privateSkillExportSchema.parse({
     skillId, version: { digest, createdAt: version.created_at, pinned: version.pinned === 1 },
     package: packet.package,

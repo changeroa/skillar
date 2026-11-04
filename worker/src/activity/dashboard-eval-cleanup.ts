@@ -3,13 +3,14 @@ import { consentSchema } from "../../../shared/activity-consent.ts";
 import type { ContentEnv } from "./content-env.ts";
 
 /** Keep purge intents so a timed-out PUT completing after DELETE is swept again. */
-export async function sweepDashboardEvalCases(env: ContentEnv, now = Date.now()) {
+export async function sweepDashboardEvalCases(env: ContentEnv, now = Date.now(), limit = 100) {
+  const bounded = z.number().int().min(1).max(1000).parse(limit);
   const rows = z.array(z.object({
     account_id: z.string(), generation: z.number(), device_id: z.string(), object_key: z.string(),
     consent_version: z.number(), requires_path: z.number(), created_at: z.number(), expires_at: z.number(), active: z.number(),
   })).parse((await env.ACTIVITY.prepare(`SELECT e.*,EXISTS(SELECT 1 FROM tenant_fences f
     WHERE f.account_id=e.account_id AND f.generation=e.generation AND f.state='active') AS active
-    FROM dashboard_eval_cases e ORDER BY e.purge_order,e.object_key LIMIT 100`).all()).results);
+    FROM dashboard_eval_cases e ORDER BY e.purge_order,e.object_key LIMIT ?`).bind(bounded).all()).results);
   let deleted = 0;
   for (const row of rows) {
     const saved = await env.ACCOUNTS.prepare(`SELECT c.version,c.consent_json FROM device_consents c

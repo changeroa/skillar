@@ -4,6 +4,51 @@ import test from "node:test";
 import { createHash } from "node:crypto";
 import { fixture, packet, skillId, key, uri, publishInput } from "./helpers/private-skill-backend.mjs";
 import { privateSkillUri } from "../../shared/dist/private-skills.js";
+import {
+  PRIVATE_SKILL_MAX_BYTES, PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_RESOURCES,
+  PRIVATE_SKILL_MAX_REQUEST_BYTES,
+} from "../../shared/dist/private-skills.js";
+
+test("collector-sized packages publish export and read through real storage without truncation", async t => {
+  // Given: all 512 resources, exactly 16 MiB, and an entrypoint above 64 KiB.
+  const f = await fixture(t);
+  const markdown = "---\nname: deploy\ndescription: Synthetic fixture\n---\n" + "a".repeat(64 * 1024);
+  const large = new Uint8Array(16 * 1024 * 1024 - Buffer.byteLength(markdown) - 510).fill(97);
+  const value = await packet("", [
+    { path: "large.bin", mediaType: "application/octet-stream", bytes: large },
+    ...Array.from({ length: 510 }, (_, i) => ({
+      path: `notes/${i}.txt`, mediaType: "text/plain", bytes: new Uint8Array([i % 256]),
+    })),
+  ], markdown);
+  assert.ok(Buffer.byteLength(JSON.stringify(publishInput(value))) > 3 * 1024 * 1024);
+  // When
+  const published = await f.publish(value);
+  assert.equal(published.status, 200, JSON.stringify(published.body));
+  const exported = await f.send(`/${skillId}/versions/${value.manifestDigest}`);
+  const read = await f.send("/resources/read", "POST", { uri: uri(value, "large.bin") });
+  // Then
+  assert.equal(exported.status, 200);
+  for (const response of [published, exported]) {
+    const actor = Number(response.headers.get("x-fixture-actor-queries"));
+    const gateway = Number(response.headers.get("x-fixture-gateway-queries"));
+    assert.ok(actor > 512 && actor + gateway < 1000, JSON.stringify({ actor, gateway }));
+  }
+  assert.deepEqual(exported.body.package, value);
+  assert.equal(read.status, 200);
+  assert.deepEqual(new Uint8Array(Buffer.from(read.body.body, "base64")), large);
+});
+
+test("oversized JSON is explicitly denied before any storage write", async t => {
+  // Given
+  const f = await fixture(t);
+  // When
+  const denied = await f.send(`/${skillId}/versions`, "POST", " ".repeat(PRIVATE_SKILL_MAX_REQUEST_BYTES + 1));
+  // Then
+  assert.equal(denied.status, 413);
+  assert.equal(denied.body.error, "request_too_large");
+  assert.deepEqual(await f.rows(f.accounts, "SELECT * FROM private_skill_uploads"), []);
+  assert.deepEqual((await f.bucket.list()).objects, []);
+});
 
 test("accepted Unicode resource paths remain readable after canonical URI encoding", async t => {
   // Given a bounded relative path whose canonical URI exceeds the old ASCII-sized limit.
@@ -120,10 +165,10 @@ test("package tampering traversal archives malformed metadata aliases and quotas
     tampered, traversal, archive, disguised,
     await packet("", [], "---\nname: Invalid Name\ndescription: example\n---\nbody"),
     await packet("", [], "---\nname: deploy\ndescription: example\nextra: &cycle [*cycle]\n---\nbody"),
-    { ...value, manifest: { ...value.manifest, resources: Array(129).fill(value.manifest.resources[0]) } },
-    { ...value, manifest: { ...value.manifest, resources: [{ ...value.manifest.resources[0], bytes: 524289 }] } },
+    { ...value, manifest: { ...value.manifest, resources: Array(PRIVATE_SKILL_MAX_RESOURCES + 1).fill(value.manifest.resources[0]) } },
+    { ...value, manifest: { ...value.manifest, resources: [{ ...value.manifest.resources[0], bytes: PRIVATE_SKILL_MAX_RESOURCE_BYTES + 1 }] } },
     { ...value, manifest: { ...value.manifest, resources: [value.manifest.resources[0],
-      ...Array.from({ length: 5 }, (_, index) => ({ ...value.manifest.resources[0], path: `file-${index}`, bytes: 524288 }))] } },
+      { ...value.manifest.resources[0], path: "file", bytes: PRIVATE_SKILL_MAX_BYTES }] } },
   ];
   // When each is published.
   const results = [];

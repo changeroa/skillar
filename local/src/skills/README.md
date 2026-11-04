@@ -27,9 +27,11 @@ Preview only creates the requested plan outside the destination, exclusively,
 at mode 0600. It never creates directories or changes target files. Existing
 targets require `--allow-overwrite`, even if their bytes already match. The plan
 captures ancestor device/inode/birth identities and target identity, digest,
-size, mode, mtime and ctime. Existing target backups have the same 512 KiB/file
-and 2 MiB/total limits as package resources. Exports, plans and receipts are
-bounded at 3, 4 and 8 MiB; directory guards are limited to 1024.
+size, mode, mtime and ctime. Packages match the local collector's 512 files and
+16 MiB total, including SKILL.md; a single file can use the entire byte budget.
+Existing target backups have the same 16 MiB/file and 16 MiB/total limits.
+Exports, plans and receipts are bounded at 24, 25 and 50 MiB, respectively;
+directory guards remain limited to 1024 and source capture to 4096 entries.
 
 ## Actual concurrency guarantee
 

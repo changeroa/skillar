@@ -14,6 +14,8 @@ import type { EventEnv } from "./account-events.ts";
 import { HubConnections } from "./account-hub-connections.ts";
 import type { HubAttachment, HubConnection } from "./account-hub-connections.ts";
 import { readAccountChanges } from "./event-replay.ts";
+import { deletionTargetSchema } from "../../../shared/activity-deletion.ts";
+import { storedDeletion } from "./deletion-store.ts";
 
 const notifySchema = eventPrincipalSchema.unwrap().pick({ accountId: true, generation: true });
 type SseWindow = { readonly endsAtMs: number; readonly nextAllowedAtMs: number };
@@ -43,6 +45,17 @@ export class AccountHub extends DurableObject<EventEnv> {
 
   private async dispatch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    if (url.origin === "https://hub.internal" && url.pathname === "/purge" && request.method === "POST") {
+      const target = deletionTargetSchema.parse(await eventJson(request));
+      this.assertAccount(target.accountId);
+      if (await storedDeletion(this.env.ACCOUNTS, target) === null) {
+        throw new EventRequestError(403, "account_not_revoked");
+      }
+      for (const connection of this.connections.all()) connection.close();
+      await this.schedule();
+      await this.ctx.storage.deleteAll();
+      return Response.json({ purged: true }, { headers: eventHeaders });
+    }
     if (url.origin === "https://hub.internal" && url.pathname === "/notify" && request.method === "POST") {
       const scope = notifySchema.parse(await eventJson(request));
       this.assertAccount(scope.accountId);

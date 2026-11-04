@@ -24,14 +24,18 @@ function rejectArchive(bytes: Uint8Array): void {
   }
 }
 export function encodePrivateSkillBytes(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  const parts: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    parts.push(String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)));
+  }
+  return btoa(parts.join(""));
 }
 export function decodePrivateSkillBytes(body: string): Uint8Array {
   const binary = atob(body);
   if (btoa(binary) !== body) throw new PrivateSkillContractError("package_integrity");
-  return Uint8Array.from(binary, character => character.charCodeAt(0));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 
 /** One bounded package format is shared by browser uploads, sync and local apply. */

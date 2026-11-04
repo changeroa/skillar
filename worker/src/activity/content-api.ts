@@ -40,6 +40,11 @@ import { privatePacksRequest } from "./private-packs.ts";
 import { sweepPrivatePacks } from "./private-packs-cleanup.ts";
 import { sweepCommands } from "./commands-cleanup.ts";
 import { acceleratorStatus, acceleratorStatusPath } from "./accelerator.ts";
+import { deletionRequest } from "./deletion-api.ts";
+import { sweepDeletions } from "./deletion-cleanup.ts";
+import { sweepRuntimeContexts } from "./runtime-cleanup.ts";
+import { sweepPrivateSkills } from "../private-skills/retention.ts";
+import { sweepSourceContent } from "./content-retention.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -100,6 +105,8 @@ async function body(request: Request): Promise<unknown> {
  */
 export async function activityContentRequest(request: Request, env: ReportEnv): Promise<Response> {
   const url = new URL(request.url);
+  const deletionResponse = await deletionRequest(request, env);
+  if (deletionResponse !== null) return deletionResponse;
   const observationResponse = await privateMcpObservationRequest(request, env);
   if (observationResponse !== null) return observationResponse;
   const privateResponse = await privateSkillsRequest(request, env);
@@ -205,6 +212,7 @@ export default {
   },
   scheduled(event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
     if (event.cron === "* * * * *") {
+      context.waitUntil(sweepDeletions(env));
       if (env.ACCOUNT_HUB !== undefined) {
         const hub = env.ACCOUNT_HUB;
         context.waitUntil(dispatchAccountControls(env).then(() =>
@@ -213,10 +221,13 @@ export default {
       return;
     }
     context.waitUntil(Promise.all([
-      sweepContent(env.ACTIVITY, env.ACTIVITY_RAW), sweepReports(env), dispatchPendingReports(env),
-      sweepDashboardEvalCases(env), sweepAccountChanges(env.ACTIVITY),
-      sweepPrivatePacks(env),
-      sweepCommands(env),
+      sweepContent(env.ACTIVITY, env.ACTIVITY_RAW, { limit: 25 }),
+      sweepReports(env, Date.now(), 25), dispatchPendingReports(env, 5),
+      sweepDashboardEvalCases(env, Date.now(), 25), sweepAccountChanges(env.ACTIVITY),
+      sweepPrivatePacks(env, 25),
+      sweepCommands(env, { limit: 25 }),
+      sweepRuntimeContexts(env, { limit: 25 }), sweepPrivateSkills(env, { limit: 5, objectLimit: 25 }),
+      sweepSourceContent(env, { limit: 25 }),
     ]));
   },
 };

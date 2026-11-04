@@ -4,7 +4,7 @@ export {
   PRIVATE_SKILL_MAX_REQUEST_BYTES, PRIVATE_SKILL_MAX_RESOURCES, privateSkillExportSchema,
   privateSkillPathSchema, privateSkillDigestSchema,
   privateSkillIdSchema, privateSkillHeadSchema, privateSkillPackageSchema, privateSkillDetailSchema,
-  privateSkillIdentitySchema,
+  privateSkillIdentitySchema, privateSkillBodySchema,
 } from "../../../shared/dist/private-skills.js";
 export type {
   PrivateSkillExport, PrivateSkillPackage, PrivateSkillId, PrivateSkillHead, PrivateSkillDigest,

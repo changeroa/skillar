@@ -61,6 +61,13 @@ key) so stale aliases cannot resurrect deleted evidence. A stale delete cannot
 remove a newer projection. Newer intentional mutations may advance past an
 older tombstone.
 
+Committed source retention uses server upload age and the shorter original/current
+content and projection retention. Reads enforce expiry before and after object
+access without waiting for cleanup. The bounded cleanup scan removes expired
+receipt mutations and only typed facts whose revisions have not advanced beyond
+those mutations. Receipt hashes, cursors and tombstones remain; exact receipt
+retries cannot reproject expired facts. Snapshot pages have no typed mutations.
+
 Jobs and outbox rows are durable intent, not a claim that Queue delivery,
 notification fan-out or report execution already runs. P5/P9/P13 wire those
 consumers; receipts retain enough metadata input for their replay. Queue loss,

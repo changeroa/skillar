@@ -8,9 +8,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { createPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
+import { PRIVATE_SKILL_MAX_REQUEST_BYTES, PRIVATE_SKILL_MAX_RESOURCE_BYTES } from "../../shared/dist/private-skills.js";
 import { distImport } from "./_helpers.mjs";
 
 const { previewSkill } = await distImport("skills/plan.js");
+const { MAX_PLAN_BYTES } = await distImport("skills/plan.js");
 const { applySkill } = await distImport("skills/apply.js");
 const { rollbackSkill } = await distImport("skills/rollback.js");
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
@@ -84,7 +86,7 @@ test("corrupt exports fail before any plan or destination write", async t => {
     e => { e.package.contents.reverse(); },
     e => { e.package.contents.push(e.package.contents[0]); },
     e => { e.package.manifest.resources[0].path = "../outside"; },
-    e => { e.package.manifest.resources[0].bytes = 512 * 1024 + 1; },
+    e => { e.package.manifest.resources[0].bytes = PRIVATE_SKILL_MAX_RESOURCE_BYTES + 1; },
     e => { e.package.contents[0].body = "AP=="; },
     e => { e.package.manifest.resources[0].path = "bundle.zip"; },
     e => {
@@ -133,9 +135,9 @@ test("corrupt serialized plans cannot choose unrelated targets or omit guards", 
 test("bounded local documents and destination-contained plans are refused", async t => {
   const f = await fixture(t);
   await assert.rejects(f.preview({ planPath: join(f.root, "SKILL.md") }), { code: "plan_in_destination" });
-  writeFileSync(f.packagePath, " ".repeat(3 * 1024 * 1024 + 1));
+  writeFileSync(f.packagePath, " ".repeat(PRIVATE_SKILL_MAX_REQUEST_BYTES + 1));
   await assert.rejects(f.preview(), { code: "quota" });
-  writeFileSync(f.planPath, " ".repeat(4 * 1024 * 1024 + 1));
+  writeFileSync(f.planPath, " ".repeat(MAX_PLAN_BYTES + 1));
   await assert.rejects(applySkill(f.planPath), { code: "quota" });
   assert.deepEqual(readdirSync(f.root), []);
 });

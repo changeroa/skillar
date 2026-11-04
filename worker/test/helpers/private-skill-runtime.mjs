@@ -13,8 +13,22 @@ async function trip(env,point) {
   if(action.fail) throw new Error("fixture_storage_failure");
 }
 function wrapped(env) {
-  const bucket=env.ACTIVITY_RAW, db=env.ACCOUNTS;
-  return {...env, PRIVATE_SKILLS_ENABLED:enabled,
+  const bucket=env.ACTIVITY_RAW, native=env.ACCOUNTS, statements=new WeakMap();
+  const queries={count:0};
+  const tick=()=>{if(++queries.count>1000)throw new Error("fixture_d1_query_limit");};
+  const wrap=statement=>{
+    const proxy=new Proxy(statement,{get(target,name) {
+      if(name==="bind")return (...args)=>wrap(target.bind(...args));
+      if(["first","all","run","raw"].includes(name))return (...args)=>{tick();return target[name](...args);};
+      return Reflect.get(target,name);
+    }});
+    statements.set(proxy,statement);return proxy;
+  };
+  const db={
+    prepare:sql=>wrap(native.prepare(sql)),
+    batch:values=>{tick();return native.batch(values.map(value=>statements.get(value)??value));},
+  };
+  return {...env, PRIVATE_SKILLS_ENABLED:enabled, fixtureQueries:queries,
     ACCOUNTS:{
       prepare(sql) {
         const statement=db.prepare(sql);
@@ -33,7 +47,14 @@ function wrapped(env) {
   };
 }
 export class PrivateSkillCatalog extends Catalog {
-  constructor(ctx,env) {super(ctx,wrapped(env));}
+  constructor(ctx,env) {const fixtureEnv=wrapped(env);super(ctx,fixtureEnv);this.fixtureEnv=fixtureEnv;}
+  async fetch(request) {
+    this.fixtureEnv.fixtureQueries.count=0;
+    const original=await super.fetch(request);
+    const response=new Response(original.body,original);
+    response.headers.set("x-fixture-actor-queries",String(this.fixtureEnv.fixtureQueries.count));
+    return response;
+  }
 }
 export class RateProbe extends DurableObject {
   async fetch(request) {
@@ -64,6 +85,10 @@ export default {async fetch(request,env) {
     return env.PRIVATE_SKILL_CATALOG.get(env.PRIVATE_SKILL_CATALOG.idFromName(
       request.headers.get("x-test-actor"))).fetch(internal);
   }
-  return await privateSkillsRequest(internal,wrapped(env))??new Response(null,{status:418});
+  const fixtureEnv=wrapped(env);
+  const original=await privateSkillsRequest(internal,fixtureEnv)??new Response(null,{status:418});
+  const response=new Response(original.body,original);
+  response.headers.set("x-fixture-gateway-queries",String(fixtureEnv.fixtureQueries.count));
+  return response;
 }};
 `;

@@ -11,6 +11,7 @@ import { activeFence, contentDigest } from "./content-db.ts";
 import type { ContentEnv } from "./content-env.ts";
 import { ContentStorageError } from "./content-keys.ts";
 import { readBatchContent } from "./content-service.ts";
+import { sourceBatchExpiry } from "./content-retention.ts";
 import { ActivityLedgerError, receiptSchema } from "./types.ts";
 import type { IngestPrincipal, IngestReceipt } from "./types.ts";
 
@@ -89,6 +90,12 @@ export async function exportContent(env: ContentEnv, principal: IngestPrincipal,
     }
     if (saved.manifest_json === null) throw new ContentStorageError("content_missing", 409);
     const metadata = parseActivityBatch(JSON.parse(saved.metadata_json), { allowEmptyMetadata: true });
+    if (await sourceBatchExpiry(env, {
+      account_id: principal.accountId, generation: principal.generation, device_id: principal.deviceId,
+      source_domain: request.sourceDomain, batch_id: saved.batchId,
+    }, metadata.consentVersion) <= Date.now()) {
+      throw new ContentStorageError("content_expired", 409);
+    }
     const manifest = z.object({
       contentHash: z.string(), totalBytes: z.number(),
       chunks: z.array(z.object(contentChunkRefSchema.unwrap().shape)),

@@ -105,12 +105,13 @@ export async function readReportRequest(env: ReportEnv, principal: IngestPrincip
   if (offset !== bytes.length) throw new ReportError("report_integrity");
   return bytes;
 }
-export async function sweepReports(env: ReportEnv, now = Date.now()) {
+export async function sweepReports(env: ReportEnv, now = Date.now(), limit = 100) {
+  const bounded = z.number().int().min(1).max(1000).parse(limit);
   const rows = z.array(z.object({ object_key: z.string() })).parse((await env.ACTIVITY.prepare(
     `SELECT o.object_key FROM report_objects o LEFT JOIN tenant_fences f ON f.account_id=o.account_id
       AND f.generation=o.generation WHERE o.expires_at<=? OR f.state IS NULL OR f.state<>'active'
-      ORDER BY o.purge_order,o.object_key LIMIT 100`,
-  ).bind(now).all()).results);
+      ORDER BY o.purge_order,o.object_key LIMIT ?`,
+  ).bind(now, bounded).all()).results);
   for (const row of rows) {
     await env.ACTIVITY.prepare(`UPDATE report_objects SET state='purging',
       purge_order=(SELECT COALESCE(max(purge_order),0)+1 FROM report_objects) WHERE object_key=?`)

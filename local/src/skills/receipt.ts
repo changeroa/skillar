@@ -2,19 +2,18 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { digest, identitySchema, readJson, sameIdentity, SkillApplyError } from "./fs.js";
 import { directorySchema, planSchema, verifyPlan } from "./plan.js";
-import { PRIVATE_SKILL_MAX_RESOURCE_BYTES } from "./package.js";
+import { PRIVATE_SKILL_MAX_REQUEST_BYTES, PRIVATE_SKILL_MAX_RESOURCES, privateSkillBodySchema } from "./package.js";
 
-export const MAX_RECEIPT_BYTES = 8 * 1024 * 1024;
-const bodySchema = z.string().max(4 * Math.ceil(PRIVATE_SKILL_MAX_RESOURCE_BYTES / 3))
-  .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/);
+// A receipt embeds the plan plus bounded before-file backups.
+export const MAX_RECEIPT_BYTES = 2 * PRIVATE_SKILL_MAX_REQUEST_BYTES + 2 * 1024 * 1024;
 export const receiptSchema = z.strictObject({
   schemaVersion: z.literal(1), runId: z.string().uuid(), plan: planSchema,
   recoveryIdentity: identitySchema,
   directories: z.array(directorySchema).min(1).max(1024).readonly(),
   entries: z.array(z.strictObject({
-    beforeBody: bodySchema.nullable(), writtenIdentity: identitySchema,
+    beforeBody: privateSkillBodySchema.nullable(), writtenIdentity: identitySchema,
     writtenMtime: z.string().regex(/^\d+$/).max(40),
-  }).readonly()).min(1).max(128).readonly(),
+  }).readonly()).min(1).max(PRIVATE_SKILL_MAX_RESOURCES).readonly(),
 }).readonly();
 export type Receipt = z.infer<typeof receiptSchema>;
 export type Hook = (event: {

@@ -143,6 +143,62 @@ test("lost runtime receipt preserves exact pending request and blobs across reop
   assert.equal((await f.remote.rows("SELECT count(*) n FROM runtime_contexts"))[0].n, 1);
 });
 
+test("idle runtime renews at half the current retention window across reopen", async t => {
+  // Given an unchanged runtime acknowledged under a one-day projection policy.
+  const f = await fixture(t), start = 1_000_000, halfDay = 43_200_000;
+  await f.setConsent(grant({ retention: { contentDays: 30, projectionDays: 1, backupDays: 0 } }));
+  assert.equal((await f.step({ now: () => start })).phase, "caught-up");
+  await f.step({ now: () => start + halfDay - 1 });
+  assert.equal(f.calls.filter(call => call.path === "/v1/activity/context").length, 1);
+  // When the unchanged state reaches the renewal boundary in a reopened sender.
+  assert.equal((await f.step({ now: () => start + halfDay })).phase, "caught-up");
+  // Then a fresh revision renews storage without changing the source cut.
+  const commits = f.calls.filter(call => call.path === "/v1/activity/context").map(call => JSON.parse(call.body));
+  assert.deepEqual(commits.map(commit => commit.sequence), [1, 2]);
+  assert.equal(commits[0].sourceCut, commits[1].sourceCut);
+  assert.notEqual(commits[0].batchId, commits[1].batchId);
+  assert.equal(commits[0].contentHash, commits[1].contentHash);
+});
+
+test("lost ACK does not restart the idle renewal clock", async t => {
+  // Given a runtime whose exact remote receipt was lost.
+  const f = await fixture(t), start = 1_000_000, halfDay = 43_200_000;
+  await f.setConsent(grant({ retention: { contentDays: 1, projectionDays: 30, backupDays: 0 } }));
+  f.loseReceipt();
+  assert.equal((await f.step({ now: () => start })).phase, "retry");
+  // When the exact pending request is acknowledged at its renewal boundary.
+  await f.step({ now: () => start + halfDay });
+  await f.step({ now: () => start + halfDay });
+  // Then the retry remains byte-identical and the next idle step renews immediately.
+  const commits = f.calls.filter(call => call.path === "/v1/activity/context");
+  assert.equal(commits.length, 3);
+  assert.equal(commits[0].body, commits[1].body);
+  assert.equal(JSON.parse(commits[2].body).sequence, 2);
+});
+
+test("a lost receipt remains recoverable after remote runtime bytes expire", async t => {
+  // Given accepted runtime whose ACK was lost, then reclaimed by native cleanup.
+  const f = await fixture(t), start = 1_000_000, day = 86_400_000;
+  await f.setConsent(grant({ retention: { contentDays: 1, projectionDays: 1, backupDays: 0 } }));
+  f.loseReceipt();
+  assert.equal((await f.step({ now: () => start })).phase, "retry");
+  const [{ received_at_ms }] = await f.remote.rows("SELECT received_at_ms FROM runtime_contexts");
+  await f.remote.send("clock", { nowMs: received_at_ms + day });
+  assert.equal((await f.remote.send("runtimeSweep")).body.deleted, 1);
+  // When the exact pending request retries after its upload intents became terminal.
+  assert.equal((await f.step({ now: () => start + day })).phase, "caught-up");
+  await f.step({ now: () => start + day });
+  // Then the tombstoned receipt ACKs without resurrecting bytes, and renewal advances.
+  const commits = f.calls.filter(call => call.path === "/v1/activity/context");
+  assert.equal(commits[0].body, commits[1].body);
+  assert.equal(JSON.parse(commits[2].body).sequence, 2);
+  assert.equal((await f.remote.bucket.list()).objects.length, 1);
+  const [{ received_at_ms: renewedAt }] = await f.remote.rows(
+    "SELECT received_at_ms FROM runtime_contexts WHERE sequence=2");
+  await f.remote.send("clock", { nowMs: renewedAt });
+  assert.equal((await f.remote.send("read", { sourceDomain: f.head.sourceDomain })).body.sequence, 2);
+});
+
 test("wrong runtime receipt never acknowledges durable pending bytes", async t => {
   // Given a server response with a mismatched source cut.
   const f = await fixture(t); f.wrongReceipt();

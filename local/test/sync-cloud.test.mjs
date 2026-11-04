@@ -15,7 +15,7 @@ const { rollbackCloud } = await distImport("sync/cloud-rollback.js");
 const { openDb } = await distImport("store/db.js");
 const { readRows } = await distImport("sync/restore-rows.js");
 
-test("lost receipt body persists retry and automatically resumes identical pending bytes", async t => {
+for (const expired of [false, true]) test(`lost receipt body resumes identical pending bytes (expired=${expired})`, async t => {
   const f = await fixture(t);
   let now = Date.now(), interrupted = false;
   t.mock.method(Date, "now", () => now);
@@ -51,6 +51,13 @@ test("lost receipt body persists retry and automatically resumes identical pendi
   const calls = f.calls.length;
   assert.equal((await step()).phase, "retry");
   assert.equal(f.calls.length, calls);
+  if (expired) {
+    const chunks = await f.remote.rows("SELECT object_key FROM content_uploads WHERE batch_id=?", pending.batch_id);
+    assert.ok(chunks.length > 0);
+    await f.remote.db.prepare("UPDATE content_uploads SET state='purged',created_at=? WHERE batch_id=?")
+      .bind(Date.now() - 31 * 86_400_000, pending.batch_id).run();
+    await f.remote.bucket.delete(chunks.map(row => row.object_key));
+  }
   now = progress.retryAtMs; // Advance the clock to the scheduler's exact signal, without a delay.
   assert.equal((await step()).acknowledgedCut, journalHead(f.db).cut);
   const sent = f.calls.filter(call => call.path === "/v1/activity/batches");
@@ -61,6 +68,11 @@ test("lost receipt body persists retry and automatically resumes identical pendi
   assert.equal(spool.pending(stream), null);
   assert.equal(spool.cursor(stream).ack_sequence, pending.sequence);
   spool.close();
+  if (expired) {
+    f.db.prepare("INSERT INTO sessions(id,runtime,started_at) VALUES('after-expiry','codex',3000)").run();
+    assert.equal((await step()).acknowledgedCut, journalHead(f.db).cut);
+    assert.equal((await f.remote.rows("SELECT count(*) n FROM ingest_receipts"))[0].n, 2);
+  }
 });
 
 test("connection alone, metadata mode, and disabled ingestion never serialize source rows", async t => {
@@ -78,6 +90,33 @@ test("connection alone, metadata mode, and disabled ingestion never serialize so
   assert.deepEqual(journalHead(f.db), before);
   assert.equal(f.calls.every(call => call.path === "/v1/devices/self"), true);
   assert.deepEqual(await f.remote.rows("SELECT * FROM content_uploads"), []);
+});
+
+test("expired chunks without a committed CDC receipt never advance the connector cursor", async t => {
+  const f = await fixture(t);
+  await f.setConsent(grant(null));
+  const step = options => runCloudStep(f.home, f.source, { fetcher: f.fetcher, ...options });
+  assert.equal((await step()).phase, "queued");
+  assert.equal((await step()).phase, "queued");
+  const baseline = journalHead(f.db);
+  f.db.prepare("INSERT INTO sessions(id,runtime,started_at) VALUES('pending','codex',2000)").run();
+  f.loseNextReceipt("/v1/activity/chunks");
+  assert.equal((await step()).phase, "retry");
+  const stream = liveStream(f.connection.instanceId, baseline.sourceDomain);
+  let spool = new CloudBlobs(join(f.home, "cloud", "spool.sqlite"));
+  const pending = spool.pending(stream);
+  assert.ok(pending);
+  spool.close();
+  await f.remote.db.prepare("UPDATE content_uploads SET state='purged',created_at=? WHERE batch_id=?")
+    .bind(Date.now() - 31 * 86_400_000, pending.batch_id).run();
+  const progress = await step({ resume: true });
+  assert.equal(progress.phase, "quarantine");
+  assert.equal(progress.code, "content_expired");
+  assert.equal((await f.remote.rows("SELECT count(*) n FROM ingest_receipts"))[0].n, 0);
+  spool = new CloudBlobs(join(f.home, "cloud", "spool.sqlite"));
+  assert.equal(spool.pending(stream).batch_id, pending.batch_id);
+  assert.equal(spool.cursor(stream).ack_cut, baseline.cut);
+  spool.close();
 });
 
 test("snapshot checkpoint, concurrent CDC, lost final ACK and restart preserve exact accepted bytes", async t => {

@@ -19,6 +19,8 @@ import { mcpCatalog } from "./mcp.ts";
 import { mcpSearchSchema } from "../private-mcp/catalog-contracts.ts";
 import { mcpObservationPath, recordMcpObservation } from "../private-mcp/telemetry-api.ts";
 import { dispatchAccountControls } from "../activity/event-controls.ts";
+import { deletionTargetSchema } from "../../../shared/activity-deletion.ts";
+import { storedDeletion } from "../activity/deletion-store.ts";
 export { privateSkillsRequest } from "./api.ts";
 
 const searchSchema = z.strictObject({
@@ -31,7 +33,7 @@ const handles = (path: string) => path === prefix || path.startsWith(`${prefix}/
 
 /** One actor per account, across generations, serializes the complete async operation. */
 export class PrivateSkillCatalog extends DurableObject<CatalogEnv> {
-  private readonly search: PrivateSkillSearch;
+  private search: PrivateSkillSearch | null;
   private projection: string | null = null;
   constructor(ctx: DurableObjectState, env: CatalogEnv) {
     super(ctx, env);
@@ -44,6 +46,20 @@ export class PrivateSkillCatalog extends DurableObject<CatalogEnv> {
     });
   }
   private async dispatch(request: Request): Promise<Response> {
+    const purgeUrl = new URL(request.url);
+    if (purgeUrl.origin === "https://activity.internal" && purgeUrl.pathname === `${prefix}/purge` &&
+        request.method === "POST") {
+      const target = deletionTargetSchema.parse(await privateJson(request));
+      if (!this.env.PRIVATE_SKILL_CATALOG.idFromName(target.accountId).equals(this.ctx.id) ||
+          await storedDeletion(this.env.ACCOUNTS, target) === null) {
+        throw new PrivateSkillError(403, "account_not_revoked");
+      }
+      this.search?.rebuild([]);
+      this.search = null;
+      this.projection = null;
+      await this.ctx.storage.deleteAll();
+      return Response.json({ purged: true }, { headers: privateHeaders });
+    }
     if (this.env.PRIVATE_SKILLS_ENABLED !== "true") throw new PrivateSkillError(404, "not_found");
     const principal = requestPrincipal(request, this.env), url = new URL(request.url);
     const observation = url.pathname === mcpObservationPath;
@@ -80,6 +96,7 @@ export class PrivateSkillCatalog extends DurableObject<CatalogEnv> {
       const value = mcpSearch ? mcpSearchSchema.parse(body) : searchSchema.parse(body);
       const catalog = await store.catalog();
       const revision = `${principal.generation}:${catalog.revision}`;
+      if (this.search === null) this.search = createPrivateSkillSearch(this.ctx.storage);
       if (this.projection !== revision) {
         this.search.rebuild(await store.projection());
         this.projection = revision;
