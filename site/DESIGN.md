@@ -1,5 +1,15 @@
 # skillar.sh
 
+## Dashboard composition (PR2)
+
+Evidence Console puts source selection beside the activity workspace, with account and connection management below it. A source is still explicitly selected; no source is selected automatically and unavailable sources remain disabled. Without a selection, the workspace explains the next action rather than showing example data. Selected activity keeps the existing Sessions/Workspaces/Flow/Heatmap routes and report adapter.
+
+Desktop uses a 240px source rail and a flexible activity region. At narrow widths they stack with 20–24px gutters and no document overflow. Snapshot freshness, technical metadata and remote commands live in a named disclosure above the activity; their components remain mounted and all existing consent, confirmation and expiry rules apply. Device and private-pack management stay available in a separate disclosure. The account menu, auth routes, source lifecycle and all API contracts are unchanged. New explanation is plain Korean. Read/search evidence is explicitly distinguished from task success.
+
+The source chooser starts open before selection. After explicit selection, its disclosure closes and keeps the selected source identifier visible; it can be reopened to change sources. Focus moves to the mounted snapshot heading, with the same keyboard-visible accent focus ring as controls. Closing a snapshot reopens source selection. The choice is never inferred from source arrival order.
+
+The owner's PR74 correction requires plain Korean for all authored dashboard copy, including navigation, account/source actions, trace labels, empty/error states, accessible names and explanations. Product/runtime names, recorded content, code IDs, commands, protocol tokens and machine values remain exact. Embedded trace focus ends on the mounted trace heading, not a full-panel outline. Real-pointer and keyboard evidence must distinguish focus modality.
+
 ## Evidence Console V2 foundations (PR1)
 
 Owner chose04 (Ev0CEN1JB875); lead authorized Phase C on2026-11-04. This visual contract supersedes earlier workshop/Linear color, typography, radius and target-size drawings below. Existing routing, auth, consent, command recovery, request outcomes, unknown values and all other behavior contracts remain unchanged. Approved source: /Users/iyen/.dori/state/lane-results/skillar-redesign/v2/sheets/04-evidence/DESIGN.md.

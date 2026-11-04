@@ -4,13 +4,13 @@ import { consentSchema } from "../../../shared/dist/activity-consent.js";
 import type { Consent } from "../../../shared/dist/activity-consent.js";
 
 export const CONTENT_KIND_COPY: Record<ContentKind, { readonly label: string; readonly detail: string }> = {
-  prompt: { label: "Prompts", detail: "The text you typed to your agent." },
-  query: { label: "Skill search queries", detail: "What was searched for when looking up skills." },
-  args: { label: "Tool arguments", detail: "Inputs passed to tools during a session." },
-  error: { label: "Error messages", detail: "Failures reported by tools and runtimes." },
-  path: { label: "File paths", detail: "Paths of files that were read or loaded." },
-  "span-attributes": { label: "Span attributes", detail: "Attributes recorded on OpenTelemetry spans." },
-  "private-skills": { label: "Private skill contents", detail: "Text of skills that are not public." },
+  prompt: { label: "프롬프트", detail: "에이전트에 입력한 텍스트입니다." },
+  query: { label: "스킬 검색어", detail: "스킬을 찾을 때 검색한 내용입니다." },
+  args: { label: "도구 인자", detail: "세션 중 도구에 전달된 입력입니다." },
+  error: { label: "오류 메시지", detail: "도구와 실행 환경이 보고한 실패입니다." },
+  path: { label: "파일 경로", detail: "읽었거나 불러온 파일의 경로입니다." },
+  "span-attributes": { label: "스팬 속성", detail: "OpenTelemetry 스팬에 기록된 속성입니다." },
+  "private-skills": { label: "비공개 스킬 내용", detail: "공개되지 않은 스킬의 본문입니다." },
 };
 export const CONTENT_KINDS: readonly ContentKind[] = contentKinds;
 export const DEFAULT_RETENTION_DAYS = 30;
@@ -97,12 +97,12 @@ export function buildConsent(draft: ConsentDraft, deviceId: string, baseVersion:
   const contentDays = integer(draft.contentDays, 1, Number.MAX_SAFE_INTEGER);
   const projectionDays = integer(draft.projectionDays, 1, Number.MAX_SAFE_INTEGER);
   const backupDays = integer(draft.backupDays, 0, MAX_BACKUP_DAYS);
-  if (contentDays === undefined) problems.push("Content retention must be a whole number of days, at least 1.");
-  if (projectionDays === undefined) problems.push("Report retention must be a whole number of days, at least 1.");
-  if (backupDays === undefined) problems.push(`Backup retention must be between 0 and ${MAX_BACKUP_DAYS} days.`);
+  if (contentDays === undefined) problems.push("내용 보존 기간은 1 이상의 정수(일)여야 합니다.");
+  if (projectionDays === undefined) problems.push("보고서 보존 기간은 1 이상의 정수(일)여야 합니다.");
+  if (backupDays === undefined) problems.push(`백업 보존 기간은 0일부터 ${MAX_BACKUP_DAYS}일 사이여야 합니다.`);
   if (draft.mode === "managed-content") {
-    if (draft.kinds.length === 0) problems.push("Choose at least one content category, or switch to metadata only.");
-    if (!draft.serverProcessing) problems.push("Confirm that the server may process uploaded content.");
+    if (draft.kinds.length === 0) problems.push("내용 범주를 하나 이상 선택하거나 메타데이터만으로 바꾸세요.");
+    if (!draft.serverProcessing) problems.push("서버가 업로드된 내용을 처리해도 된다고 확인해 주세요.");
   }
   let backfill: Record<string, unknown> | undefined;
   if (draft.backfill.enabled) {
@@ -111,11 +111,11 @@ export function buildConsent(draft: ConsentDraft, deviceId: string, baseVersion:
     const snapshotId = draft.backfill.snapshotId.trim();
     const fromMs = draft.backfill.allHistory ? -MAX_HISTORY_MS : instant(draft.backfill.from);
     const toMs = draft.backfill.allHistory ? MAX_HISTORY_MS : instant(draft.backfill.to);
-    if (version === undefined) problems.push("Snapshot manifest version must be a whole number, at least 1.");
-    if (snapshotId === "" || snapshotId.length > 512) problems.push("Enter the snapshot ID printed by `skillar sync prepare`.");
-    if (journalCut === undefined) problems.push("Journal cut must be a whole number, at least 0.");
-    if (fromMs === undefined || toMs === undefined) problems.push("Enter both ends of the historical range.");
-    else if (toMs <= fromMs) problems.push("The historical range must end after it starts.");
+    if (version === undefined) problems.push("스냅샷 매니페스트 버전은 1 이상의 정수여야 합니다.");
+    if (snapshotId === "" || snapshotId.length > 512) problems.push("`skillar sync prepare`가 출력한 스냅샷 ID를 입력하세요.");
+    if (journalCut === undefined) problems.push("저널 컷은 0 이상의 정수여야 합니다.");
+    if (fromMs === undefined || toMs === undefined) problems.push("과거 범위의 시작과 끝을 모두 입력하세요.");
+    else if (toMs <= fromMs) problems.push("과거 범위의 끝은 시작보다 뒤여야 합니다.");
     backfill = { version, snapshotId, journalCut, range: { fromMs, toMs } };
   }
   if (problems.length > 0) return { ok: false, problems };
@@ -131,20 +131,20 @@ export function buildConsent(draft: ConsentDraft, deviceId: string, baseVersion:
   };
   const parsed = consentSchema.safeParse(candidate);
   if (!parsed.success) {
-    return { ok: false, problems: parsed.error.issues.map(issue => `${issue.path.join(".") || "consent"}: ${issue.message}`) };
+    return { ok: false, problems: parsed.error.issues.map(issue => `${issue.path.join(".") || "동의"}: ${issue.message}`) };
   }
   return { ok: true, consent: parsed.data };
 }
 
 export function describeConsent(consent: Consent): string {
   switch (consent.mode) {
-    case "local-only": return "Local only. Nothing is uploaded.";
-    case "metadata": return `Metadata only, kept ${consent.retention.contentDays} days.`;
+    case "local-only": return "로컬 전용. 아무것도 업로드하지 않습니다.";
+    case "metadata": return `메타데이터만, ${consent.retention.contentDays}일 보존.`;
     case "managed-content": {
       const count = consent.contentKinds.length;
-      const coverage = count === CONTENT_KINDS.length ? "all seven content categories" : `${count} of ${CONTENT_KINDS.length} content categories`;
-      const history = consent.backfill === undefined ? "" : ", plus one prepared historical snapshot";
-      return `Metadata and ${coverage}, kept ${consent.retention.contentDays} days${history}.`;
+      const coverage = count === CONTENT_KINDS.length ? "일곱 가지 내용 범주 전체" : `내용 범주 ${CONTENT_KINDS.length}개 중 ${count}개`;
+      const history = consent.backfill === undefined ? "" : ", 준비된 과거 스냅샷 1개 포함";
+      return `메타데이터와 ${coverage}, ${consent.retention.contentDays}일 보존${history}.`;
     }
     default: {
       const exhaustive: never = consent;

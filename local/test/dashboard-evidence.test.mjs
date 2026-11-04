@@ -166,7 +166,7 @@ test("a zero unresolved-load count renders no uncertainty disclosure", () => {
 test("lower-ranked loaded skill retains its machine rank and rendered value", () => {
   const node = attr(findingView(), "data-used-skill", "lower");
   assert.equal(node.attrs["data-rank"], "2");
-  assert.match(node.textContent, /rank 2/);
+  assert.match(node.textContent, /순위 2/);
 });
 test("candidate copies expose collapsed rank and original rank", () => {
   const root = findingView();
@@ -174,7 +174,7 @@ test("candidate copies expose collapsed rank and original rank", () => {
   assert.equal(copy.attrs["data-rank"], "1");
   assert.equal(copy.attrs["data-raw-rank"], "2");
   assert.equal(copy.attrs["data-copies"], "2");
-  assert.match(copy.textContent, /copies 2/);
+  assert.match(copy.textContent, /복사본 2개/);
 });
 test("abstention preserves its reported reason and query", () => {
   const root = findingView(1);
@@ -238,29 +238,29 @@ function costView(key) {
   return render(ui.Header, { report: costReports[key], backHref: "#/workspaces", onRefresh() {}, busy: false });
 }
 test("flow header charges one 0.02 model call once for two co-active spans", () => {
-  assert.match(costView("shared").textContent, /cost \$0\.0200/);
+  assert.match(costView("shared").textContent, /비용 \$0\.0200/);
   const session = reports.shared;
   assert.deepEqual(session.usage.spans.map((span) => span.costUsd), [0.02, 0.02]);
   for (const span of session.tree.turns[0].skillSpans) {
     const node = render(ui.Span, { span, usage: session.usage.spans.find((item) => item.spanId === span.id) });
     attr(node, "data-shared-cost", "true");
-    assert.match(node.textContent, /cost \$0\.0200/);
+    assert.match(node.textContent, /비용 \$0\.0200/);
   }
 });
 test("flow header adds two distinct model call costs exactly once", () => {
-  assert.match(costView("distinct").textContent, /cost \$0\.0500/);
+  assert.match(costView("distinct").textContent, /비용 \$0\.0500/);
 });
 test("flow header preserves unknown cost for any unreported relevant call", () => {
-  assert.match(costView("unknown").textContent, /cost unknown/);
+  assert.match(costView("unknown").textContent, /비용 알 수 없음/);
 });
 test("flow header counts model calls without active skills", () => {
-  assert.match(costView("unskilled").textContent, /cost \$0\.0400/);
+  assert.match(costView("unskilled").textContent, /비용 \$0\.0400/);
 });
 test("flow header deduplicates repeated observations by model call identity", () => {
-  assert.match(costView("repeated").textContent, /cost \$0\.0200/);
+  assert.match(costView("repeated").textContent, /비용 \$0\.0200/);
 });
 test("flow header uses event identity when model call IDs are absent", () => {
-  assert.match(costView("event-only").textContent, /cost \$0\.0500/);
+  assert.match(costView("event-only").textContent, /비용 \$0\.0500/);
 });
 test("step cards render together and alternative modes from the exact spec version", () => {
   const spec = versions.find((item) => item.version === report.spec.version);

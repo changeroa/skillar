@@ -26,65 +26,65 @@ export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
 export type ViewProps = { route: Route; navigate: (next: Route) => void; live: LiveInfo; readonly embedded?: boolean };
 
 export const RUNTIME_LABEL: Record<RuntimeId, string> = {
-  "claude-code": "Claude Code", codex: "Codex", gemini: "Gemini CLI", cursor: "Cursor", omo: "OmO", gajae: "Gajae Code", openclaw: "OpenClaw", unknown: "Unknown",
+  "claude-code": "Claude Code", codex: "Codex", gemini: "Gemini CLI", cursor: "Cursor", omo: "OmO", gajae: "Gajae Code", openclaw: "OpenClaw", unknown: "알 수 없음",
 };
 export const RUNTIME_MARK: Record<RuntimeId, string> = {
   "claude-code": "CC", codex: "CX", gemini: "GM", cursor: "CU", omo: "OM", gajae: "GJ", openclaw: "OC", unknown: "??",
 };
 export const STATE_LABEL: Record<import("../src/types.js").FlowState, string> = {
-  not_attempted: "not_attempted", in_progress: "in_progress", succeeded: "succeeded", failed: "failed", cancelled: "cancelled", unknown: "unknown",
-  loaded: "Loaded", exposed_only: "Exposed", no_match: "No match", aborted: "Aborted", not_used: "Not used",
+  not_attempted: "요청 없음", in_progress: "진행 중", succeeded: "성공", failed: "실패", cancelled: "취소됨", unknown: "알 수 없음",
+  loaded: "읽음", exposed_only: "후보만 표시", no_match: "후보 없음", aborted: "중단됨", not_used: "사용 기록 없음",
 };
 export const STATE_TITLE: Record<AdoptionState, string> = {
-  loaded: "loaded: a skill was loaded in this session",
-  exposed_only: "exposed_only: candidates were shown but none was loaded",
-  no_match: "no_match: the search returned no candidate",
-  aborted: "aborted: legacy session classification; does not establish a failed or cancelled load",
-  not_used: "not_used: the session never searched for a skill",
+  loaded: "loaded: 이 세션에서 스킬을 읽었습니다.",
+  exposed_only: "exposed_only: 후보를 표시했지만 읽은 스킬은 없습니다.",
+  no_match: "no_match: 검색에서 후보가 나오지 않았습니다.",
+  aborted: "aborted: 이전 세션 분류입니다. 읽기 요청의 실패나 취소를 뜻하지 않습니다.",
+  not_used: "not_used: 이 세션에는 스킬 검색 기록이 없습니다.",
 };
 export const ATTRIBUTION_LABEL: Record<Attribution["method"], string> = {
-  runtime_id: "runtime id", vendor_meta: "vendor meta", trace_handle: "trace handle", window: "window", none: "unattributed",
+  runtime_id: "실행 환경 ID", vendor_meta: "제공자 메타데이터", trace_handle: "검색 추적 ID", window: "시간 구간", none: "미연결",
 };
-export const DOW_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+export const DOW_LABEL = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /** How a turn got its events: herdr/runtime said so, an OTel span joined them, or the time window placed them. */
-export const BASIS_LABEL: Record<TurnBasis, string> = { reported: "reported", span_join: "joined", inferred_time: "inferred" };
+export const BASIS_LABEL: Record<TurnBasis, string> = { reported: "직접 기록", span_join: "연결된 기록", inferred_time: "시간으로 추정" };
 export const BASIS_TITLE: Record<TurnBasis, string> = {
-  reported: "reported: the runtime reported the turn these events belong to",
-  span_join: "joined: an OTel span joined these events to the turn",
-  inferred_time: "inferred: the events fall inside the turn's time window",
+  reported: "reported: 실행 환경이 이 이벤트가 속한 대화 차례를 기록했습니다.",
+  span_join: "joined: OTel 구간으로 이 이벤트와 대화 차례를 연결했습니다.",
+  inferred_time: "inferred: 이벤트가 이 대화 차례의 시간 구간에 들어갑니다.",
 };
 /** Which skill a call is credited to: the runtime said so, one skill was active, or several were. */
 export const SPAN_ATTRIBUTION_LABEL: Record<"reported" | "single" | "co_active" | "no_skill", string> = {
-  reported: "reported", single: "single", co_active: "co-active", no_skill: "no skill",
+  reported: "직접 기록", single: "단일 스킬", co_active: "동시 사용", no_skill: "스킬 없음",
 };
 /** Descriptive labels over recorded events: where a used skill came from, never whether it was the right one. */
 export const FINDING_LABEL: Record<FindingLabel, string> = {
-  found_top1: "top result used",
-  found_lower: "lower result used",
-  loaded_outside_results: "used outside results",
-  native_without_search: "native, no search",
-  searched_none_used: "searched, none used",
-  no_search: "no search",
+  found_top1: "첫 검색 결과 사용",
+  found_lower: "하위 검색 결과 사용",
+  loaded_outside_results: "검색 결과 밖의 스킬 사용",
+  native_without_search: "검색 없이 내장 스킬 사용",
+  searched_none_used: "검색 결과 사용 기록 없음",
+  no_search: "검색 기록 없음",
 };
 export const FINDING_TITLE: Record<FindingLabel, string> = {
-  found_top1: "found_top1: the skill the turn used was the first search result",
-  found_lower: "found_lower: the skill the turn used was a lower search result",
-  loaded_outside_results: "loaded_outside_results: the skill the turn used was not among the search results",
-  native_without_search: "native_without_search: the runtime activated a skill of its own without searching skillar",
-  searched_none_used: "searched_none_used: the turn searched but used none of the results",
-  no_search: "no_search: the turn neither searched nor used a skill",
+  found_top1: "found_top1: 이 대화 차례에서 사용한 스킬이 첫 검색 결과였습니다.",
+  found_lower: "found_lower: 이 대화 차례에서 사용한 스킬이 하위 검색 결과였습니다.",
+  loaded_outside_results: "loaded_outside_results: 이 대화 차례에서 사용한 스킬이 검색 결과에 없었습니다.",
+  native_without_search: "native_without_search: 실행 환경이 skillar 검색 없이 내장 스킬을 활성화했습니다.",
+  searched_none_used: "searched_none_used: 이 대화 차례에서 검색했지만 결과를 사용한 기록은 없습니다.",
+  no_search: "no_search: 이 대화 차례에는 검색이나 스킬 사용 기록이 없습니다.",
 };
 /** Spec comparison per step; deviations are reported, never penalised. */
 export const STEP_STATUS_LABEL: Record<StepStatus, string> = {
-  matched: "matched", partial: "partial", different: "different", no_skill_used: "no skill used", not_run: "not run",
+  matched: "일치", partial: "일부 일치", different: "다른 스킬", no_skill_used: "스킬 사용 없음", not_run: "실행 없음",
 };
 export const STEP_STATUS_TITLE: Record<StepStatus, string> = {
-  matched: "matched: the step's panes used what the spec intended",
-  partial: "partial: a step that intends its skills together used some of them",
-  different: "different: skills were used, none of them intended by the step",
-  no_skill_used: "no_skill_used: the step's panes used no skill at all",
-  not_run: "not_run: no pane was mapped to this step",
+  matched: "matched: 이 단계의 패널에서 계획한 스킬을 사용했습니다.",
+  partial: "partial: 함께 사용하도록 계획한 스킬 중 일부를 사용했습니다.",
+  different: "different: 스킬을 사용했지만 이 단계에서 계획한 스킬은 없었습니다.",
+  no_skill_used: "no_skill_used: 이 단계의 패널에는 스킬 사용 기록이 없습니다.",
+  not_run: "not_run: 이 단계에 연결된 패널이 없습니다.",
 };
 
 const RUNTIME_SET = new Set<string>(RUNTIME_IDS);

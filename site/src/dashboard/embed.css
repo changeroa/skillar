@@ -19,6 +19,9 @@
 .dash-embed h1 { font-size: var(--fs-title); }
 .dash-embed h2 { font-size: var(--fs-section); }
 .dash-embed h3 { font-size: var(--fs-subhead); }
+.dash-embed .top__row { min-height: 44px; }
+.dash-embed .tabs { gap: 8px; }
+.dash-embed .tab { padding-inline: 8px; }
 .dash-embed .button { font-size: var(--ui); font-weight: 600; }
 .dash-embed .button.primary:not(:disabled) { color: var(--on-accent); }
 .dash-embed .text-field { font-size: var(--ui); font-weight: 400; }

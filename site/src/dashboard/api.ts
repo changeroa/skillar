@@ -58,22 +58,25 @@ export function isUnauthorized(error: unknown): boolean {
   return error instanceof DashboardRequestError && error.status === 401;
 }
 
-/** Human copy for a failed request; never echoes server text beyond the fixed error codes. */
+/**
+ * Human copy for a failed request; never echoes server text beyond the fixed error codes.
+ * `action` is a noun phrase such as "출처 읽기"; every template attaches its particle to the fixed word "요청", so no action needs a particle of its own.
+ */
 export function describeFailure(error: unknown, action: string): string {
-  if (error instanceof DOMException && error.name === "AbortError") return `${action} was cancelled.`;
+  if (error instanceof DOMException && error.name === "AbortError") return `${action} 요청이 취소되었습니다.`;
   if (error instanceof DashboardRequestError) {
     switch (error.code) {
-      case "consent_conflict": return "Consent changed elsewhere. Reload to review the current version.";
-      case "command_conflict": return "Another command is pending or the source revision changed. Refresh sources before submitting again.";
-      case "dashboard_unavailable": case "activity_unavailable": return `${action} is unavailable right now. Try again later.`;
-      case "not_found": return "That device no longer exists for this account.";
-      case "invalid_consent": case "invalid_request": return `${action} was rejected as invalid. Review the form and try again.`;
-      case "insufficient_scope": return `${action} is not allowed for this account.`;
-      default: return `${action} failed (${error.code}).`;
+      case "consent_conflict": return "동의 내용이 다른 곳에서 바뀌었습니다. 새로 고쳐 현재 버전을 확인하세요.";
+      case "command_conflict": return "다른 명령이 대기 중이거나 출처 리비전이 바뀌었습니다. 다시 제출하기 전에 출처를 새로 고치세요.";
+      case "dashboard_unavailable": case "activity_unavailable": return `${action} 요청을 지금은 처리할 수 없습니다. 나중에 다시 시도하세요.`;
+      case "not_found": return "해당 기기가 이 계정에 더 이상 없습니다.";
+      case "invalid_consent": case "invalid_request": return `${action} 요청이 올바르지 않아 거부되었습니다. 입력 내용을 확인하고 다시 시도하세요.`;
+      case "insufficient_scope": return `이 계정에서는 ${action} 요청이 허용되지 않습니다.`;
+      default: return `${action} 요청이 실패했습니다 (${error.code}).`;
     }
   }
-  if (error instanceof TypeError) return `${action} could not reach skillar. Check your connection and retry.`;
-  return `${action} failed unexpectedly.`;
+  if (error instanceof TypeError) return `${action} 요청이 skillar에 도달하지 못했습니다. 연결 상태를 확인하고 다시 시도하세요.`;
+  return `${action} 요청이 예기치 않게 실패했습니다.`;
 }
 
 async function errorCode(response: Response): Promise<string> {

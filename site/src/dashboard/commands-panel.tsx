@@ -50,8 +50,8 @@ function KindFields({ draft, patch }: { readonly draft: CommandDraft; readonly p
           </div>
           <TextArea label={FIELD_LABELS.workflowSteps} value={draft.workflowSteps} onInput={workflowSteps => patch({ workflowSteps })} />
           <p class="note">
-            Each step needs an <code>id</code> and a <code>skills</code> list; <code>together</code>, <code>expectTools</code> and <code>doneWhen</code> are optional.
-            Up to 50 steps with unique ids, for example <code>{"[{\"id\":\"plan\",\"skills\":[\"skillar/plan\"]}]"}</code>.
+            각 단계에는 <code>id</code>와 <code>skills</code> 목록이 필요하고 <code>together</code>, <code>expectTools</code>, <code>doneWhen</code>은 선택입니다.
+            서로 다른 id를 가진 단계를 최대 50개까지 넣을 수 있습니다. 예: <code>{"[{\"id\":\"plan\",\"skills\":[\"skillar/plan\"]}]"}</code>
           </p>
         </>
       );
@@ -125,28 +125,28 @@ function CommandItem({ submission, busy, journalThrough, sourcesBusy, sourcesLoa
         <span class="source__state">{copy.label}</span>
       </div>
       <dl class="account-status command__facts">
-        <div><dt>Command ID</dt><dd><code>{submission.commandId}</code></dd></div>
-        <div><dt>Base revision</dt><dd>journal {submission.baseRevision}</dd></div>
-        <div data-tone={copy.tone}><dt>State</dt><dd>{copy.explanation}</dd></div>
-        {status !== null && status.sourceRevision !== null && <div><dt>Source revision</dt><dd>{status.sourceRevision}</dd></div>}
-        {resultEntries(status).map(entry => <div key={entry.key}><dt>Result: {entry.key}</dt><dd><code>{entry.value}</code></dd></div>)}
+        <div><dt>명령 ID</dt><dd><code>{submission.commandId}</code></dd></div>
+        <div><dt>기준 리비전</dt><dd>저널 {submission.baseRevision}</dd></div>
+        <div data-tone={copy.tone}><dt>상태</dt><dd>{copy.explanation}</dd></div>
+        {status !== null && status.sourceRevision !== null && <div><dt>출처 리비전</dt><dd>{status.sourceRevision}</dd></div>}
+        {resultEntries(status).map(entry => <div key={entry.key}><dt>결과: {entry.key}</dt><dd><code>{entry.value}</code></dd></div>)}
       </dl>
       {copy.next !== null && <p class="note">{copy.next}</p>}
       {waitingForUpload && (
-        <p class="note">Sources were refreshed, but the revision here is still journal {journalThrough}. Wait for the device's next upload and refresh again.</p>
+        <p class="note">출처를 새로 고쳤지만 여기 표시된 리비전은 아직 저널 {journalThrough}입니다. 기기의 다음 업로드를 기다린 뒤 다시 새로 고치세요.</p>
       )}
       {technical !== null && (
-        <details class="command-item__technical"><summary>Technical details</summary><p><code>{technical}</code></p></details>
+        <details class="command-item__technical"><summary>기술 정보</summary><p><code>{technical}</code></p></details>
       )}
       <div class="cluster command-item__actions">
-        {actions.retry && <button class="button secondary" type="button" disabled={busy} onClick={onRetry}>Retry with the same ID</button>}
-        {actions.check && <button class="button secondary" type="button" disabled={busy} onClick={onCheck}>Check status</button>}
-        {actions.refresh && <button class="button secondary" type="button" disabled={sourcesBusy} onClick={onRefresh}>Refresh sources</button>}
+        {actions.retry && <button class="button secondary" type="button" disabled={busy} onClick={onRetry}>같은 ID로 다시 시도</button>}
+        {actions.check && <button class="button secondary" type="button" disabled={busy} onClick={onCheck}>상태 확인</button>}
+        {actions.refresh && <button class="button secondary" type="button" disabled={sourcesBusy} onClick={onRefresh}>출처 새로 고침</button>}
         {actions.resubmit && (
-          <button class="button secondary" type="button" disabled={busy} onClick={onResubmit}>Submit again at journal {journalThrough}</button>
+          <button class="button secondary" type="button" disabled={busy} onClick={onResubmit}>저널 {journalThrough} 기준으로 다시 제출</button>
         )}
-        {actions.edit && <button class="button secondary" type="button" onClick={onEdit}>Edit in form</button>}
-        <span class="note" role="status" aria-live="polite">{busy ? "Working\u2026" : checkNote}</span>
+        {actions.edit && <button class="button secondary" type="button" onClick={onEdit}>입력란에서 편집</button>}
+        <span class="note" role="status" aria-live="polite">{busy ? "처리 중\u2026" : checkNote}</span>
       </div>
     </li>
   );
@@ -236,7 +236,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
     setProblems([]);
     const submission = newSubmission(source, profile.journalThrough, built.operation, sourcesLoad);
     setSubmissions(current => [submission, ...current]);
-    setMessage(`Command ${shortId(submission.commandId)} is listed below with its status.`);
+    setMessage(`명령 ${shortId(submission.commandId)}의 상태가 아래 목록에 표시됩니다.`);
     void send(submission);
   };
   const resubmit = (previous: Submission) => {
@@ -249,29 +249,29 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
     if (submission.operation === null) return;
     setDraft(draftFromOperation(submission.operation));
     setProblems([]);
-    setMessage(`Copied command ${shortId(submission.commandId)} into the form. Queueing sends it as a new command.`);
+    setMessage(`명령 ${shortId(submission.commandId)}의 내용을 입력란에 복사했습니다. 대기열에 넣으면 새 명령으로 보냅니다.`);
     form.current?.querySelector<HTMLElement>("select")?.focus();
   };
   const lookUp = (event: Event) => {
     event.preventDefault();
     const commandId = lookup.trim().toLowerCase();
     if (!isCommandId(commandId)) {
-      setLookupMessage("Enter the full command ID shown when a command was queued.");
+      setLookupMessage("명령을 대기열에 넣을 때 표시된 전체 명령 ID를 입력하세요.");
       return;
     }
     const existing = submissions.find(submission => submission.commandId === commandId);
     if (existing !== undefined) {
-      setLookupMessage(`Command ${shortId(commandId)} is already listed below; checking its status.`);
+      setLookupMessage(`명령 ${shortId(commandId)}의 항목이 이미 아래에 있습니다. 상태를 확인합니다.`);
       void check(existing);
       return;
     }
-    setLookupMessage("Checking\u2026");
+    setLookupMessage("확인 중\u2026");
     void run(commandId, async requestSignal => {
       try {
         const status = await readCommandStatus({ profile: source, commandId }, requestSignal);
         setSubmissions(current => [fromStatus(source, status, sourcesLoad), ...current]);
         setLookup("");
-        setLookupMessage(`Command ${shortId(commandId)} is listed below.`);
+        setLookupMessage(`명령 ${shortId(commandId)}의 항목을 아래에 추가했습니다.`);
       } catch (error) {
         if (requestSignal.aborted) return;
         if (isUnauthorized(error)) {
@@ -279,21 +279,21 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
           return;
         }
         setLookupMessage(error instanceof DashboardRequestError && error.status === 404 ?
-          "skillar has no record of that command ID for this source." : describeFailure(error, "Checking the command"));
+          "이 출처에는 해당 명령 ID의 기록이 skillar에 없습니다." : describeFailure(error, "명령 상태 확인"));
       }
     });
   };
 
   return (
     <details class="commands">
-      <summary>Remote commands for this source</summary>
+      <summary>이 출처에 보내는 원격 명령</summary>
       <p class="note">
-        skillar queues a command for device {shortId(profile.deviceId)}. The device's local daemon applies it on its existing {SYNC_CADENCE_SECONDS}-second
-        sync only after <code>{ENABLE_COMMANDS_CLI}</code> was run on that device; remote commands are off by default, and a device that is offline or
-        opted out leaves them pending. Statuses change only when you check them.
+        기기 {shortId(profile.deviceId)}에 보낼 명령을 skillar가 대기열에 넣습니다. 기기의 로컬 데몬은 기존 {SYNC_CADENCE_SECONDS}초 동기화 때 명령을 적용하되,
+        그 기기에서 <code>{ENABLE_COMMANDS_CLI}</code>를 실행한 뒤에만 적용합니다. 원격 명령은 기본적으로 꺼져 있고, 오프라인이거나
+        원격 명령을 켜지 않은 기기에서는 대기 상태로 남습니다. 상태는 직접 확인할 때만 갱신됩니다.
       </p>
       <form class="command-form" ref={form} onSubmit={submit} aria-describedby={id("base")}>
-        <label class="field-label">Command
+        <label class="field-label">명령
           <select class="text-field" value={draft.kind} onChange={event => {
             const kind = COMMAND_KINDS.find(candidate => candidate === event.currentTarget.value);
             if (kind !== undefined) patch({ kind });
@@ -304,24 +304,24 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
         <p class="note">{COMMAND_KIND_COPY[draft.kind].detail}</p>
         <KindFields draft={draft} patch={patch} />
         <p class="note" id={id("base")}>
-          Base revision: journal {profile.journalThrough}, from the last sources load. The device applies the command only if its data is still at this
-          revision; refresh sources to update it.
+          기준 리비전: 저널 {profile.journalThrough} (마지막 출처 읽기 기준). 기기는 데이터가 아직 이 리비전에 있을 때만 명령을 적용합니다.
+          갱신하려면 출처를 새로 고치세요.
         </p>
         {problems.length > 0 && (
           <ul class="problems" role="alert">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>
         )}
         <div class="cluster">
-          <button class="button primary" type="submit">Queue command</button>
-          <button class="button secondary" type="button" onClick={onRefreshSources} disabled={sourcesBusy}>Refresh sources</button>
+          <button class="button primary" type="submit">명령 대기열에 넣기</button>
+          <button class="button secondary" type="button" onClick={onRefreshSources} disabled={sourcesBusy}>출처 새로 고침</button>
           <span class="note" role="status" aria-live="polite">{message}</span>
         </div>
       </form>
-      <h3 id={id("list")}>Commands from this page</h3>
+      <h3 id={id("list")}>이 페이지에서 보낸 명령</h3>
       <p class="note">
-        Listed only while this snapshot is open; closing it, switching sources or signing out clears the list. Statuses stay on skillar and can be
-        looked up by command ID.
+        이 기록이 열려 있는 동안만 표시됩니다. 기록을 닫거나 출처를 바꾸거나 로그아웃하면 목록이 지워집니다. 상태는 skillar에 남아 있어
+        명령 ID로 조회할 수 있습니다.
       </p>
-      {submissions.length === 0 ? <p class="note">No command has been queued from this page.</p> : (
+      {submissions.length === 0 ? <p class="note">이 페이지에서 대기열에 넣은 명령이 없습니다.</p> : (
         <ul class="command-list" aria-labelledby={id("list")}>
           {submissions.map(submission => (
             <CommandItem key={submission.commandId} submission={submission} busy={busy.has(submission.commandId)}
@@ -332,12 +332,12 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
         </ul>
       )}
       <form class="command-lookup" onSubmit={lookUp}>
-        <label class="field-label">Command ID
+        <label class="field-label">명령 ID
           <input class="text-field" type="text" autocomplete="off" spellcheck={false} value={lookup}
             onInput={event => setLookup(event.currentTarget.value)} />
         </label>
         <div class="cluster">
-          <button class="button secondary" type="submit" disabled={busy.has(lookup.trim().toLowerCase())}>Check a command ID</button>
+          <button class="button secondary" type="submit" disabled={busy.has(lookup.trim().toLowerCase())}>명령 ID로 확인</button>
           <span class="note" role="status" aria-live="polite">{lookupMessage}</span>
         </div>
       </form>

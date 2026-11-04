@@ -26,8 +26,8 @@ export const SUMMARY_CONCURRENCY = 2;
 export const TURNS_OPEN_MAX = 3;
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 
-const dateTimeFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
-const clockFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const clockFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
 export function flowTitle(entry: Pick<FlowListEntry, "label" | "workspaceId">): string {
   return entry.label ?? entry.workspaceId;
@@ -38,7 +38,7 @@ export function flowTitle(entry: Pick<FlowListEntry, "label" | "workspaceId">): 
  * has no version at all. They stay separate so a long name can truncate while its version stays on screen.
  */
 export function specTagParts(spec: FlowSpecRef | null): { name: string; version: string | null } {
-  return spec ? { name: spec.name, version: `v${spec.version}` } : { name: "unregistered", version: null };
+  return spec ? { name: spec.name, version: `v${spec.version}` } : { name: "미등록", version: null };
 }
 
 export function specLabel(spec: FlowSpecRef | null): string {
@@ -55,12 +55,12 @@ export function formatStarted(ms: number | null | undefined): string {
 /** Which skill the calls of a span were credited to; a count of 0 is left out, and no call at all says so. */
 export function attributionParts(share: AttributionShare): { key: keyof typeof SPAN_ATTRIBUTION_LABEL; label: string; value: number; title: string }[] {
   const counts: [keyof typeof SPAN_ATTRIBUTION_LABEL, number, string][] = [
-    ["reported", share.reported, "the runtime credited them to this skill"],
-    ["single", share.single, "this skill was the only one active"],
-    ["co_active", share.coActive, "another skill was active at the same time"],
+    ["reported", share.reported, "실행 환경이 이 스킬에 연결했습니다"],
+    ["single", share.single, "이 스킬만 활성 상태였습니다"],
+    ["co_active", share.coActive, "다른 스킬도 동시에 활성 상태였습니다"],
   ];
   return counts.flatMap(([key, value, why]) => (value > 0
-    ? [{ key, label: SPAN_ATTRIBUTION_LABEL[key], value, title: `${value} ${value === 1 ? "call" : "calls"}: ${why}` }]
+    ? [{ key, label: SPAN_ATTRIBUTION_LABEL[key], value, title: `호출 ${value}건: ${why}` }]
     : []));
 }
 
@@ -177,11 +177,11 @@ function Chevron() {
 }
 
 function SpecTag({ entry }: { entry: FlowListEntry }) {
-  if (entry.kind === "outside_herdr") return <span class="tag tag--dim">no pane link</span>;
+  if (entry.kind === "outside_herdr") return <span class="tag tag--dim">패널 연결 없음</span>;
   const { name, version } = specTagParts(entry.spec);
   const title = entry.spec
-    ? `${specLabel(entry.spec)}: the workflow spec this flow was registered with`
-    : "no workflow spec was registered for this herdr workspace";
+    ? `${specLabel(entry.spec)}: 이 워크플로를 등록할 때 사용한 스펙`
+    : "이 herdr 작업 공간에 등록된 워크플로 스펙이 없습니다";
   return (
     <span class={entry.spec ? "tag" : "tag tag--dim"} title={title}>
       <span class="tag__name">{name}</span>
@@ -243,9 +243,9 @@ function FlowRow({ entry, route, summary }: { entry: FlowListEntry; route: Route
       </time>
       <Facts facts={entryFacts(entry)} className="facts wsrow__meta" />
       {summary === undefined || summary.status === "loading"
-        ? <p class="facts wsrow__sum dim" data-summary="loading">reading skill spans{"\u2026"}</p>
+        ? <p class="facts wsrow__sum dim" data-summary="loading">스킬 구간을 읽는 중{"\u2026"}</p>
         : summary.status === "error"
-          ? <p class="facts wsrow__sum dim" data-summary="error">skill span summary unavailable</p>
+          ? <p class="facts wsrow__sum dim" data-summary="error">스킬 구간 요약을 가져올 수 없음</p>
           : <Facts facts={summaryFacts(summary.summary)} className="facts wsrow__sum" />}
     </li>
   );
@@ -255,18 +255,18 @@ function ListEmpty({ filtered, route, navigate }: { filtered: boolean; route: Ro
   if (filtered) {
     return (
       <section class="empty">
-        <h2>No workspaces in this range</h2>
-        <p>Widen the time range or remove a filter to see more workspaces.</p>
-        <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>Clear filters</button>
+        <h2>이 기간에는 작업 공간이 없습니다</h2>
+        <p>기간을 넓히거나 필터를 지우면 더 많은 작업 공간을 볼 수 있습니다.</p>
+        <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>
       </section>
     );
   }
   return (
     <section class="empty">
-      <h2>No herdr workspaces recorded</h2>
-      {api.mode === "cloud" ? <p>This snapshot has no recorded herdr workspaces. Upload a newer snapshot from a source device with herdr activity, then reload sources.</p> : <p>
-        skillar groups sessions by the herdr pane they ran in. Start a herdr workspace and run an agent in one of its
-        panes, or run <code class="cmd">skillar doctor</code> to check the herdr connection.
+      <h2>기록된 herdr 작업 공간이 없습니다</h2>
+      {api.mode === "cloud" ? <p>이 스냅숏에는 기록된 herdr 작업 공간이 없습니다. herdr 활동이 있는 기기에서 더 새로운 스냅숏을 올린 뒤 소스를 다시 불러오세요.</p> : <p>
+        skillar는 세션을 실행된 herdr 패널별로 묶어 보여줍니다. herdr 작업 공간을 시작해 패널에서 에이전트를 실행하거나,
+        <code class="cmd">skillar doctor</code>로 herdr 연결을 확인해 보세요.
       </p>}
     </section>
   );
@@ -304,11 +304,11 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
 
   return (
     <section class="ws" aria-busy={flows === undefined}>
-      {error && <p class="notice" role="alert">Could not load workspaces: {error}</p>}
+      {error && <p class="notice" role="alert">작업 공간을 불러올 수 없습니다: {error}</p>}
       {flows !== undefined && flows.length === 0 && <ListEmpty filtered={filtered} route={route} navigate={navigate} />}
       {flows !== undefined && flows.length > 0 && (
         <div class="card">
-          <ul class="wslist" aria-label="herdr workspaces">
+          <ul class="wslist" aria-label="herdr 작업 공간">
             {flows.map((entry) => <FlowRow key={entry.id} entry={entry} route={route} summary={summaries[entry.id]} />)}
           </ul>
         </div>
@@ -326,38 +326,38 @@ export function StepRow({ step, specStep, uncertain = false }: { step: StepCompa
       <div class="step__head">
         <span class="step__id">{step.stepId}</span>
         <span class="tag" data-skill-mode={specStep ? specStep.together ? "together" : "alternatives" : "unknown"}>
-          {specStep ? specStep.together ? "together (all required)" : "alternatives (any one)" : "skill matching mode unavailable"}
+          {specStep ? specStep.together ? "함께 (모두 필요)" : "택일 (하나면 충분)" : "스킬 매칭 방식 알 수 없음"}
         </span>
         {attributionUncertain && step.status !== "matched"
-          ? <span class="tag" data-step-attribution="uncertain">attribution unresolved</span>
+          ? <span class="tag" data-step-attribution="uncertain">세션 연결 미확정</span>
           : <span class={`badge badge--${step.status}`} title={STEP_STATUS_TITLE[step.status]}>{STEP_STATUS_LABEL[step.status]}</span>}
-        <span class="dim">{step.panes.length === 0 ? "no pane mapped" : step.panes.join(", ")}</span>
+        <span class="dim">{step.panes.length === 0 ? "연결된 패널 없음" : step.panes.join(", ")}</span>
       </div>
       <div class="step__row">
-        <span class="step__k">intended</span>
+        <span class="step__k">계획한 스킬</span>
         <span class="step__v">
           {step.intendedSkills.length === 0
-            ? <span class="dim">none</span>
+            ? <span class="dim">없음</span>
             : step.intendedSkills.map((name) => (
-              <span key={name} class={used.has(name) ? "skill" : "skill skill--missing"} title={used.has(name) ? "used in this step" : "no attributed use recorded"}>{name}</span>
+              <span key={name} class={used.has(name) ? "skill" : "skill skill--missing"} title={used.has(name) ? "이 단계에서 사용됨" : "이 단계에 연결된 사용 기록 없음"}>{name}</span>
             ))}
         </span>
       </div>
       <div class="step__row">
-        <span class="step__k">{attributionUncertain ? "attributed use" : "used"}</span>
+        <span class="step__k">{attributionUncertain ? "연결된 사용 기록" : "사용한 스킬"}</span>
         <span class="step__v">
           {step.usedSkills.length === 0
-            ? <span class="dim">{attributionUncertain ? "unknown" : "none"}</span>
+            ? <span class="dim">{attributionUncertain ? "알 수 없음" : "없음"}</span>
             : step.usedSkills.map((name) => (
-              <span key={name} class="skill" title={intended.has(name) ? "intended by this step" : "not intended by this step"}>
+              <span key={name} class="skill" title={intended.has(name) ? "이 단계에서 계획한 스킬" : "이 단계에서 계획하지 않은 스킬"}>
                 {name}
-                {!intended.has(name) && <span class="skill__tag">extra</span>}
+                {!intended.has(name) && <span class="skill__tag">계획 외</span>}
               </span>
             ))}
         </span>
       </div>
       {step.unexpectedTools.length > 0 && (
-        <p class="dim step__tools">tools outside the step{"\u2019"}s list: {step.unexpectedTools.join(", ")}</p>
+        <p class="dim step__tools">단계 목록에 없는 도구: {step.unexpectedTools.join(", ")}</p>
       )}
     </li>
   );
@@ -366,14 +366,14 @@ export function StepRow({ step, specStep, uncertain = false }: { step: StepCompa
 function Steps({ comparison, specSteps, specError, uncertain }: { comparison: FlowComparison; specSteps: WorkflowSpec["steps"]; specError: string | undefined; uncertain: boolean }) {
   return (
     <section class="card ws__block" aria-labelledby="ws-steps">
-      <h2 class="ws__h" id="ws-steps">Steps</h2>
-      {specError && <p class="notice" role="alert">Could not read step matching modes: {specError}</p>}
+      <h2 class="ws__h" id="ws-steps">단계</h2>
+      {specError && <p class="notice" role="alert">단계별 스킬 매칭 방식을 읽을 수 없습니다: {specError}</p>}
       <ol class="wssteps">
         {comparison.steps.map((step) => <StepRow key={step.stepId} step={step} specStep={specSteps.find((item) => item.id === step.stepId)} uncertain={uncertain} />)}
       </ol>
       {comparison.unplanned.length > 0 && (
         <p class="dim">
-          Panes outside the spec: {comparison.unplanned.map((pane) => `${pane.paneId}${pane.usedSkills.length ? ` (${pane.usedSkills.join(", ")})` : ""}`).join(", ")}
+          스펙에 없는 패널: {comparison.unplanned.map((pane) => `${pane.paneId}${pane.usedSkills.length ? ` (${pane.usedSkills.join(", ")})` : ""}`).join(", ")}
         </p>
       )}
     </section>
@@ -386,13 +386,13 @@ export function Span({ span, usage, events = span.events }: { span: SkillSpan; u
   return (
     <li class="span" data-span={span.id} data-skill={span.skill}>
       <div class="span__head">
-        <span class="span__name" title={span.uri ?? "no skill uri reported"}>{span.name}</span>
+        <span class="span__name" title={span.uri ?? "보고된 스킬 URI 없음"}>{span.name}</span>
         {attribution.length === 0
-          ? <span class="tag tag--dim">no call attributed</span>
+          ? <span class="tag tag--dim">연결된 호출 없음</span>
           : attribution.map((part) => <span key={part.key} class="tag" title={part.title}>{part.label} {part.value}</span>)}
       </div>
       <Facts facts={spanFacts(span, usage, rows.length)} className="facts span__facts" />
-      {usage && usage.attribution.coActive > 0 && <p class="dim" data-shared-cost="true">Shared cost observation - co-active skills see the same calls; not additive billing.</p>}
+      {usage && usage.attribution.coActive > 0 && <p class="dim" data-shared-cost="true">비용은 공유 관측값입니다. 동시에 활성화된 스킬들이 같은 호출을 함께 보므로, 스킬별 비용을 더해도 청구액이 되지 않습니다.</p>}
       <p class="span__tokens"><Tokens parts={tokenParts(usage?.tokens ?? [])} /></p>
       {usage && <UsageEvidence events={events} usage={usage} />}
       <CallList rows={rows} />
@@ -409,15 +409,15 @@ export function Turn({ turn, index, finding, usageBySpan, open }: {
       <details class="turn" id={`turn-${turn.id}`} open={open} data-turn={turn.id}>
         <summary class="turn__sum">
           <Chevron />
-          <span class="turn__n">Turn {index + 1}</span>
+          <span class="turn__n">대화 차례 {index + 1}</span>
           <time class="turn__time" dateTime={new Date(turn.startedAt).toISOString()}>{clockFmt.format(turn.startedAt)}</time>
           <span class="tag" title={BASIS_TITLE[turn.basis]}>{BASIS_LABEL[turn.basis]}</span>
           {finding && <span class="tag" title={FINDING_TITLE[finding.label]} data-finding={finding.label}>{FINDING_LABEL[finding.label]}</span>}
-          <span class="turn__meta">{turn.skillSpans.length} {turn.skillSpans.length === 1 ? "skill span" : "skill spans"}</span>
+          <span class="turn__meta">스킬 구간 {turn.skillSpans.length}개</span>
         </summary>
         {finding && <FindingEvidence finding={finding} />}
         {turn.skillSpans.length === 0 ? (
-          <p class="dim turn__none">No skill was active in this turn{calls > 0 ? `; ${calls} ${calls === 1 ? "call" : "calls"} ran without one` : ""}.</p>
+          <p class="dim turn__none">이 대화 차례에서는 활성화된 스킬이 없습니다.{calls > 0 ? ` 호출 ${calls}건이 스킬 없이 실행되었습니다.` : ""}</p>
         ) : (
           <ul class="spans">
             {turn.skillSpans.map((span) => <Span key={span.id} span={span} usage={usageBySpan.get(span.id)} events={turn.events} />)}
@@ -440,17 +440,17 @@ export function Session({ link, session, route, findings, usageBySpan, flow, pan
     <article class="sess" data-session={session.id}>
       <header class="sess__head">
         <Runtime runtime={session.runtime} />
-        <a class="sess__link" href={buildHash({ view: "trace", sessionId: session.id, filter: route.filter })}>Open trace</a>
+        <a class="sess__link" href={buildHash({ view: "trace", sessionId: session.id, filter: route.filter })}>추적 열기</a>
         <time class="sess__when" dateTime={new Date(session.startedAt).toISOString()}>{formatStarted(session.startedAt)}</time>
-        <span class="tag" title={link ? link.basis === "reported" ? "herdr reported this pane's agent session" : "herdr did not report it; skillar inferred it from cwd and time" : "no herdr pane is linked to this session"}>
-          {link?.basis ?? "outside herdr"}
+        <span class="tag" title={link ? link.basis === "reported" ? "herdr가 이 패널의 에이전트 세션을 보고했습니다" : "herdr가 보고하지 않아 skillar가 작업 디렉터리(cwd)와 시간으로 추정했습니다" : "이 세션에 연결된 herdr 패널이 없습니다"}>
+          {link ? link.basis === "reported" ? "herdr 직접 기록" : "skillar 추정" : "herdr 외부"}
         </span>
-        <span class="sess__meta">{session.turns.length} {session.turns.length === 1 ? "turn" : "turns"}</span>
-        <span class="tag" data-session-status={lifecycle}>{lifecycle === "ended" ? "ended" : lifecycle === "end_not_observed" ? "end not observed" : "in progress"}</span>
-        {outside && <span class="tag" data-session-window="outside" title="Pane history outside this flow's window, not included in step results">outside flow window</span>}
+        <span class="sess__meta">대화 차례 {session.turns.length}개</span>
+        <span class="tag" data-session-status={lifecycle}>{lifecycle === "ended" ? "종료됨" : lifecycle === "end_not_observed" ? "종료 미확인" : "진행 중"}</span>
+        {outside && <span class="tag" data-session-window="outside" title="이 워크플로 실행 구간 밖의 패널 기록으로, 단계 결과에는 포함되지 않습니다">워크플로 구간 밖</span>}
       </header>
       {session.turns.length === 0
-        ? <p class="dim">No turn was recorded for this session.</p>
+        ? <p class="dim">이 세션에는 기록된 대화 차례가 없습니다.</p>
         : (
           <ol class="turns">
             {session.turns.map((turn, index) => (
@@ -468,8 +468,8 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
 }) {
   if (tree.sessions !== undefined) return (
     <section class="card ws__block" aria-labelledby="ws-sessions">
-      <h2 class="ws__h" id="ws-sessions">Sessions</h2>
-      {tree.sessions.length === 0 && <p class="dim">No sessions outside herdr in this range.</p>}
+      <h2 class="ws__h" id="ws-sessions">세션</h2>
+      {tree.sessions.length === 0 && <p class="dim">이 기간에는 herdr 외부 세션이 없습니다.</p>}
       {tree.sessions.map((session) => (
         <Session key={session.id} session={session} route={route} findings={findings} usageBySpan={usageBySpan} />
       ))}
@@ -478,16 +478,16 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
   const panes = tree.tabs.reduce((n, tab) => n + tab.panes.length, 0);
   return (
     <section class="card ws__block" aria-labelledby="ws-panes">
-      <h2 class="ws__h" id="ws-panes">Panes</h2>
+      <h2 class="ws__h" id="ws-panes">패널</h2>
       {panes === 0 ? (
-        <p class="dim">herdr reported no pane for this workspace yet.</p>
+        <p class="dim">herdr가 이 작업 공간의 패널을 아직 보고하지 않았습니다.</p>
       ) : (
         <ul class="tabsets">
           {tree.tabs.map((tab) => (
             <li key={tab.id} class="tabset">
               <p class="tabset__head">
                 <span class="tabset__name">{tab.label ?? tab.id}</span>
-                <span class="dim">{tab.panes.length} {tab.panes.length === 1 ? "pane" : "panes"}</span>
+                <span class="dim">패널 {tab.panes.length}개</span>
               </p>
               <ul class="panes">
                 {tab.panes.map((pane) => (
@@ -496,19 +496,19 @@ function Tree({ tree, route, findings, usageBySpan, filtered, flow }: {
                       <summary class="pane__sum">
                         <Chevron />
                         <span class="pane__name">{pane.label ?? pane.id}</span>
-                        <span class="pane__meta">{pane.sessions.length} {pane.sessions.length === 1 ? "session" : "sessions"}</span>
+                        <span class="pane__meta">세션 {pane.sessions.length}개</span>
                       </summary>
                       <div class="pane__body">
                         {pane.sessions.length === 0 && (
                           <p class="dim">{filtered
-                            ? "No agent session is shown for this pane; the automated ones are left out."
-                            : "No agent session ran in this pane."}</p>
+                            ? "이 패널에 표시할 에이전트 세션이 없습니다. 자동화된 세션은 제외되었습니다."
+                            : "이 패널에서 실행된 에이전트 세션이 없습니다."}</p>
                         )}
                         {pane.sessions.map((link) => (
                           link.session === null
                             ? (
                               <p key={link.agentSessionValue} class="dim" data-unlinked={link.agentSessionValue}>
-                                Agent session <code class="cmd">{link.agentSessionValue}</code> is not matched to a skillar session yet.
+                                에이전트 세션 <code class="cmd">{link.agentSessionValue}</code>에 연결된 skillar 세션이 아직 없습니다.
                               </p>
                             )
                             : <Session key={link.session.id} link={link} session={link.session} route={route} findings={findings} usageBySpan={usageBySpan}
@@ -537,47 +537,47 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
     <header class="ws__head card">
       <a class="ws__back" href={backHref}>
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        Workspaces
+        작업 공간 목록
       </a>
       <Title class="ws__title">{report.label ?? report.workspaceId}</Title>
       <dl class="ws__meta">
         {report.kind !== "outside_herdr" && <>
         <div>
-          <dt>Workspace</dt>
+          <dt>작업 공간</dt>
           <dd class="ws__id">{report.workspaceId}</dd>
         </div>
         <div>
-          <dt>Spec</dt>
+          <dt>스펙</dt>
           <dd class={report.spec ? undefined : "dim"}>{specLabel(report.spec)}</dd>
         </div>
         <div>
-          <dt>Started</dt>
+          <dt>시작</dt>
           <dd>{formatStarted(report.flow?.registeredMs ?? null)}</dd>
         </div>
         <div>
-          <dt>Ended</dt>
-          <dd class={report.flow?.endedMs ? undefined : "dim"}>{report.flow?.endedMs ? formatStarted(report.flow.endedMs) : "open"}</dd>
+          <dt>종료</dt>
+          <dd class={report.flow?.endedMs ? undefined : "dim"}>{report.flow?.endedMs ? formatStarted(report.flow.endedMs) : "진행 중"}</dd>
         </div>
         <div>
-          <dt>Panes</dt>
+          <dt>패널</dt>
           <dd>{panes}</dd>
         </div>
         </>}
         <div>
-          <dt>Sessions</dt>
+          <dt>세션</dt>
           <dd>{report.usage.sessions.length}</dd>
         </div>
       </dl>
       <Facts facts={summaryFacts(flowSummary(report))} className="facts ws__counts" />
-      {history && <p class="dim" data-pane-history="true">Turn and session counts include pane history. Step results and unique-call cost cover only this flow's window; outside sessions are labelled below.</p>}
+      {history && <p class="dim" data-pane-history="true">대화 차례와 세션 수에는 패널 기록이 포함됩니다. 단계 결과와 고유 호출 비용은 이 워크플로의 실행 구간만 집계하며, 구간 밖 세션은 아래에 따로 표시됩니다.</p>}
       <div class="ws__actions">
-        <span class="dim">as of {clockFmt.format(report.generatedAt)}</span>
-        <button type="button" class="btn" onClick={onRefresh} disabled={busy}>{busy ? "Reading\u2026" : "Refresh"}</button>
+        <span class="dim">{clockFmt.format(report.generatedAt)} 기준</span>
+        <button type="button" class="btn" onClick={onRefresh} disabled={busy}>{busy ? "읽는 중\u2026" : "새로 고침"}</button>
       </div>
       {report.excludedSessions.length > 0 && (
         <p class="dim" data-excluded={report.excludedSessions.length}>
-          {report.excludedSessions.length} automated {report.excludedSessions.length === 1 ? "session" : "sessions"} left out
-          ({[...new Set(report.excludedSessions.map((session) => session.reason))].join(", ")}). Show automated sessions to include them.
+          자동화된 세션 {report.excludedSessions.length}개 제외됨
+          ({[...new Set(report.excludedSessions.map((session) => session.reason))].join(", ")}). 자동화된 세션을 표시하도록 설정하면 포함됩니다.
         </p>
       )}
     </header>
@@ -627,7 +627,7 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
               setSpecSteps(version.steps);
               setSpecError(undefined);
             }
-            else setSpecError("registered spec version not returned");
+            else setSpecError("등록된 스펙 버전이 응답에 없습니다");
           }).catch((err: unknown) => {
             if (!cancelled) setSpecError(err instanceof Error ? err.message : String(err));
           });
@@ -644,8 +644,8 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
   if (error !== undefined && report === undefined) {
     return (
       <section class="ws">
-        <p class="notice" role="alert">Could not load this flow: {error}</p>
-        <a class="btn ws__backbtn" href={backHref}>Back to workspaces</a>
+        <p class="notice" role="alert">이 워크플로를 불러올 수 없습니다: {error}</p>
+        <a class="btn ws__backbtn" href={backHref}>작업 공간 목록으로</a>
       </section>
     );
   }
@@ -655,7 +655,7 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
   return (
     <section class="ws" aria-busy="false">
       <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded} />
-      {error !== undefined && <p class="notice" role="alert">Could not refresh this flow: {error}</p>}
+      {error !== undefined && <p class="notice" role="alert">이 워크플로를 새로 고칠 수 없습니다: {error}</p>}
       {report.executionScope && <aside class="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
       <UnresolvedLoadNotice loads={report.unattributedLoads} />
       {report.comparison && <Steps comparison={report.comparison} specSteps={specSteps} specError={specError} uncertain={report.unattributedLoads.count > 0} />}

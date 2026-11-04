@@ -18,21 +18,21 @@ const ENVELOPE_BYTES = 1024;
 
 export type CommandKindCopy = { readonly label: string; readonly detail: string };
 export const COMMAND_KIND_COPY: Record<CommandKind, CommandKindCopy> = {
-  "workflow.put": { label: "Save a workflow", detail: "Creates or replaces the workflow with this name in the device's local store." },
-  "flow.create": { label: "Start a flow", detail: "Opens a flow in a workspace from a workflow the device already has." },
-  "flow.map-step": { label: "Map a pane to a step", detail: "Links one pane of an open flow to one step of its workflow." },
-  "flow.end": { label: "End a flow", detail: "Closes an open flow on the device." },
+  "workflow.put": { label: "워크플로 저장", detail: "기기의 로컬 저장소에서 이 이름의 워크플로를 만들거나 교체합니다." },
+  "flow.create": { label: "흐름 시작", detail: "기기에 이미 있는 워크플로로 작업 공간에 흐름을 엽니다." },
+  "flow.map-step": { label: "pane을 단계에 연결", detail: "열려 있는 흐름의 pane 하나를 그 워크플로의 단계 하나에 연결합니다." },
+  "flow.end": { label: "흐름 종료", detail: "기기에서 열려 있는 흐름을 닫습니다." },
   "eval.add": {
-    label: "Add a local eval case",
-    detail: "Adds an eval case to the device's local store. Eval cases saved from the views above are stored by skillar instead; the two stores are separate.",
+    label: "로컬 평가 사례 추가",
+    detail: "기기의 로컬 저장소에 평가 사례를 추가합니다. 위 화면에서 저장한 평가 사례는 skillar에 저장되며, 두 저장소는 별개입니다.",
   },
 };
 
 export const FIELD_LABELS = {
-  workflowName: "Workflow name", workflowSteps: "Steps (JSON array)",
-  workspaceId: "Workspace ID", tabId: "Tab ID (optional)", flowName: "Workflow name", flowVersion: "Workflow version (optional)",
-  label: "Label (optional)", flowId: "Flow ID", paneId: "Pane ID", stepId: "Step ID",
-  query: "Query", expectedUri: "Expected URI (optional)", fromTraceId: "From trace ID (optional)",
+  workflowName: "워크플로 이름", workflowSteps: "단계(JSON 배열)",
+  workspaceId: "작업 공간 ID", tabId: "탭 ID(선택)", flowName: "워크플로 이름", flowVersion: "워크플로 버전(선택)",
+  label: "라벨(선택)", flowId: "흐름 ID", paneId: "pane ID", stepId: "단계 ID",
+  query: "검색어", expectedUri: "기대 URI(선택)", fromTraceId: "원본 트레이스 ID(선택)",
 } as const;
 
 export type CommandDraft = {
@@ -80,10 +80,10 @@ export type OperationBuild =
 /** Schema paths to field labels; `{n}` is the 1-based step number. */
 const ISSUE_LABELS: Record<CommandKind, Readonly<Record<string, string>>> = {
   "workflow.put": {
-    "spec.name": FIELD_LABELS.workflowName, "spec.steps": "Steps", "spec.steps.*": "Step {n}", "spec.steps.*.id": "Step {n} id",
-    "spec.steps.*.skills": "Step {n} skills", "spec.steps.*.skills.*": "Step {n} skill", "spec.steps.*.together": "Step {n} together",
-    "spec.steps.*.expectTools": "Step {n} expectTools", "spec.steps.*.expectTools.*": "Step {n} expected tool",
-    "spec.steps.*.doneWhen": "Step {n} doneWhen",
+    "spec.name": FIELD_LABELS.workflowName, "spec.steps": "단계", "spec.steps.*": "단계 {n}", "spec.steps.*.id": "단계 {n} id",
+    "spec.steps.*.skills": "단계 {n} skills", "spec.steps.*.skills.*": "단계 {n} skills 항목", "spec.steps.*.together": "단계 {n} together",
+    "spec.steps.*.expectTools": "단계 {n} expectTools", "spec.steps.*.expectTools.*": "단계 {n} expectTools 항목",
+    "spec.steps.*.doneWhen": "단계 {n} doneWhen",
   },
   "flow.create": {
     workspaceId: FIELD_LABELS.workspaceId, tabId: FIELD_LABELS.tabId, "spec.name": FIELD_LABELS.flowName,
@@ -97,15 +97,15 @@ const ISSUE_LABELS: Record<CommandKind, Readonly<Record<string, string>>> = {
 function friendlyMessage(issue: z.ZodIssue): string {
   switch (issue.code) {
     case "too_small":
-      return issue.origin === "string" && issue.minimum === 1 ? "Required." :
-        issue.origin === "array" ? `At least ${issue.minimum} item${issue.minimum === 1 ? "" : "s"}.` : `At least ${issue.minimum}.`;
+      return issue.origin === "string" && issue.minimum === 1 ? "필수입니다." :
+        issue.origin === "array" ? `${issue.minimum}개 이상이어야 합니다.` : `${issue.minimum} 이상이어야 합니다.`;
     case "too_big":
-      return issue.origin === "string" ? `At most ${issue.maximum} characters.` :
-        issue.origin === "array" ? `At most ${issue.maximum} items.` : `At most ${issue.maximum}.`;
+      return issue.origin === "string" ? `${issue.maximum}자 이하여야 합니다.` :
+        issue.origin === "array" ? `${issue.maximum}개 이하여야 합니다.` : `${issue.maximum} 이하여야 합니다.`;
     case "invalid_format":
-      return issue.format === "regex" ? "Use letters, digits, dots, underscores or hyphens, starting with a letter or digit." : issue.message;
-    case "invalid_type": return `Expected ${issue.expected}.`;
-    case "unrecognized_keys": return `Unknown ${issue.keys.length === 1 ? "key" : "keys"}: ${issue.keys.join(", ")}.`;
+      return issue.format === "regex" ? "영문자, 숫자, 점(.), 밑줄(_), 하이픈(-)만 쓸 수 있으며 영문자나 숫자로 시작해야 합니다." : issue.message;
+    case "invalid_type": return `${issue.expected} 형식이어야 합니다.`;
+    case "unrecognized_keys": return `알 수 없는 키: ${issue.keys.join(", ")}.`;
     default: return issue.message;
   }
 }
@@ -113,7 +113,7 @@ function friendlyMessage(issue: z.ZodIssue): string {
 function describeIssue(kind: CommandKind, issue: z.ZodIssue): string {
   const index = issue.path.find((part): part is number => typeof part === "number");
   const key = issue.path.map(part => typeof part === "number" ? "*" : String(part)).join(".");
-  const label = (ISSUE_LABELS[kind][key] ?? (key === "" ? "Command" : key)).replace("{n}", String((index ?? 0) + 1));
+  const label = (ISSUE_LABELS[kind][key] ?? (key === "" ? "명령" : key)).replace("{n}", String((index ?? 0) + 1));
   return `${label}: ${friendlyMessage(issue)}`;
 }
 
@@ -127,14 +127,14 @@ function optionalText(key: string, value: string): Record<string, string> {
 function parseSteps(text: string, problems: string[]): unknown {
   const source = trimmed(text);
   if (source === "") {
-    problems.push(`${FIELD_LABELS.workflowSteps}: required. Enter a JSON array of steps, each with an id and a skills list.`);
+    problems.push(`${FIELD_LABELS.workflowSteps}: 필수입니다. 각 단계에 id와 skills 목록이 있는 JSON 배열을 입력하세요.`);
     return [];
   }
   try {
     return JSON.parse(source);
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
-    problems.push(`${FIELD_LABELS.workflowSteps}: not valid JSON (${error.message}).`);
+    problems.push(`${FIELD_LABELS.workflowSteps}: 올바른 JSON이 아닙니다 (${error.message}).`);
     return [];
   }
 }
@@ -143,7 +143,7 @@ export function buildOperation(draft: CommandDraft): OperationBuild {
   const problems: string[] = [];
   const required = (value: string, label: string): string => {
     const text = trimmed(value);
-    if (text === "") problems.push(`${label}: required.`);
+    if (text === "") problems.push(`${label}: 필수입니다.`);
     return text;
   };
   let candidate: Record<string, unknown>;
@@ -153,7 +153,7 @@ export function buildOperation(draft: CommandDraft): OperationBuild {
       break;
     case "flow.create": {
       const version = trimmed(draft.flowVersion);
-      if (version !== "" && !/^\d+$/.test(version)) problems.push(`${FIELD_LABELS.flowVersion}: a whole number, at least 1.`);
+      if (version !== "" && !/^\d+$/.test(version)) problems.push(`${FIELD_LABELS.flowVersion}: 1 이상의 정수여야 합니다.`);
       candidate = {
         kind: draft.kind, workspaceId: required(draft.workspaceId, FIELD_LABELS.workspaceId), ...optionalText("tabId", draft.tabId),
         spec: { name: required(draft.flowName, FIELD_LABELS.flowName), ...(version === "" ? {} : { version: Number(version) }) },
@@ -185,7 +185,7 @@ export function buildOperation(draft: CommandDraft): OperationBuild {
   const parsed = sourceOperationSchema.safeParse(candidate);
   if (!parsed.success) return { ok: false, problems: [...new Set(parsed.error.issues.map(issue => describeIssue(draft.kind, issue)))] };
   if (new TextEncoder().encode(JSON.stringify(parsed.data)).length > MAX_BATCH_BYTES - ENVELOPE_BYTES) {
-    return { ok: false, problems: [`The command is larger than skillar accepts (${MAX_BATCH_BYTES / 1024} KiB).`] };
+    return { ok: false, problems: [`명령이 skillar가 받는 최대 크기(${MAX_BATCH_BYTES / 1024} KiB)보다 큽니다.`] };
   }
   return { ok: true, operation: parsed.data };
 }
@@ -314,64 +314,64 @@ export type OutcomeCopy = { readonly label: string; readonly tone: Tone; readonl
 
 export const COMMAND_STATE_COPY: Record<CommandState, OutcomeCopy> = {
   pending: {
-    label: "Pending", tone: "pending",
-    explanation: "skillar holds the command. The device has not reported a result.",
-    next: `The device applies it on its next sync, about every ${SYNC_CADENCE_SECONDS} seconds, only if \`${ENABLE_COMMANDS_CLI}\` was run there; remote commands are off by default. An offline or opted-out device leaves it pending. Check status to see whether it was applied.`,
+    label: "대기 중", tone: "pending",
+    explanation: "skillar가 명령을 보관하고 있습니다. 기기가 아직 결과를 보고하지 않았습니다.",
+    next: `기기는 다음 동기화(약 ${SYNC_CADENCE_SECONDS}초마다) 때 명령을 적용하되, 그 기기에서 \`${ENABLE_COMMANDS_CLI}\`를 실행한 경우에만 적용합니다. 원격 명령은 기본적으로 꺼져 있습니다. 오프라인이거나 원격 명령을 켜지 않은 기기에서는 대기 상태로 남습니다. 적용 여부는 상태 확인으로 알 수 있습니다.`,
   },
-  applied: { label: "Applied", tone: "applied", explanation: "The device applied this command.", next: null },
+  applied: { label: "적용됨", tone: "applied", explanation: "기기가 이 명령을 적용했습니다.", next: null },
   conflict: {
-    label: "Conflict", tone: "conflict",
-    explanation: "The device's data had moved past the base revision, so it did not apply the command.",
-    next: "Wait for the device's next upload, refresh sources, then submit again once the revision here has caught up.",
+    label: "충돌", tone: "conflict",
+    explanation: "기기의 데이터가 기준 리비전 이후로 바뀌어 명령을 적용하지 않았습니다.",
+    next: "기기의 다음 업로드를 기다린 뒤 출처를 새로 고치고, 여기 표시된 리비전이 따라잡으면 다시 제출하세요.",
   },
   rejected: {
-    label: "Rejected", tone: "rejected",
-    explanation: "The device refused this command.",
-    next: "Read the technical details, correct the form and submit a new command.",
+    label: "거부됨", tone: "rejected",
+    explanation: "기기가 이 명령을 거부했습니다.",
+    next: "기술 정보를 확인하고 입력 내용을 고쳐 새 명령을 제출하세요.",
   },
 };
 
 const REFUSAL_COPY: Record<RefusalReason, Pick<OutcomeCopy, "explanation" | "next">> = {
   conflict: {
-    explanation: "Another command is pending for this source, or its revision changed. Nothing was queued.",
-    next: "Refresh sources, then submit again with the current revision.",
+    explanation: "이 출처에 다른 명령이 대기 중이거나 리비전이 바뀌었습니다. 아무것도 대기열에 넣지 않았습니다.",
+    next: "출처를 새로 고친 뒤 현재 리비전으로 다시 제출하세요.",
   },
   disabled: {
-    explanation: "Remote commands are switched off on the server right now, or this source is no longer available. Nothing was queued.",
-    next: "Try again later, or reload sources to check the source.",
+    explanation: "지금은 서버에서 원격 명령이 꺼져 있거나 이 출처를 더 이상 사용할 수 없습니다. 아무것도 대기열에 넣지 않았습니다.",
+    next: "나중에 다시 시도하거나 출처를 다시 읽어 출처 상태를 확인하세요.",
   },
   forbidden: {
-    explanation: "This device's consent does not allow remote commands; they need its current full content consent with all seven categories. Nothing was queued.",
-    next: "Review the device's consent below, then submit again.",
+    explanation: "이 기기의 동의는 원격 명령을 허용하지 않습니다. 원격 명령에는 일곱 가지 범주를 모두 포함한 현재 버전의 전체 내용 동의가 필요합니다. 아무것도 대기열에 넣지 않았습니다.",
+    next: "아래에서 기기의 동의를 확인한 뒤 다시 제출하세요.",
   },
-  invalid: { explanation: "skillar rejected the command as invalid. Nothing was queued.", next: "Correct the form and submit again." },
+  invalid: { explanation: "skillar가 명령을 잘못된 요청으로 거부했습니다. 아무것도 대기열에 넣지 않았습니다.", next: "입력 내용을 고쳐 다시 제출하세요." },
   "too-large": {
-    explanation: `The command is larger than skillar accepts (${MAX_BATCH_BYTES / 1024} KiB). Nothing was queued.`,
-    next: "Shorten it and submit again.",
+    explanation: `명령이 skillar가 받는 최대 크기(${MAX_BATCH_BYTES / 1024} KiB)보다 큽니다. 아무것도 대기열에 넣지 않았습니다.`,
+    next: "내용을 줄여 다시 제출하세요.",
   },
-  "rate-limited": { explanation: "Too many requests. Nothing was queued.", next: "Wait a minute and submit again." },
-  other: { explanation: "skillar could not queue the command. Nothing was queued.", next: "Read the technical details and try again." },
+  "rate-limited": { explanation: "요청이 너무 많습니다. 아무것도 대기열에 넣지 않았습니다.", next: "잠시 기다린 뒤 다시 제출하세요." },
+  other: { explanation: "skillar가 명령을 대기열에 넣지 못했습니다. 아무것도 대기열에 넣지 않았습니다.", next: "기술 정보를 확인하고 다시 시도하세요." },
 };
 
 const UNCERTAIN_NEXT = {
-  unchecked: "Retry sends the same command ID and content, which skillar counts once; or check its status first.",
-  missing: "A status check found no record of it, so retrying is safe. Retry sends the same command ID and content.",
-  unreachable: "A status check could not reach skillar. Retry when your connection is back; it sends the same command ID and content, which skillar counts once.",
+  unchecked: "다시 시도하면 같은 명령 ID와 내용을 보내며 skillar는 이를 한 번으로 셉니다. 먼저 상태를 확인해도 됩니다.",
+  missing: "상태 확인에서 이 명령의 기록을 찾지 못했으므로 다시 시도해도 안전합니다. 다시 시도하면 같은 명령 ID와 내용을 보냅니다.",
+  unreachable: "상태 확인이 skillar에 도달하지 못했습니다. 연결이 복구되면 다시 시도하세요. 같은 명령 ID와 내용을 보내며 skillar는 이를 한 번으로 셉니다.",
 } as const;
 
 export function describeOutcome(submission: Submission): OutcomeCopy {
   const outcome = submission.outcome;
   switch (outcome.kind) {
     case "sending":
-      return { label: "Sending", tone: "sending", explanation: "Waiting for skillar to confirm it holds the command.", next: null };
+      return { label: "보내는 중", tone: "sending", explanation: "skillar가 명령을 보관했다고 확인해 주기를 기다리고 있습니다.", next: null };
     case "uncertain":
       return {
-        label: "Not confirmed", tone: "uncertain",
-        explanation: outcome.cause === "network" ? "The request did not complete, so skillar may or may not hold this command." :
-          "skillar did not answer as expected, so it may or may not hold this command.",
+        label: "확인되지 않음", tone: "uncertain",
+        explanation: outcome.cause === "network" ? "요청이 완료되지 않아 skillar가 이 명령을 보관하고 있는지 알 수 없습니다." :
+          "skillar가 예상과 다르게 응답해 이 명령을 보관하고 있는지 알 수 없습니다.",
         next: UNCERTAIN_NEXT[outcome.check],
       };
-    case "refused": return { label: "Not queued", tone: "refused", ...REFUSAL_COPY[outcome.reason] };
+    case "refused": return { label: "대기열에 없음", tone: "refused", ...REFUSAL_COPY[outcome.reason] };
     case "tracked": return COMMAND_STATE_COPY[outcome.status.state];
     default: {
       const exhaustive: never = outcome;
@@ -381,19 +381,20 @@ export function describeOutcome(submission: Submission): OutcomeCopy {
 }
 
 export const CHECK_COPY: Record<Exclude<CheckResult, "ok">, string> = {
-  unreachable: "Couldn't reach skillar to check; the state shown is the last one known.",
-  missing: "skillar no longer has a record of this command; the state shown is the last one known.",
-  failed: "The status check failed; the state shown is the last one known.",
+  unreachable: "확인을 위해 skillar에 연결할 수 없었습니다. 표시된 상태는 마지막으로 알려진 것입니다.",
+  missing: "skillar에 이 명령의 기록이 더 이상 없습니다. 표시된 상태는 마지막으로 알려진 것입니다.",
+  failed: "상태 확인에 실패했습니다. 표시된 상태는 마지막으로 알려진 것입니다.",
 };
 
+/** Each variable is followed by a noun or an invariant particle (에서, 에), so no Korean particle has to agree with its final sound. */
 export function summarizeOperation(operation: SourceOperation | null): string {
-  if (operation === null) return "Looked up by command ID";
+  if (operation === null) return "명령 ID로 조회함";
   switch (operation.kind) {
-    case "workflow.put": return `Save workflow ${operation.spec.name} (${operation.spec.steps.length} step${operation.spec.steps.length === 1 ? "" : "s"})`;
-    case "flow.create": return `Start flow ${operation.spec.name} in workspace ${operation.workspaceId}`;
-    case "flow.map-step": return `Map pane ${operation.paneId} to step ${operation.stepId} in flow ${operation.flowId}`;
-    case "flow.end": return `End flow ${operation.flowId}`;
-    case "eval.add": return `Add local eval case: ${operation.query.length > 60 ? `${operation.query.slice(0, 60)}\u2026` : operation.query}`;
+    case "workflow.put": return `워크플로 ${operation.spec.name} 저장 (단계 ${operation.spec.steps.length}개)`;
+    case "flow.create": return `작업 공간 ${operation.workspaceId}에서 흐름 ${operation.spec.name} 시작`;
+    case "flow.map-step": return `흐름 ${operation.flowId}에서 단계 ${operation.stepId}에 pane ${operation.paneId} 연결`;
+    case "flow.end": return `흐름 ${operation.flowId} 종료`;
+    case "eval.add": return `로컬 평가 사례 추가: ${operation.query.length > 60 ? `${operation.query.slice(0, 60)}\u2026` : operation.query}`;
     default: {
       const exhaustive: never = operation;
       return exhaustive;

@@ -128,7 +128,7 @@ test("a live update preserves a populated Flow's selected unit and mounted contr
   // Given
   const h = host(t, "#/flow");
   await h.mount();
-  const group = find(h.root, (node) => node.attrs["aria-label"] === "Unit");
+  const group = find(h.root, (node) => node.attrs["aria-label"] === "단위");
   const search = find(group, (node) => node.localName === "button" && node.attrs["aria-pressed"] === "false");
   await ui.act(async () => click(search));
   const section = find(h.root, (node) => node.attrs["data-unit"] === "search_requests");
@@ -136,7 +136,7 @@ test("a live update preserves a populated Flow's selected unit and mounted contr
   await h.refresh();
   // Then
   assert.ok(find(h.root, (node) => node.attrs["data-unit"] === "search_requests") === section);
-  assert.ok(find(h.root, (node) => node.attrs["aria-label"] === "Unit") === group);
+  assert.ok(find(h.root, (node) => node.attrs["aria-label"] === "단위") === group);
 });
 
 test("a live update keeps the Sessions search node and its unsubmitted draft", async (t) => {
@@ -185,7 +185,7 @@ test("a healthy cloud event transport does not change an unended historical trac
   await h.mount();
   const duration = () => {
     const metadata = classed(h.root, "trace__meta");
-    return find(metadata, (node) => node.localName === "div" && node.firstChild?.textContent === "Duration").textContent;
+    return find(metadata, (node) => node.localName === "div" && node.firstChild?.textContent === "소요 시간").textContent;
   };
   const historicalDuration = duration();
   // When

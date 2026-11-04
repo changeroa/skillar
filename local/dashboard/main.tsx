@@ -36,9 +36,9 @@ function useLive(): LiveInfo & { invalidated?: boolean } {
   return live;
 }
 
-const LIVE_TEXT: Record<LiveState, string> = { connecting: "connecting", live: "live", paused: "paused", offline: "offline", fixtures: "fixtures" };
+const LIVE_TEXT: Record<LiveState, string> = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
 
-const dateTime = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateTime = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
 type Chip = { key: FilterKey; label: string; value: string };
 
@@ -48,23 +48,23 @@ function chipsFor(filter: Filter): Chip[] {
     const value = filter[key];
     if (value === undefined) continue;
     switch (key) {
-      case "from": chips.push({ key, label: "from", value: dateTime.format(value as number) }); break;
-      case "to": chips.push({ key, label: "to", value: dateTime.format(value as number) }); break;
-      case "runtime": chips.push({ key, label: "runtime", value: filter.runtime!.map((r) => RUNTIME_LABEL[r]).join(", ") }); break;
-      case "skill": chips.push({ key, label: "skill", value: filter.skill!.map(skillName).join(", ") }); break;
-      case "searchStatus": chips.push({ key, label: "search status", value: filter.searchStatus!.join(", ") }); break;
-      case "loadStatus": chips.push({ key, label: "load status", value: filter.loadStatus!.join(", ") }); break;
-      case "searchResult": chips.push({ key, label: "search result", value: filter.searchResult!.join(", ") }); break;
-      case "state": chips.push({ key, label: "state", value: filter.state!.map((s) => STATE_LABEL[s]).join(", ") }); break;
-      case "dow": chips.push({ key, label: "day", value: DOW_LABEL[value as number] ?? String(value) }); break;
+      case "from": chips.push({ key, label: "시작", value: dateTime.format(value as number) }); break;
+      case "to": chips.push({ key, label: "종료", value: dateTime.format(value as number) }); break;
+      case "runtime": chips.push({ key, label: "실행 환경", value: filter.runtime!.map((r) => RUNTIME_LABEL[r]).join(", ") }); break;
+      case "skill": chips.push({ key, label: "스킬", value: filter.skill!.map(skillName).join(", ") }); break;
+      case "searchStatus": chips.push({ key, label: "검색 상태", value: filter.searchStatus!.map(s => STATE_LABEL[s]).join(", ") }); break;
+      case "loadStatus": chips.push({ key, label: "읽기 상태", value: filter.loadStatus!.map(s => STATE_LABEL[s]).join(", ") }); break;
+      case "searchResult": chips.push({ key, label: "검색 결과", value: filter.searchResult!.map(result => result === "candidates_found" ? "후보 있음" : "후보 없음").join(", ") }); break;
+      case "state": chips.push({ key, label: "상태", value: filter.state!.map((s) => STATE_LABEL[s]).join(", ") }); break;
+      case "dow": chips.push({ key, label: "요일", value: DOW_LABEL[value as number] ?? String(value) }); break;
       case "hour": {
         const span = filter.hourSpan ?? 1;
-        chips.push({ key, label: "hour", value: `${String(value).padStart(2, "0")}:00-${String(((value as number) + span) % 24).padStart(2, "0")}:00` });
+        chips.push({ key, label: "시간", value: `${String(value).padStart(2, "0")}:00-${String(((value as number) + span) % 24).padStart(2, "0")}:00` });
         break;
       }
       case "hourSpan": break;
-      case "q": chips.push({ key, label: "search", value: String(value) }); break;
-      case "automated": chips.push({ key, label: "automated", value: value === "only" ? "only" : "shown" }); break;
+      case "q": chips.push({ key, label: "검색", value: String(value) }); break;
+      case "automated": chips.push({ key, label: "자동 실행", value: value === "only" ? "만 보기" : "포함" }); break;
     }
   }
   return chips;
@@ -74,25 +74,25 @@ function FilterChips({ route, navigate }: { route: Route; navigate: (next: Route
   const chips = chipsFor(route.filter);
   if (!chips.length) return null;
   return (
-    <div class="filters" aria-label="Active filters">
+    <div class="filters" aria-label="적용된 필터">
       {chips.map((chip) => (
         <span class="chip" key={chip.key}>
           <span class="chip__k">{chip.label}</span>
           <span class="chip__v" title={chip.value}>{chip.value}</span>
-          <button type="button" class="chip__x" aria-label={`Remove ${chip.label} filter`} onClick={() => navigate({ ...route, filter: withoutFilterKey(route.filter, chip.key) })}>
+          <button type="button" class="chip__x" aria-label={`${chip.label} 필터 해제`} onClick={() => navigate({ ...route, filter: withoutFilterKey(route.filter, chip.key) })}>
             {"\u00d7"}
           </button>
         </span>
       ))}
       {chips.length > 1 && (
-        <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>Clear</button>
+        <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>전체 해제</button>
       )}
     </div>
   );
 }
 
 export const AUTOMATED_EXPLAINER =
-  "Sessions you did not start: Codex thread titles, Herdr pane recaps, scheduled jobs, memory reflection and dreaming runs, and sessions with no prompt or skill activity. Hidden from every view unless shown.";
+  "직접 시작하지 않은 세션입니다. Codex 대화 제목, herdr 패널 요약, 예약 작업, 메모리 검토·정리 작업, 요청문이나 스킬 활동이 없는 세션을 포함합니다. 표시를 켜기 전에는 모든 화면에서 숨깁니다.";
 
 function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (next: Route) => void; live: LiveInfo }) {
   const [hidden, setHidden] = useState(0);
@@ -107,16 +107,19 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
   return (
     <button type="button" class="btn" data-automated-toggle title={AUTOMATED_EXPLAINER}
       onClick={() => navigate({ ...route, filter: { ...route.filter, automated: "include" } })}>
-      {`${hidden} automated ${hidden === 1 ? "session" : "sessions"} hidden \u00b7 Show`}
+      {`자동 실행 세션 ${hidden}개 숨김 \u00b7 표시`}
     </button>
   );
 }
 
+const VIEW_LABEL: Record<View, string> = {
+  sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "사용 흐름", heatmap: "활동 분포",
+};
 const TABS: { view: View; label: string }[] = [
-  { view: "sessions", label: "Sessions" },
-  { view: "workspaces", label: "Workspaces" },
-  { view: "flow", label: "Flow" },
-  { view: "heatmap", label: "Heatmap" },
+  { view: "sessions", label: VIEW_LABEL.sessions },
+  { view: "workspaces", label: VIEW_LABEL.workspaces },
+  { view: "flow", label: VIEW_LABEL.flow },
+  { view: "heatmap", label: VIEW_LABEL.heatmap },
 ];
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
@@ -210,13 +213,38 @@ export function App({ embedded = false }: AppOptions = {}) {
       removeEventListener("scroll", position, true); removeEventListener("resize", position);
     };
   }, [embedded]);
-  if (live.invalidated) return <p role="status">Cloud activity is unavailable. Sign in or select a source again.</p>;
+  if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
     <>
       <Header class="top">
-        <div class="wrap">
-          <div class="top__row">
-            {!embedded && <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>}
+        <div class="wrap top__row">
+          {!embedded && (
+            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>
+              {/* Canonical wordmark (site/public/wordmark-*.svg): geometry verbatim, fills through the brand role tokens. */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 100" role="img" aria-label="skillar" focusable="false">
+                <title>skillar</title>
+                <g transform="translate(-9.25 1.99)">
+                  <path class="brand__prompt" d="M0 31L19 50L0 69L7 76L33 50L7 24Z" transform="translate(16.5 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M47 35C36 27 5 27 4 46C3 60 16 62 29 65C43 68 40 79 27 80C18 81 10 78 3 73L0 83C10 91 34 94 46 82C55 71 49 57 34 54L21 51C7 47 24 35 43 44Z" transform="translate(70 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M3 8H15V54L39 31H55L28 57L57 89H41L15 61V89H3Z" transform="translate(131 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M14 31H38V77H56V89H14V77H26V43H14Z" transform="translate(192 0)" fill-rule="evenodd" />
+                  <circle class="brand__ink" cx="224" cy="13" r="7" />
+                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(256 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(320 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M45 89H34V83C23 95 0 90 0 71C0 53 22 49 34 55V50C34 35 13 37 5 44L2 33C22 23 46 28 46 50V89ZM34 65C22 57 11 63 11 72C11 83 27 84 34 74Z" transform="translate(391.5 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M3 31H15V41C23 29 35 27 44 31L41 43C27 39 15 48 15 62V89H3Z" transform="translate(458 0)" fill-rule="evenodd" />
+                </g>
+              </svg>
+            </a>
+          )}
+          <nav class="tabs" aria-label="화면 선택">
+            {TABS.map((tab) => (
+              <a key={tab.view} class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
+                {tab.label}
+              </a>
+            ))}
+          </nav>
+          <div class="top__status">
             <span class={`live live--${live.state}`} role="status" aria-live="polite">
               <span class="live__dot" aria-hidden="true" />
               {LIVE_TEXT[live.state]}
@@ -224,19 +252,12 @@ export function App({ embedded = false }: AppOptions = {}) {
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
           </div>
-          <nav class="tabs" aria-label="Views">
-            {TABS.map((tab) => (
-              <a key={tab.view} class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
-                {tab.label}
-              </a>
-            ))}
-          </nav>
         </div>
       </Header>
       <Content class="page wrap"
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
         tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
-        aria-label={embedded ? `${activeTab} snapshot` : undefined}>
+        aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
         {route.view === "sessions" && <SessionsView {...props} />}
         {route.view === "trace" && <TraceView {...props} />}
         {route.view === "workspaces" && <WorkspacesView {...props} />}

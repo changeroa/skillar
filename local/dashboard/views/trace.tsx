@@ -1,6 +1,6 @@
 import { RequestCounts, RequestDetails } from "../components/requests";
 import { isSkillarMcpData } from "../../src/ingest/identity.js";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { AbstainReason, EventKind, FindingLabel, RuntimeId, SearchMode, SessionSkillReportDto, SkillSpan, SkillUri,
   TraceStep } from "../../src/types.js";
 import { api, type SessionListRow } from "../api";
@@ -33,27 +33,27 @@ export const PROMPT_FOLD_CHARS = 600;
 export const SHORT_DIGEST_CHARS = 8;
 export const TOOL_ARGS_PREVIEW_CHARS = 160;
 export type ToolArgs = { captured: true; text: string; truncated: boolean } | { captured: false; length: number };
-const COST_UNKNOWN = "cost unknown";
+const COST_UNKNOWN = "비용 정보 없음";
 
 export const KIND_LABEL: Record<EventKind, string> = {
-  skill_request: "Request",
-  session_start: "Session started",
-  prompt: "Prompt",
-  search: "Searched skillar",
-  load: "Loaded skill",
-  read_file: "Read resource",
-  native_skill: "Native skill",
-  llm_call: "Model call",
-  tool_call: "Tool run",
-  session_end: "Session ended",
-  error: "Error",
+  skill_request: "요청",
+  session_start: "세션 시작",
+  prompt: "요청문",
+  search: "skillar 검색",
+  load: "스킬 읽기",
+  read_file: "자료 읽기",
+  native_skill: "내장 스킬",
+  llm_call: "모델 호출",
+  tool_call: "도구 실행",
+  session_end: "세션 종료",
+  error: "오류",
 };
-export const MODE_LABEL: Record<SearchMode, string> = { discovery: "discovery", automatic: "automatic", explicit: "explicit" };
+export const MODE_LABEL: Record<SearchMode, string> = { discovery: "탐색", automatic: "자동", explicit: "직접 지정" };
 export const ABSTAIN_LABEL: Record<AbstainReason, string> = {
-  empty_query: "empty query", no_overlap: "no overlap", below_threshold: "below threshold", explicit_only: "explicit only",
+  empty_query: "검색어 없음", no_overlap: "일치하는 표현 없음", below_threshold: "관련도 기준 미달", explicit_only: "직접 지정 전용",
 };
-export const NEVER_CONSULTED = "This session never consulted skillar";
-export const SPAN_KIND_LABEL = "Skill active";
+export const NEVER_CONSULTED = "이 세션에는 skillar 검색 기록이 없습니다";
+export const SPAN_KIND_LABEL = "스킬 활성 구간";
 
 /** One timeline row: a recorded step, or a skill span holding the model and tool calls made while it was active. */
 export type TimelineItem =
@@ -140,22 +140,22 @@ export function sessionBounds(steps: readonly TraceStep[], row?: Pick<SessionLis
 
 export function formatDuration(ms: number): string {
   const minutes = Math.round(ms / 60e3);
-  if (minutes < 1) return "<1m";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return "1분 미만";
+  if (minutes < 60) return `${minutes}분`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+  return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
 }
 
 export function formatOffset(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "";
-  if (ms < 10e3) return `+${(ms / 1e3).toFixed(1)}s`;
-  if (ms < 60e3) return `+${Math.round(ms / 1e3)}s`;
+  if (ms < 10e3) return `+${(ms / 1e3).toFixed(1)}초`;
+  if (ms < 60e3) return `+${Math.round(ms / 1e3)}초`;
   const totalSeconds = Math.round(ms / 1e3);
   const minutes = Math.floor(totalSeconds / 60);
-  if (minutes < 60) return `+${minutes}m ${String(totalSeconds % 60).padStart(2, "0")}s`;
+  if (minutes < 60) return `+${minutes}분 ${String(totalSeconds % 60).padStart(2, "0")}초`;
   const hours = Math.floor(minutes / 60);
-  return `+${hours}h ${String(minutes % 60).padStart(2, "0")}m`;
+  return `+${hours}시간 ${String(minutes % 60).padStart(2, "0")}분`;
 }
 
 export function formatBytes(bytes: number): string {
@@ -220,8 +220,8 @@ export function firstPromptOf(steps: readonly TraceStep[], row?: Pick<SessionLis
   return text || undefined;
 }
 
-const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-const dateTimeFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const timeFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
 function Runtime({ runtime }: { runtime: RuntimeId }) {
   return (
@@ -232,76 +232,95 @@ function Runtime({ runtime }: { runtime: RuntimeId }) {
   );
 }
 
-function Header({ sessionId, row, steps, backHref, liveState, unresolvedLoads, embedded }: { sessionId: string; row?: SessionListRow; steps: TraceStep[]; backHref: string; liveState: ViewProps["live"]["state"]; unresolvedLoads: boolean; readonly embedded: boolean }) {
+function Header({ row, steps, backHref, embedded }: { row?: SessionListRow; steps: TraceStep[]; backHref: string; readonly embedded: boolean }) {
   const Title = embedded ? "h2" : "h1";
-  const bounds = sessionBounds(steps, row);
+  const heading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    const node = heading.current;
+    if (embedded && node && node.closest(".page") === document.activeElement) node.focus({ preventScroll: true });
+  }, [embedded]);
   const counts = traceCounts(steps);
   const title = firstPromptOf(steps, row);
+  const parts = [
+    `이벤트 ${counts.steps}개`,
+    `검색 ${counts.searches}회`,
+    `읽기 ${counts.loads}회`,
+  ];
+  if (counts.reads) parts.push(`파일 읽기 ${counts.reads}회`);
+  if (counts.natives) parts.push(`내장 스킬 ${counts.natives}개`);
+  if (counts.errors) parts.push(`오류 ${counts.errors}건`);
+  return (
+    <header class="trace__head page-title">
+      <a class="trace__back" href={backHref}>
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        세션
+      </a>
+      <Title ref={heading} tabIndex={embedded ? -1 : undefined} class={title ? "trace__title" : "trace__title trace__title--dim"}>{title ?? "(요청문 기록 없음)"}</Title>
+      <p class="trace__counts">{parts.join(" \u00b7 ")}</p>
+    </header>
+  );
+}
+
+/** The source and session facts beside the event sequence: the same measured values the header used to carry, no new claim. */
+function Inspector({ sessionId, row, steps, liveState, unresolvedLoads, embedded }: { sessionId: string; row?: SessionListRow; steps: TraceStep[]; liveState: ViewProps["live"]["state"]; unresolvedLoads: boolean; readonly embedded: boolean }) {
+  const Heading = embedded ? "h3" : "h2";
+  const Sub = embedded ? "h4" : "h3";
+  const bounds = sessionBounds(steps, row);
   const runtime = row?.runtime;
   let duration: string;
   if (bounds.startedAt === undefined) duration = "-";
   else if (bounds.endedAt !== undefined) duration = formatDuration(bounds.endedAt - bounds.startedAt);
-  else if (api.mode !== "cloud" && liveState === "live") duration = `in progress \u00b7 ${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} so far`;
-  else duration = `${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} (no end recorded)`;
+  else if (api.mode !== "cloud" && liveState === "live") duration = `진행 중 \u00b7 ${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} 경과`;
+  else duration = `${formatDuration((bounds.lastTs ?? bounds.startedAt) - bounds.startedAt)} (종료 기록 없음)`;
   const attribution = row
     ? row.attribution === "none"
-      ? `unattributed \u00b7 ${row.attributionReason ?? "reason not reported"}`
+      ? `미연결 \u00b7 ${row.attributionReason ?? "사유 기록 없음"}`
       : ATTRIBUTION_LABEL[row.attribution] ?? row.attribution
     : "-";
-  const parts = [
-    `${counts.steps} ${counts.steps === 1 ? "step" : "steps"}`,
-    `${counts.searches} ${counts.searches === 1 ? "search" : "searches"}`,
-    `${counts.loads} ${counts.loads === 1 ? "load" : "loads"}`,
-  ];
-  if (counts.reads) parts.push(`${counts.reads} ${counts.reads === 1 ? "file read" : "file reads"}`);
-  if (counts.natives) parts.push(`${counts.natives} native`);
-  if (counts.errors) parts.push(`${counts.errors} ${counts.errors === 1 ? "error" : "errors"}`);
   return (
-    <header class="trace__head card">
-      <a class="trace__back" href={backHref}>
-        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        Sessions
-      </a>
-      <Title class={title ? "trace__title" : "trace__title trace__title--dim"}>{title ?? "(no prompt captured)"}</Title>
+    <aside class="trace__inspector" aria-labelledby="trace-inspector-title">
+      <Heading id="trace-inspector-title" class="trace__subtitle">세션 정보</Heading>
       <dl class="trace__meta">
         <div>
-          <dt>Runtime</dt>
-          <dd>{runtime ? <Runtime runtime={runtime} /> : <span class="trace__dim">unknown</span>}</dd>
+          <dt>실행 환경</dt>
+          <dd>{runtime ? <Runtime runtime={runtime} /> : <span class="trace__dim">알 수 없음</span>}</dd>
         </div>
         <div>
-          <dt>Started</dt>
+          <dt>시작</dt>
           <dd>{bounds.startedAt !== undefined ? <time dateTime={new Date(bounds.startedAt).toISOString()}>{dateTimeFmt.format(bounds.startedAt)}</time> : "-"}</dd>
         </div>
         <div>
-          <dt>Duration</dt>
+          <dt>소요 시간</dt>
           <dd>{duration}</dd>
         </div>
         <div>
-          <dt>Attribution</dt>
+          <dt>세션 연결</dt>
           <dd class={row?.attribution === "none" ? "trace__dim" : undefined}>{attribution}</dd>
         </div>
         {row && (
           <div>
-            <dt>Requests</dt>
-            <dd>{unresolvedLoads ? <span class="tag" data-adoption-status="uncertain">attribution unresolved</span>
+            <dt>요청</dt>
+            <dd>{unresolvedLoads ? <span class="tag" data-adoption-status="uncertain">세션 연결 미확정</span>
               : <RequestCounts summary={row.requests} />}</dd>
           </div>
         )}
         <div>
-          <dt>Session</dt>
+          <dt>세션</dt>
           <dd class="trace__id">{sessionId}</dd>
         </div>
       </dl>
-      <p class="trace__counts">{parts.join(" \u00b7 ")}</p>
-      <RequestDetails steps={steps} />
-    </header>
+      <div class="trace__scope">
+        <Sub class="trace__scope-title">확인 범위</Sub>
+        <p class="trace__note">검색과 읽기 기록은 요청 단위로 확인됩니다. 실제 적용과 작업 성공은 이 기록으로 확인되지 않습니다.</p>
+      </div>
+    </aside>
   );
 }
 
 function StepTime({ ts, startedAt }: { ts: number; startedAt?: number }) {
   const offset = startedAt !== undefined ? formatOffset(ts - startedAt) : "";
   return (
-    <time class="tl__time" dateTime={new Date(ts).toISOString()} title={new Date(ts).toLocaleString()}>
+    <time class="tl__time" dateTime={new Date(ts).toISOString()} title={new Date(ts).toLocaleString("ko-KR")}>
       <b>{timeFmt.format(ts)}</b>
       {offset && <span class="tl__offset">{offset}</span>}
     </time>
@@ -311,7 +330,7 @@ function StepTime({ ts, startedAt }: { ts: number; startedAt?: number }) {
 function PromptBody({ detail }: { detail: PromptDetail }) {
   const [open, setOpen] = useState(false);
   if (!detail.text) {
-    return <p class="tl__dim">(prompt not captured{detail.textLength !== undefined ? `, ${detail.textLength} chars` : ""})</p>;
+    return <p class="tl__dim">(요청문 기록 없음{detail.textLength !== undefined ? `, ${detail.textLength}자` : ""})</p>;
   }
   const { head, folded } = foldText(detail.text);
   return (
@@ -319,7 +338,7 @@ function PromptBody({ detail }: { detail: PromptDetail }) {
       <p class="tl__text">{open || !folded ? detail.text : `${head}\u2026`}</p>
       {folded && (
         <button type="button" class="foldbtn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-          {open ? "Show less" : `Show more (${Array.from(detail.text).length} chars)`}
+          {open ? "접기" : `더 보기 (${Array.from(detail.text).length}자)`}
         </button>
       )}
     </div>
@@ -341,9 +360,9 @@ function SaveEvalButton({ detail }: { detail: SearchDetail }) {
     <div class="tl__save">
       <button type="button" class="btn" data-save-eval={state.status} disabled={state.status === "saving" || saved} onClick={save}>
         {saved && <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>}
-        {saved ? "Saved as eval case" : state.status === "saving" ? "Saving\u2026" : "Save as eval case"}
+        {saved ? "평가 사례로 저장됨" : state.status === "saving" ? "저장 중\u2026" : "평가 사례로 저장"}
       </button>
-      {state.status === "error" && <span class="tl__err" role="alert">Could not save: {state.message}</span>}
+      {state.status === "error" && <span class="tl__err" role="alert">저장하지 못했습니다: {state.message}</span>}
     </div>
   );
 }
@@ -351,21 +370,21 @@ function SaveEvalButton({ detail }: { detail: SearchDetail }) {
 function SearchBody({ detail }: { detail: SearchDetail }) {
   const shown = detail.candidates.length;
   const countText = detail.abstained
-    ? "abstained"
-    : detail.total > shown ? `top ${shown} of ${detail.total}` : `${shown} ${shown === 1 ? "candidate" : "candidates"}`;
+    ? "추천 보류"
+    : detail.total > shown ? `전체 ${detail.total}개 중 상위 ${shown}개` : `후보 ${shown}개`;
   return (
     <div>
       <p class="tl__meta tl__meta--row">
-        <span class="tl__mode" title={`mode: ${detail.mode}`}>{MODE_LABEL[detail.mode] ?? detail.mode}</span>
+        <span class="tl__mode" title={`검색 모드: ${detail.mode}`}>{MODE_LABEL[detail.mode] ?? detail.mode}</span>
         <span>{formatMs(detail.elapsedMs)}</span>
         <span>{countText}</span>
-        {detail.traceId && <span class="tl__id" title="trace id">{detail.traceId}</span>}
+        {detail.traceId && <span class="tl__id" title="추적 ID">{detail.traceId}</span>}
       </p>
-      <blockquote class="tl__query">{detail.query || <span class="tl__dim">(empty query)</span>}</blockquote>
+      <blockquote class="tl__query">{detail.query || <span class="tl__dim">(검색어 없음)</span>}</blockquote>
       {detail.abstained ? (
         <div class="tl__abstain" data-abstained={detail.abstained.reason}>
           <div class="tl__abstain-head">
-            <span class="badge badge--succeeded">no_candidates {"\u00b7"} {ABSTAIN_LABEL[detail.abstained.reason] ?? detail.abstained.reason}</span>
+            <span class="badge badge--succeeded">후보 없음 {"\u00b7"} {ABSTAIN_LABEL[detail.abstained.reason] ?? detail.abstained.reason}</span>
           </div>
           <p class="tl__hint">{detail.abstained.hint}</p>
           <SaveEvalButton detail={detail} />
@@ -382,7 +401,7 @@ function LoadBody({ detail }: { detail: LoadDetail }) {
     <p class="tl__line">
       <span class="tl__name">{skillName(detail.uri)}</span>
       <span class="tl__uri">{detail.uri}</span>
-      {detail.manifestDigest && <span class="tl__digest" title={`manifest ${detail.manifestDigest}`}>@{shortDigest(detail.manifestDigest)}</span>}
+      {detail.manifestDigest && <span class="tl__digest" title={`명세 해시 ${detail.manifestDigest}`}>@{shortDigest(detail.manifestDigest)}</span>}
     </p>
   );
 }
@@ -392,7 +411,7 @@ function ReadBody({ detail }: { detail: ReadDetail }) {
     <p class="tl__line">
       <span class="tl__name tl__name--mono">{resourcePath(detail.skillUri, detail.uri)}</span>
       <span class="tl__meta">{formatBytes(detail.bytes)}</span>
-      {detail.skillUri && <span class="tl__meta">from {skillName(detail.skillUri)}</span>}
+      {detail.skillUri && <span class="tl__meta">출처 {skillName(detail.skillUri)}</span>}
     </p>
   );
 }
@@ -401,7 +420,7 @@ function NativeBody({ detail }: { detail: NativeDetail }) {
   return (
     <p class="tl__line">
       <span class="tl__name">{detail.name}</span>
-      <span class="tl__meta">via {detail.via}</span>
+      <span class="tl__meta">활성 경로: {detail.via}</span>
     </p>
   );
 }
@@ -427,7 +446,7 @@ function LlmBody({ step, detail }: { step: TraceStep; detail: LlmDetail }) {
       <span class="tl__name">{step.summary}</span>
       <span class="tl__meta">{formatCost(detail.costUsd)}</span>
       {detail.durationMs !== undefined && <span class="tl__meta">{formatMs(detail.durationMs)}</span>}
-      {detail.ttftMs !== undefined && <span class="tl__meta">first token {formatMs(detail.ttftMs)}</span>}
+      {detail.ttftMs !== undefined && <span class="tl__meta">첫 토큰 {formatMs(detail.ttftMs)}</span>}
     </p>
   );
 }
@@ -437,8 +456,8 @@ function ToolBody({ step, detail }: { step: TraceStep; detail: ToolDetail }) {
   return (
     <p class="tl__line">
       <span class="tl__name">{step.summary}</span>
-      {args !== undefined && <span class="tl__name tl__name--mono">{args.captured ? args.text : `${args.length} chars not captured`}</span>}
-      {detail.resultBytes !== undefined && <span class="tl__meta">result {formatBytes(detail.resultBytes)}</span>}
+      {args !== undefined && <span class="tl__name tl__name--mono">{args.captured ? args.text : `${args.length}자 기록 생략`}</span>}
+      {detail.resultBytes !== undefined && <span class="tl__meta">결과 {formatBytes(detail.resultBytes)}</span>}
     </p>
   );
 }
@@ -463,7 +482,7 @@ function StepBody({ step, bounds }: { step: TraceStep; bounds: ReturnType<typeof
     case "tool_call": return <ToolBody step={step} detail={step.detail as ToolDetail} />;
     case "error": return <ErrorBody detail={step.detail as ErrorDetail} />;
     case "session_end":
-      return bounds.startedAt !== undefined ? <p class="tl__meta">after {formatDuration(step.ts - bounds.startedAt)}</p> : null;
+      return bounds.startedAt !== undefined ? <p class="tl__meta">{formatDuration(step.ts - bounds.startedAt)} 후</p> : null;
     case "session_start":
       return null;
     default:
@@ -481,10 +500,10 @@ function Step({ step, bounds }: { step: TraceStep; bounds: ReturnType<typeof ses
       <span class={hollow ? "tl__dot tl__dot--hollow" : "tl__dot"} aria-hidden="true" />
       <div class="tl__head">
         <span class="tl__kind">{KIND_LABEL[step.kind] ?? step.kind}</span>
-        {step.kind === "native_skill" && <span class="tl__tag" title="handled by the runtime's own skill mechanism, not skillar">native</span>}
-        {skillarTool && <span class="tl__tag" title="a call to skillar's own MCP server">skillar</span>}
-        {failedTool && <span class="tl__tag tl__tag--bad">failed</span>}
-        {search?.abstained && <span class="tl__tag tl__tag--bad">abstained</span>}
+        {step.kind === "native_skill" && <span class="tl__tag" title="실행 환경의 내장 스킬 기능으로 처리한 기록입니다. skillar 호출이 아닙니다.">내장</span>}
+        {skillarTool && <span class="tl__tag" title="skillar의 MCP 서버 호출입니다.">skillar</span>}
+        {failedTool && <span class="tl__tag tl__tag--bad">실패</span>}
+        {search?.abstained && <span class="tl__tag tl__tag--bad">추천 보류</span>}
         <StepTime ts={step.ts} startedAt={bounds.startedAt} />
       </div>
       <div class="tl__body">
@@ -501,7 +520,7 @@ function SpanGroup({ item, bounds }: { item: Extract<TimelineItem, { kind: "span
       <span class="tl__dot tl__dot--hollow" aria-hidden="true" />
       <div class="tl__head">
         <span class="tl__kind">{SPAN_KIND_LABEL}</span>
-        <span class="tl__name" title={item.span.uri ?? "no skill uri reported"}>{item.span.name}</span>
+        <span class="tl__name" title={item.span.uri ?? "스킬 URI 기록 없음"}>{item.span.name}</span>
         <StepTime ts={item.span.startedAt} startedAt={bounds.startedAt} />
       </div>
       <div class="tl__body">
@@ -515,9 +534,9 @@ function SpanGroup({ item, bounds }: { item: Extract<TimelineItem, { kind: "span
 function NotFound({ sessionId, backHref }: { sessionId: string; backHref: string }) {
   return (
     <section class="empty empty--trace">
-      <h2>Session not found</h2>
-      <p>No events are recorded for <code class="cmd">{sessionId}</code>. It may have been removed by retention, or the link is stale.</p>
-      <a class="btn" href={backHref}>Back to sessions</a>
+      <h2>세션을 찾을 수 없습니다</h2>
+      <p><code class="cmd">{sessionId}</code>에 기록된 이벤트가 없습니다. 보존 기간이 지나 삭제되었거나 오래된 링크일 수 있습니다.</p>
+      <a class="btn" href={backHref}>세션으로 돌아가기</a>
     </section>
   );
 }
@@ -527,8 +546,8 @@ function NeverConsulted({ counts }: { counts: TraceCounts }) {
     <div class="callout" role="status" data-empty="never-consulted">
       <strong>{NEVER_CONSULTED}</strong>
       <span>
-        No skill search was recorded, so no candidates were ranked.
-        {counts.natives ? ` The runtime handled ${counts.natives === 1 ? "one skill" : `${counts.natives} skills`} natively.` : ""}
+        스킬 검색 기록이 없어 후보 순위를 매기지 않았습니다.
+        {counts.natives ? ` 실행 환경이 내장 스킬 ${counts.natives}개를 처리했습니다.` : ""}
       </span>
     </div>
   );
@@ -585,7 +604,7 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
   if (steps === undefined) {
     return (
       <section class="trace" aria-busy="true">
-        {error && <p class="notice" role="alert">Could not load the trace: {error}</p>}
+        {error && <p class="notice" role="alert">추적 기록을 불러오지 못했습니다: {error}</p>}
       </section>
     );
   }
@@ -594,21 +613,29 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
   const items = planTimeline(steps, report);
+  const Heading = embedded ? "h3" : "h2";
   return (
     <section class="trace" aria-busy="false">
-      {error && <p class="notice" role="alert">Live update failed: {error}</p>}
-      <Header sessionId={sessionId} row={row} steps={steps} backHref={backHref} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} embedded={embedded} />
-      {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
-      {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
-      {items.length > 0 && (
-        <div class="card tl__card">
-          <ol class="tl" aria-label="Session timeline">
-            {items.map((item, index) => (item.kind === "step"
-              ? <Step key={`${item.step.ts}-${index}-${item.step.kind}`} step={item.step} bounds={bounds} />
-              : <SpanGroup key={`${item.span.id}-${index}`} item={item} bounds={bounds} />))}
-          </ol>
+      {error && <p class="notice" role="alert">실시간 갱신 실패: {error}</p>}
+      <Header row={row} steps={steps} backHref={backHref} embedded={embedded} />
+      <div class="trace__console">
+        <Inspector sessionId={sessionId} row={row} steps={steps} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} embedded={embedded} />
+        <div class="trace__events">
+          {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
+          {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
+          {items.length > 0 && (
+            <>
+              <Heading class="trace__subtitle">이벤트 순서</Heading>
+              <ol class="tl" aria-label="세션 이벤트 순서">
+                {items.map((item, index) => (item.kind === "step"
+                  ? <Step key={`${item.step.ts}-${index}-${item.step.kind}`} step={item.step} bounds={bounds} />
+                  : <SpanGroup key={`${item.span.id}-${index}`} item={item} bounds={bounds} />))}
+              </ol>
+            </>
+          )}
+          <RequestDetails steps={steps} />
         </div>
-      )}
+      </div>
     </section>
   );
 }
@@ -619,49 +646,55 @@ function skillReportOf(sessionId: string): Promise<SessionSkillReportDto | undef
 }
 
 const TRACE_CSS = `
-.trace { display: grid; gap: var(--s-4); }
-.trace__head { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
-.trace__back { display: inline-flex; align-items: center; gap: var(--s-1); justify-self: start; min-height: 32px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; text-decoration: none; }
-.trace__back:hover { color: var(--ink); }
-.trace__title { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.01em; line-height: 1.4; }
-.trace__title--dim { color: var(--ink-3); font-style: italic; font-weight: 400; }
-.trace__meta { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin: 0; }
-.trace__meta > div { display: grid; gap: var(--s-1); align-content: start; }
-.trace__meta dt { color: var(--ink-3); font-size: var(--fs-cap); font-weight: 500; }
-.trace__meta dd { margin: 0; color: var(--ink); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.trace { display: grid; gap: var(--s-8); }
+.trace__back { display: inline-flex; align-items: center; gap: var(--s-1); justify-self: start; min-height: 44px; color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; text-decoration: none; }
+.trace__back:hover { color: var(--ink); text-decoration: underline; }
+.trace__title--dim { color: var(--ink-3); font-weight: 400; }
+.trace__counts { font-variant-numeric: tabular-nums; }
+/* Console: the event sequence beside a 260px source/session inspector; one column with the inspector first under 960px. */
+.trace__console { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: var(--s-8); }
+.trace__events { grid-column: 1; display: grid; gap: var(--s-6); align-content: start; min-width: 0; }
+.trace__inspector { grid-column: 2; grid-row: 1; display: grid; gap: var(--s-6); align-content: start; min-width: 0; padding-inline-start: var(--s-6); border-inline-start: 1px solid var(--line); }
+.trace__subtitle { margin: 0; font-size: var(--fs-section); font-weight: 600; line-height: 1.4; letter-spacing: 0; }
+.trace__inspector .trace__subtitle { font-size: var(--fs-subhead); }
+.trace__meta { display: grid; gap: var(--s-4); margin: 0; }
+.trace__meta > div { display: grid; gap: var(--s-1); align-content: start; min-width: 0; }
+.trace__meta dt { color: var(--ink-2); font-size: var(--fs-cap); }
+.trace__meta dd { margin: 0; color: var(--ink); font-size: var(--fs-body); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .trace__dim { color: var(--ink-3); }
 .trace__id { font-family: var(--font-mono); font-size: var(--fs-cap); color: var(--ink-2); }
-.trace__counts { margin: 0; color: var(--ink-3); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
+.trace__scope { display: grid; gap: var(--s-2); padding-top: var(--s-6); border-top: 1px solid var(--line); }
+.trace__scope-title { margin: 0; font-size: var(--fs-body); font-weight: 600; line-height: 1.5; }
+.trace__note { margin: 0; color: var(--ink-2); font-size: var(--fs-cap); line-height: 1.65; text-wrap: pretty; }
 .empty--trace .btn { text-decoration: none; }
-.tl__card { padding: var(--s-4) var(--s-5); }
-.tl { --dot-top: calc(var(--s-2) + 6px); list-style: none; margin: 0; padding: 0 0 0 var(--s-6); }
-.tl__step { --dot: var(--neutral); position: relative; padding-block: var(--s-2) var(--s-4); }
-.tl__step:last-child { padding-bottom: var(--s-2); }
-.tl__step::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--s-1) - 1px - var(--s-6)); width: 2px; background: var(--line-2); }
-.tl__step:first-child::before { top: var(--dot-top); }
-.tl__step:last-child::before { bottom: auto; height: var(--dot-top); }
-.tl__step:only-child::before { display: none; }
-.tl__step--prompt { --dot: var(--ink); }
-.tl__step--search { --dot: var(--accent); }
-.tl__step--load, .tl__step--read_file { --dot: var(--ok); }
-.tl__step--native_skill { --dot: var(--warn); }
-.tl__step--error { --dot: var(--bad); }
-.tl__step--span { --dot: var(--ok); }
-.tl__step--span .tl__body { display: grid; gap: var(--s-1); }
-.tl__dot { position: absolute; left: calc(-1 * var(--s-6)); top: var(--dot-top); width: var(--s-2); height: var(--s-2); border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 2px var(--surface); }
-.tl__dot--hollow { background: var(--surface); box-shadow: inset 0 0 0 2px var(--dot), 0 0 0 2px var(--surface); }
-.tl__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
-.tl__kind { color: var(--ink); font-size: var(--fs-sm); font-weight: 600; }
-.tl__tag { display: inline-flex; align-items: center; height: 18px; padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-2); color: var(--ink-2); font: 600 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.02em; text-transform: uppercase; }
-.tl__tag--bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); border-color: transparent; }
-.tl__time { display: inline-flex; gap: var(--s-2); margin-inline-start: auto; color: var(--ink-3); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Search and load requests: the shared component keeps its card class, the trace shows it flat behind a rule. */
+.trace .request-details { margin: 0; padding: var(--s-6) 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; overflow-x: auto; }
+.trace .request-details h2 { margin: 0 0 var(--s-2); font-size: var(--fs-section); font-weight: 600; line-height: 1.4; letter-spacing: 0; }
+.trace .request-details > .dim { margin: 0 0 var(--s-4); }
+.trace .request-details th { color: var(--ink-2); font-size: var(--fs-cap); font-weight: 500; }
+.trace .request-details th, .trace .request-details td { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line); }
+.trace .request-details :is(th, td):first-child { padding-inline-start: 0; }
+.trace .request-details :is(th, td):last-child { padding-inline-end: 0; }
+.trace .request-details .btn { margin-top: var(--s-4); }
+/* Event rows: time | content | state, hairline rules, no rail. The head is display: contents so its children take grid cells. */
+.tl { list-style: none; margin: 0; padding: 0; }
+.tl__step { display: grid; grid-template-columns: 82px minmax(0, 1fr) 116px; grid-auto-flow: row dense; column-gap: var(--s-4); row-gap: var(--s-1); padding: var(--s-4) 0; border-bottom: 1px solid var(--line); }
+.tl__head { display: contents; }
+.tl__dot { display: none; }
+.tl__time { grid-column: 1; grid-row: 1; display: grid; align-content: start; gap: var(--s-1); padding-top: var(--s-1); color: var(--ink-3); font-family: var(--font-mono); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; line-height: 1.5; white-space: nowrap; }
 .tl__time b { color: var(--ink-2); font-weight: 500; }
-.tl__body { margin-top: var(--s-1); color: var(--ink-2); font-size: var(--fs-sm); }
+.tl__kind { grid-column: 2; grid-row: 1; color: var(--ink); font-size: var(--fs-subhead); font-weight: 600; line-height: 1.5; }
+.tl__head > .tl__name { grid-column: 2; }
+.tl__tag { grid-column: 3; align-self: start; padding-top: var(--s-1); color: var(--ink-2); font-size: var(--fs-cap); font-weight: 500; line-height: 1.5; }
+.tl__tag--bad { color: var(--bad); }
+.tl__body { grid-column: 2; min-width: 0; color: var(--ink-2); font-size: var(--fs-cap); }
+.tl__body:empty { display: none; }
 .tl__body > :first-child { margin-top: 0; }
-.tl__text { margin: 0; color: var(--ink); white-space: pre-wrap; }
-.tl__dim { margin: 0; color: var(--ink-3); font-style: italic; }
+.tl__step--span .tl__body { display: grid; gap: var(--s-1); }
+.tl__text { margin: 0; color: var(--ink); font-size: var(--fs-body); white-space: pre-wrap; }
+.tl__dim { margin: 0; color: var(--ink-3); }
 .tl__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); margin: 0; }
-.tl__name { color: var(--ink); font-weight: 500; }
+.tl__name { color: var(--ink); font-size: var(--fs-body); font-weight: 500; }
 .tl__name--mono { font-family: var(--font-mono); font-size: var(--fs-cap); }
 .tl__uri, .tl__digest, .tl__id, .tl__code { font-family: var(--font-mono); font-size: var(--fs-cap); color: var(--ink-3); overflow-wrap: anywhere; }
 .tl__code { color: var(--bad); font-weight: 500; }
@@ -669,10 +702,10 @@ const TRACE_CSS = `
 .tl__meta { margin: 0; color: var(--ink-3); font-size: var(--fs-cap); }
 .tl__meta--row { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); }
 .tl__mode { color: var(--ink-2); font-weight: 500; }
-.tl__query { margin: var(--s-2) 0 0; padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); background: var(--wash); color: var(--ink); font-size: var(--fs-sm); }
-.tl__abstain { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.tl__query { margin: var(--s-2) 0 0; padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: var(--fs-body); }
+.tl__abstain { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); background: var(--surface); }
 .tl__abstain-head { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.tl__hint { margin: 0; color: var(--ink-2); }
+.tl__hint { margin: 0; color: var(--ink-2); font-size: var(--fs-body); }
 .tl__save { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .tl__save .btn[disabled] { cursor: default; color: var(--ink-2); }
 .tl__save .btn[data-save-eval="saved"] { color: var(--ok); }
@@ -686,9 +719,9 @@ const TRACE_CSS = `
 .cand__rank { grid-area: rank; align-self: start; color: var(--ink-3); font-size: var(--fs-cap); line-height: 1.6; font-variant-numeric: tabular-nums; text-align: right; }
 .cand__name { grid-area: name; display: flex; align-items: baseline; gap: var(--s-1); min-width: 0; color: var(--ink); font-weight: 500; }
 .cand__nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cand__root { flex: none; color: var(--ink-3); font: 500 var(--fs-micro) / 1 var(--font-mono); }
+.cand__root { flex: none; color: var(--ink-3); font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0; }
 .cand__cov { grid-area: cov; color: var(--ink-3); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cand__inv { grid-area: inv; display: inline-flex; align-items: center; height: 18px; padding: 0 var(--s-1); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink-2); font: 600 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.02em; text-transform: uppercase; }
+.cand__inv { grid-area: inv; display: inline-flex; align-items: center; min-height: 26px; padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: 0; background: var(--surface-2); color: var(--ink-2); font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0; }
 .cand__bar { grid-area: bar; display: block; height: 6px; border-radius: var(--r-full); background: var(--wash-2); overflow: hidden; }
 .cand__fill { display: block; height: 100%; border-radius: inherit; background: color-mix(in srgb, var(--ink) 35%, transparent); }
 .cand--chosen .cand__fill { background: var(--ok); }
@@ -696,10 +729,21 @@ const TRACE_CSS = `
 .cand__pick { grid-area: pick; display: grid; place-items: center; width: var(--s-5); height: var(--s-5); color: var(--ok); }
 .cand__desc { grid-area: desc; color: var(--ink-3); font-size: var(--fs-cap); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cand__matched { color: var(--ink-2); }
+@media (max-width: 959.98px) {
+  .trace__console { grid-template-columns: minmax(0, 1fr); }
+  .trace__inspector, .trace__events { grid-column: 1; }
+  .trace__inspector { grid-row: auto; padding-inline-start: 0; border-inline-start: 0; padding-top: var(--s-6); border-top: 1px solid var(--line); }
+  .trace__meta { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
+}
 @media (max-width: 639.98px) {
-  .trace__head, .tl__card { padding: var(--s-4); }
-  .trace__meta { gap: var(--s-3) var(--s-5); }
-  .tl__time { flex-basis: 100%; margin-inline-start: 0; }
+  .trace .request-details table, .trace .request-details tbody { display: block; }
+  .trace .request-details thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .trace .request-details tbody tr { display: grid; gap: var(--s-3); padding: var(--s-4) 0; border-bottom: 1px solid var(--line); }
+  .trace .request-details td { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-3); padding: 0; border: 0; text-align: left; overflow-wrap: anywhere; }
+  .trace .request-details td::before { content: attr(data-label); color: var(--ink-2); font-size: var(--fs-cap); font-weight: 500; overflow-wrap: normal; }
+  .trace .request-details td > .badge { justify-self: start; }
+  .tl__step { grid-template-columns: 72px minmax(0, 1fr); column-gap: var(--s-3); }
+  .tl__tag { grid-column: 2; padding-top: 0; }
   .cand { grid-template-columns: var(--s-5) minmax(0, 1fr) auto 2.6em var(--s-5); grid-template-areas: "rank name inv score pick" "rank bar bar cov cov" "rank desc desc desc desc"; row-gap: var(--s-1); }
   .cand__cov { text-align: right; }
   .cand__desc { white-space: normal; }

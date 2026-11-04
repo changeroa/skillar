@@ -21,7 +21,7 @@ export type LaidOutLink = FlowLink & { index: number; width: number; y0: number;
 export type FlowLayout = { nodes: LaidOutNode[]; links: LaidOutLink[] };
 export type LayoutOptions = { width: number; height: number; top?: number; nodeWidth?: number; nodePadding?: number };
 
-export const COLUMN_TITLE: Record<FlowDto["columns"][number], string> = { task_type: "Task type", skill: "Skill", state: "Outcome" };
+export const COLUMN_TITLE: Record<FlowDto["columns"][number], string> = { task_type: "작업 유형", skill: "스킬", state: "결과" };
 export const STATE_VALUES: ReadonlySet<string> = new Set<AdoptionState>(["loaded", "exposed_only", "no_match", "aborted", "not_used", ...REQUEST_STATUSES]);
 
 const NODE_WIDTH = 10;
@@ -39,10 +39,19 @@ export function nodeValue(node: Pick<FlowNode, "id">): string {
   return i < 0 ? node.id : node.id.slice(i + 1);
 }
 
+/** Translate generic buckets by their identity; a recorded name with the same spelling stays exact. */
+export function genericLabel(node: FlowNode): string {
+  const value = nodeValue(node);
+  if (node.other) return node.label.replace(/^Other(?= \(\d+\)$|$)/, "기타");
+  if (node.column === 0 && value === "unclassified") return "분류 없음";
+  if (node.column === 1 && value === "(none)") return "(스킬 없음)";
+  return node.label;
+}
+
 /** Outcome nodes carry the raw state as their label; show the same wording as the badges and the legend. */
 export function displayLabel(node: FlowNode): string {
   const value = nodeValue(node);
-  return node.column === 2 && STATE_VALUES.has(value) ? STATE_LABEL[value as AdoptionState] : node.label;
+  return node.column === 2 && STATE_VALUES.has(value) ? STATE_LABEL[value as AdoptionState] : genericLabel(node);
 }
 
 export function share(count: number, total: number): number {
@@ -166,16 +175,21 @@ function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, Math.max(1, max - 1))}\u2026` : text;
 }
 
+/** "요청 12건" or "세션 3개", whichever the DTO counts. */
+function countText(dto: FlowDto, count: number): string {
+  return dto.requestCount !== undefined ? `요청 ${count}건` : `세션 ${count}개`;
+}
+
 function describe(dto: FlowDto, target: FlowTarget): { title: string; sub: string } {
   if (target.kind === "node") {
     const { node } = target;
-    return { title: displayLabel(node), sub: `${node.count} ${dto.requestCount !== undefined ? "requests" : node.count === 1 ? "session" : "sessions"} \u00b7 ${percent(node.count, (dto.requestCount ?? dto.sessionCount))}` };
+    return { title: displayLabel(node), sub: `${countText(dto, node.count)} \u00b7 ${percent(node.count, (dto.requestCount ?? dto.sessionCount))}` };
   }
   const label = new Map(dto.nodes.map((n) => [n.id, displayLabel(n)]));
   const { link } = target;
   return {
     title: `${label.get(link.source) ?? link.source} \u2192 ${label.get(link.target) ?? link.target}`,
-    sub: `${STATE_LABEL[link.state] ?? link.state} \u00b7 ${link.count} ${dto.requestCount !== undefined ? "requests" : link.count === 1 ? "session" : "sessions"} \u00b7 ${percent(link.count, (dto.requestCount ?? dto.sessionCount))}`,
+    sub: `${STATE_LABEL[link.state] ?? link.state} \u00b7 ${countText(dto, link.count)} \u00b7 ${percent(link.count, (dto.requestCount ?? dto.sessionCount))}`,
   };
 }
 
@@ -280,7 +294,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   return (
     <div class="sankey" ref={wrap} style={{ minHeight: `${height}px` }}>
       {layout.nodes.length > 0 && (
-        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`Flow of ${(dto.requestCount ?? dto.sessionCount)} ${dto.requestCount !== undefined ? "requests" : "sessions"} from task type to skill to outcome`}>
+        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`작업 유형에서 스킬, 결과로 이어지는 ${countText(dto, dto.requestCount ?? dto.sessionCount)}의 사용 흐름`}>
           <g aria-hidden="true">
             <text class="sankey__head" x={0} y={10}>{COLUMN_TITLE[dto.columns[0]]}</text>
             <text class="sankey__head sankey__head--mid" x={plotWidth / 2} y={10}>{COLUMN_TITLE[dto.columns[1]]}</text>
@@ -294,7 +308,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const dest = nodeById.get(link.target);
               const on = !lit || lit.links.has(link.index);
               const path = <path class={`sankey__link is-${link.state}${on ? " is-on" : ""}`} d={link.path} stroke-width={Math.max(1, link.width)} />;
-              const label = `${source ? displayLabel(source) : link.source} to ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${link.count} ${dto.requestCount !== undefined ? "requests" : "sessions"} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
+              const label = `${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, { x: ((source?.x1 ?? 0) + (dest?.x0 ?? plotWidth)) / 2, y: (link.y0 + link.y1) / 2 });
               return href
                 ? <a key={`l${link.index}`} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{path}</a>
@@ -320,7 +334,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
                   </text>
                 </>
               );
-              const label = `${displayLabel(node)}: ${node.count} ${dto.requestCount !== undefined ? "requests" : "sessions"} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})`;
+              const label = `${displayLabel(node)}: ${countText(dto, node.count)} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, { x: end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP, y: (node.y0 + node.y1) / 2 });
               if (href) return <a key={node.id} class={cls} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{body}</a>;
               if (expandable) {
@@ -330,7 +344,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
                     class={cls}
                     role="button"
                     tabindex={0}
-                    aria-label={`${node.label}: show up to 15 per column`}
+                    aria-label={`${displayLabel(node)}: 열별 최대 15개까지 표시`}
                     onClick={() => onExpandOther?.()}
                     onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onExpandOther?.(); } }}
                     {...handlers}
