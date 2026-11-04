@@ -100,6 +100,7 @@ type SignedInProps = {
 };
 
 function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, onRebuild, onUnauthorized }: SignedInProps) {
+  const sourcePicker = useRef<HTMLDetailsElement>(null);
   const [profiles, reloadProfiles] = useLoad<DashboardProfiles>(readProfiles, "Loading sources", signal, onUnauthorized);
   const [devices, reloadDevices] = useLoad(loadDevices, "Loading devices", signal, onUnauthorized);
   const reload = () => {
@@ -131,10 +132,13 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       <div class="dash-workspace">
         <aside class="dash-sources" aria-label="활동 출처">
           {selected !== null && <p class="dash-source-current">출처 <code>{selected.sourceDomain}</code></p>}
-          <details class="dash-source-picker" open={selected === null}>
+          <details ref={sourcePicker} class="dash-source-picker" open={selected === null}>
             <summary>{selected === null ? "출처 선택" : "출처 변경 및 상세"}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
-              message={loadMessage(profiles, "Loading sources\u2026")} onSelect={onSelect} onReload={reload} />
+              message={loadMessage(profiles, "Loading sources\u2026")} onSelect={profile => {
+                if (sourcePicker.current) sourcePicker.current.open = false;
+                onSelect(profile);
+              }} onReload={reload} />
           </details>
         </aside>
         <div class="dash-activity">
