@@ -1,4 +1,5 @@
 import { h } from "preact";
+import type { JSX } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type {
   PrivateSkillDetail, PrivateSkillDigest, PrivateSkillHead, PrivateSkillId, PrivateSkillManifest, PrivateSkillPackage,
@@ -37,8 +38,28 @@ type DraftState =
   | { readonly status: "ready"; readonly draft: Draft; readonly baseline: Draft; readonly resources: Resources }
   | { readonly status: "failed"; readonly message: string };
 type Note = { readonly text: string; readonly technical: string | null };
+type Pending = { readonly kind: "skill" } | { readonly kind: "version"; readonly digest: PrivateSkillDigest };
+export type DeleteTarget = { readonly kind: "skill"; readonly name: string } | { readonly kind: "version"; readonly digest: PrivateSkillDigest };
 
 const silent: Note = { text: "", technical: null };
+
+/** The text a person must type before "Confirm delete" is enabled. A pointer alone can never produce it, so repeated clicks cannot delete. */
+export function confirmationText(target: DeleteTarget): string {
+  return target.kind === "skill" ? target.name : target.digest.slice(0, 8);
+}
+
+/** Skill names match exactly after trimming and Unicode normalisation; a digest prefix is hex, so its case does not matter. */
+export function confirmsDeletion(target: DeleteTarget, typed: string): boolean {
+  const expected = confirmationText(target);
+  const input = typed.trim().normalize();
+  if (input === "") return false;
+  return target.kind === "skill" ? input === expected.trim().normalize() : input.toLowerCase() === expected.toLowerCase();
+}
+
+/** The trigger that opened a confirmation gets focus back when it closes; it is looked up by id because closing re-renders it. */
+function triggerId(pending: Pending): string {
+  return pending.kind === "skill" ? "skill-delete" : `version-delete-${pending.digest.slice(0, 16)}`;
+}
 
 function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
@@ -78,12 +99,10 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
   const [deleteNote, setDeleteNote] = useState<Note>(silent);
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState(false);
-  const [confirmingSkill, setConfirmingSkill] = useState(false);
-  const [confirmingDigest, setConfirmingDigest] = useState<PrivateSkillDigest | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [typed, setTyped] = useState("");
   const heading = useRef<HTMLHeadingElement | null>(null);
-  const keepSkill = useRef<HTMLButtonElement | null>(null);
-  const deleteSkillTrigger = useRef<HTMLButtonElement | null>(null);
-  const keepVersion = useRef<HTMLButtonElement | null>(null);
+  const confirmField = useRef<HTMLInputElement | null>(null);
   const draftRef = useRef<DraftState>(draftState);
   draftRef.current = draftState;
 
@@ -140,8 +159,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     setVersionsNote(silent);
     setDeleteNote(silent);
     setConflict(false);
-    setConfirmingSkill(false);
-    setConfirmingDigest(null);
+    setPending(null);
     readSkill(skillId, signal).then(next => {
       if (!active) return;
       setDetailState({ status: "ready", detail: next });
@@ -163,17 +181,17 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
   }, [focusHeading]);
 
   useLayoutEffect(() => {
-    if (!confirmingSkill) return;
-    keepSkill.current?.focus();
-    return () => deleteSkillTrigger.current?.focus();
-  }, [confirmingSkill]);
+    if (pending === null) return;
+    confirmField.current?.focus();
+    const trigger = triggerId(pending);
+    return () => (document.getElementById(trigger) ??
+      (pending.kind === "version" ? document.getElementById("versions-title") : null))?.focus();
+  }, [pending]);
 
-  useLayoutEffect(() => {
-    if (confirmingDigest === null) return;
-    keepVersion.current?.focus();
-    const id = `version-delete-${confirmingDigest.slice(0, 16)}`;
-    return () => document.getElementById(id)?.focus();
-  }, [confirmingDigest]);
+  const openConfirmation = (next: Pending) => {
+    setTyped("");
+    setPending(next);
+  };
 
   const run = async (action: string, task: () => Promise<PrivateSkillDetail>) => {
     setBusy(true);
@@ -194,7 +212,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       setVersionsNote(failureNote(error, action));
     } finally {
       setBusy(false);
-      setConfirmingDigest(null);
+      setPending(null);
     }
   };
 
@@ -296,8 +314,29 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       setDeleteNote(failureNote(error, "Deleting the skill"));
     } finally {
       setBusy(false);
-      setConfirmingSkill(false);
+      setPending(null);
     }
+  };
+
+  const confirmation = (target: DeleteTarget, consequence: string, keepLabel: string, onConfirm: () => unknown) => {
+    const id = target.kind === "skill" ? "confirm-delete-skill" : `confirm-delete-${target.digest.slice(0, 16)}`;
+    const armed = !busy && confirmsDeletion(target, typed);
+    return h("div", { class: "editor", role: "group", "aria-labelledby": `${id}-consequence`,
+      onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== "Escape" || busy) return;
+        event.preventDefault();
+        setPending(null);
+      } },
+      h("p", { id: `${id}-consequence`, class: "note" }, consequence),
+      h("label", { class: "field-label", for: id },
+        h("span", null, target.kind === "skill" ? "To confirm, type the skill name " : "To confirm, type the first 8 characters of this version's digest ",
+          h("code", { class: "version__digest" }, confirmationText(target))),
+        h("input", { id, ref: confirmField, class: "text-field", type: "text", autocomplete: "off", autocapitalize: "off", spellcheck: false,
+          value: typed, disabled: busy, "aria-describedby": `${id}-consequence`,
+          onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setTyped(event.currentTarget.value) })),
+      h("div", { class: "cluster" },
+        h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => setPending(null) }, keepLabel),
+        h("button", { class: "button primary", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "Confirm delete")));
   };
 
   const title = name === "" ? "Skill" : `Skill: ${name}`;
@@ -317,7 +356,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     const current = head !== null && version.digest === head.digest;
     const protectedReason = current ? "This is the current version; make another version current before deleting it."
       : version.pinned ? "This version is pinned; unpin it before deleting it." : null;
-    const confirming = confirmingDigest === version.digest;
+    const confirming = pending?.kind === "version" && pending.digest === version.digest;
     const rowId = `version-${version.digest.slice(0, 16)}`;
     return h("li", { key: version.digest, class: "version", "aria-labelledby": rowId },
       h("div", { class: "version__meta" },
@@ -336,14 +375,10 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
           version.pinned ? "Unpin" : "Pin"),
         h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => exportVersion(version.digest) }, "Export JSON"),
         protectedReason === null && head !== null && (confirming
-          ? [
-            h("button", { key: "confirm", class: "button primary", type: "button", disabled: busy,
-              onClick: () => run("Deleting the version", () => deleteVersion(skillId, head, version.digest, signal)) }, "Confirm delete"),
-            h("button", { key: "keep", ref: keepVersion, class: "button secondary", type: "button", disabled: busy, onClick: () => setConfirmingDigest(null) }, "Keep version"),
-            h("span", { key: "note", class: "note version__warning" }, "Deleting removes this version's files from your account. It cannot be undone."),
-          ]
-          : h("button", { id: `version-delete-${version.digest.slice(0, 16)}`, class: "button secondary", type: "button", disabled: busy,
-            onClick: () => setConfirmingDigest(version.digest) }, "Delete version\u2026")),
+          ? confirmation({ kind: "version", digest: version.digest }, "Deleting removes this version's files from your account. It cannot be undone.", "Keep version",
+            () => run("Deleting the version", () => deleteVersion(skillId, head, version.digest, signal)))
+          : h("button", { id: triggerId({ kind: "version", digest: version.digest }), class: "button secondary", type: "button", disabled: busy,
+            onClick: () => openConfirmation({ kind: "version", digest: version.digest }) }, "Delete version\u2026")),
         protectedReason !== null && h("span", { class: "note version__protected" }, protectedReason)));
   };
 
@@ -380,19 +415,17 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
           onClick: () => loadDraft(head) }, "Discard edits and load the current version"),
         h(NoteLine, { note: publishNote }))),
     detail !== null && h("section", { class: "skill__section", "aria-labelledby": "versions-title" },
-      h("h3", { id: "versions-title", class: "panel__subtitle" }, "Versions"),
+      h("h3", { id: "versions-title", class: "panel__subtitle", tabIndex: -1 }, "Versions"),
       h("p", { class: "note" }, "Make current restores an older version as the one agents will get; pinning keeps a version from being deleted. Each version can be exported as JSON."),
       h("div", { class: "cluster versions__note" }, h(NoteLine, { note: versionsNote })),
       h("ul", { class: "version-list" }, detail.versions.map(versionRow))),
     detail !== null && h("section", { class: "skill__section skill__danger", "aria-labelledby": "delete-title" },
       h("h3", { id: "delete-title", class: "panel__subtitle" }, "Delete this skill"),
       h("p", { class: "note" }, "Deleting removes every version of this skill from your account. Export anything you want to keep first."),
-      h("div", { class: "cluster" }, confirmingSkill
-        ? [
-          h("button", { key: "confirm", class: "button primary", type: "button", disabled: busy, onClick: removeSkill }, "Confirm delete"),
-          h("button", { key: "keep", ref: keepSkill, class: "button secondary", type: "button", disabled: busy, onClick: () => setConfirmingSkill(false) }, "Keep skill"),
-          h("span", { key: "note", class: "note" }, `This deletes ${detail.versions.length} ${detail.versions.length === 1 ? "version" : "versions"}. It cannot be undone.`),
-        ]
-        : h("button", { ref: deleteSkillTrigger, class: "button secondary", type: "button", disabled: busy, onClick: () => setConfirmingSkill(true) }, "Delete skill\u2026"),
+      h("div", { class: "cluster" }, pending?.kind === "skill"
+        ? confirmation({ kind: "skill", name }, `This deletes ${detail.versions.length} ${detail.versions.length === 1 ? "version" : "versions"}. It cannot be undone.`,
+          "Keep skill", removeSkill)
+        : h("button", { id: triggerId({ kind: "skill" }), class: "button secondary", type: "button", disabled: busy, onClick: () => openConfirmation({ kind: "skill" }) },
+          "Delete skill\u2026"),
         h(NoteLine, { note: deleteNote }))));
 }
