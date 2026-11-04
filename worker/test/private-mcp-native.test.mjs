@@ -41,6 +41,8 @@ test("native MCP preserves complete Unicode frontmatter and exact BOM text and b
   const issued = await f.pat();
   const discovery = completed(await f.mcp(issued.token, "server/discover"));
   assert.deepEqual(discovery.capabilities.extensions["io.modelcontextprotocol/skills"], {});
+  assert.equal(discovery.capabilities.tools.listChanged, false);
+  assert.equal(discovery.capabilities.resources.listChanged, false);
   const listed = completed(await f.mcp(issued.token, "skills/list"));
   assert.equal(listed.skills.length, 1);
   assert.equal(listed.skills[0].uri, wire(value));
@@ -113,6 +115,18 @@ test("native standard resource listing pages above fifty without dropping cursor
   assert.equal(next.nextCursor, undefined);
   assert.equal(new Set([...first.resources, ...next.resources].map(file => file.uri)).size, 56);
   assert.ok((await f.mcp(issued.token, "skills/list", { cursor: first.nextCursor })).body.error);
+});
+
+test("per-request MCP subscriptions finish without advertising undeliverable changes", { timeout: 10000 }, async t => {
+  const f = await fixture(t), issued = await f.pat();
+  const response = await f.mcp(issued.token, "subscriptions/listen", { notifications: {
+    toolsListChanged: true, resourcesListChanged: true, promptsListChanged: true,
+    resourceSubscriptions: ["skill://private/not-published"],
+  } });
+  const result = completed(response);
+  assert.equal(result?.resultType, "complete");
+  const acknowledged = response.messages.find(message => message.method === "notifications/subscriptions/acknowledged");
+  assert.deepEqual(acknowledged.params.notifications, {});
 });
 
 test("the actual OAuth resource wrapper supports the SDK legacy transport", async t => {

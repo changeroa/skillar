@@ -52,7 +52,11 @@ function skillVersions(catalog: McpCatalog) {
 /** Fresh factory per exchange; only the native SDK parses and dispatches JSON-RPC. */
 export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext): McpServer {
   const backend = mcpBackend(env, context);
-  const server = new McpServer({ name: "skillar", version: "0.2.0" }, { instructions });
+  const server = new McpServer({ name: "skillar", version: "0.2.0" }, {
+    instructions,
+    // Per-request servers have no shared change-event bus; clients refresh by request.
+    capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
+  });
   const revision = (catalog: McpCatalog) =>
     `${context.principal.accountId}:${context.principal.generation}:${catalog.revision}`;
   async function entry(value: { readonly uri: string; readonly version: Version }, signal: AbortSignal) {
