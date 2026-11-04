@@ -106,6 +106,14 @@ before deletion. The native source-retention suite covers exact boundaries,
 shorter grants, late PUT, failed DELETE, newer facts, tombstones, closed fences,
 and 128-chunk reads within 640 D1 binding RPCs.
 
+Authorized exact CDC retries recover the original receipt even after content
+expiry, without reading or recreating R2 bytes, renewing age, or reprojecting
+scrubbed mutations. The connector proceeds from an expired chunk response to
+that exact receipt check. A changed hash conflicts, revoked generations remain
+denied, and an expired batch with no committed receipt remains pending rather
+than advancing its local cursor. The lost-ACK regression also sends the next
+fresh CDC batch after recovery.
+
 ### 3.2 Runtime TTL
 
 Runtime uses server `received_at_ms` in `runtime-api.ts`, and
@@ -180,7 +188,7 @@ Rollback must never bring back data a user deleted.
 
 | Item | Where | Status |
 | --- | --- | --- |
-| P14 unit/integration tests | Worker, Site, Shared, Local suites and compilers | 645 Worker, 201 Site, 94 Shared, 907 Local plus performance test pass |
+| P14 unit/integration tests | Worker, Site, Shared, Local suites and compilers | 645 Worker, 201 Site, 94 Shared, 909 Local plus performance test pass |
 | P14 UI control captures | `.omo/evidence/skillar-parity-p14-controls/*.png`, `skillar-parity-p14-controls-qa.json` | 24 captures reviewed; desktop/390 px, light/dark, final focus repair verified |
 | Replay benchmark | `worker/scripts/parity-replay-benchmark.mjs`, `.omo/evidence/skillar-parity-p14-replay.json` | 10/100/1000 pass; billing and CPU remain unmeasured |
 | P13 release record | `.omo/evidence/skillar-parity-p13-release.json` | Merged d9c2af0, deployed Activity only |

@@ -131,7 +131,8 @@ test("exact retry preserves age receipts source cursor and newer typed metadata"
   for (const [table, rows] of Object.entries(retained)) assert.deepEqual(await f.rows(`SELECT * FROM ${table}`), rows);
   assert.equal((await exported(f)).body.error, "content_expired");
   assert.equal((await f.send("chunk", p.uploads[0])).body.error, "content_expired");
-  assert.equal((await f.send("cdc", p.batch)).status, 409);
+  assert.deepEqual(await f.send("cdc", p.batch), accepted);
+  assert.equal((await f.send("cdc", { ...p.batch, contentHash: "0".repeat(64) })).body.error, "batch_conflict");
   assert.equal((await f.rows("SELECT count(*) n FROM ingest_receipts"))[0].n, 2);
   assert.equal((await f.send("readCdc", { sourceDomain: "source", batchId: "newer" })).status, 200);
 });
@@ -167,8 +168,17 @@ for (const closed of [false, true]) test(`source retirement preserves fences and
     receipts[0].metadata_json = JSON.stringify(metadata);
   }
   assert.deepEqual(after, receipts);
-  assert.equal((await f.send("cdc", p.batch)).status, closed ? 403 : 409);
+  assert.equal((await f.send("cdc", p.batch)).status, closed ? 403 : 200);
   assert.equal((await f.rows("SELECT * FROM session_facts")).length, closed ? 1 : 0);
+  if (!closed) {
+    const next = await packet(document(8), {
+      batchId: "after-expiry", sequence: 2, from: 7, through: 8,
+      metadataMutations: [{ ...mutations[0], revision: 8 }],
+    });
+    assert.equal((await f.upload(next)).status, 200);
+    assert.equal((await f.rows("SELECT revision FROM session_facts"))[0].revision, 8);
+    assert.deepEqual(await f.rows("SELECT * FROM entity_tombstones"), tombstones);
+  }
 });
 
 test("terminal source identity catches late PUT and DELETE failure without resurrection", async t => {

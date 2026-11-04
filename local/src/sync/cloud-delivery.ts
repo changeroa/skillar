@@ -3,6 +3,7 @@ import { CloudSyncError } from "./cloud-blobs.js";
 import type { CloudBlobs } from "./cloud-blobs.js";
 import type { BlobReference } from "./cloud-documents.js";
 import { sha256 } from "./cloud-documents.js";
+import { CloudRequestError } from "./cloud-http.js";
 import type { CloudHttp } from "./cloud-http.js";
 import { requireJob } from "./cloud-jobs.js";
 import {
@@ -59,7 +60,15 @@ export async function deliverCloudJob(blobs: CloudBlobs, http: CloudHttp, batch:
       if (body.sequence !== batch.sequence || body.batchId !== batch.batch_id ||
           body.journal.from !== batch.journal_from || body.journal.through !== batch.journal_through ||
           sha256(JSON.stringify(body)) !== job.payloadHash) throw new CloudSyncError("invalid_spool_job");
-      await upload(blobs, http, job.refs, body.chunks);
+      try {
+        await upload(blobs, http, job.refs, body.chunks);
+      } catch (error) {
+        // Expired chunks can belong to an accepted batch whose ACK was lost.
+        // Only the exact receipt below can acknowledge it; otherwise stay pending.
+        if (!(error instanceof CloudRequestError && error.status === 409 && error.code === "content_expired")) {
+          throw error;
+        }
+      }
       const receipt = receiptSchema.parse(await request(blobs, http, "/v1/activity/batches", job.body));
       if (receipt.batchId !== body.batchId || receipt.sequence !== body.sequence ||
           receipt.payloadHash !== job.payloadHash || receipt.projectedThrough !== body.journal.through) {
