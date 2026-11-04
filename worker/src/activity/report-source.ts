@@ -10,6 +10,7 @@ import { exportMigration } from "./migrations.ts";
 import { ReportError } from "./report-types.ts";
 import type { ReportEnv } from "./report-types.ts";
 import type { IngestPrincipal } from "./types.ts";
+import { sourceBatchExpiry } from "./content-retention.ts";
 
 const key = (row: ContentRow) => `${row.table}\0${row.key}`;
 const MIN_TIME = -8_640_000_000_000_000, MAX_TIME = 8_640_000_000_000_000;
@@ -17,22 +18,18 @@ export async function inputBatchExpiry(
   env: ReportEnv, principal: IngestPrincipal, sourceDomain: string, batchId: string,
   consentVersion: number, full: boolean,
 ) {
-  const [saved, uploaded] = await Promise.all([
-    env.ACCOUNTS.prepare(`SELECT consent_json FROM device_consents
+  const saved = await env.ACCOUNTS.prepare(`SELECT consent_json FROM device_consents
       WHERE account_id=? AND device_id=? AND generation=? AND version=?`)
-      .bind(principal.accountId, principal.deviceId, principal.generation, consentVersion).first(),
-    env.ACTIVITY.prepare(`SELECT min(created_at) AS created_at FROM content_uploads
-      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND batch_id=?
-        AND state='committed'`)
-      .bind(principal.accountId, principal.generation, principal.deviceId, sourceDomain, batchId).first(),
-  ]);
+      .bind(principal.accountId, principal.deviceId, principal.generation, consentVersion).first();
   if (saved === null) throw new ReportError("source_gap");
   const grant = consentSchema.parse(JSON.parse(z.object({ consent_json: z.string() }).parse(saved).consent_json));
   if (grant.mode !== "managed-content" || (full && !contentKinds.every(kind => grant.contentKinds.includes(kind)))) {
     throw new ReportError("source_gap");
   }
-  const created = z.object({ created_at: z.number() }).parse(uploaded).created_at;
-  const expires = Math.min(MAX_TIME, created + grant.retention.contentDays * 86_400_000);
+  const expires = await sourceBatchExpiry(env, {
+    account_id: principal.accountId, generation: principal.generation,
+    device_id: principal.deviceId, source_domain: sourceDomain, batch_id: batchId,
+  }, consentVersion);
   if (expires <= Date.now()) throw new ReportError("report_expired", 410);
   return expires;
 }

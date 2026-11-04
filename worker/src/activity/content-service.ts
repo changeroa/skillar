@@ -11,6 +11,7 @@ import {
 import type { ContentEnv } from "./content-env.ts";
 import { ContentStorageError } from "./content-keys.ts";
 import { readChunkBytes } from "./content-objects.ts";
+import { requireChunkReadable, sourceBatchExpiry } from "./content-retention.ts";
 import { commitActivityBatch } from "./ledger.ts";
 import { ActivityLedgerError } from "./types.ts";
 import type { IngestPrincipal } from "./types.ts";
@@ -43,6 +44,7 @@ async function assemble(env: ContentEnv, principal: IngestPrincipal, manifest: M
     throw new ContentStorageError("content_conflict", 409);
   }
   const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(plaintext));
+  for (const part of manifest.chunks) await requireChunkReadable(env, principal, part.objectKey);
   return value;
 }
 
@@ -56,6 +58,14 @@ export async function acceptContentBatch(
   const stored = await uploadedChunks(env.ACTIVITY, principal, batch);
   const scopeHash = await contentScopeHash(batch);
   if (stored.length !== batch.chunks.length) throw new ContentStorageError("content_missing", 409);
+  const retention = async () => {
+    const expiresAt = await sourceBatchExpiry(env, {
+      account_id: principal.accountId, generation: principal.generation,
+      device_id: principal.deviceId, source_domain: batch.sourceDomain, batch_id: batch.batchId,
+    }, batch.consentVersion);
+    if (expiresAt <= Date.now()) throw new ContentStorageError("content_expired", 409);
+  };
+  await retention();
   const chunks = batch.chunks.map((part, index) => {
     const object = stored[index];
     if (object === undefined || !["stored", "committed"].includes(object.state) ||
@@ -81,6 +91,7 @@ export async function acceptContentBatch(
   // Consent is checked again after all awaited R2 reads, before the final
   // same-shard generation-fenced receipt/manifest/projection transaction.
   await requireContentConsent(env.ACCOUNTS, principal, contentScope(batch));
+  await retention();
   return commitActivityBatch(env.ACTIVITY, {
     principal, receivedAtMs: Date.now(),
     batch: {

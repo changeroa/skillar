@@ -102,7 +102,8 @@ export async function reportResult(env: ReportEnv, principal: IngestPrincipal, i
   return { index: part, bytes: result.bytes.length, hash: result.hash, body: btoa(binary) };
 }
 /** Recover queued dispatch after a crash; no plaintext request or result enters the Workflow parameters. */
-export async function dispatchPendingReports(env: ReportEnv) {
+export async function dispatchPendingReports(env: ReportEnv, limit = 20) {
+  const bounded = z.number().int().min(1).max(20).parse(limit);
   if (!env.REPORT_FLOW) return { dispatched: 0 };
   const rows = z.array(reportJobSchema).parse((await env.ACTIVITY.prepare(
     `SELECT j.* FROM report_jobs j JOIN tenant_fences f ON f.account_id=j.account_id
@@ -111,8 +112,8 @@ export async function dispatchPendingReports(env: ReportEnv) {
         j.request_chunks=(SELECT count(*) FROM report_objects o WHERE o.account_id=j.account_id
           AND o.generation=j.generation AND o.device_id=j.device_id AND o.source_domain=j.source_domain
           AND o.job_id=j.job_id AND o.role='request' AND o.state IN ('stored','committed')))
-      ORDER BY j.dispatch_order,j.created_at,j.job_id LIMIT 20`,
-  ).bind(Date.now(), Date.now()).all()).results);
+      ORDER BY j.dispatch_order,j.created_at,j.job_id LIMIT ?`,
+  ).bind(Date.now(), Date.now(), bounded).all()).results);
   let dispatched = 0;
   for (const row of rows) {
     const principal = reportPrincipal({ ...referenceOf(row), accountId: row.account_id });

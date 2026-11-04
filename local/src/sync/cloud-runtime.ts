@@ -70,6 +70,7 @@ export function requestRuntimeCapture(
 const jobSchema = z.strictObject({
   kind: z.literal("runtime"), body: z.string(), refs: z.array(blobReferenceSchema),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  preparedAtMs: z.number().int().optional(),
 });
 const receiptSchema = z.strictObject({
   sequence: z.number().int().positive(), sourceCut: z.number().int().nonnegative(),
@@ -77,6 +78,7 @@ const receiptSchema = z.strictObject({
 });
 const rememberedSchema = z.strictObject({
   instanceId: z.string(), streamId: z.string(), sequence: z.number().int().positive(), fingerprint: z.string(),
+  preparedAtMs: z.number().int().optional(), consentVersion: z.number().int().optional(),
 });
 export const runtimeStream = (instanceId: string, sourceDomain: string) =>
   `cloud-runtime:${instanceId}:${sourceDomain}`;
@@ -103,7 +105,7 @@ function authorize(consent: Consent, commit: RuntimeCommit): void {
 export async function runCloudRuntimeStep(
   home: string, sourcePath: string, progress: CloudProgress,
   capture: (request: z.infer<typeof runtimeCaptureRequestSchema>) => Promise<RuntimeCapture | null>,
-  options: { readonly fetcher?: typeof fetch } = {},
+  options: { readonly fetcher?: typeof fetch; readonly now?: () => number } = {},
 ): Promise<CloudProgress> {
   if (progress.phase !== "caught-up" || progress.sourceDomain === undefined ||
       progress.acknowledgedCut === undefined) return progress;
@@ -156,7 +158,14 @@ export async function runCloudRuntimeStep(
         ? rememberedSchema.parse(JSON.parse(readFileSync(statePath, "utf8"))) : null;
       if (remembered?.instanceId === connection.instanceId && remembered.streamId === streamId &&
           remembered.sequence === blobs.cursor(streamId)?.ack_sequence &&
-          remembered.fingerprint === fingerprint) return progress;
+          remembered.fingerprint === fingerprint && remembered.consentVersion === scope.consentVersion &&
+          remembered.preparedAtMs !== undefined &&
+          (options.now?.() ?? Date.now()) - remembered.preparedAtMs <
+            Math.min(self.consent.retention.contentDays, self.consent.retention.projectionDays) *
+              86_400_000 / 2) return progress;
+      // Start the renewal clock before upload, not at ACK: a lost receipt may
+      // leave an exact pending request retrying long after remote acceptance.
+      const preparedAtMs = options.now?.() ?? Date.now();
       const bytes = Buffer.from(JSON.stringify(context));
       const common = {
         schemaVersion: 2, batchId: randomUUID(), deviceId: connection.deviceId,
@@ -189,7 +198,7 @@ export async function runCloudRuntimeStep(
             capturedAtMs: context.capturedAtMs, chunks, totalBytes: bytes.length, contentHash: sha256(bytes),
           });
           authorize(self.consent, commit);
-          return { kind: "runtime", body: JSON.stringify(commit), refs, fingerprint };
+          return { kind: "runtime", body: JSON.stringify(commit), refs, fingerprint, preparedAtMs };
         },
       });
     }
@@ -216,8 +225,17 @@ export async function runCloudRuntimeStep(
         throw new CloudSyncError("spool_blob_corrupt");
       }
       blobs.renew();
-      const ack = z.strictObject({ stored: z.literal(true), chunk: contentChunkRefSchema })
-        .parse(await http.request("/v1/activity/chunks", { body }));
+      let value: unknown;
+      try {
+        value = await http.request("/v1/activity/chunks", { body });
+      } catch (error) {
+        // Retention may have retired an already accepted request after ACK loss.
+        // Only the exact commit receipt below can acknowledge it; an uncommitted
+        // purged batch still fails finalization and keeps its local pending job.
+        if (error instanceof CloudRequestError && error.status === 409 && error.code === "content_expired") break;
+        throw error;
+      }
+      const ack = z.strictObject({ stored: z.literal(true), chunk: contentChunkRefSchema }).parse(value);
       blobs.renew();
       if (JSON.stringify(ack.chunk) !== JSON.stringify(expected)) throw new CloudSyncError("invalid_remote_receipt");
     }
@@ -230,6 +248,7 @@ export async function runCloudRuntimeStep(
     blobs.acknowledge({ streamId, sequence: batch.sequence, payloadHash: batch.payload_hash });
     atomicCloudJson(home, "runtime-state.json", {
       instanceId: connection.instanceId, streamId, sequence: receipt.sequence, fingerprint: job.fingerprint,
+      preparedAtMs: job.preparedAtMs ?? 0, consentVersion: commit.consentVersion,
     });
     blobs.prune();
     return progress;
