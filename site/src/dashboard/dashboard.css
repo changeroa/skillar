@@ -42,7 +42,7 @@
 .choice__detail { color: var(--muted); }
 .consent__fields, .command-form__fields { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
 .field-label { display: grid; gap: var(--s1); font-size: var(--small); font-weight: 600; min-width: 0; }
-.text-field { min-height: 44px; width: 100%; padding: var(--s1) var(--s2); border: 1px solid var(--muted); border-radius: 0; background: var(--bg); color: var(--ink); font-weight: 400; font-size: var(--body); }
+.text-field { min-height: 44px; width: 100%; padding: var(--s1) var(--s2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--ink); font-weight: 400; font-size: var(--ui); }
 .consent__history { background: var(--surface); padding: 0 var(--s3) var(--s3); }
 .consent__history > summary { font-size: var(--small); }
 .consent__history > .note { margin-bottom: var(--s2); }
@@ -56,8 +56,8 @@
 .commands .button.secondary { background: var(--bg); }
 .command-form, .command-lookup { display: grid; gap: var(--s3); min-width: 0; }
 .command-form select.text-field, .command-lookup .text-field { max-width: 48ch; }
-.document-field { display: block; width: 100%; min-height: 18lh; padding: var(--s3); border: 1px solid var(--muted); border-radius: 0; background: var(--code-bg); color: var(--code-ink); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--small); line-height: 1.6; tab-size: 2; resize: vertical; overflow-wrap: anywhere; }
-.document-field:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.document-field { display: block; width: 100%; min-height: 18lh; padding: var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--code-bg); color: var(--code-ink); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: var(--small); line-height: 1.6; tab-size: 2; resize: vertical; overflow-wrap: anywhere; }
+.document-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .document-field--short { min-height: 6lh; }
 .command-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
 .command-item { background: var(--bg); padding: var(--s3); display: grid; gap: var(--s3); min-width: 0; }
