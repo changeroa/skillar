@@ -13,6 +13,7 @@ import { currentDeviceConsent, readDeviceConsent, setDeviceConsent } from "./act
 import { ActivityRequestError, readBody } from "./activity-body.ts";
 import { dashboardRequest } from "./activity-dashboard.ts";
 import { eventRequest } from "./activity-events.ts";
+import { privatePackPagesRequest } from "./private-packs.ts";
 
 const grantRequestSchema = z.strictObject({
   scopes: z.array(connectorScopeSchema).min(1).max(4).readonly(),
@@ -51,10 +52,11 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
     }
     const migration = /^\/v1\/activity\/migrations\/(begin|status|page|complete|export|rollback)$/.exec(path);
     const report = /^\/v1\/activity\/reports\/(status|result)$/.test(path);
+    const command = /^\/v1\/activity\/commands\/(poll|ack)$/.test(path);
     if ((path === "/v1/activity/chunks" || path === "/v1/activity/batches" ||
         path === "/v1/activity/export" || path === "/v1/activity/query" ||
         path === "/v1/activity/context" || path === "/v1/activity/context/read" ||
-        report || migration !== null) &&
+        report || command || migration !== null) &&
         request.method === "POST") {
       const readOnly = path === "/v1/activity/export" || path === "/v1/activity/query" ||
         path === "/v1/activity/context/read" || report ||
@@ -128,6 +130,9 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
 export async function activityRequest(request: Request, env: ActivityEnv): Promise<Response> {
   try {
     const path = new URL(request.url).pathname;
+    if (path.startsWith("/api/packs/") || path.startsWith("/v1/packs/")) {
+      return await privatePackPagesRequest(request, env);
+    }
     if (path === "/api/skills" || path.startsWith("/api/skills/") ||
         path === "/v1/skills" || path.startsWith("/v1/skills/")) {
       return await privateSkillPagesRequest(request, env);

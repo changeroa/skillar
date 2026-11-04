@@ -4,6 +4,8 @@ import { dashboardPaths, dashboardProfilesSchema } from "../../../shared/dist/ac
 import type { DashboardProfiles } from "../../../shared/dist/activity-dashboard.js";
 import { consentSchema } from "../../../shared/dist/activity-consent.js";
 import type { Consent } from "../../../shared/dist/activity-consent.js";
+import { commandStatusSchema } from "../../../shared/dist/activity-commands.js";
+import type { CommandStatus, CommandStatusRequest, SourceCommandRequest } from "../../../shared/dist/activity-commands.js";
 import { sessionResponseSchema } from "../../lib/account.ts";
 import type { SessionUser } from "../../lib/account.ts";
 
@@ -15,6 +17,8 @@ export const routes = {
   grants: "/api/devices/grants",
   consent: (deviceId: string) => `/api/devices/${encodeURIComponent(deviceId)}/consent`,
   revoke: (deviceId: string) => `/api/devices/${encodeURIComponent(deviceId)}/revoke`,
+  commands: "/api/dashboard/commands",
+  commandStatus: "/api/dashboard/commands/status",
 } as const;
 export const GRANT_SCOPES = ["activity:read", "activity:ingest"] as const;
 
@@ -60,6 +64,7 @@ export function describeFailure(error: unknown, action: string): string {
   if (error instanceof DashboardRequestError) {
     switch (error.code) {
       case "consent_conflict": return "Consent changed elsewhere. Reload to review the current version.";
+      case "command_conflict": return "Another command is pending or the source revision changed. Refresh sources before submitting again.";
       case "dashboard_unavailable": case "activity_unavailable": return `${action} is unavailable right now. Try again later.`;
       case "not_found": return "That device no longer exists for this account.";
       case "invalid_consent": case "invalid_request": return `${action} was rejected as invalid. Review the form and try again.`;
@@ -141,4 +146,14 @@ export function createGrant(signal?: AbortSignal, allowPrivateSkills = false): P
 
 export async function revokeDevice(deviceId: string, signal?: AbortSignal): Promise<void> {
   await call(routes.revoke(deviceId), revokedSchema, { body: {}, signal });
+}
+
+/** Queues one source command; 202 answers with its durable status, which starts pending and never implies application. */
+export function submitCommand(request: SourceCommandRequest, signal?: AbortSignal): Promise<CommandStatus> {
+  return call(routes.commands, commandStatusSchema, { body: request, signal });
+}
+
+/** Reads the durable status of one command for a source; an explicit check, never polled. */
+export function readCommandStatus(request: CommandStatusRequest, signal?: AbortSignal): Promise<CommandStatus> {
+  return call(routes.commandStatus, commandStatusSchema, { body: request, signal });
 }

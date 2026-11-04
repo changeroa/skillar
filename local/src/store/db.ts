@@ -6,7 +6,7 @@ import { installJournalTriggers } from "../sync/triggers.js";
 
 export type Db = DatabaseSync;
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /** migrations[i] upgrades user_version i -> i + 1. */
 function migrations(): string[] {
@@ -18,6 +18,7 @@ function migrations(): string[] {
     readFileSync(new URL("./migrations/005_execution_boundaries.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/006_recording_order.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/007_sync.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/008_connector_commands.sql", import.meta.url), "utf8"),
   ];
 }
 

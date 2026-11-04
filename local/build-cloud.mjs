@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 // These facades import repository-shared runtime modules. Bundle those
 // relative imports into dist; keep the local package's declared zod dependency.
 for (const facade of [
-  "sync/cloud-wire", "analysis/kernel", "api/report-kernel", "catalog/fields",
+  "sync/cloud-wire", "sync/command-wire", "analysis/kernel", "api/report-kernel", "catalog/fields",
   "search/index", "search/fts", "search/lexical", "search/fusion", "search/guidance", "skills/package",
 ]) {
   await build({

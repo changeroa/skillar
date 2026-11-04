@@ -8,6 +8,7 @@ import {
 import type { McpResourceEnv } from "./contracts.ts";
 import { mcpCatalogSchema, mcpSearchResultSchema } from "./catalog-contracts.ts";
 import type { McpSearchObservation, McpReadObservation } from "./telemetry.ts";
+import { privatePackSearchResultSchema, privatePackLoadResultSchema } from "../../../shared/private-packs.ts";
 
 /** MCP uses the existing clients' skill:// scheme; storage keeps its private URI. */
 export function mcpUri(uri: string): string {
@@ -54,6 +55,12 @@ export function mcpBackend(env: McpResourceEnv, context: McpContext) {
     return value;
   }
   return {
+    async searchPacks(input: unknown, signal: AbortSignal) {
+      return privatePackSearchResultSchema.parse(await call("/v1/private-packs/search", signal, input));
+    },
+    async loadPacks(input: unknown, signal: AbortSignal) {
+      return privatePackLoadResultSchema.parse(await call("/v1/private-packs/load", signal, input));
+    },
     async catalog(signal: AbortSignal) {
       return mcpCatalogSchema.parse(await call("/v1/private-skills/mcp/catalog", signal));
     },

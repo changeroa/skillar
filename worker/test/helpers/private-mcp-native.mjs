@@ -67,7 +67,8 @@ export async function createPrivateMcpNativeFixture(t) {
   const db = await f.runtime.getD1Database("ACTIVITY", "private-mcp-native-activity");
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql",
     "0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql", "0007_account_events.sql",
-    "0008_private_skill_notifications.sql"]) await migrate(db, name);
+    "0008_private_skill_notifications.sql", "0009_private_packs.sql",
+    "0010_connector_commands.sql"]) await migrate(db, name);
   const driver = await f.runtime.getWorker("private-mcp-native-activity");
   const rawForward = (target, url, { method = "POST", headers = {}, body } = {}) =>
     driver.fetch("https://fixture.internal/__test/forward", { method: "POST", redirect: "manual",

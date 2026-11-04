@@ -44,8 +44,8 @@ function near(actual, expected, label) {
 
 test("parity 001-006: fresh Store installs the real migration registry", (t) => {
   const { db } = memoryStore(t);
-  assert.equal(SCHEMA_VERSION, 7);
-  assert.equal(db.prepare("PRAGMA user_version").get().user_version, 7);
+  assert.equal(SCHEMA_VERSION, 8);
+  assert.equal(db.prepare("PRAGMA user_version").get().user_version, 8);
   const indexes = rows(db, "SELECT name FROM sqlite_master WHERE type='index'").map((row) => row.name);
   for (const index of migrations.indexes) assert.ok(indexes.includes(index), index);
   assert.deepEqual(rows(db, "PRAGMA foreign_key_check"), []);
@@ -69,7 +69,7 @@ for (const version of [1, 2, 3, 4, 5, 6]) {
       const db = openDb(path);
       const store = createStore(db, { now: () => 1100 });
       try {
-        assert.equal(db.prepare("PRAGMA user_version").get().user_version, 7);
+        assert.equal(db.prepare("PRAGMA user_version").get().user_version, 8);
         for (const check of migrations.checks) {
           // A v1 snapshot has no topology or spans to preserve.
           if (version === 1 && /^(003|005|006-no-invented-order|006-span-mark)/.test(check.id)) continue;

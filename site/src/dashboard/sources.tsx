@@ -61,10 +61,11 @@ type SnapshotProps = {
   readonly failure: RequestFailure | null;
   readonly onRebuild: () => void;
   readonly onClose: () => void;
+  readonly commands: ComponentChildren;
   readonly children: ComponentChildren;
 };
 
-export function SnapshotSection({ profile, report, failure, onRebuild, onClose, children }: SnapshotProps) {
+export function SnapshotSection({ profile, report, failure, onRebuild, onClose, commands, children }: SnapshotProps) {
   return (
     <section class="panel snapshot" aria-labelledby="snapshot-title">
       <div class="panel__head">
@@ -84,6 +85,7 @@ export function SnapshotSection({ profile, report, failure, onRebuild, onClose, 
           </div>
         ))}
       </dl>
+      {commands}
       <div class="dash-embed">{children}</div>
     </section>
   );

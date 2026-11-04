@@ -35,6 +35,10 @@ import { sweepAccountChanges } from "./event-replay.ts";
 import { dispatchAccountControls } from "./event-controls.ts";
 import { privateSkillsRequest } from "../private-skills/api.ts";
 import { privateMcpObservationRequest } from "../private-mcp/telemetry-api.ts";
+import { commandsRequest } from "./commands.ts";
+import { privatePacksRequest } from "./private-packs.ts";
+import { sweepPrivatePacks } from "./private-packs-cleanup.ts";
+import { sweepCommands } from "./commands-cleanup.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -99,6 +103,10 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
   if (observationResponse !== null) return observationResponse;
   const privateResponse = await privateSkillsRequest(request, env);
   if (privateResponse !== null) return privateResponse;
+  const commandResponse = await commandsRequest(request, env);
+  if (commandResponse !== null) return commandResponse;
+  const packResponse = await privatePacksRequest(request, env);
+  if (packResponse !== null) return packResponse;
   if (url.pathname.startsWith("/v1/activity/events/")) {
     if (env.ACCOUNT_HUB === undefined) return Response.json({ error: "not_found" }, { status: 404, headers });
     return await accountEventsRequest(request, { ...env, ACCOUNT_HUB: env.ACCOUNT_HUB }) ??
@@ -202,6 +210,8 @@ export default {
     context.waitUntil(Promise.all([
       sweepContent(env.ACTIVITY, env.ACTIVITY_RAW), sweepReports(env), dispatchPendingReports(env),
       sweepDashboardEvalCases(env), sweepAccountChanges(env.ACTIVITY),
+      sweepPrivatePacks(env),
+      sweepCommands(env),
     ]));
   },
 };

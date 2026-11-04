@@ -9,13 +9,18 @@ import { App as LocalViews } from "../../../local/dashboard/main";
 import type { SessionUser } from "../../lib/account.ts";
 import { describeFailure, isUnauthorized, readConsent, readDevices, readProfiles, readSession } from "./api";
 import type { SessionState } from "./api";
+import { CommandsDisclosure } from "./commands-panel";
+import { PrivatePacks } from "./packs";
 import { DevicesSection } from "./devices";
 import type { DeviceState } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { mergeReports, profileKey } from "./status";
 import type { RequestFailure } from "./status";
 
-type Loaded<T> = { readonly status: "loading" | "ready" | "failed"; readonly data: T | null; readonly message: string };
+type Loaded<T> = {
+  readonly status: "loading" | "ready" | "failed"; readonly data: T | null;
+  readonly message: string; readonly completedLoads: number;
+};
 type Phase = SessionState | { readonly kind: "checking" } | { readonly kind: "expired" };
 const LOCAL_ONLY: Consent = { mode: "local-only" };
 const errorCodeSchema = z.object({ error: z.string().min(1).max(100) });
@@ -48,20 +53,20 @@ async function loadDevices(signal: AbortSignal): Promise<readonly DeviceState[]>
 function useLoad<T>(
   load: (signal: AbortSignal) => Promise<T>, action: string, signal: AbortSignal, onUnauthorized: () => void,
 ): [Loaded<T>, () => void] {
-  const [state, setState] = useState<Loaded<T>>({ status: "loading", data: null, message: "" });
+  const [state, setState] = useState<Loaded<T>>({ status: "loading", data: null, message: "", completedLoads: 0 });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let active = true;
-    setState(current => ({ status: "loading", data: current.data, message: "" }));
+    setState(current => ({ ...current, status: "loading", message: "" }));
     load(signal).then(data => {
-      if (active) setState({ status: "ready", data, message: "" });
+      if (active) setState(current => ({ status: "ready", data, message: "", completedLoads: current.completedLoads + 1 }));
     }, (error: unknown) => {
       if (!active || isAbort(error)) return;
       if (isUnauthorized(error)) {
         onUnauthorized();
         return;
       }
-      setState(current => ({ status: "failed", data: current.data, message: describeFailure(error, action) }));
+      setState(current => ({ ...current, status: "failed", message: describeFailure(error, action) }));
     });
     return () => { active = false; };
   }, [tick, signal]);
@@ -102,11 +107,13 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     reloadDevices();
   };
   const list = profiles.data?.profiles ?? [];
+  const sourcesLoad = profiles.completedLoads;
   useEffect(() => {
     if (selected === null || profiles.status !== "ready") return;
     const key = profileKey(selected);
     if (!list.some(profile => profileKey(profile) === key && profile.availability === "ready")) onClose();
   }, [profiles]);
+  const current = selected === null ? null : list.find(profile => profileKey(profile) === profileKey(selected)) ?? selected;
   const loadMessage = (state: Loaded<unknown>, loading: string): string =>
     state.status === "loading" ? loading : state.message;
   return (
@@ -123,14 +130,19 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       </div>
       <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
         message={loadMessage(profiles, "Loading sources\u2026")} onSelect={onSelect} onReload={reload} />
-      {selected !== null && (
-        <SnapshotSection profile={selected} report={report} failure={failure} onRebuild={onRebuild} onClose={onClose}>
+      {selected !== null && current !== null && (
+        <SnapshotSection profile={selected} report={report} failure={failure} onRebuild={onRebuild} onClose={onClose}
+          commands={
+            <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
+              signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />
+          }>
           <LocalViews key={profileKey(selected)} embedded />
         </SnapshotSection>
       )}
       <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
         settled={devices.status === "ready"} message={loadMessage(devices, "Loading devices\u2026")}
         signal={signal} onChanged={reload} onUnauthorized={onUnauthorized} />
+      <PrivatePacks key={user.email} signal={signal} onUnauthorized={onUnauthorized} />
     </>
   );
 }

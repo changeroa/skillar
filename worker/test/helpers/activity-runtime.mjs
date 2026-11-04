@@ -79,7 +79,7 @@ const bundle = build({
     sourcefile: "activity-runtime-fixture.mjs" },
   bundle: true, write: false, platform: "browser", format: "esm", target: "es2022",
 });
-async function migrate(db, path) {
+export async function migrate(db, path) {
   const sql = await readFile(path, "utf8"), statements = [];
   let current = "", trigger = false;
   for (const line of sql.replace(/^--.*$/gm, "").split("\n")) {
