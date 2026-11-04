@@ -28,6 +28,26 @@ Spacing follows existing4/8/12/16/20/24/32/48/64/96 scale. Native local dashboar
 
 PR1 is foundations only: no session/search/skill/auth/landing behavior change. Existing page compositions are restyled in the subsequent approved PRs. site/src/skills/* is locked until lead confirms P14 merge; inherit base tokens there but do not edit its controls yet.
 
+## Evidence Console V2 Sessions and Trace layout (PR2)
+
+Approved reference: v2/sheets/04-evidence/home-light.html (the console: session list / event sequence / inspector) with its DESIGN.md. Touches `main.tsx`, `views/sessions.tsx`, `views/trace.tsx`, `components/requests.tsx` and `styles.css`. Where the AppShell, TabBar, SessionsToolbar, SessionsTable, TraceHeader, Timeline and AbstainBlock drawings further down differ from this block, this block wins; every route, hash, filter, live, eval and unknown-value contract stays as it is.
+
+Tokens added: `--brand-ink` #1F201D / #F0F1E9 and `--brand-prompt` #B4321C / #FF8F70 (the exact light / dark wordmark export colors). They color the inline wordmark paths and nothing else.
+
+Shell: `header.top > div.wrap.top__row` = `a.brand` (the canonical wordmark SVG inlined from site/public/wordmark-*.svg with its geometry verbatim, 120px wide, fills through `.brand__prompt` / `.brand__ink`), then `nav.tabs[aria-label=Views]`, then `div.top__status` (live indicator, filter chips, automated toggle) pushed to the end. One wrapping row at 640px and up; under 640px the tab row takes its own full-width line after brand and status. Tabs are 44px text links in muted ink with no box: hover is ink, current is ink at 600 with a 2px accent underline at 8px offset; `aria-current` and `TAB_OF` unchanged. The embed renders the same row without the brand.
+
+Page title: `div.page-title` holds the view title (`h1`, `h2` when embedded) at 28px / 600 / 1.3 and a 16px muted lead, 32px above the content. Sessions: title "세션 사용 기록", lead "검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다." (the former English dim sentence, same meaning). Trace: the back link, the first prompt (or the muted "(no prompt captured)", no italic) and the step counts as the lead.
+
+Sessions: title, toolbar (controls, ids, names and aria names unchanged; 16px label on its own line, search field up to 25rem, selects at least 10rem, 24px below), then the table flat on the page in `div.sessions__frame` (horizontal scroll owner at tablet widths, no card): th 14px / 500 muted, cells 12px x 16px, first column flush left and last flush right, hairline rules under every row, hover wash. Under 640px the rows stay the named-area cards with 16px vertical padding and no inline padding. The attribution explanation (`p.usage`: unattributed counts, the "How attribution works" tooltip and the MCP attribution rates, text unchanged) moves below the table into `footer.sessions__foot`, 32px down behind a top rule.
+
+Trace: `header.trace__head.page-title` then `div.trace__console` = `aside.trace__inspector` (260px right column at 960px and up, left rule, content at the top) beside `div.trace__events` (fluid, 24px stack). Inspector: h2 "세션 정보" (h3 embedded), the existing `dl.trace__meta` as one column (dt 14px muted, dd 16px ink, 16px apart; Runtime / Started / Duration / Attribution / Requests / Session unchanged, Duration states unchanged), then under a rule the h3 "확인 범위" with "검색과 읽기 기록은 요청 단위로 확인됩니다. 실제 적용과 작업 성공은 이 기록으로 확인되지 않습니다." Events: the existing callouts (unresolved loads, never consulted), h2 "이벤트 순서" with `ol.tl`, then the Search and load requests section flat behind a top rule (22px heading, 14px lead, reference table cells). Under 960px the console is one column: inspector first, then events; the inspector swaps its left rule for a top rule and its facts wrap as a cluster.
+
+Timeline rows: `li.tl__step` is a grid `82px | minmax(0, 1fr) | 116px` (time | content | state) with 16px vertical padding and a bottom rule; `tl__head` is `display: contents` so its children sit in the grid. Time is HH:MM:SS over the +offset in 14px mono; the kind label is 18px / 600 ink; a skill span's name sits under its label. State words (`tl__tag`: native, skillar, failed, abstained) are plain 14px / 500 text in the state column, `--bad` for failed and abstained, muted otherwise; no box, no uppercase. Bodies: prompt text 16px ink, metadata lines 14px muted, the query and the abstain block (badge, hint, Save as eval case) on a surface block with no border; candidate rows unchanged except the invocation tag (14px mono, 26px, 0 radius, no uppercase). The rail and dots are retired: `tl__dot` is hidden, and a step's kind is read from its label, never from a color. Under 640px rows are `72px | minmax(0, 1fr)` and state words drop under the kind label.
+
+Copy: new explanatory UI is plain Korean; every existing label, aria name, status value and test-pinned string stays as shipped.
+
+At phone widths the request table becomes labeled rows with a 96px label column and a flexible value column. Column headers remain in the accessibility tree; operation, status, result/reason and skill values keep their original table semantics and wrap without squeezing individual letters into a vertical column. The same rule applies in the hosted embed.
+
 
 
 Scope: `local/dashboard/**` (the Preact app served by the skillar daemon at `http://127.0.0.1:8799`).

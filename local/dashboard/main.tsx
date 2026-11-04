@@ -214,16 +214,26 @@ export function App({ embedded = false }: AppOptions = {}) {
   return (
     <>
       <Header class="top">
-        <div class="wrap">
-          <div class="top__row">
-            {!embedded && <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>skillar</a>}
-            <span class={`live live--${live.state}`} role="status" aria-live="polite">
-              <span class="live__dot" aria-hidden="true" />
-              {LIVE_TEXT[live.state]}
-            </span>
-            <FilterChips route={route} navigate={navigate} />
-            <AutomatedToggle route={route} navigate={navigate} live={live} />
-          </div>
+        <div class="wrap top__row">
+          {!embedded && (
+            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>
+              {/* Canonical wordmark (site/public/wordmark-*.svg): geometry verbatim, fills through the brand role tokens. */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 100" role="img" aria-label="skillar" focusable="false">
+                <title>skillar</title>
+                <g transform="translate(-9.25 1.99)">
+                  <path class="brand__prompt" d="M0 31L19 50L0 69L7 76L33 50L7 24Z" transform="translate(16.5 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M47 35C36 27 5 27 4 46C3 60 16 62 29 65C43 68 40 79 27 80C18 81 10 78 3 73L0 83C10 91 34 94 46 82C55 71 49 57 34 54L21 51C7 47 24 35 43 44Z" transform="translate(70 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M3 8H15V54L39 31H55L28 57L57 89H41L15 61V89H3Z" transform="translate(131 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M14 31H38V77H56V89H14V77H26V43H14Z" transform="translate(192 0)" fill-rule="evenodd" />
+                  <circle class="brand__ink" cx="224" cy="13" r="7" />
+                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(256 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(320 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M45 89H34V83C23 95 0 90 0 71C0 53 22 49 34 55V50C34 35 13 37 5 44L2 33C22 23 46 28 46 50V89ZM34 65C22 57 11 63 11 72C11 83 27 84 34 74Z" transform="translate(391.5 0)" fill-rule="evenodd" />
+                  <path class="brand__ink" d="M3 31H15V41C23 29 35 27 44 31L41 43C27 39 15 48 15 62V89H3Z" transform="translate(458 0)" fill-rule="evenodd" />
+                </g>
+              </svg>
+            </a>
+          )}
           <nav class="tabs" aria-label="Views">
             {TABS.map((tab) => (
               <a key={tab.view} class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
@@ -231,6 +241,14 @@ export function App({ embedded = false }: AppOptions = {}) {
               </a>
             ))}
           </nav>
+          <div class="top__status">
+            <span class={`live live--${live.state}`} role="status" aria-live="polite">
+              <span class="live__dot" aria-hidden="true" />
+              {LIVE_TEXT[live.state]}
+            </span>
+            <FilterChips route={route} navigate={navigate} />
+            <AutomatedToggle route={route} navigate={navigate} live={live} />
+          </div>
         </div>
       </Header>
       <Content class="page wrap"

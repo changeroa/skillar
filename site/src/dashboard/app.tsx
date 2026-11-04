@@ -128,21 +128,40 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
         </div>
         <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out</button></form>
       </div>
-      <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
-        message={loadMessage(profiles, "Loading sources\u2026")} onSelect={onSelect} onReload={reload} />
-      {selected !== null && current !== null && (
-        <SnapshotSection profile={selected} report={report} failure={failure} onRebuild={onRebuild} onClose={onClose}
-          commands={
-            <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
-              signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />
-          }>
-          <LocalViews key={profileKey(selected)} embedded />
-        </SnapshotSection>
-      )}
-      <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
-        settled={devices.status === "ready"} message={loadMessage(devices, "Loading devices\u2026")}
-        signal={signal} onChanged={reload} onUnauthorized={onUnauthorized} />
-      <PrivatePacks key={user.email} signal={signal} onUnauthorized={onUnauthorized} />
+      <div class="dash-workspace">
+        <aside class="dash-sources" aria-label="활동 출처">
+          {selected !== null && <p class="dash-source-current">출처 <code>{selected.sourceDomain}</code></p>}
+          <details class="dash-source-picker" open={selected === null}>
+            <summary>{selected === null ? "출처 선택" : "출처 변경 및 상세"}</summary>
+            <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
+              message={loadMessage(profiles, "Loading sources\u2026")} onSelect={onSelect} onReload={reload} />
+          </details>
+        </aside>
+        <div class="dash-activity">
+          {selected !== null && current !== null ? (
+            <SnapshotSection profile={selected} report={report} failure={failure} onRebuild={onRebuild} onClose={onClose}
+              commands={
+                <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
+                  signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />
+              }>
+              <LocalViews key={profileKey(selected)} embedded />
+            </SnapshotSection>
+          ) : (
+            <section class="dash-empty" aria-labelledby="dash-empty-title">
+              <h2 id="dash-empty-title">확인할 출처를 선택하세요</h2>
+              <p>조회할 수 있는 출처에서 Show snapshot을 선택하면 세션과 검색·읽기 기록이 열립니다.</p>
+              <p class="note">아직 기록을 선택하지 않았습니다. 읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
+            </section>
+          )}
+        </div>
+      </div>
+      <details class="dash-management">
+        <summary>기기 및 private pack 관리</summary>
+        <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
+          settled={devices.status === "ready"} message={loadMessage(devices, "Loading devices\u2026")}
+          signal={signal} onChanged={reload} onUnauthorized={onUnauthorized} />
+        <PrivatePacks key={user.email} signal={signal} onUnauthorized={onUnauthorized} />
+      </details>
     </>
   );
 }

@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import type { DashboardProfile, DashboardReportStatus } from "../../../shared/dist/activity-dashboard.js";
 import { availabilityCopy, formatWhen, profileKey, shortId, snapshotLines } from "./status";
 import type { RequestFailure } from "./status";
@@ -66,17 +67,22 @@ type SnapshotProps = {
 };
 
 export function SnapshotSection({ profile, report, failure, onRebuild, onClose, commands, children }: SnapshotProps) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => heading.current?.focus(), [profileKey(profile)]);
   return (
     <section class="panel snapshot" aria-labelledby="snapshot-title">
       <div class="panel__head">
-        <h2 id="snapshot-title">Snapshot of device <span class="device-id">{shortId(profile.deviceId)}</span></h2>
+        <h2 id="snapshot-title" ref={heading} tabIndex={-1}>Snapshot of device <span class="device-id">{shortId(profile.deviceId)}</span></h2>
         <div class="cluster">
           <button class="button secondary" type="button" onClick={onRebuild}>Rebuild reports</button>
           <button class="button secondary" type="button" onClick={onClose}>Close snapshot</button>
         </div>
       </div>
-      <p class="note">Reports refresh when new uploads arrive. Capture and report times show freshness; a live connection does not mean the source device is running.</p>
-      <dl class="account-status snapshot__facts" aria-live="polite">
+      <p class="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
+      <details class="snapshot__inspector">
+        <summary>출처 상태 및 원격 작업</summary>
+        <p class="note">Reports refresh when new uploads arrive. Capture and report times show freshness; a live connection does not mean the source device is running.</p>
+        <dl class="account-status snapshot__facts" aria-live="polite">
         {snapshotLines(profile, report, failure).map(line => (
           <div key={line.term} {...(line.tone === undefined ? {} : { "data-tone": line.tone })}>
             <dt>{line.term}</dt><dd>{line.detail}{line.technical !== undefined && (
@@ -84,8 +90,9 @@ export function SnapshotSection({ profile, report, failure, onRebuild, onClose, 
             )}</dd>
           </div>
         ))}
-      </dl>
-      {commands}
+        </dl>
+        {commands}
+      </details>
       <div class="dash-embed">{children}</div>
     </section>
   );

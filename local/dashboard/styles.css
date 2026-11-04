@@ -6,6 +6,7 @@
   --line: #D9DDD6; --line-2: #7D8279; --wash: #F3F5F2; --wash-2: #F3F5F2;
   --accent: #B4321C; --accent-2: #B4321C; --accent-wash: #F3F5F2; --on-accent: #FFFFFF;
   --ok: #23603B; --warn: #805000; --bad: #AC2045; --neutral: #565C51; --shadow-pop: none;
+  --brand-ink: #1F201D; --brand-prompt: #B4321C;
   --font-sans: "Helvetica Neue", "Apple SD Gothic Neo", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fs-title: 28px; --fs-section: 22px; --fs-subhead: 18px;
@@ -24,6 +25,7 @@
     --line: #3C4336; --line-2: #7A8273; --wash: #22261F; --wash-2: #22261F;
     --accent: #FF8F70; --accent-2: #FF8F70; --accent-wash: #22261F; --on-accent: #23110C;
     --ok: #8BD2A0; --warn: #EAC477; --bad: #FF9CB4; --neutral: #B3BAAA;
+    --brand-ink: #F0F1E9; --brand-prompt: #FF8F70;
   }
 }
 :root[data-theme="dark"] {
@@ -33,6 +35,7 @@
     --line: #3C4336; --line-2: #7A8273; --wash: #22261F; --wash-2: #22261F;
     --accent: #FF8F70; --accent-2: #FF8F70; --accent-wash: #22261F; --on-accent: #23110C;
     --ok: #8BD2A0; --warn: #EAC477; --bad: #FF9CB4; --neutral: #B3BAAA;
+    --brand-ink: #F0F1E9; --brand-prompt: #FF8F70;
 }
 :root[data-theme="light"] { color-scheme: light; }
 
@@ -62,7 +65,7 @@ button, input, select { font: inherit; color: inherit; }
 
 .wrap { max-width: var(--max-w); margin-inline: auto; padding-inline: var(--gutter); }
 
-/* Shell: sticky header block (brand row + tabs), document owns the scroll. */
+/* Shell: one sticky app bar row (brand, view tabs, live status and filters); the document owns the scroll. */
 .top {
   position: sticky;
   top: 0;
@@ -75,20 +78,32 @@ button, input, select { font: inherit; color: inherit; }
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--s-2) var(--s-4);
+  gap: var(--s-2) var(--s-6);
   min-height: 72px;
   padding-block: var(--s-2);
 }
 
+/* The canonical wordmark, inlined in main.tsx: 120px wide, colored by the brand role tokens only. */
 .brand {
   display: inline-flex;
   align-items: center;
+  flex: none;
+  width: 120px;
   min-height: 44px;
-  font-size: var(--fs-subhead);
-  font-weight: 600;
-  letter-spacing: 0;
   color: var(--ink);
   text-decoration: none;
+}
+
+.brand svg { display: block; width: 100%; height: auto; }
+.brand__ink { fill: var(--brand-ink); }
+.brand__prompt { fill: var(--brand-prompt); }
+
+.top__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  margin-inline-start: auto;
 }
 
 .live {
@@ -121,7 +136,6 @@ button, input, select { font: inherit; color: inherit; }
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s-2);
-  margin-inline-start: auto;
 }
 
 .chip {
@@ -166,30 +180,34 @@ button, input, select { font: inherit; color: inherit; }
 
 .chip__x:hover { background: var(--wash-2); color: var(--ink); }
 
+/* View tabs: 44px text links, current = ink with an accent underline; no box, no wash. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-1);
-  padding-block: var(--s-1) var(--s-2);
+  gap: var(--s-4);
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 var(--s-3);
-  border-radius: var(--r-sm);
+  padding: 0 var(--s-1);
   color: var(--ink-2);
   font-size: var(--fs-sm);
   font-weight: 500;
   text-decoration: none;
-  transition: background-color var(--t-micro), color var(--t-micro);
+  transition: color var(--t-micro);
 }
 
-.tab:hover { background: var(--wash); color: var(--ink); }
-.tab[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 8px; }
+.tab:hover { color: var(--ink); }
+.tab[aria-current="page"] { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: var(--s-2); }
 
-.page { padding-block: var(--s-5) var(--s-12); }
+.page { padding-block: var(--s-8) var(--s-12); }
+
+/* Page title block: the view title over a quiet one-sentence lead. */
+.page-title { display: grid; gap: var(--s-2); margin-bottom: var(--s-8); }
+.page-title > :is(h1, h2) { margin: 0; font-size: var(--fs-title); font-weight: 600; line-height: 1.3; letter-spacing: 0; text-wrap: pretty; }
+.page-title > p { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: var(--fs-body); line-height: 1.65; text-wrap: pretty; }
 
 .btn {
   display: inline-flex;
@@ -229,11 +247,11 @@ button, input, select { font: inherit; color: inherit; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-2);
-  margin-bottom: var(--s-3);
+  gap: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-6);
 }
 
-.toolbar__label { flex-basis: 100%; }
+.toolbar__label { flex-basis: 100%; font-size: var(--fs-body); }
 
 .field {
   min-height: 44px;
@@ -246,8 +264,8 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .field::placeholder { color: var(--ink-3); }
-.field--search { flex: 1 1 14rem; min-width: 0; }
-.field--select { padding-inline-end: var(--s-2); }
+.field--search { flex: 1 1 14rem; min-width: 0; max-width: 25rem; }
+.field--select { min-width: 10rem; padding-inline-end: var(--s-2); }
 
 .toolbar__count {
   color: var(--ink-3);
@@ -262,6 +280,9 @@ button, input, select { font: inherit; color: inherit; }
   border-radius: var(--r-md);
 }
 
+/* Sessions table: flat on the page, hairline rules, first and last columns flush with the page edges. */
+.sessions__frame { overflow-x: auto; }
+
 .sessions {
   width: 100%;
   border-collapse: collapse;
@@ -271,8 +292,8 @@ button, input, select { font: inherit; color: inherit; }
 
 .sessions th {
   text-align: left;
-  padding: var(--s-2) var(--s-3);
-  color: var(--ink-3);
+  padding: var(--s-3) var(--s-4);
+  color: var(--ink-2);
   font-size: var(--fs-cap);
   font-weight: 500;
   border-bottom: 1px solid var(--line);
@@ -280,17 +301,21 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .sessions td {
-  padding: var(--s-3);
+  padding: var(--s-3) var(--s-4);
   vertical-align: top;
   border-bottom: 1px solid var(--line);
   overflow-wrap: normal;
 }
 
+.sessions :is(th, td):first-child { padding-inline-start: 0; }
+.sessions :is(th, td):last-child { padding-inline-end: 0; }
 .sessions td.c-prompt { overflow-wrap: anywhere; }
 
 .sessions tbody tr { transition: background-color var(--t-micro); cursor: pointer; }
-.sessions tbody tr:last-child td { border-bottom: 0; }
 .sessions tbody tr:hover, .sessions tbody tr:has(.rowlink:focus-visible) { background: var(--wash); }
+
+/* The attribution explanation sits apart from the data, behind a rule under the table. */
+.sessions__foot { margin-top: var(--s-8); padding-top: var(--s-6); border-top: 1px solid var(--line); }
 
 .rowlink {
   min-height: 44px;
@@ -530,11 +555,10 @@ button, input, select { font: inherit; color: inherit; }
       "load load"
       ". attr";
     gap: var(--s-2) var(--s-3);
-    padding: var(--s-3) var(--s-4);
+    padding: var(--s-4) 0;
     border-bottom: 1px solid var(--line);
   }
 
-  .sessions tbody tr:last-child { border-bottom: 0; }
   .sessions td { padding: 0; border: 0; min-width: 0; }
   .c-runtime { grid-area: runtime; }
   .c-started { grid-area: started; justify-self: end; }
@@ -547,6 +571,11 @@ button, input, select { font: inherit; color: inherit; }
   .c-attr { grid-area: attr; justify-self: end; }
   .when { flex-direction: row; gap: var(--s-2); }
   .when__dur::before { content: "\00b7\00a0"; }
+}
+
+@media (max-width: 639.98px) {
+  /* Phone widths: the tab row takes its own line under the brand and status. */
+  .tabs { order: 3; flex-basis: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

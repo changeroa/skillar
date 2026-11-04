@@ -34,19 +34,15 @@
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <header class="shell header account-header">
+    <header class="shell header account-header dashboard-header">
       <a class="wordmark" href="/" aria-label="skillar home"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
       <label class="theme-label">Theme
         <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
       </label>
       <nav aria-label="Account"><a href="/login/">Account</a><a href="/connections/">Connections</a><a href="/dashboard/" aria-current="page">Dashboard</a><a href="/skills/">Skills</a></nav>
     </header>
-    <aside class="preview-notice" aria-label="What works today">
-      <div class="shell"><strong>Google sign-in, the activity dashboard, private skills and MCP connections work.</strong> Device uploads and MCP activity recording each require separate consent. <a href="/">Back to skillar ↗</a></div>
-    </aside>
-    <main id="main" class="shell account-main" tabindex="-1">
-      <ol class="steps" aria-label="Account journey"><li>Account</li><li>Connect MCP</li><li aria-current="step">Dashboard</li></ol>
-      <div class="dashboard-heading"><div><h1>Activity dashboard.</h1><p class="account-lead">Sessions, Workspaces, Flow and Heatmap from consented device uploads and MCP connections whose activity recording you explicitly enable. Every device and connection starts with recording off.</p></div></div>
+    <main id="main" class="shell account-main dashboard-page" tabindex="-1">
+      <div class="dashboard-heading"><div><h1>세션과 읽기 기록</h1><p class="account-lead">동의한 출처의 검색·읽기 기록을 확인하세요. 기기와 MCP 연결의 기록 수집은 각각 기본 꺼짐이며, 별도 동의가 필요합니다.</p></div></div>
       <noscript>
         <p class="note">JavaScript is off. The dashboard needs it to read your sources and show activity. Signing in and out still work.</p>
         <div class="auth-actions">

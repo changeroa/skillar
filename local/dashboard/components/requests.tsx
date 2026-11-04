@@ -30,10 +30,10 @@ export function RequestDetails({ steps }: { steps: TraceStep[] }) {
   return <section class="card request-details" aria-label="Search and load requests">
     <h2>Search and load requests</h2>
     <p class="dim">Each row is one request. Retries count separately. unknown means the outcome was not observed; it does not mean failure.</p>
-    <table><thead><tr><th>Operation</th><th>Status</th><th>Result / reason</th><th>Skill</th></tr></thead>
+    <table><thead><tr><th scope="col">Operation</th><th scope="col">Status</th><th scope="col">Result / reason</th><th scope="col">Skill</th></tr></thead>
       <tbody>{(expanded ? records : records.slice(0, 20)).map((r) => <tr key={r.id}>
-        <td>{r.operation}</td><td><span class={`badge badge--${r.status}`}>{r.status}</span></td>
-        <td>{[r.result, r.reason, r.errorCode].filter(Boolean).join(" · ") || "—"}</td><td>{r.uri ?? "—"}</td>
+        <td data-label="Operation">{r.operation}</td><td data-label="Status"><span class={`badge badge--${r.status}`}>{r.status}</span></td>
+        <td data-label="Result / reason">{[r.result, r.reason, r.errorCode].filter(Boolean).join(" · ") || "—"}</td><td data-label="Skill">{r.uri ?? "—"}</td>
       </tr>)}</tbody></table>
     {records.length > 20 && <button type="button" class="btn" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? "Show fewer requests" : `Show all ${records.length} requests`}</button>}
   </section>;

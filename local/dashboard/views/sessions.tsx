@@ -10,7 +10,7 @@ import {
 } from "../state";
 
 const USAGE_CSS = `
-.usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0 0 var(--s-3); color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
+.usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0; color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
 .usage__item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
 .usage__key { color: var(--ink-3); }
 .usage__why { color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
@@ -48,22 +48,24 @@ function UsageNote({ stats }: { stats: Stats }) {
   const rates = attributionRates(stats);
   if (!orphan && rates.length === 0) return null;
   return (
-    <p class="usage">
-      {orphan && (
-        <span class="usage__item" data-usage="unattributed">
-          <span>{orphan}</span>
-          <span class="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>How attribution works</span>
-        </span>
-      )}
-      {rates.length > 0 && (
-        <span class="usage__item" data-usage="rates" title="Share of each runtime's MCP events matched to a session; - means the runtime sent no MCP events">
-          <span class="usage__key">MCP attribution</span>
-          {rates.map((r) => (
-            <span key={r.runtime} class={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
-          ))}
-        </span>
-      )}
-    </p>
+    <footer class="sessions__foot">
+      <p class="usage">
+        {orphan && (
+          <span class="usage__item" data-usage="unattributed">
+            <span>{orphan}</span>
+            <span class="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>How attribution works</span>
+          </span>
+        )}
+        {rates.length > 0 && (
+          <span class="usage__item" data-usage="rates" title="Share of each runtime's MCP events matched to a session; - means the runtime sent no MCP events">
+            <span class="usage__key">MCP attribution</span>
+            {rates.map((r) => (
+              <span key={r.runtime} class={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
+            ))}
+          </span>
+        )}
+      </p>
+    </footer>
   );
 }
 
@@ -256,7 +258,8 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
 
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 
-export function SessionsView({ route, navigate, live }: ViewProps) {
+export function SessionsView({ route, navigate, live, embedded = false }: ViewProps) {
+  const Title = embedded ? "h2" : "h1";
   const filterKey = serializeFilter(route.filter);
   const [rows, setRows] = useState<SessionListRow[]>();
   const [stats, setStats] = useState<Stats>();
@@ -295,7 +298,7 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
     body = <NoSessionsEmpty />;
   } else {
     body = (
-      <div class="card">
+      <div class="sessions__frame">
         <table class="sessions">
           <colgroup>
             <col style="width:10%" />
@@ -327,11 +330,14 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={rows === undefined}>
-      <p class="dim">Search and load counts are per request. No request observed is different from an unknown outcome.</p>
+      <div class="page-title">
+        <Title>세션 사용 기록</Title>
+        <p>검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다.</p>
+      </div>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
       {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
-      {rows !== undefined && stats && <UsageNote stats={stats} />}
       {body}
+      {rows !== undefined && stats && <UsageNote stats={stats} />}
     </section>
   );
 }
