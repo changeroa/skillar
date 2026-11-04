@@ -8,7 +8,7 @@
 .connections__facts { margin-block: var(--s4) 0; max-width: 70ch; }
 .connections__facts div { grid-template-columns: 1fr 1.6fr; }
 .connections__facts dd { color: var(--ink); }
-.connections__facts, .connection .source__facts dd, .token, .pat-form { word-break: keep-all; }
+.connections__facts, .connection h3, .connection .source__facts dd, .token, .pat-form { word-break: keep-all; }
 .connections__guide h3 + .command { margin-top: calc(var(--s2) * -1); }
 .connections__guide .note { margin-top: var(--s1); }
 .pat-form { margin-top: var(--s4); display: grid; gap: var(--s4); max-width: 70ch; }

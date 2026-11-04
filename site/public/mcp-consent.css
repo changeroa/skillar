@@ -18,7 +18,7 @@ body { margin: 0; font-size: 18px; line-height: 1.55; }
 header, footer { width: min(100% - 96px, 1280px); margin: auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); padding-block: var(--s4); }
 header > :last-child { margin-left: auto; font-size: 15px; }
 a { color: inherit; text-underline-offset: 5px; display: inline-flex; align-items: center; min-height: 44px; }
-a:hover, button:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+a:hover, button:hover, .actions > a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .wordmark { min-width: 120px; text-decoration: none; }
 .wordmark img { display: block; width: 120px; height: 24px; }
 .wordmark img.wordmark-dark { display: none; }
@@ -44,10 +44,10 @@ code { font-family: ui-monospace, monospace; font-size: 15px; }
 .choice small { display: block; font-size: 15px; color: var(--muted); margin-top: var(--s1); }
 .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
 button { border: 0; border-radius: 0; font: 600 15px/1.4 Arial, sans-serif; min-height: 48px; padding: var(--s2) var(--s4); cursor: pointer; }
-button:active { box-shadow: inset 0 0 0 2px currentColor; }
+button:active, .actions > a:active { box-shadow: inset 0 0 0 2px currentColor; }
 .primary { background: var(--accent); color: var(--on-accent); }
 .secondary { background: var(--surface); color: var(--ink); }
-.actions > a { min-height: 48px; padding: var(--s2) var(--s4); font-size: 15px; font-weight: 600; }
+.actions > a { min-height: 48px; padding: var(--s2) var(--s4); font-size: 15px; font-weight: 600; justify-content: center; text-decoration: none; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--ink); outline-offset: 5px; }
 footer { border-top: 1px solid var(--border); font-size: 15px; gap: var(--s5); }
 .skip:not(:focus) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
