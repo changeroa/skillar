@@ -2,7 +2,7 @@ import { REQUEST_STATUSES, type RequestStatus } from "../../src/request-status.j
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { AdoptionState, FlowState, Filter, FlowDto, SkillEntry } from "../../src/types.js";
 import { api } from "../api";
-import { STATE_VALUES, Sankey, installStyles, nodeValue, percent, share, type FlowLink, type FlowNode, type FlowTarget } from "../charts/sankey";
+import { STATE_VALUES, Sankey, genericLabel, installStyles, nodeValue, percent, share, type FlowLink, type FlowNode, type FlowTarget } from "../charts/sankey";
 import { ADOPTION_STATES, STATE_LABEL, buildHash, isEmptyFilter, serializeFilter, skillName, type Route, type ViewProps } from "../state";
 
 // Flow view: Sankey (>= TABLE_THRESHOLD sessions) or the "Top paths" table, each switchable.
@@ -17,7 +17,7 @@ export type FlowUnit = FlowDto["unit"];
 export type SkillResolver = (value: string) => string | undefined;
 export type TopPath = { index: number; task: string; skill: string; skillNode: FlowNode; state: FlowState; count: number; share: number };
 
-const UNIT_LABEL: Record<FlowUnit, string> = { first_load: "First load", all_loads: "All loads", search_requests: "Search requests", load_requests: "Load requests" };
+const UNIT_LABEL: Record<FlowUnit, string> = { first_load: "첫 읽기", all_loads: "모든 읽기", search_requests: "검색 요청", load_requests: "읽기 요청" };
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 
 export function defaultMode(sessionCount: number): FlowMode {
@@ -25,8 +25,8 @@ export function defaultMode(sessionCount: number): FlowMode {
 }
 
 export function legendText(unit: FlowUnit): string {
-  if (unit === "search_requests" || unit === "load_requests") return `Band width = ${unit === "search_requests" ? "search" : "load"} requests. Each retry counts separately.`;
-  return unit === "first_load" ? "Band width = sessions (unit: first loaded skill)" : "Band width = skill loads (unit: all loaded skills)";
+  if (unit === "search_requests" || unit === "load_requests") return `띠 굵기 = ${unit === "search_requests" ? "검색" : "읽기"} 요청 수. 재시도는 각각 따로 셉니다.`;
+  return unit === "first_load" ? "띠 굵기 = 세션 수 (단위: 처음 읽은 스킬)" : "띠 굵기 = 스킬 읽기 수 (단위: 읽은 모든 스킬)";
 }
 
 /** Skill node values are URIs from the store; fixtures and older rows may carry a skill name, resolved through the catalog. */
@@ -136,9 +136,9 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
 function Legend({ unit, withKey }: { unit: FlowUnit; withKey: boolean }) {
   return (
     <p class="flow__legend">
-      <span>{unit.endsWith("_requests") ? `${legendText(unit)} Share = requests on the path / requests in range.` : withKey ? legendText(unit) : `Share = sessions on the path / sessions in range (unit: ${unit === "first_load" ? "first loaded skill" : "all loaded skills"})`}</span>
+      <span>{unit.endsWith("_requests") ? `${legendText(unit)} 비율 = 경로의 요청 수 / 기간 내 요청 수.` : withKey ? legendText(unit) : `비율 = 경로의 세션 수 / 기간 내 세션 수 (단위: ${unit === "first_load" ? "처음 읽은 스킬" : "읽은 모든 스킬"})`}</span>
       {withKey && (
-        <span class="flow__key" aria-label="Band color">
+        <span class="flow__key" aria-label="띠 색상">
           {(unit.endsWith("_requests") ? REQUEST_STATUSES.filter((s) => s !== "not_attempted") : ADOPTION_STATES).map((state) => (
             <span class="flow__swatch" key={state}>
               <i class={`flow__dot is-${state}`} aria-hidden="true" />
@@ -162,14 +162,15 @@ export function TopPathsTable({ dto, route, navigate, resolve }: { dto: FlowDto;
       <table class="paths">
         <thead>
           <tr>
-            <th scope="col">Path<span class="paths__hint">task type {"\u2192"} skill {"\u2192"} outcome</span></th>
-            <th scope="col" class="num">{dto.requestCount !== undefined ? "Requests" : "Sessions"}</th>
-            <th scope="col" class="num">Share</th>
+            <th scope="col">경로<span class="paths__hint">작업 유형 {"\u2192"} 스킬 {"\u2192"} 결과</span></th>
+            <th scope="col" class="num">{dto.requestCount !== undefined ? "요청" : "세션"}</th>
+            <th scope="col" class="num">비율</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => {
             const link = dto.links[row.index]!;
+            const taskNode = dto.nodes.find(node => node.id === link.source)!;
             const target = sessionsRoute(route, targetFilter({ kind: "link", link, index: row.index }, dto.nodes, resolve, dto.unit) ?? {});
             const href = buildHash(target);
             const filterable = skillUri(row.skillNode, resolve) !== undefined;
@@ -177,9 +178,9 @@ export function TopPathsTable({ dto, route, navigate, resolve }: { dto: FlowDto;
               <tr key={row.index} onClick={(event) => { if (!isInteractive(event.target)) navigate(target); }}>
                 <td>
                   <span class="paths__path">
-                    <span class="paths__task">{row.task}</span>
+                    <span class="paths__task">{genericLabel(taskNode)}</span>
                     <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
-                    <a class={filterable ? "paths__skill" : "paths__skill paths__skill--dim"} href={href} title={filterable ? nodeValue(row.skillNode) : undefined}>{row.skill}</a>
+                    <a class={filterable ? "paths__skill" : "paths__skill paths__skill--dim"} href={href} title={filterable ? nodeValue(row.skillNode) : undefined}>{genericLabel(row.skillNode)}</a>
                     <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
                     <span class={`badge badge--${row.state}`}>{STATE_LABEL[row.state] ?? row.state}</span>
                   </span>
@@ -199,9 +200,9 @@ function EmptyFlow({ route, navigate }: { route: Route; navigate: ViewProps["nav
   const filtered = !isEmptyFilter(route.filter);
   return (
     <section class="empty">
-      <h2>No sessions in this range</h2>
-      <p>{filtered ? "No session matches these filters, so there is no flow to draw." : "Start a session in a connected runtime and the task-to-skill flow appears here."}</p>
-      {filtered && <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>Clear filters</button>}
+      <h2>이 기간에는 세션이 없습니다</h2>
+      <p>{filtered ? "이 필터에 맞는 세션이 없어 그릴 사용 흐름이 없습니다." : "연결된 실행 환경에서 세션을 시작하면 작업에서 스킬로 이어지는 사용 흐름이 여기에 나타납니다."}</p>
+      {filtered && <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>}
     </section>
   );
 }
@@ -258,18 +259,18 @@ export function FlowView({ route, navigate, live }: ViewProps) {
     body = (
       <>
         <div class="toolbar">
-          <Segmented label="View" value={shown} options={[{ value: "chart", label: "Chart" }, { value: "table", label: "Top paths" }]} onChange={setMode} />
-          <Segmented label="Unit" value={unit} options={(["search_requests", "load_requests"] as const).map((value) => ({ value, label: UNIT_LABEL[value] }))} onChange={setUnit} />
+          <Segmented label="보기" value={shown} options={[{ value: "chart", label: "차트" }, { value: "table", label: "주요 경로" }]} onChange={setMode} />
+          <Segmented label="단위" value={unit} options={(["search_requests", "load_requests"] as const).map((value) => ({ value, label: UNIT_LABEL[value] }))} onChange={setUnit} />
           {top !== DEFAULT_TOP && (
-            <button type="button" class="btn" onClick={() => setTop(DEFAULT_TOP)}>Top {DEFAULT_TOP} per column</button>
+            <button type="button" class="btn" onClick={() => setTop(DEFAULT_TOP)}>열별 상위 {DEFAULT_TOP}개</button>
           )}
           <span class="toolbar__count">
-            {dto.requestCount ?? dto.sessionCount} {dto.requestCount !== undefined ? "requests" : "sessions"}
-            {orphanLoads > 0 && <span title="MCP loads no session could be matched to; they are stored but not drawn in the flow">{` \u00b7 ${orphanLoads} unattributed ${orphanLoads === 1 ? "load" : "loads"} not shown`}</span>}
+            {dto.requestCount !== undefined ? `요청 ${dto.requestCount}건` : `세션 ${dto.sessionCount}개`}
+            {orphanLoads > 0 && <span title="어느 세션에도 연결되지 않은 MCP 읽기입니다. 저장은 되지만 사용 흐름에는 그리지 않습니다.">{` \u00b7 세션에 연결되지 않은 읽기 ${orphanLoads}건은 표시하지 않음`}</span>}
           </span>
         </div>
         <Legend unit={unit} withKey={shown === "chart"} />
-        {(dto.requestCount ?? dto.sessionCount) === 0 ? <p class="empty">No {unit === "search_requests" ? "search" : "load"} requests recorded for these filters.</p> : shown === "chart"
+        {(dto.requestCount ?? dto.sessionCount) === 0 ? <p class="empty">이 필터에 기록된 {unit === "search_requests" ? "검색" : "읽기"} 요청이 없습니다.</p> : shown === "chart"
           ? (
             <div class="card flow__chart">
               <Sankey dto={dto} hrefFor={hrefFor} onActivate={onActivate} onExpandOther={top < EXPANDED_TOP ? () => setTop(EXPANDED_TOP) : undefined} />
@@ -282,7 +283,7 @@ export function FlowView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={dto === undefined && !error} data-mode={dto ? shown : undefined} data-top={top} data-unit={unit}>
-      {error && <p class="notice" role="alert">Could not load the flow: {error}</p>}
+      {error && <p class="notice" role="alert">사용 흐름을 불러올 수 없습니다: {error}</p>}
       {body}
     </section>
   );

@@ -17,29 +17,27 @@ export type Fact =
 
 export type FactKey = Fact["key"];
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 export function factText(fact: Fact): string {
   switch (fact.key) {
     case "workspace": return fact.value;
-    case "tab": return `tab ${fact.value}`;
-    case "panes": return plural(fact.value, "pane", "panes");
-    case "sessions": return plural(fact.value, "session", "sessions");
-    case "inferred": return `${fact.value} inferred`;
-    case "unlinked": return `${fact.value} unlinked`;
-    case "turns": return plural(fact.value, "turn", "turns");
-    case "found": return `${fact.value} found via search`;
-    case "abstained": return `${fact.value} abstained`;
-    case "calls": return plural(fact.value, "call", "calls");
-    case "callsAfter": return `${plural(fact.value, "call", "calls")} after activation`;
-    case "commands": return plural(fact.value, "shell command", "shell commands");
-    case "unresolvedExec": return `${plural(fact.value, "exec wrapper", "exec wrappers")}, role unknown`;
-    case "skillarCalls": return `${plural(fact.value, "call", "calls")} to skillar`;
-    case "failed": return `${fact.value} failed`;
-    case "reads": return `${plural(fact.value, "read", "reads")} of its resources`;
-    case "spans": return `${fact.withCalls}/${fact.total} ${fact.total === 1 ? "span" : "spans"} with calls after activation`;
-    case "cost": return `cost ${fact.value === null ? UNKNOWN : formatCostUsd(fact.value)}`;
-    case "active": return `active ${formatLapse(fact.value)}`;
+    case "tab": return `탭 ${fact.value}`;
+    case "panes": return `패널 ${fact.value}개`;
+    case "sessions": return `세션 ${fact.value}개`;
+    case "inferred": return `추론으로 연결 ${fact.value}개`;
+    case "unlinked": return `미연결 ${fact.value}개`;
+    case "turns": return `대화 차례 ${fact.value}개`;
+    case "found": return `검색으로 찾음 ${fact.value}건`;
+    case "abstained": return `검색 보류 ${fact.value}건`;
+    case "calls": return `호출 ${fact.value}건`;
+    case "callsAfter": return `활성화 후 호출 ${fact.value}건`;
+    case "commands": return `셸 명령 ${fact.value}건`;
+    case "unresolvedExec": return `exec 래퍼 ${fact.value}개, 역할 알 수 없음`;
+    case "skillarCalls": return `skillar 호출 ${fact.value}건`;
+    case "failed": return `실패 ${fact.value}건`;
+    case "reads": return `스킬 리소스 읽기 ${fact.value}건`;
+    case "spans": return `활성화 후 호출이 있는 구간 ${fact.withCalls}/${fact.total}`;
+    case "cost": return `비용 ${fact.value === null ? UNKNOWN : formatCostUsd(fact.value)}`;
+    case "active": return `활성 시간 ${formatLapse(fact.value)}`;
     case "finding": return FINDING_LABEL[fact.value];
     default: {
       const exhaustive: never = fact;
@@ -51,8 +49,8 @@ export function factText(fact: Fact): string {
 export function factTitle(fact: Fact): string | undefined {
   switch (fact.key) {
     case "finding": return FINDING_TITLE[fact.value];
-    case "spans": return "Spans followed by at least one non-skillar tool call: activity, not proof the skill was applied or helped.";
-    case "unresolvedExec": return "Codex exec runs code that may only dispatch the other calls or also do work of its own, so the exact work count stays unknown.";
+    case "spans": return "skillar가 아닌 도구 호출이 한 번 이상 뒤따른 구간입니다. 활동이 있었다는 뜻일 뿐, 스킬이 적용되었거나 도움이 되었다는 증거는 아닙니다.";
+    case "unresolvedExec": return "Codex exec가 실행하는 코드는 다른 호출을 넘기기만 할 수도 있고 자체 작업을 할 수도 있어서, 정확한 작업 수는 알 수 없습니다.";
     default: return undefined;
   }
 }

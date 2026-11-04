@@ -6,7 +6,9 @@ Evidence Console puts source selection beside the activity workspace, with accou
 
 Desktop uses a 240px source rail and a flexible activity region. At narrow widths they stack with 20–24px gutters and no document overflow. Snapshot freshness, technical metadata and remote commands live in a named disclosure above the activity; their components remain mounted and all existing consent, confirmation and expiry rules apply. Device and private-pack management stay available in a separate disclosure. The account menu, auth routes, source lifecycle and all API contracts are unchanged. New explanation is plain Korean. Read/search evidence is explicitly distinguished from task success.
 
-The source chooser starts open before selection. After explicit selection, its disclosure closes and keeps the selected source identifier visible; it can be reopened to change sources. Focus moves to the mounted snapshot heading, with the same accent focus ring as controls. Closing a snapshot reopens source selection. The choice is never inferred from source arrival order.
+The source chooser starts open before selection. After explicit selection, its disclosure closes and keeps the selected source identifier visible; it can be reopened to change sources. Focus moves to the mounted snapshot heading, with the same keyboard-visible accent focus ring as controls. Closing a snapshot reopens source selection. The choice is never inferred from source arrival order.
+
+The owner's PR74 correction requires plain Korean for all authored dashboard copy, including navigation, account/source actions, trace labels, empty/error states, accessible names and explanations. Product/runtime names, recorded content, code IDs, commands, protocol tokens and machine values remain exact. Embedded trace focus ends on the mounted trace heading, not a full-panel outline. Real-pointer and keyboard evidence must distinguish focus modality.
 
 ## Evidence Console V2 foundations (PR1)
 

@@ -53,9 +53,18 @@ test("defaultMode: the top-paths table is the default below 30 sessions, the cha
 });
 
 test("legend is one line and names the unit", () => {
-  assert.equal(flow.legendText("first_load"), "Band width = sessions (unit: first loaded skill)");
-  assert.ok(flow.legendText("all_loads").includes("all loaded skills"));
+  assert.equal(flow.legendText("first_load"), "띠 굵기 = 세션 수 (단위: 처음 읽은 스킬)");
+  assert.ok(flow.legendText("all_loads").includes("읽은 모든 스킬"));
   assert.ok(!flow.legendText("all_loads").includes("\n"));
+});
+
+test("flow labels preserve recorded names that resemble generic bucket labels", () => {
+  for (const [column, value] of [[0, "custom"], [1, "skill://local/agents/unclassified/SKILL.md"]]) {
+    for (const label of ["unclassified", "Other (3)"]) {
+      const node = { id: `${column === 0 ? "t" : "s"}:${value}`, column, label, count: 1 };
+      assert.equal(sankey.displayLabel(node), node.label);
+    }
+  }
 });
 
 test("topPaths derives one row per task -> skill -> outcome from the task->skill links, sorted by sessions", () => {

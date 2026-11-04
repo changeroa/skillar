@@ -7,34 +7,34 @@ export type AvailabilityCopy = {
 
 export const AVAILABILITY_COPY: Record<Availability, AvailabilityCopy> = {
   "local-only": {
-    label: "Local only", selectable: false,
-    explanation: "Upload consent is off for this device.",
-    next: "Save upload consent and process a device upload to make its snapshots available here.",
+    label: "로컬 전용", selectable: false,
+    explanation: "이 기기는 업로드 동의가 꺼져 있습니다.",
+    next: "업로드 동의를 저장하고 기기 업로드가 처리되면 여기에서 기록을 볼 수 있습니다.",
   },
   "metadata-only": {
-    label: "Metadata only", selectable: false,
-    explanation: "Only session metadata is consented. Reports need all seven content categories.",
-    next: "Extend the device's consent to metadata and content.",
+    label: "메타데이터만", selectable: false,
+    explanation: "세션 메타데이터에만 동의했습니다. 보고서에는 일곱 가지 내용 범주가 모두 필요합니다.",
+    next: "기기의 동의를 메타데이터와 내용까지 넓히세요.",
   },
   partial: {
-    label: "Partial coverage", selectable: false,
-    explanation: "Consent covers some content categories or an older consent version. Reports need all seven on the current version.",
-    next: "Review the device's consent and include every category.",
+    label: "일부만 포함", selectable: false,
+    explanation: "동의가 일부 내용 범주만 포함하거나 이전 동의 버전입니다. 보고서에는 현재 버전에서 일곱 가지가 모두 필요합니다.",
+    next: "기기의 동의를 확인하고 모든 범주를 포함하세요.",
   },
   "awaiting-runtime": {
-    label: "Awaiting runtime", selectable: false,
-    explanation: "Uploads arrived, but the analysis runtime has not processed this source yet.",
-    next: "Check back after the next upload completes.",
+    label: "실행 환경 대기 중", selectable: false,
+    explanation: "업로드는 도착했지만 분석 실행 환경이 이 출처를 아직 처리하지 않았습니다.",
+    next: "다음 업로드가 끝난 뒤 다시 확인하세요.",
   },
   ready: {
-    label: "Snapshot available", selectable: true,
-    explanation: "Reports use uploaded snapshots. A live connection refreshes views when newer uploads arrive.",
+    label: "기록 있음", selectable: true,
+    explanation: "보고서는 업로드된 기록을 사용합니다. 실시간 연결은 새 업로드가 도착하면 화면을 새로 고칩니다.",
     next: null,
   },
   revoked: {
-    label: "Revoked", selectable: false,
-    explanation: "This device was revoked. Its uploads stopped and its snapshots are no longer shown.",
-    next: "Connect a new device to continue.",
+    label: "연결 해제됨", selectable: false,
+    explanation: "이 기기는 연결이 해제되었습니다. 업로드가 멈추고 기록도 더 이상 표시되지 않습니다.",
+    next: "계속하려면 새 기기를 연결하세요.",
   },
 };
 
@@ -42,14 +42,14 @@ export function availabilityCopy(availability: Availability): AvailabilityCopy {
   return AVAILABILITY_COPY[availability];
 }
 
-const whenFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+const whenFormat = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" });
 
 export function formatWhen(ms: number | null | undefined): string {
-  return ms === null || ms === undefined ? "Never" : whenFormat.format(new Date(ms));
+  return ms === null || ms === undefined ? "없음" : whenFormat.format(new Date(ms));
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {
-  return seconds === null || seconds === undefined ? "Never" : formatWhen(seconds * 1000);
+  return seconds === null || seconds === undefined ? "없음" : formatWhen(seconds * 1000);
 }
 
 export function shortId(id: string): string {
@@ -63,8 +63,8 @@ export function profileKey(profile: Pick<DashboardProfile, "deviceId" | "sourceD
 export type SnapshotLine = { readonly term: string; readonly detail: string; readonly technical?: string; readonly tone?: "pending" | "stale" | "failed" };
 
 export const REPORT_STATE_TEXT: Record<DashboardReportStatus["state"], string> = {
-  preparing: "Preparing the report", queued: "Queued on the server", running: "Building the report",
-  complete: "Complete", failed: "Failed",
+  preparing: "보고서 준비 중", queued: "서버에서 대기 중", running: "보고서 만드는 중",
+  complete: "완료", failed: "실패",
 };
 
 export function mergeReports(reports: Iterable<DashboardReportStatus>): DashboardReportStatus | null {
@@ -93,29 +93,29 @@ export function snapshotLines(
   const captured = report?.sourceCapturedAt ?? profile.capturedAtMs;
   const received = report?.sourceReceivedAt ?? profile.receivedAtMs;
   const revision = report === null
-    ? `${profile.sourceSequence} / journal ${profile.journalThrough} / runtime ${profile.runtimeSequence ?? "none"}`
-    : `${report.inputRevision.sequence} / journal ${report.inputRevision.journalThrough} / runtime ${report.inputRevision.runtimeSequence}`;
+    ? `${profile.sourceSequence} / 저널 ${profile.journalThrough} / 실행 환경 ${profile.runtimeSequence ?? "없음"}`
+    : `${report.inputRevision.sequence} / 저널 ${report.inputRevision.journalThrough} / 실행 환경 ${report.inputRevision.runtimeSequence}`;
   const lines: SnapshotLine[] = [
-    { term: "Source captured", detail: formatWhen(captured) },
-    { term: "Received by skillar", detail: formatWhen(received) },
-    { term: "Revision", detail: revision },
-    { term: "Report", detail: failure !== null ? "Request failed" : report === null ? "Not requested yet" :
-      report.state === "failed" && report.error === "flow_not_found" ? "Some report data is unavailable" : REPORT_STATE_TEXT[report.state],
+    { term: "출처 수집 시각", detail: formatWhen(captured) },
+    { term: "skillar 수신 시각", detail: formatWhen(received) },
+    { term: "리비전", detail: revision },
+    { term: "보고서", detail: failure !== null ? "요청 실패" : report === null ? "아직 요청하지 않음" :
+      report.state === "failed" && report.error === "flow_not_found" ? "일부 보고서 데이터 없음" : REPORT_STATE_TEXT[report.state],
       ...(failure === null ? {} : { tone: "failed" as const }) },
   ];
-  if (report?.pending) lines.push({ term: "Pending", tone: "pending", detail: "The report is still being processed and may not include the newest accepted upload." });
-  if (report?.stale) lines.push({ term: "Stale", tone: "stale", detail: "This result may be out of date. Rebuild reports to check the latest processed upload." });
+  if (report?.pending) lines.push({ term: "대기 중", tone: "pending", detail: "보고서가 아직 처리 중이어서 가장 최근에 접수된 업로드가 포함되지 않았을 수 있습니다." });
+  if (report?.stale) lines.push({ term: "오래됨", tone: "stale", detail: "이 결과는 최신이 아닐 수 있습니다. 보고서를 다시 만들어 가장 최근에 처리된 업로드를 확인하세요." });
   if (report?.state === "failed") {
-    lines.push({ term: "Failure", tone: "failed",
-      detail: report.error === "flow_not_found" ? "A workspace flow summary is unavailable for this snapshot. Other reports remain available." :
-        "The server could not build one report. Rebuild reports to retry.",
+    lines.push({ term: "실패", tone: "failed",
+      detail: report.error === "flow_not_found" ? "이 기록에는 작업 공간 사용 흐름 요약이 없습니다. 다른 보고서는 그대로 볼 수 있습니다." :
+        "서버가 보고서 하나를 만들지 못했습니다. 보고서를 다시 만들어 재시도하세요.",
       ...(report.error === null ? {} : { technical: report.error }) });
   }
   if (failure !== null) {
-    lines.push({ term: "Request failed", tone: "failed",
-      detail: failure.status >= 500 ? "The cloud report service is temporarily unavailable. Try rebuilding reports later." :
-        failure.status === 403 ? "The device or its consent no longer permits this report. Reload sources and review its consent." :
-        "The cloud report request could not be completed. Reload sources and try again.",
+    lines.push({ term: "요청 실패", tone: "failed",
+      detail: failure.status >= 500 ? "클라우드 보고서 서비스를 일시적으로 사용할 수 없습니다. 나중에 보고서를 다시 만들어 보세요." :
+        failure.status === 403 ? "기기 또는 기기의 동의가 더 이상 이 보고서를 허용하지 않습니다. 출처를 다시 읽고 동의를 확인하세요." :
+        "클라우드 보고서 요청을 완료할 수 없었습니다. 출처를 다시 읽고 다시 시도하세요.",
       technical: `${failure.status} (${failure.code})` });
   }
   return lines;

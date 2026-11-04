@@ -74,15 +74,15 @@ function useLoad<T>(
 }
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
-  const text = phase.kind === "expired" ? "Your session ended, so activity was cleared from this page. Sign in again to continue." :
-    phase.kind === "signed-out" ? "Not signed in. Activity is shown only after you sign in." :
-    phase.kind === "unreachable" ? "Couldn't reach the account service. Check your connection and reload." :
-    "The account service didn't answer as expected. Try again later.";
+  const text = phase.kind === "expired" ? "세션이 끝나 이 페이지의 활동 내용을 지웠습니다. 계속하려면 다시 로그인하세요." :
+    phase.kind === "signed-out" ? "로그인되어 있지 않습니다. 활동은 로그인한 뒤에만 표시됩니다." :
+    phase.kind === "unreachable" ? "계정 서비스에 연결할 수 없습니다. 연결 상태를 확인하고 페이지를 새로 고치세요." :
+    "계정 서비스가 예상과 다르게 응답했습니다. 나중에 다시 시도하세요.";
   return (
     <div class="auth-actions dash-signed-out">
       <p class="note session-status" role="status" aria-live="polite">{text}</p>
-      <a class="button primary" href="/auth/google">Continue with Google <span aria-hidden="true">{"\u2192"}</span></a>
-      <p class="note">Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained.</p>
+      <a class="button primary" href="/auth/google">Google로 계속하기 <span aria-hidden="true">{"\u2192"}</span></a>
+      <p class="note">Google은 자체 페이지에서 동의를 요청합니다. 그 뒤 skillar는 Google ID, 이메일, 이름, 프로필 사진, 첫 로그인 시각과 최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키이며, Google 토큰은 보관하지 않습니다.</p>
     </div>
   );
 }
@@ -101,8 +101,8 @@ type SignedInProps = {
 
 function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, onRebuild, onUnauthorized }: SignedInProps) {
   const sourcePicker = useRef<HTMLDetailsElement>(null);
-  const [profiles, reloadProfiles] = useLoad<DashboardProfiles>(readProfiles, "Loading sources", signal, onUnauthorized);
-  const [devices, reloadDevices] = useLoad(loadDevices, "Loading devices", signal, onUnauthorized);
+  const [profiles, reloadProfiles] = useLoad<DashboardProfiles>(readProfiles, "출처 읽기", signal, onUnauthorized);
+  const [devices, reloadDevices] = useLoad(loadDevices, "기기 읽기", signal, onUnauthorized);
   const reload = () => {
     reloadProfiles();
     reloadDevices();
@@ -122,12 +122,12 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       <div class="dash-account">
         <div class="account-user">
           <div>
-            <p class="note">Signed in as</p>
+            <p class="note">로그인 계정</p>
             <p class="account-name">{user.name === "" ? user.email : user.name}</p>
             {user.name !== "" && <p class="account-email">{user.email}</p>}
           </div>
         </div>
-        <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out</button></form>
+        <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
       </div>
       <div class="dash-workspace">
         <aside class="dash-sources" aria-label="활동 출처">
@@ -135,7 +135,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           <details ref={sourcePicker} class="dash-source-picker" open={selected === null}>
             <summary>{selected === null ? "출처 선택" : "출처 변경 및 상세"}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
-              message={loadMessage(profiles, "Loading sources\u2026")} onSelect={profile => {
+              message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => {
                 if (sourcePicker.current) sourcePicker.current.open = false;
                 onSelect(profile);
               }} onReload={reload} />
@@ -153,16 +153,16 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           ) : (
             <section class="dash-empty" aria-labelledby="dash-empty-title">
               <h2 id="dash-empty-title">확인할 출처를 선택하세요</h2>
-              <p>조회할 수 있는 출처에서 Show snapshot을 선택하면 세션과 검색·읽기 기록이 열립니다.</p>
+              <p>조회할 수 있는 출처에서 '기록 보기'를 선택하면 세션과 검색·읽기 기록이 열립니다.</p>
               <p class="note">아직 기록을 선택하지 않았습니다. 읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
             </section>
           )}
         </div>
       </div>
       <details class="dash-management">
-        <summary>기기 및 private pack 관리</summary>
+        <summary>기기 및 비공개 팩 관리</summary>
         <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
-          settled={devices.status === "ready"} message={loadMessage(devices, "Loading devices\u2026")}
+          settled={devices.status === "ready"} message={loadMessage(devices, "기기를 읽는 중\u2026")}
           signal={signal} onChanged={reload} onUnauthorized={onUnauthorized} />
         <PrivatePacks key={user.email} signal={signal} onUnauthorized={onUnauthorized} />
       </details>
@@ -212,7 +212,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     configureApi(api);
     setSelected(profile);
   };
-  if (phase.kind === "checking") return <p class="note session-status" role="status" aria-live="polite">Checking your account{"\u2026"}</p>;
+  if (phase.kind === "checking") return <p class="note session-status" role="status" aria-live="polite">계정을 확인하는 중{"\u2026"}</p>;
   if (phase.kind !== "signed-in") return <SignedOut phase={phase} />;
   return (
     <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failure} onSelect={select}

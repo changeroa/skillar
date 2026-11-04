@@ -14,13 +14,13 @@ test("session request counts show success and failure together, zero attempts se
   const root = newRoot();
   const summary = { total: 2, counts: { in_progress: 0, succeeded: 1, failed: 1, cancelled: 0, unknown: 0 }, results: { candidates_found: 0, no_candidates: 0 }, reasons: {} };
   ui.render(ui.h(ui.OperationCounts, { summary }), root);
-  assert.match(root.textContent, /succeeded\s*1/);
-  assert.match(root.textContent, /failed\s*1/);
-  assert.doesNotMatch(root.textContent, /Aborted|Loaded|not_attempted/);
+  assert.match(root.textContent, /성공\s*1/);
+  assert.match(root.textContent, /실패\s*1/);
+  assert.doesNotMatch(root.textContent, /중단됨|읽음|요청 없음/);
   ui.render(ui.h(ui.OperationCounts, { summary: { ...summary, total: 0 } }), root);
-  assert.equal(root.textContent, "not_attempted");
+  assert.equal(root.textContent, "요청 없음");
   ui.render(ui.h(ui.OperationCounts, {}), root);
-  assert.equal(root.textContent, "unknown");
+  assert.equal(root.textContent, "알 수 없음");
   ui.render(null, root);
 });
 

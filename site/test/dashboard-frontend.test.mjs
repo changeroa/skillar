@@ -176,16 +176,16 @@ test("snapshot lines report pending, stale and failed states separately from emp
   const terms = lines => lines.map(line => line.term);
   const tones = lines => lines.map(line => line.tone).filter(tone => tone !== undefined);
   assert.deepEqual(tones(snapshotLines(profile, null)), []);
-  assert.equal(snapshotLines(profile, null).find(line => line.term === "Report")?.detail, "Not requested yet");
+  assert.equal(snapshotLines(profile, null).find(line => line.term === "보고서")?.detail, "아직 요청하지 않음");
   const report = {
     schemaVersion: 1, jobId: "00000000-0000-4000-8000-000000000000", state: "failed", generatedAt: now,
     sourceCapturedAt: now - 1000, sourceReceivedAt: null, inputRevision: { sequence: 5, journalThrough: 50, runtimeSequence: 3 },
     analysisVersion: 1, stale: true, pending: true, error: "runtime_missing", result: null,
   };
   assert.deepEqual(tones(snapshotLines(profile, report)), ["pending", "stale", "failed"]);
-  assert.deepEqual(terms(snapshotLines(profile, report)).slice(0, 4), ["Source captured", "Received by skillar", "Revision", "Report"]);
+  assert.deepEqual(terms(snapshotLines(profile, report)).slice(0, 4), ["출처 수집 시각", "skillar 수신 시각", "리비전", "보고서"]);
   const failed = snapshotLines(profile, null, { status: 503, code: "dashboard_unavailable" });
   assert.deepEqual(tones(failed), ["failed", "failed"]);
-  assert.equal(failed.find(line => line.term === "Report")?.tone, "failed");
-  assert.equal(failed.at(-1)?.term, "Request failed");
+  assert.equal(failed.find(line => line.term === "보고서")?.tone, "failed");
+  assert.equal(failed.at(-1)?.term, "요청 실패");
 });

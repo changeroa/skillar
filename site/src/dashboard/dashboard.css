@@ -34,7 +34,7 @@
 .snapshot__inspector { margin-block: 12px; padding: 0; border-block: 1px solid var(--rule); background: none; }
 .snapshot .panel__head .cluster { gap: 8px; }
 .snapshot #snapshot-title { font-size: 18px; }
-.snapshot #snapshot-title:focus { outline: 2px solid var(--accent); outline-offset: 4px; }
+.snapshot #snapshot-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .snapshot__inspector > .note { margin-bottom: 16px; }
 .snapshot__inspector .snapshot__facts { font-size: var(--small); }
 .dash-management { margin-top: 32px; border-top: 1px solid var(--border); }

@@ -176,8 +176,8 @@ test("sessions usage line: unattributed counts and per-runtime attribution with 
   assert.equal(formatRate(0.954), "95%");
   assert.equal(unattributedText(undefined), undefined);
   assert.equal(unattributedText({ searches: 0, loads: 0 }), undefined);
-  assert.equal(unattributedText({ searches: 3, loads: 1 }), "3 unattributed searches, 1 load (no session could be matched)");
-  assert.equal(unattributedText({ searches: 1, loads: 0 }), "1 unattributed search, 0 loads (no session could be matched)");
+  assert.equal(unattributedText({ searches: 3, loads: 1 }), "세션 미연결: 검색 3건, 읽기 1건");
+  assert.equal(unattributedText({ searches: 1, loads: 0 }), "세션 미연결: 검색 1건, 읽기 0건");
   const rates = attributionRates({
     attributionRate: { "claude-code": 1, codex: 0, gemini: null, cursor: null, omo: null, gajae: null, openclaw: 0.5, unknown: null },
     lastEventByRuntime: { gemini: 1, codex: 2 },

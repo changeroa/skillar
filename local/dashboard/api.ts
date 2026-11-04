@@ -60,7 +60,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, { credentials: "same-origin", ...init, headers: { Accept: "application/json", ...(init?.headers ?? {}) } });
   if (!res.ok) {
     let code = `http_${res.status}`;
-    let message = `${init?.method ?? "GET"} ${path} failed with ${res.status}`;
+    let message = `${init?.method ?? "GET"} ${path} 요청 실패 (${res.status})`;
     try {
       const body = (await res.json()) as { error?: string; message?: string };
       if (body.error) code = body.error;
@@ -68,7 +68,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body: keep the status-based message */
     }
-    if (res.status === 401) message = "this browser is not signed in to the dashboard. Run `skillar open` in a terminal to open it with a sign-in link.";
+    if (res.status === 401) message = "이 브라우저는 대시보드에 로그인하지 않았습니다. 터미널에서 `skillar open`을 실행해 로그인 링크로 여세요.";
     throw new ApiError(res.status, code, message);
   }
   if (res.status === 204) return undefined as T;
@@ -185,9 +185,9 @@ function fixtureApi(variant: FixtureVariant): Api {
         generatedAt: Date.now(), from: query.from ?? null, to: query.to ?? null, limit: query.limit ?? FLOWS_PAGE_LIMIT,
         automated: query.automated ?? "exclude", flows: [], nextCursor: null,
       }),
-    flowReport: (id) => Promise.reject(new ApiError(404, "flow_not_found", `no flow or herdr workspace ${id}`)),
+    flowReport: (id) => Promise.reject(new ApiError(404, "flow_not_found", `사용 흐름 또는 herdr 작업 공간을 찾을 수 없습니다: ${id}`)),
     workflowVersions: () => Promise.resolve([]),
-    skillReport: (sessionId) => Promise.reject(new ApiError(404, "session_not_found", `no session ${sessionId}`)),
+    skillReport: (sessionId) => Promise.reject(new ApiError(404, "session_not_found", `세션을 찾을 수 없습니다: ${sessionId}`)),
     flow: (filter, opts = {}) =>
       settle((data) => {
         if (opts.unit === "search_requests" || opts.unit === "load_requests") return fixtureRequestFlow(data, rowsOf(data).filter((row) => matchesFilter(row, filter)), opts.unit);
