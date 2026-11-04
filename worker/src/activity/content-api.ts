@@ -39,6 +39,7 @@ import { commandsRequest } from "./commands.ts";
 import { privatePacksRequest } from "./private-packs.ts";
 import { sweepPrivatePacks } from "./private-packs-cleanup.ts";
 import { sweepCommands } from "./commands-cleanup.ts";
+import { acceleratorStatus, acceleratorStatusPath } from "./accelerator.ts";
 
 const internalPrincipalSchema = z.strictObject({
   kind: z.literal("device"), accountId: accountIdSchema, deviceId: deviceIdSchema,
@@ -115,7 +116,8 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
   const readOnly = url.pathname === dashboardServicePaths.profiles || url.pathname === "/v1/activity/migrations/status" ||
     url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export" ||
     url.pathname === "/v1/activity/query" || url.pathname === "/v1/activity/reports/status" ||
-    url.pathname === "/v1/activity/reports/result" || url.pathname === "/v1/activity/context/read";
+    url.pathname === "/v1/activity/reports/result" || url.pathname === "/v1/activity/context/read" ||
+    url.pathname === acceleratorStatusPath;
   if (!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") {
     return Response.json({ error: "not_found" }, { status: 404, headers });
   }
@@ -131,6 +133,9 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     const principal = internalPrincipalSchema.parse(JSON.parse(identity));
     if (!isDeploymentOrigin(principal.issuer, env)) throw new ActivityLedgerError("forbidden");
     const path = url.pathname;
+    if (path === acceleratorStatusPath) {
+      return Response.json(acceleratorStatus(), { headers });
+    }
     if (path === dashboardServicePaths.evalCases) {
       return Response.json(await storeDashboardEvalCase(env, principal, await body(request)), { status: 201, headers });
     }
