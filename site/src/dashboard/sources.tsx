@@ -33,14 +33,18 @@ export function SourcesSection({ profiles, selectedKey, busy, message, onSelect,
           return (
             <li class="source" key={key} aria-current={current ? "true" : undefined}>
               <div class="source__head">
-                <h3>기기 <span class="device-id">{shortId(profile.deviceId)}</span></h3>
+                <h3>기기 <span class="device-id" title={profile.deviceId}>{shortId(profile.deviceId)}</span></h3>
                 <span class="source__state">{copy.label}</span>
               </div>
               <dl class="account-status source__facts">
-                <div><dt>출처</dt><dd><code>{profile.sourceDomain}</code></dd></div>
-                <div><dt>수집</dt><dd>{formatWhen(profile.capturedAtMs)}</dd></div>
-                <div><dt>수신</dt><dd>{formatWhen(profile.receivedAtMs)}</dd></div>
-                <div><dt>리비전</dt><dd>{profile.sourceSequence} / 저널 {profile.journalThrough} / 실행 환경 {profile.runtimeSequence ?? "없음"}</dd></div>
+                <div><dt>출처</dt><dd><code title={profile.sourceDomain}>{shortId(profile.sourceDomain)}</code></dd></div>
+                <div><dt>수집</dt><dd class="source__when">{formatWhen(profile.capturedAtMs)}</dd></div>
+                <div><dt>수신</dt><dd class="source__when">{formatWhen(profile.receivedAtMs)}</dd></div>
+                <div><dt>리비전</dt><dd class="source__revisions">
+                  <span>{profile.sourceSequence}</span>
+                  <span>/ 저널 {profile.journalThrough}</span>
+                  <span>/ 실행 환경 {profile.runtimeSequence ?? "없음"}</span>
+                </dd></div>
               </dl>
               <p class="note">{copy.explanation}{copy.next === null ? "" : ` ${copy.next}`}</p>
               {copy.selectable && (

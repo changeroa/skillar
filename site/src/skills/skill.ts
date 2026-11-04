@@ -336,7 +336,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
           onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setTyped(event.currentTarget.value) })),
       h("div", { class: "cluster" },
         h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => setPending(null) }, keepLabel),
-        h("button", { class: "button primary", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "Confirm delete")));
+        h("button", { class: "button danger", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "Confirm delete")));
   };
 
   const title = name === "" ? "Skill" : `Skill: ${name}`;
@@ -358,7 +358,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       : version.pinned ? "This version is pinned; unpin it before deleting it." : null;
     const confirming = pending?.kind === "version" && pending.digest === version.digest;
     const rowId = `version-${version.digest.slice(0, 16)}`;
-    return h("li", { key: version.digest, class: "version", "aria-labelledby": rowId },
+    return h("li", { key: version.digest, class: "version", "aria-labelledby": rowId, "data-current": current ? "true" : undefined },
       h("div", { class: "version__meta" },
         h("p", { id: rowId, class: "version__flags" },
           current && h("strong", null, "Current"),
@@ -377,7 +377,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
         protectedReason === null && head !== null && (confirming
           ? confirmation({ kind: "version", digest: version.digest }, "Deleting removes this version's files from your account. It cannot be undone.", "Keep version",
             () => run("Deleting the version", () => deleteVersion(skillId, head, version.digest, signal)))
-          : h("button", { id: triggerId({ kind: "version", digest: version.digest }), class: "button secondary", type: "button", disabled: busy,
+          : h("button", { id: triggerId({ kind: "version", digest: version.digest }), class: "button secondary danger-quiet", type: "button", disabled: busy,
             onClick: () => openConfirmation({ kind: "version", digest: version.digest }) }, "Delete version\u2026")),
         protectedReason !== null && h("span", { class: "note version__protected" }, protectedReason)));
   };
@@ -388,44 +388,54 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     h("p", { class: "note skill__status", role: "status", "aria-live": "polite" },
       detailState.status === "loading" ? "Loading the skill\u2026" : detailState.status === "failed" ? detailState.message : ""),
     detail !== null && h("dl", { class: "account-status skill__facts" },
-      h("div", null, h("dt", null, "Skill ID"), h("dd", null, h("code", null, detail.skill.skillId))),
       h("div", null, h("dt", null, "Current revision"), h("dd", null, String(detail.skill.head.revision))),
-      h("div", null, h("dt", null, "Current digest"), h("dd", null, h("code", null, detail.skill.head.digest))),
-      h("div", null, h("dt", null, "Updated"), h("dd", null, when(detail.skill.updatedAt))),
-      h("div", null, h("dt", null, "Versions kept"), h("dd", null, String(detail.versions.length)))),
-    detail !== null && h("section", { class: "skill__section", "aria-labelledby": "resources-title" },
-      h("h3", { id: "resources-title", class: "panel__subtitle" }, "Files in the current version"),
-      draftState.status === "ready"
-        ? h("dl", { class: "account-status resource-list" }, draftState.resources.map(resource =>
-          h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)), h("dd", null, `${formatBytes(resource.bytes)} \u00b7 ${resource.mediaType}`))))
-        : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "Loading the current version\u2026" : draftState.message)),
-    detail !== null && draftState.status === "ready" && h("form", { class: "skill__section publish", onSubmit: publish, "aria-labelledby": "edit-title" },
-      h("h3", { id: "edit-title", class: "panel__subtitle" }, "Edit and publish a new version"),
-      h("p", { class: "note" }, `Edits stay in this page until you publish. Publishing creates revision ${detail.skill.head.revision + 1} on top of revision ${draftState.draft.base?.revision ?? detail.skill.head.revision}; earlier versions are kept.`),
-      h(DraftEditor, { draft: draftState.draft, idPrefix: "edit-skill", busy, notes,
-        onChange: (next, newNotes) => {
-          setDraftState({ ...draftState, draft: next });
-          if (newNotes.length > 0) setNotes(newNotes);
-        } }),
-      problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
-      h("div", { class: "cluster publish__actions" },
-        h("button", { class: "button primary", type: "submit", disabled: busy }, "Publish new version"),
-        conflict && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: review }, "Review current version"),
-        isDirty(draftState) && head !== null && h("button", { class: "button secondary", type: "button", disabled: busy,
-          onClick: () => loadDraft(head) }, "Discard edits and load the current version"),
-        h(NoteLine, { note: publishNote }))),
-    detail !== null && h("section", { class: "skill__section", "aria-labelledby": "versions-title" },
-      h("h3", { id: "versions-title", class: "panel__subtitle", tabIndex: -1 }, "Versions"),
-      h("p", { class: "note" }, "Make current restores an older version as the one agents will get; pinning keeps a version from being deleted. Each version can be exported as JSON."),
-      h("div", { class: "cluster versions__note" }, h(NoteLine, { note: versionsNote })),
-      h("ul", { class: "version-list" }, detail.versions.map(versionRow))),
-    detail !== null && h("section", { class: "skill__section skill__danger", "aria-labelledby": "delete-title" },
-      h("h3", { id: "delete-title", class: "panel__subtitle" }, "Delete this skill"),
-      h("p", { class: "note" }, "Deleting removes every version of this skill from your account. Export anything you want to keep first."),
-      h("div", { class: "cluster" }, pending?.kind === "skill"
-        ? confirmation({ kind: "skill", name }, `This deletes ${detail.versions.length} ${detail.versions.length === 1 ? "version" : "versions"}. It cannot be undone.`,
-          "Keep skill", removeSkill)
-        : h("button", { id: triggerId({ kind: "skill" }), class: "button secondary", type: "button", disabled: busy, onClick: () => openConfirmation({ kind: "skill" }) },
-          "Delete skill\u2026"),
-        h(NoteLine, { note: deleteNote }))));
+      h("div", null, h("dt", null, "Versions kept"), h("dd", null, String(detail.versions.length))),
+      h("div", { class: "skill__digest" }, h("dt", null, "Current digest"), h("dd", null, h("code", null, detail.skill.head.digest))),
+      h("div", null, h("dt", null, "Skill ID"), h("dd", null, h("code", null, detail.skill.skillId))),
+      h("div", null, h("dt", null, "Updated"), h("dd", null, when(detail.skill.updatedAt)))),
+    detail !== null && h("div", { class: "skill__layout" },
+      h("div", { class: "skill__support" },
+        h("section", { class: "skill__section", "aria-labelledby": "versions-title" },
+          h("h3", { id: "versions-title", class: "panel__subtitle", tabIndex: -1 }, "Versions"),
+          h("p", { class: "note" }, "Make current restores an older version as the one agents will get; pinning keeps a version from being deleted. Each version can be exported as JSON."),
+          h("div", { class: "cluster versions__note" }, h(NoteLine, { note: versionsNote })),
+          h("ul", { class: "version-list" }, detail.versions.map(versionRow))),
+        h("section", { class: "skill__section skill__evidence", "aria-labelledby": "evidence-title" },
+          h("h3", { id: "evidence-title", class: "panel__subtitle" }, "Read history and evaluation"),
+          h("dl", { class: "account-status" },
+            h("div", null, h("dt", null, "Version-linked reads"), h("dd", null, "Not connected to this view")),
+            h("div", null, h("dt", null, "Evaluation results"), h("dd", null, "Not connected to this view"))),
+          h("p", { class: "note" }, "Publication history is not read history, and reading does not prove task success. This view has no version-linked read or evaluation results."),
+          h("a", { class: "button secondary", href: "/dashboard/" }, "Open Dashboard"))),
+      h("div", { class: "skill__document" },
+        h("section", { class: "skill__section", "aria-labelledby": "resources-title" },
+          h("h3", { id: "resources-title", class: "panel__subtitle" }, "Files in the current version"),
+          draftState.status === "ready"
+            ? h("dl", { class: "account-status resource-list" }, draftState.resources.map(resource =>
+              h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)), h("dd", null, `${formatBytes(resource.bytes)} \u00b7 ${resource.mediaType}`))))
+            : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "Loading the current version\u2026" : draftState.message)),
+        draftState.status === "ready" && h("form", { class: "skill__section publish", onSubmit: publish, "aria-labelledby": "edit-title" },
+          h("h3", { id: "edit-title", class: "panel__subtitle" }, "Edit and publish a new version"),
+          h("p", { class: "note" }, `Edits stay in this page until you publish. Publishing creates revision ${detail.skill.head.revision + 1} on top of revision ${draftState.draft.base?.revision ?? detail.skill.head.revision}; earlier versions are kept.`),
+          h(DraftEditor, { draft: draftState.draft, idPrefix: "edit-skill", busy, notes,
+            onChange: (next, newNotes) => {
+              setDraftState({ ...draftState, draft: next });
+              if (newNotes.length > 0) setNotes(newNotes);
+            } }),
+          problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
+          h("div", { class: "cluster publish__actions" },
+            h("button", { class: "button primary", type: "submit", disabled: busy }, "Publish new version"),
+            conflict && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: review }, "Review current version"),
+            isDirty(draftState) && head !== null && h("button", { class: "button secondary", type: "button", disabled: busy,
+              onClick: () => loadDraft(head) }, "Discard edits and load the current version"),
+            h(NoteLine, { note: publishNote }))),
+        h("section", { class: "skill__section skill__danger", "aria-labelledby": "delete-title" },
+          h("h3", { id: "delete-title", class: "panel__subtitle" }, "Delete this skill"),
+          h("p", { class: "note" }, "Deleting removes every version of this skill from your account. Export anything you want to keep first."),
+          h("div", { class: "cluster" }, pending?.kind === "skill"
+            ? confirmation({ kind: "skill", name }, `This deletes ${detail.versions.length} ${detail.versions.length === 1 ? "version" : "versions"}. It cannot be undone.`,
+              "Keep skill", removeSkill)
+            : h("button", { id: triggerId({ kind: "skill" }), class: "button secondary danger-quiet", type: "button", disabled: busy, onClick: () => openConfirmation({ kind: "skill" }) },
+              "Delete skill\u2026"),
+            h(NoteLine, { note: deleteNote }))))));
 }

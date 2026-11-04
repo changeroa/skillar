@@ -14,7 +14,7 @@ import { PrivatePacks } from "./packs";
 import { DevicesSection } from "./devices";
 import type { DeviceState } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
-import { mergeReports, profileKey } from "./status";
+import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
 
 type Loaded<T> = {
@@ -101,6 +101,7 @@ type SignedInProps = {
 
 function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, onRebuild, onUnauthorized }: SignedInProps) {
   const sourcePicker = useRef<HTMLDetailsElement>(null);
+  const management = useRef<HTMLDetailsElement>(null);
   const [profiles, reloadProfiles] = useLoad<DashboardProfiles>(readProfiles, "출처 읽기", signal, onUnauthorized);
   const [devices, reloadDevices] = useLoad(loadDevices, "기기 읽기", signal, onUnauthorized);
   const reload = () => {
@@ -108,6 +109,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     reloadDevices();
   };
   const list = profiles.data?.profiles ?? [];
+  const hasViewableSources = list.some(profile => profile.availability === "ready");
   const sourcesLoad = profiles.completedLoads;
   useEffect(() => {
     if (selected === null || profiles.status !== "ready") return;
@@ -131,7 +133,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       </div>
       <div class="dash-workspace">
         <aside class="dash-sources" aria-label="활동 출처">
-          {selected !== null && <p class="dash-source-current">출처 <code>{selected.sourceDomain}</code></p>}
+          {selected !== null && <p class="dash-source-current">출처 <code title={selected.sourceDomain}>{shortId(selected.sourceDomain)}</code></p>}
           <details ref={sourcePicker} class="dash-source-picker" open={selected === null}>
             <summary>{selected === null ? "출처 선택" : "출처 변경 및 상세"}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
@@ -152,14 +154,30 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
             </SnapshotSection>
           ) : (
             <section class="dash-empty" aria-labelledby="dash-empty-title">
-              <h2 id="dash-empty-title">확인할 출처를 선택하세요</h2>
-              <p>조회할 수 있는 출처에서 '기록 보기'를 선택하면 세션과 검색·읽기 기록이 열립니다.</p>
-              <p class="note">아직 기록을 선택하지 않았습니다. 읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
+              {profiles.status === "ready" && !hasViewableSources ? (
+                <>
+                  <h2 id="dash-empty-title">조회할 수 있는 출처가 없습니다</h2>
+                  <p>새 기기를 연결하거나 로컬 대시보드에서 기록을 확인하세요. 기기 연결과 기록 업로드 동의는 별개입니다.</p>
+                  <div class="cluster">
+                    <a class="button primary" href="#dashboard-management" onClick={() => {
+                      if (management.current) management.current.open = true;
+                    }}>기기 연결 안내</a>
+                    <a class="text-link" href="/#local-setup">로컬 설정 안내</a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 id="dash-empty-title">확인할 출처를 선택하세요</h2>
+                  <p>조회할 수 있는 출처에서 '기록 보기'를 선택하면 세션과 검색·읽기 기록이 열립니다.</p>
+                  <p class="note">아직 기록을 선택하지 않았습니다.</p>
+                </>
+              )}
+              <p class="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
             </section>
           )}
         </div>
       </div>
-      <details class="dash-management">
+      <details ref={management} id="dashboard-management" class="dash-management">
         <summary>기기 및 비공개 팩 관리</summary>
         <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
           settled={devices.status === "ready"} message={loadMessage(devices, "기기를 읽는 중\u2026")}

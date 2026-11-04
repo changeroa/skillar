@@ -1,10 +1,56 @@
 # skillar.sh
 
+## Skill evidence and dashboard recovery (PR3)
+
+The selected skill remains a real document and version workspace, using the
+existing hash route, editor, verified package and version actions. Make the
+current revision, full digest, files and retained versions easy to distinguish.
+Publication history is not read history. The current skill API supplies neither
+version-linked reads nor evaluation results, so show those as not connected to
+this view, never as zero reads, a passing score or an evaluation gate. A real
+Dashboard link can lead to session evidence without claiming a prefiltered
+version match. Existing pin, head, publish, export and P14 typed-delete contracts
+remain unchanged. Lead cleared the skills ownership gate after PR71 merged.
+
+The detail workspace adapts the approved version rail and document relationship:
+a 320px supporting column holds retained versions and the evidence availability
+facts, beside a zero-minimum document column from 1000px. Below that width,
+the same source and focus order stacks in the document. Current revision and
+retained-version count lead the compact facts; the full current digest keeps
+its own row. Version rows use flat rule separators, a neutral current-version
+wash and 44px actions, not repeated elevated cards. The current document stays
+plain text in the existing editor. Section headings use the 22px app role.
+Destructive triggers use the existing error ink and border; an armed typed
+confirmation uses error fill and background ink. Disabled confirmation remains
+neutral. No confirmation predicate, request, default action or focus rule changes.
+
+The Dashboard workspace offers source selection only when a successful source
+read includes a viewable source. When none are viewable, explain that state and
+offer device-connection guidance and the existing local-setup destination.
+Opening guidance reveals the existing management disclosure; it creates no
+grant, device or consent. Loading and failed reads must not invent an empty
+result.
+
+Desktop source rails use 320px, expanding to 360px from 1200px. At the existing
+900px reflow they return to a single document column. Source facts use a 56px
+label track and a shrinkable value track. Opaque source/device IDs use the
+existing middle-ellipsis formatter with their full value in a native title;
+dates stay on one line and revision groups wrap only between complete values.
+The page remains the sole vertical scroll owner. No new color, font, radius,
+motion or API token is introduced.
+
+Spatial references, adapted to the existing page rather than copied:
+[sidebar](https://raw.githubusercontent.com/changeroa/StyleGallery/main/patterns/split-sidebar/sidebar.md)
+for source/supporting columns and
+[list-detail](https://raw.githubusercontent.com/changeroa/StyleGallery/main/patterns/split-sidebar/list-detail.md)
+for the selected document relationship. Source order and focus order stay
+aligned; zero-minimum tracks and the phone stack are load-bearing constraints.
+
 ## Dashboard composition (PR2)
 
 Evidence Console puts source selection beside the activity workspace, with account and connection management below it. A source is still explicitly selected; no source is selected automatically and unavailable sources remain disabled. Without a selection, the workspace explains the next action rather than showing example data. Selected activity keeps the existing Sessions/Workspaces/Flow/Heatmap routes and report adapter.
 
-Desktop uses a 240px source rail and a flexible activity region. At narrow widths they stack with 20–24px gutters and no document overflow. Snapshot freshness, technical metadata and remote commands live in a named disclosure above the activity; their components remain mounted and all existing consent, confirmation and expiry rules apply. Device and private-pack management stay available in a separate disclosure. The account menu, auth routes, source lifecycle and all API contracts are unchanged. New explanation is plain Korean. Read/search evidence is explicitly distinguished from task success.
+Desktop uses the source rail dimensions defined in PR3 and a flexible activity region. At narrow widths they stack with 20–24px gutters and no document overflow. Snapshot freshness, technical metadata and remote commands live in a named disclosure above the activity; their components remain mounted and all existing consent, confirmation and expiry rules apply. Device and private-pack management stay available in a separate disclosure. The account menu, auth routes, source lifecycle and all API contracts are unchanged. New explanation is plain Korean. Read/search evidence is explicitly distinguished from task success.
 
 The source chooser starts open before selection. After explicit selection, its disclosure closes and keeps the selected source identifier visible; it can be reopened to change sources. Focus moves to the mounted snapshot heading, with the same keyboard-visible accent focus ring as controls. Closing a snapshot reopens source selection. The choice is never inferred from source arrival order.
 
@@ -36,7 +82,7 @@ Primitive geometry: 0px flat data boundaries, 2px controls/cards/tags; no pills.
 
 Spacing follows existing4/8/12/16/20/24/32/48/64/96 scale. Native local dashboard content max1600px with20px phone/32px desktop gutters. Preserve document scroll owner, responsive table-to-card behavior, wrapping navigation and filter behavior. The hosted embed inherits the site's palette but keeps its own scoped styles and zero extra inner gutter.
 
-PR1 is foundations only: no session/search/skill/auth/landing behavior change. Existing page compositions are restyled in the subsequent approved PRs. site/src/skills/* is locked until lead confirms P14 merge; inherit base tokens there but do not edit its controls yet.
+PR1 is foundations only: no session/search/skill/auth/landing behavior change. Existing page compositions are restyled in the subsequent approved PRs. The initial site/src/skills/* lock was cleared by lead after P14 PR71 merged; PR3 may restyle that UI while preserving its confirmation and transaction contracts.
 
 
 
