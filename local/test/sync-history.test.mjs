@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { journalHead, openDb, request, seedAll, spoolBatch } from "./helpers/sync.mjs";
 
@@ -15,10 +17,20 @@ test("v8 portable history preserves existing import semantics without adopting s
   spoolBatch(source, request(source));
   source.prepare(`INSERT INTO connector_command_receipts
     (account_id,generation,device_id,source_domain,command_id,payload_hash,result_json)
-    VALUES('fixture',1,'fixture','fixture','fixture','fixture','{}')`).run();
+    VALUES('fixture',1,'fixture','fixture','fixture','fixture',?)`)
+    .run(JSON.stringify({ id: "RECEIPT_ONLY_SENTINEL" }));
   const sourceStore = createStore(source), destinationStore = createStore(destination);
   const before = journalHead(destination);
   sourceStore.exportTo(join(dir, "export"), { withHistory: true });
+  const historyPath = join(dir, "export", "history.db");
+  const exported = new DatabaseSync(historyPath, { readOnly: true });
+  try {
+    assert.equal(exported.prepare("SELECT COUNT(*) n FROM connector_command_receipts").get().n, 0);
+    assert.equal(readFileSync(historyPath).includes(Buffer.from("RECEIPT_ONLY_SENTINEL")), false);
+  } finally {
+    exported.close();
+  }
+  assert.equal(source.prepare("SELECT COUNT(*) n FROM connector_command_receipts").get().n, 1);
   const dryRun = destinationStore.importFrom(join(dir, "export"), { merge: false });
   assert.ok(dryRun.added > 0);
   assert.deepEqual(journalHead(destination), before);

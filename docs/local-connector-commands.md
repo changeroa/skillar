@@ -49,7 +49,9 @@ therefore determined by the same Local store as local HTTP writes.
 A crash before commit leaves neither a mutation nor a receipt. A lost ACK after
 commit replays the stored result without repeating the mutation. Connector
 receipts are not CDC source tables and are never adopted by portable history
-imports. Local full-database backups can retain receipts for the same source.
+imports. Portable `history.db` exports remove receipt rows and vacuum the private
+temporary snapshot before publishing the artifact; the live source receipts
+remain intact. Local full-database backups can retain receipts for the same source.
 
 `cloud/command-status.json` contains only the last command ID, state and error
 code, not its operation or result. Network failures leave the durable server
