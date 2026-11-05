@@ -1,6 +1,7 @@
 import { h } from "preact";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { PrivateSkillCatalog, PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
+import type { SessionUser } from "../../lib/account.ts";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
 import type { SessionState } from "./api.ts";
 import { LibraryPanel, visibleSkills } from "./library.ts";
@@ -31,6 +32,16 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, text),
     h("a", { class: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")),
     h("p", { class: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
+}
+
+function AccountLine({ user }: { readonly user: SessionUser }) {
+  return h("div", { class: "dash-account" },
+    h("div", { class: "account-user" }, h("div", null,
+      h("p", { class: "note" }, "로그인 계정"),
+      h("p", { class: "account-name" }, user.name === "" ? user.email : user.name),
+      user.name !== "" && h("p", { class: "account-email" }, user.email))),
+    h("form", { method: "post", action: "/auth/logout" },
+      h("button", { class: "button secondary", type: "submit" }, "로그아웃")));
 }
 
 export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
@@ -114,7 +125,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   };
   const open = (skillId: PrivateSkillId, target?: HTMLElement) => {
     setNotice("");
-    if (navigate({ ...view, selected: skillId, full: false, digest: "", tab: "document" }))
+    if (navigate({ ...view, selected: skillId, full: false, digest: "", tab: "versions" }))
       returnFocus.current = target ?? document.getElementById(`skill-row-${skillId}`);
   };
   const back = () => navigate({ ...view, selected: null, full: false, digest: "", tab: "document" });
@@ -130,6 +141,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   if (phase.kind !== "signed-in") return h("div", null, h(SkillsHeading, { name: "스킬" }), h(SignedOut, { phase }));
   if (catalog.status === "unavailable") {
     return h("div", null,
+      h(AccountLine, { user: phase.user }),
       h(SkillsHeading, { name: "스킬" }),
       h("p", { class: "note skills-unavailable", role: "status", "aria-live": "polite" },
         "이 배포에서는 아직 비공개 스킬을 이용할 수 없습니다. 업로드한 내용이나 이 화면에서 저장한 내용은 없습니다."));
@@ -144,6 +156,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     if (skill) open(skill.skillId);
   };
   return h("div", null,
+    h(AccountLine, { user: phase.user }),
     h(SkillsHeading, { name: !view.full ? "스킬" : resolved !== null && resolved.skillId === selected ? resolved.name
       : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
     h("div", { hidden: view.full && selected !== null, class: selected !== null ? "skills-list-workspace skills-list-workspace--peek" : "skills-list-workspace" },

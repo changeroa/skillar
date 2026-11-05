@@ -22,18 +22,22 @@ export function readSkillsView(href: string): SkillsView {
   const sort = url.searchParams.get("sort");
   const parsed = privateSkillIdSchema.safeParse(url.searchParams.get("skill"));
   const legacy = skillIdFromHash(url.hash);
+  const selected = parsed.success ? parsed.data : legacy;
+  const full = url.searchParams.get("view") === "full" || legacy !== null;
+  const defaultTab = selected !== null && !full ? "versions" : "document";
+  const tab = url.searchParams.get("tab") ?? defaultTab;
   return {
     q: url.searchParams.get("q") ?? "",
     sort: sort === "name" || sort === "revision" || sort === "digest" ? sort : "updated",
     descending: url.searchParams.get("order") !== "asc",
-    selected: parsed.success ? parsed.data : legacy,
-    full: url.searchParams.get("view") === "full" || legacy !== null,
+    selected,
+    full,
     revisions: url.searchParams.getAll("revision"),
     days: url.searchParams.getAll("day"),
     hidden: [...new Set(url.searchParams.getAll("hide").filter(id => ["revision", "updated", "digest"].includes(id)))],
     density: url.searchParams.get("density") === "normal" ? "normal" : url.searchParams.get("density") === "spacious" ? "spacious" : "compact",
     digest: url.searchParams.get("version") ?? "",
-    tab: ["versions", "compare", "files"].includes(url.searchParams.get("tab") ?? "") ? url.searchParams.get("tab") ?? "document" : "document",
+    tab: ["document", "versions", "compare", "files"].includes(tab) ? tab : defaultTab,
   };
 }
 
@@ -49,6 +53,6 @@ export function skillsViewUrl(view: SkillsView): string {
   for (const column of view.hidden) query.append("hide", column);
   query.set("density", view.density);
   if (view.digest !== "") query.set("version", view.digest);
-  if (view.tab !== "document") query.set("tab", view.tab);
+  if (view.selected !== null || view.tab !== "document") query.set("tab", view.tab);
   return `/skills/?${query}`;
 }

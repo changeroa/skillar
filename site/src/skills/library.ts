@@ -44,9 +44,9 @@ export function visibleSkills(skills: readonly PrivateSkillSummary[], view: Skil
     (view.days.length === 0 || view.days.includes(skillDay(skill)))), view.sort, view.descending);
 }
 
-export function updatedHistogram(skills: readonly PrivateSkillSummary[]) {
-  if (skills.length === 0) return { labels: [], series: [] };
-  const end = Math.max(...skills.map(skill => Date.parse(skillDay(skill))));
+export function updatedHistogram(skills: readonly PrivateSkillSummary[], catalog: readonly PrivateSkillSummary[] = skills) {
+  if (catalog.length === 0) return { labels: [], series: [] };
+  const end = Math.max(...catalog.map(skill => Date.parse(skillDay(skill))));
   const start = end - 6 * 86400000;
   const days = Array.from({ length: Math.round((end - start) / 86400000) + 1 },
     (_, index) => new Date(start + index * 86400000).toISOString().slice(0, 10));
@@ -101,7 +101,7 @@ export function LibraryPanel(props: LibraryProps) {
           selected: { revision: view.revisions, day: view.days },
           onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
       h("div", { class: "skills-table-main" },
-        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · UTC", data: updatedHistogram(visibleSkills(skills, view)), height: 112 }),
+        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · UTC", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 }),
         h(DataTable<PrivateSkillSummary>, { caption: `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`,
           rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },

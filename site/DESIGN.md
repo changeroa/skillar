@@ -98,6 +98,9 @@ explicitly unmeasured per-version reads frame. Formatted Markdown is built
 as safe text nodes, never unsanitized HTML. Editing always targets current
 head, separately labelled from the read-only selected version. P14 typed
 deletion, export payloads, upload acknowledgement and retry semantics remain.
+Below 1024px the document precedes the version index in both visual and DOM
+order. Desktop keeps the index on the left. Responsive reordering preserves
+the document and draft rather than relying on a visually reordered focus path.
 No new palette, font, radius or motion is introduced.
 
 ## P-A approved app shell and shared UI

@@ -1,5 +1,6 @@
 import { h } from "preact";
 import type { JSX } from "preact";
+import { useEffect, useState } from "preact/hooks";
 import { createPortal } from "preact/compat";
 import type { PrivateSkillDetail, PrivateSkillDigest } from "../../../shared/dist/private-skills.js";
 import { deleteVersion, setHead, setPinned } from "./api.ts";
@@ -33,6 +34,16 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
     versionsNote, deleteNote, setRetry, setDraftState, setNotes, loadDraft, run, review, publish, exportVersion, removeSkill,
     openConfirmation, confirmation, onBack, skillId, signal, onUnauthorized, summary, workspace, digest, versionPreview } = controller;
   const peek = workspace.view !== undefined && !workspace.view.full;
+  const [stacked, setStacked] = useState(() => typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1023px)").matches);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setStacked(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
   const orderedVersions = [...(detail?.versions ?? [])].sort((a, b) =>
     Number(b.digest === head?.digest) - Number(a.digest === head?.digest) || b.createdAt - a.createdAt);
   const selectVersion = (next: string) => {
@@ -108,12 +119,13 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       "aria-pressed": digest === version.digest, onClick: () => selectVersion(version.digest) },
       h(Pill, null, version.digest === head?.digest ? `r${head.revision} · 현재` : "보관"), h("code", null, version.digest.slice(0, 8)))),
     h("p", { class: "note" }, "현재 head · 불변 digest"), h("code", { class: "version__digest" }, head?.digest));
-  const documentTab = h("div", { class: "skill-document-layout" }, rail,
-    h("div", { class: "skill__document" }, h(VersionDocument, { ...versionPreview, digest: digest ?? "" }),
+  const documentContent = h("div", { class: "skill__document" }, h(VersionDocument, { ...versionPreview, digest: digest ?? "" }),
       draftState.status === "failed" && head !== null && h("div", null,
         h("p", { class: "note", role: "status" }, draftState.message),
         h("button", { class: "button secondary", type: "button", onClick: () => loadDraft(head) }, "다시 시도")),
-      detail !== null && h(UnmeasuredReads, { detail }), editor));
+      detail !== null && h(UnmeasuredReads, { detail }), editor);
+  const documentTab = h("div", { class: "skill-document-layout" },
+    stacked ? documentContent : rail, stacked ? rail : documentContent);
   return h("section", { class: peek ? "skill skill--peek" : "skill skill--full", "aria-labelledby": "skill-title" },
     detail && digest && h(VersionBreadcrumb, { detail, digest, onSelect: selectVersion }),
     panelHead,
@@ -133,7 +145,7 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       { label: "선택 버전과 head", value: digest === head?.digest ? "같은 버전" : "다른 버전" },
     ] }),
     detail !== null && h(SegmentedTabs, { key: peek ? "peek" : "full", id: "skill-detail", label: "스킬 상세",
-      initialId: workspace.view?.tab === "document" && peek ? "versions" : workspace.view?.tab ?? "document",
+      initialId: workspace.view?.tab ?? "document",
       onChange: tab => { if (workspace.view) workspace.onViewChange?.({ ...workspace.view, tab }); },
       tabs: [
         { id: "document", label: "문서", content: documentTab }, { id: "versions", label: "버전", content: versions },

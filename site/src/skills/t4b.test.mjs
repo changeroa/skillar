@@ -39,6 +39,16 @@ test("legacy hashes open full detail while invalid selection and presentation va
   assert.deepEqual(invalid.hidden, []);
 });
 
+test("a peek document selection has explicit reproducible URL tab state", () => {
+  // Given
+  const state = { ...view, selected: id, full: false, tab: "document" };
+  // When
+  const url = new URL(skillsViewUrl(state), "https://skillar.sh");
+  // Then
+  assert.equal(url.searchParams.get("tab"), "document");
+  assert.deepEqual(readSkillsView(url.href), state);
+});
+
 test("search revision and UTC date facets intersect without changing the catalog", () => {
   // Given / When
   const rows = visibleSkills(skills, { ...view, q: "검증", revisions: ["1"], days: ["2026-11-04"] });
@@ -59,6 +69,19 @@ test("updated histogram retains empty UTC dates and compact bars share one basel
   assert.ok(chart.bars.every(bar => bar.y + bar.height === chart.baseline));
   assert.ok(chart.bars.filter(bar => bar.value === 0).every(bar => bar.height === 1));
   assert.equal(new Set(chart.bars.map(bar => bar.width)).size, 1);
+});
+
+test("an empty filter retains the received catalog date domain as seven measured zeros", () => {
+  // Given
+  const rows = visibleSkills(skills, { ...view, q: "no matching skill" });
+  // When
+  const data = updatedHistogram(rows, skills);
+  const chart = chartLayout(data, 112);
+  // Then
+  assert.deepEqual(data.labels, ["10/30", "10/31", "11/01", "11/02", "11/03", "11/04", "11/05"]);
+  assert.deepEqual(data.series[0].values, [0, 0, 0, 0, 0, 0, 0]);
+  assert.equal(chart.bars.length, 7);
+  assert.ok(chart.bars.every(bar => bar.height === 1 && bar.y + bar.height === chart.baseline));
 });
 
 test("shared table keyboard activation supplies the real row for focus restoration", async t => {
