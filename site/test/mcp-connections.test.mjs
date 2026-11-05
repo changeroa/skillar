@@ -82,6 +82,14 @@ test("PAT field errors map independently and disappear when a field is corrected
   ]);
 });
 
+test("PAT form describes only each invalid field's own error", async () => {
+  const html = await readFile(new URL("../connections/index.html", import.meta.url), "utf8");
+  assert.match(html, /<input id="pat-name"[^>]*>/);
+  assert.doesNotMatch(html.match(/<input id="pat-name"[^>]*>/)[0], /aria-describedby="pat-problems"/);
+  assert.match(html, /<input id="pat-days"[^>]*>/);
+  assert.doesNotMatch(html.match(/<input id="pat-days"[^>]*>/)[0], /aria-describedby="pat-problems"/);
+});
+
 test("listing connections is a same-origin GET parsed with the shared schema", async t => {
   // Given
   const calls = mockFetch(t, 200, listing);
