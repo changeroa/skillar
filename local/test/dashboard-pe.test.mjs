@@ -9,10 +9,12 @@ const ui = await loadViews(`
   export { readSkills, candidateSkills, sortSessions } from "./local/dashboard/views/sessions/model.ts";
   export { SessionTable } from "./local/dashboard/views/sessions/table.tsx";
   export { createTimelineKeys } from "./local/dashboard/views/trace/plan.ts";
-  export { ganttGeometry } from "./local/dashboard/views/trace/geometry.ts";
+  export { ganttGeometry, ganttViewport } from "./local/dashboard/views/trace/geometry.ts";
   export { EventConsole } from "./local/dashboard/views/trace/event-console.tsx";
   export { summaryFacts } from "./local/dashboard/views/trace/summary.tsx";
   export { RankedCandidates } from "./local/dashboard/components/ranked-candidates.tsx";
+  export { JsonViewer } from "./local/dashboard/components/json-viewer.tsx";
+  export { EventViewTabs } from "./local/dashboard/views/trace/view-tabs.tsx";
 `);
 
 test("local view preferences round-trip without leaking into API filters", () => {
@@ -117,7 +119,8 @@ test("formatted and raw inspect the same event while native argument state survi
   await act(() => { original.open = true; });
   await show({ ...props, route: { ...route, format: "raw" } });
   const raw = all(container, node => node.hasAttribute("data-event-raw"))[0];
-  assert.deepEqual(JSON.parse(raw.textContent), step);
+  assert.deepEqual(all(raw, node => node.getAttribute("class") === "json-value").map(node => JSON.parse(node.textContent)),
+    [step.kind, step.ts, step.summary, step.detail.kind, step.detail.toolName, step.detail.args]);
   assert.ok(all(container, node => node === original)[0]);
   assert.equal(original.open, true);
   await show({ ...props, route: { ...route, format: "formatted" } });
@@ -167,6 +170,53 @@ test("ranked candidates retain root disambiguation for identical recorded names"
   }));
   const { container } = await mount(t, ui.RankedCandidates, { candidates });
   assert.deepEqual(all(container, node => node.hasAttribute("data-root")).map(node => node.getAttribute("data-root")), ["agents", "claude"]);
+});
+
+test("Gantt zoom clips the displayed window without changing measured offsets or source keys", () => {
+  const source = ui.createTimelineKeys("zoom")([
+    { ts: 1250, kind: "prompt", summary: "point", detail: { kind: "prompt", text: "captured" } },
+    { ts: 1400, kind: "tool", summary: "interval", detail: { kind: "tool", toolName: "Bash", durationMs: 200, startedAt: 1400, endedAt: 1600 } },
+  ]);
+  const graph = ui.ganttGeometry(source, 1000, 2000);
+  const left = ui.ganttViewport(graph, 2, 0), right = ui.ganttViewport(graph, 2, 1);
+  assert.deepEqual([left.start, left.end, right.start, right.end], [1000, 1500, 1500, 2000]);
+  assert.deepEqual(right.points.map(point => [point.key, point.offsetMs]), graph.points.map(point => [point.key, point.offsetMs]));
+  assert.equal(left.points[0].x, 50);
+  assert.equal(right.points[0].inView, false);
+  assert.deepEqual([left.points[1].x, left.points[1].width], [80, 20]);
+  assert.deepEqual([right.points[1].x, right.points[1].width], [0, 20]);
+  assert.deepEqual(ui.ganttViewport(graph, 1, 0).points.map(({ inView, ...point }) => point), graph.points);
+});
+
+test("shared peek tabs preserve list scope and leave graph disabled with its reason", async t => {
+  const route = { view: "sessions", filter: { q: "captured", runtime: ["codex"] }, peek: "session", sort: "-reads", event: "immutable" };
+  let next;
+  const { container } = await mount(t, ui.EventViewTabs, { route, navigate(value) { next = value; }, prefix: "peek-event" });
+  const buttons = all(container, node => node.localName === "button");
+  await act(() => buttons.find(node => node.getAttribute("data-view") === "timeline").click());
+  assert.deepEqual(next, { ...route, traceTab: "timeline" });
+  const graph = buttons.find(node => node.disabled);
+  assert.equal(graph.getAttribute("aria-describedby"), "peek-event-graph-reason");
+  assert.equal(buttons.find(node => node.getAttribute("data-view") === "tree").getAttribute("aria-selected"), "true");
+});
+
+test("raw JSON has native nested disclosures and preserves every captured primitive", async t => {
+  const value = { ts: 100, kind: "search", detail: { candidates: [{ uri: "skill://a", score: .75 }], chosen: ["skill://a"], measured: false, missing: null } };
+  const { container } = await mount(t, ui.JsonViewer, { value });
+  const branches = all(container, node => node.localName === "details");
+  assert.equal(branches.length, 5);
+  assert.ok(branches[0].hasAttribute("open") && branches[1].hasAttribute("open"));
+  assert.ok(!branches[2].hasAttribute("open") && !branches[3].hasAttribute("open"));
+  assert.deepEqual(all(container, node => node.getAttribute("class") === "json-value").map(node => JSON.parse(node.textContent)),
+    [100, "search", "skill://a", .75, "skill://a", false, null]);
+  assert.equal(all(container, node => node.hasAttribute("data-event-raw")).length, 1);
+});
+
+test("session summary counts missing search latency separately from measured zero", () => {
+  const search = { kind: "search", ts: 100, summary: "captured", detail: { kind: "search", candidates: [] } };
+  assert.equal(ui.summaryFacts([search]).unmeasuredSearches, 1);
+  assert.equal(ui.summaryFacts([{ ...search, detail: { ...search.detail, elapsedMs: 0 } }]).unmeasuredSearches, 0);
+  assert.equal(ui.summaryFacts([{ kind: "prompt", ts: 100, detail: { kind: "prompt", text: "captured" } }]).unmeasuredSearches, 0);
 });
 
 test("unrecognised view preference values do not become active controls", () => {

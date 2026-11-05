@@ -113,7 +113,7 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
   if (presentation === "peek") return <section class="trace pe-console" aria-busy={busy}>
     <SessionSummary sessionId={sessionId} steps={steps} row={row} peek embedded backHref={backHref} />
     {error && <p role="alert">{error}<button class="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button></p>}
-    <CompactTree items={source} startedAt={bounds.startedAt} route={route} />
+    <CompactTree items={source} startedAt={bounds.startedAt} endedAt={bounds.endedAt} route={route} navigate={navigate} />
   </section>;
   return (
     <section class="trace trace-console pe-console" data-pe-screen="session-detail" aria-busy={busy}>

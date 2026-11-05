@@ -31,6 +31,13 @@ export function consoleStyles() {
 .pe-jump kbd{font-family:var(--font-mono);padding:1px 4px;border:1px solid var(--line);border-radius:2px}
 .pe-content{padding:16px;min-width:0}
 .pe-mobile-nav{display:none}
+.pe-source-toggle{display:none}
+.pe-sheet-overlay{position:fixed;inset:0;z-index:100;background:#0007;display:flex;justify-content:flex-end}
+.pe-sheet{width:100%;max-width:440px;height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--ink)}
+.pe-sheet__head,.pe-sheet__actions{display:flex;flex:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.pe-sheet__head h2{font-size:18px;margin:0}.pe-sheet__body{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:12px}
+.pe-sheet__actions{border-top:1px solid var(--line);border-bottom:0;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.pe-sheet .pe-source{margin-bottom:12px}.pe-sheet .pe-nav{margin-top:16px}
 .pe-overlay{position:fixed;inset:0;z-index:100;background:#0007;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px}
 .pe-command{width:520px;max-width:100%;max-height:75dvh;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--line-2);border-radius:4px}
 .pe-command__head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -44,6 +51,7 @@ export function consoleStyles() {
 @media(max-width:1279px){.pe-sessions-region:has(.session-peek){grid-template-columns:minmax(0,1fr) 480px}}
 @media(max-width:1023px){
  .pe-shell{display:block}.pe-sidebar{display:none}.pe-topbar{padding:0 12px}.pe-content{padding:12px}
+ .pe-source-toggle{display:inline-flex;flex:none;padding:6px}.pe-topbar{gap:4px}
  .pe-mobile-nav{display:flex;flex-wrap:nowrap;overflow-x:auto;border-bottom:1px solid var(--line);gap:4px;padding:0 8px}
  .pe-mobile-nav>span{flex:none}.pe-mobile-nav .tab{display:inline-flex;align-items:center;gap:4px;min-height:44px;flex:none;padding:6px;font-size:12px;border:0;color:var(--ink);text-decoration:none;white-space:nowrap}
  .pe-mobile-nav [aria-current=page]{box-shadow:inset 0 -3px var(--accent)}

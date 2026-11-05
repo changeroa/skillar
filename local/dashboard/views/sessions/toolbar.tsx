@@ -6,8 +6,8 @@ import { Icon } from "../../components/icons";
 import { COLUMN_LABEL } from "./model";
 import { DEFAULT_COLUMNS } from "./table";
 
-export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacets }: Pick<ViewProps, "route" | "navigate"> & {
-  readonly count?: number; readonly facetsOpen: boolean; readonly toggleFacets: () => void;
+export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacets, sheet }: Pick<ViewProps, "route" | "navigate"> & {
+  readonly count?: number; readonly facetsOpen: boolean; readonly toggleFacets: () => void; readonly sheet?: boolean;
 }) {
   const [draft, setDraft] = useState(route.filter.q ?? "");
   useEffect(() => setDraft(route.filter.q ?? ""), [route.filter.q]);
@@ -31,7 +31,8 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
         <option value="7">최근 7일</option><option value="30">최근 30일</option><option value="60">최근 60일</option>
       </select>
       <span class="session-toolbar__count">{count === undefined ? "집계 중" : `세션 ${count}개`}</span>
-      <button class="pe-button session-facets-toggle" aria-controls="session-facets" aria-expanded={facetsOpen} onClick={toggleFacets}><Icon name="filter" />필터</button>
+      <button class="pe-button session-facets-toggle" aria-controls={sheet ? "session-filter-sheet" : "session-facets"} aria-expanded={facetsOpen}
+        aria-haspopup={sheet ? "dialog" : undefined} onClick={toggleFacets}><Icon name="filter" />필터</button>
       <details class="session-menu" onKeyDown={event => {
         if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); }
       }}><summary class="pe-button"><Icon name="filter" />요청 상태</summary>

@@ -4,6 +4,7 @@ import type { SkillSpan, TraceStep } from "../../../src/types.js";
 import { CopyButton } from "../../components/copy-button";
 import { Icon } from "../../components/icons";
 import type { ViewProps } from "../../state";
+import { JsonViewer } from "../../components/json-viewer";
 
 export function EventInspector({ id, kind, title, value, selected, narrow, trigger, route, navigate, children }: Pick<ViewProps, "route" | "navigate"> & {
   readonly id: string; readonly kind: string; readonly title: string; readonly value: TraceStep | SkillSpan;
@@ -57,7 +58,7 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
     </div>
     <div id={`${domId}-content`} role="tabpanel" aria-labelledby={`${domId}-${route.attributes ? "attributes" : "preview"}-tab`}>
       <div class="event-inspector__preview" data-source-key={id} hidden={Boolean(route.attributes) || raw}>{children}</div>
-      {open && raw && <pre data-event-raw tabIndex={0}>{JSON.stringify(value, null, 2)}</pre>}
+      {open && raw && <JsonViewer value={value} />}
       {open && !raw && route.attributes && <dl class="event-attributes">{Object.entries(value).map(([key, item]) =>
         <div key={key}><dt><code>{key}</code></dt><dd><pre>{typeof item === "string" ? item : JSON.stringify(item, null, 2)}</pre></dd></div>)}</dl>}
     </div>

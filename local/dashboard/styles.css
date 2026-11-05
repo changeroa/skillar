@@ -249,17 +249,19 @@ button, input, select { font: inherit; color: inherit; }
 
 .seg__btn, .seg__b { min-height: 44px; }
 .paths__skill { display: inline-flex; align-items: center; min-height: 44px; }
-.page .trace__back, .page .ws__back, .page summary { min-height: 44px; }
-.page .hm-stack { --hm-cell: 44px; }
-.page .hmc { min-width: 0; }
-.page .hm {
+:is(.page, .pe-content) .trace__back,
+:is(.page, .pe-content) .ws__back,
+:is(.page, .pe-content) summary { min-height: 44px; min-width: 44px; }
+:is(.page, .pe-content) .hm-stack { --hm-cell: 44px; }
+:is(.page, .pe-content) .hmc { min-width: 0; }
+:is(.page, .pe-content) .hm {
   grid-template-columns: max-content repeat(var(--hm-cols), minmax(44px, 1fr)) max-content;
   overflow-x: auto;
   padding-block: var(--s-2);
 }
-.page .hm .hm__skill { min-height: 44px; }
+:is(.page, .pe-content) .hm .hm__skill { min-height: 44px; }
 @media (max-width: 639.98px) {
-  .page .hm--skills { grid-template-columns: repeat(var(--hm-cols), minmax(44px, 1fr)) max-content; }
+  :is(.page, .pe-content) .hm--skills { grid-template-columns: repeat(var(--hm-cols), minmax(44px, 1fr)) max-content; }
 }
 
 .toolbar {

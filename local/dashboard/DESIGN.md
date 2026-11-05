@@ -2,6 +2,20 @@
 
 ## Approved local shell and sessions P-E (2026-11-05)
 
+Gate revision: overlays use a bounded `100dvh` scroll-body shell. The peek
+action bar stays outside `.session-peek__body`, which alone owns vertical
+scroll; short sessions still fill the mobile viewport. Mobile navigation
+exposes a drawer containing current-source status and the hosted-site link.
+The mobile histogram stays visible above the rows with the same R7 geometry.
+Mobile filters are a full-screen sheet with fixed header/actions, a scrolling
+facet body, Escape dismissal, focus containment and trigger focus restoration.
+Target-size safeguards apply to `.page` and `.pe-content`, including 44px-wide
+back links and 44px heatmap cells. Peek includes Tree/Timeline/disabled Graph.
+Gantt zoom and overview share the actual session axis: zoom changes its visible
+window, the overview locates that window, and reset restores the full range.
+Read-only JSON uses native nested disclosures, line numbers and full-value copy;
+folding never changes the underlying captured event or its immutable key.
+
 This section supersedes the older shell, sessions and trace compositions below.
 The owner-approved v2 references are
 `research/wireframes/local/{sessions-table,sessions-peek,session-detail}.html`

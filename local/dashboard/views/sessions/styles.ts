@@ -19,6 +19,9 @@ export function sessionsStyles() {
 .session-filter-pill{border-radius:10px;font-size:12px;max-width:100%;gap:8px}.session-filter-pill code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:28ch}
 .sessions-body{display:grid;grid-template-columns:232px minmax(0,1fr);gap:16px}
 .session-facets{border-right:1px solid var(--line);padding-right:12px;min-width:0}
+.pe-sheet .session-facets{display:block;border:0;padding:0}
+.session-sheet-period{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:12px}
+.session-sheet-period select{min-width:160px}
 .session-facets__scope{font-size:12px;color:var(--ink-2);margin:4px 0 12px}
 .session-facet{margin:0 0 16px;border:0;border-bottom:1px solid var(--line);padding:0 0 12px;min-width:0}
 .session-facet legend{font-weight:600;padding:0;font-size:12px}
@@ -53,7 +56,7 @@ export function sessionsStyles() {
 @media(max-width:639px){
  .session-toolbar{gap:6px}.session-search{flex-basis:100%;min-width:0}.session-search>.pe-icon{display:none}
  .session-toolbar .pe-button{padding-inline:7px;font-size:12px}.session-toolbar__count{margin-left:auto}
- .session-histogram{display:none}.session-table-frame{overflow:visible}.session-table,.session-table tbody{display:block}
+ .session-histogram{display:block}.session-table-frame{overflow:visible}.session-table,.session-table tbody{display:block}
  .session-table caption{position:absolute}.session-table thead{display:none}
  .session-table tr{display:grid;grid-auto-flow:row dense;grid-template-columns:1.1fr .9fr .9fr .8fr;gap:0 6px;padding:8px 0;border-bottom:1px solid var(--line)}
  .session-table td{display:none;border:0;height:auto!important;padding:0;width:auto!important;min-width:0}

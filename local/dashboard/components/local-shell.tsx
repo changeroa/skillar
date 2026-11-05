@@ -6,6 +6,7 @@ import { consoleStyles } from "./console-style";
 import { CommandJump, DESTINATIONS, destination } from "./command-jump";
 import { Icon } from "./icons";
 import { useNarrow } from "./use-narrow";
+import { ConsoleSheet } from "./console-sheet";
 
 const LIVE_TEXT = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
 function Wordmark({ href }: { readonly href: string }) {
@@ -32,6 +33,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
 }) {
   consoleStyles();
   const [open, setOpen] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const narrow = useNarrow();
   const trigger = useRef<HTMLButtonElement>(null), returnFocus = useRef<HTMLElement | null>(null);
   const close = () => { setOpen(false); returnFocus.current?.focus(); };
@@ -50,9 +52,11 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
   const active = route.view === "trace" ? "sessions" : route.view === "workspace" ? "workspaces" : route.view;
   const label = DESTINATIONS.find(item => item.view === active)?.label ?? "페이지를 찾을 수 없습니다";
   const source = api.mode === "fixtures" ? "예시 기록" : "이 기기";
-  const links = (mobile: boolean) => DESTINATIONS.map((item, index) => <span key={item.view}>
+  const sourceInfo = <div class="pe-source"><strong>{source}</strong>
+    <span class={`live live--${live.state}`} role="status"><span class="live__dot" aria-hidden="true" />{LIVE_TEXT[live.state]}</span></div>;
+  const links = (mobile: boolean, inDrawer = false) => DESTINATIONS.map((item, index) => <span key={item.view}>
     {!mobile && (index === 0 || index === 1) && <p class="pe-nav__group">{item.group}</p>}
-    <a id={mobile ? undefined : `skillar-local-tab-${item.view}`} class="tab"
+    <a id={mobile || inDrawer ? undefined : `skillar-local-tab-${item.view}`} class="tab"
       href={buildHash(destination(route, item.view))} aria-current={active === item.view ? "page" : undefined}>
       <Icon name={item.icon} />{item.label}</a>
   </span>);
@@ -60,12 +64,13 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     <aside id={narrow ? undefined : "app-navigation"} class="pe-sidebar" aria-label="로컬 대시보드">
       <Wordmark href={buildHash(destination(route, "sessions"))} />
       <nav class="pe-nav tabs local-tabs" aria-label="주요 화면">{links(false)}</nav>
-      <div class="pe-sidebar__foot"><div class="pe-source"><strong>{source}</strong>
-        <span class={`live live--${live.state}`} role="status"><span class="live__dot" aria-hidden="true" />{LIVE_TEXT[live.state]}</span></div>
+      <div class="pe-sidebar__foot">{sourceInfo}
         {automation}<a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
       </div>
     </aside>
     <div class="pe-body"><header class="pe-topbar app-topbar">
+      <button class="pe-button pe-source-toggle" aria-label="출처와 탐색 메뉴" aria-haspopup="dialog"
+        aria-expanded={drawer} aria-controls="pe-source-drawer" onClick={() => setDrawer(true)}><Icon name="columns" /></button>
       <nav class="pe-breadcrumb" aria-label="경로"><a href={buildHash(destination(route, "sessions"))}>{source}</a>
         <Icon name="chevron" /><a href={buildHash(destination(route, active))}>{label}</a>
         {(route.sessionId || route.flowId) && <><Icon name="chevron" /><code title={route.sessionId ?? route.flowId}>{route.sessionId ?? route.flowId}</code></>}
@@ -78,5 +83,13 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
       {children}
     </div>
     {open && <CommandJump route={route} navigate={navigate} close={close} />}
+    {narrow && drawer && <ConsoleSheet id="pe-source-drawer" title="출처와 탐색" close={() => setDrawer(false)}>
+      {sourceInfo}
+      {automation}
+      <a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
+      <nav class="pe-nav" aria-label="메뉴 화면" onClick={event => {
+        if (event.target instanceof Element && event.target.closest("a")) setDrawer(false);
+      }}>{links(false, true)}</nav>
+    </ConsoleSheet>}
   </div>;
 }

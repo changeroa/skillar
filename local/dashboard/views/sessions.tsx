@@ -12,6 +12,8 @@ import { SessionTable } from "./sessions/table";
 import { SessionToolbar } from "./sessions/toolbar";
 import { readSkills, sortSessions } from "./sessions/model";
 import { sessionsStyles } from "./sessions/styles";
+import { useNarrow } from "../components/use-narrow";
+import { SessionFilterSheet } from "./sessions/filter-sheet";
 
 const USAGE_CSS = `
 .usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0; color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
@@ -173,6 +175,7 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   const [rows, setRows] = useState<SessionListRow[]>();
   const [facetRows, setFacetRows] = useState<SessionListRow[]>();
   const [facetsOpen, setFacetsOpen] = useState(false);
+  const narrow = useNarrow();
   const [stats, setStats] = useState<Stats>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
@@ -279,17 +282,19 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
         <Title>세션</Title>
         <p>세션 사용 기록</p>
       </div>
-      <SessionToolbar route={route} navigate={navigate} count={rows?.length} facetsOpen={facetsOpen} toggleFacets={() => setFacetsOpen(value => !value)} />
+      <SessionToolbar route={route} navigate={navigate} count={rows?.length} facetsOpen={facetsOpen} sheet={narrow}
+        toggleFacets={() => setFacetsOpen(value => !value)} />
       {failure}
       {busy && <p role="status">세션 불러오는 중…</p>}
       <div class="sessions-body" data-facets-open={facetsOpen}>
-        {facetRows && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
+        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
         <Results class="session-results" aria-label="세션 기록" tabIndex={-1}>
           {rows && <SessionHistogram rows={rows} filter={route.filter} />}
           {body}
         </Results>
       </div>
       {rows !== undefined && stats && <UsageNote stats={stats} />}
+      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
     </section>
   );
 }

@@ -6,14 +6,16 @@ import { useNarrow } from "../../components/use-narrow";
 import { type ViewProps } from "../../state";
 import { StepBody } from "./bodies";
 import { EventInspector } from "./event-inspector";
-import { ganttGeometry } from "./geometry";
+import { ganttGeometry, type ganttViewport } from "./geometry";
+import { GanttControls, useGanttWindow } from "./gantt-controls";
 import { KIND_LABEL, formatOffset, sessionBounds } from "./model";
 import { planTimeline, type KeyedStep, type TimelineItem } from "./plan";
 import { SpanGroup } from "./timeline";
+import { EventViewTabs } from "./view-tabs";
 
 type EventProps = Pick<ViewProps, "route" | "navigate"> & {
   readonly item: TimelineItem; readonly selected: boolean; readonly narrow: boolean;
-  readonly bounds: ReturnType<typeof sessionBounds>; readonly point?: NonNullable<ReturnType<typeof ganttGeometry>>["points"][number];
+  readonly bounds: ReturnType<typeof sessionBounds>; readonly point?: ReturnType<typeof ganttViewport>["points"][number];
   readonly argumentIds?: ReadonlySet<string>;
   readonly trigger: RefObject<HTMLButtonElement>;
 };
@@ -31,8 +33,8 @@ function EventRow({ item, selected, bounds, point, trigger, route, navigate }: E
       <time class="pe-muted" dateTime={new Date(ts).toISOString()}>{bounds.startedAt === undefined ? "미측정" : formatOffset(ts - bounds.startedAt)}</time>
       {route.traceTab === "timeline" && point?.outside && <span class="pe-muted">시간 범위 밖</span>}
       {route.traceTab === "timeline" && point && !point.outside && <span class="event-gantt-track" aria-label={`${point.offsetMs}ms${point.bounded ? " · 측정된 구간" : " · 시점"}`}>
-        <span class={point.bounded ? "event-gantt-bar" : "event-gantt-point"} style={`left:${point.x}%;width:${point.width}%`}
-          data-offset={point.offsetMs} data-bounded={point.bounded} />
+        {point.inView && <span class={point.bounded ? "event-gantt-bar" : "event-gantt-point"} style={`left:${point.x}%;width:${point.width}%`}
+          data-offset={point.offsetMs} data-bounded={point.bounded} />}
       </span>}
     </button>
   </li>;
@@ -86,32 +88,20 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
     ? source.find(item => item.step.kind === "prompt")?.key ?? items[0]?.key
     : items.find(item => item.key === route.event)?.key;
   const graph = ganttGeometry(items, bounds.startedAt, bounds.endedAt);
-  const points = new Map(graph?.points.map(point => [point.key, point]));
+  const window = useGanttWindow(graph);
+  const points = new Map(window.viewport?.points.map(point => [point.key, point]));
   const tab = route.traceTab ?? "tree";
   const Heading = embedded ? "h3" : "h2";
   const TreeRoot = embedded ? "div" : "main";
   return <section class="event-console" data-component="linked-event-console">
-    <div class="event-console__tabs" role="tablist" aria-label="이벤트 표시" onKeyDown={event => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation();
-      const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])'));
-      const index = tabs.findIndex(node => node === event.target);
-      const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + 1) % tabs.length;
-      tabs[next]?.focus(); tabs[next]?.click();
-    }}>
-      {(["tree", "timeline"] as const).map(value => <button key={value} id={`event-${value}-tab`} role="tab" class="pe-button"
-        data-view={value} aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} aria-controls="event-tree-panel"
-        onClick={() => navigate({ ...route, traceTab: value })}><Icon name={value} />{value === "tree" ? "트리" : "타임라인"}</button>)}
-      <button role="tab" class="pe-button" disabled aria-selected="false" aria-describedby="event-graph-reason"><Icon name="graph" />그래프</button>
-    </div>
-    <p id="event-graph-reason" class="pe-muted">인과관계 기록이 없어 그래프를 표시하지 않습니다.</p>
+    <EventViewTabs route={route} navigate={navigate} />
     {route.event !== undefined && selected === undefined && <p role="status">선택한 이벤트를 찾을 수 없습니다. 목록에서 다시 선택하세요.</p>}
     {tab === "timeline" && graph?.points.some(point => point.outside) && <p class="pe-muted event-range-note" role="status">세션 시간 범위 밖의 보고서 구간은 축에 표시하지 않습니다.</p>}
     <div class="event-console__split">
       <TreeRoot class="event-console__tree" aria-label="세션 이벤트" tabIndex={-1} data-component="event-tree">
        <div id="event-tree-panel" role="tabpanel" aria-labelledby={`event-${tab}-tab`}>
         <div class="event-console__heading"><Heading>이벤트 순서</Heading><span class="pe-muted">{source.length}개{spans.length ? ` · 구간 ${spans.length}개` : ""}</span></div>
-        {tab === "timeline" && graph && <p class="event-gantt-axis"><span>+0초</span><span>+{((graph.end - graph.start) / 1000).toFixed(1)}초</span></p>}
+        {tab === "timeline" && graph && <GanttControls graph={graph} window={window} />}
         <ol aria-label="세션 이벤트 순서">{items.map(item => <EventRow key={item.key} item={item} selected={selected === item.key}
           narrow={narrow} bounds={bounds} point={points.get(item.key)} trigger={triggerFor(item.key)} route={route} navigate={navigate} />)}</ol>
         {!items.length && <p>이 세션에 수집된 이벤트가 없습니다.</p>}

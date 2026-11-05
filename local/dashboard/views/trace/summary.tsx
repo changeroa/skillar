@@ -12,7 +12,8 @@ export function summaryFacts(steps: readonly TraceStep[]) {
   const reads = [...new Set(steps.flatMap(step => step.kind === "load" && typeof step.detail.uri === "string" ? [step.detail.uri] : []))];
   const models = steps.filter(step => step.kind === "llm_call");
   const costs = models.flatMap(step => typeof step.detail.costUsd === "number" ? [step.detail.costUsd] : []);
-  return { reads, modelCount: models.length, costCount: costs.length, cost: costs.reduce((sum, cost) => sum + cost, 0) };
+  const unmeasuredSearches = steps.filter(step => step.kind === "search" && step.detail.elapsedMs === undefined).length;
+  return { reads, modelCount: models.length, costCount: costs.length, cost: costs.reduce((sum, cost) => sum + cost, 0), unmeasuredSearches };
 }
 
 function FirstRequest({ prompt }: { readonly prompt: string }) {
@@ -41,7 +42,7 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
     { id: "started", label: "시작", hidden: true, value: bounds.startedAt === undefined ? "미측정" : <time dateTime={new Date(bounds.startedAt).toISOString()}>{date.format(bounds.startedAt)}</time> },
     { id: "duration", label: "소요 시간", hidden: true, value: duration },
     { id: "reads", label: "읽은 스킬", value: `${facts.reads.length}개` },
-    { id: "searches", label: "검색", value: `${counts.searches}회` },
+    { id: "searches", label: "검색", value: <>{counts.searches}회{facts.unmeasuredSearches > 0 && <span> · 지연 시간 {facts.unmeasuredSearches}회 <span>측정 안 됨</span></span>}</> },
     { id: "errors", label: "오류", value: `${counts.errors}건` },
     { id: "models", label: "모델 기록", value: `${facts.modelCount}회` },
     { id: "cost", label: "비용", value: facts.costCount ? `${formatCost(facts.cost)} · ${facts.costCount}/${facts.modelCount} 측정` : "미측정" },

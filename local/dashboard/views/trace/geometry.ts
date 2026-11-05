@@ -21,3 +21,16 @@ export function ganttGeometry(items: readonly TimelineItem[], origin?: number, l
     outside: interval.start < start || (interval.end ?? interval.start) > end,
   })) };
 }
+
+export function ganttViewport(graph: NonNullable<ReturnType<typeof ganttGeometry>>, zoom: number, position: number) {
+  const width = (graph.end - graph.start) / zoom;
+  const start = graph.start + position * (graph.end - graph.start - width);
+  const left = position * (100 - 100 / zoom);
+  return { start, end: start + width, left, width: 100 / zoom,
+    points: graph.points.map(point => {
+      const x = (point.x - left) * zoom, end = x + point.width * zoom;
+      return { ...point, inView: !point.outside && end >= 0 && x <= 100,
+        x: Math.max(0, Math.min(100, x)),
+        width: point.bounded ? Math.max(0, Math.min(100, end) - Math.max(0, x)) : 0 };
+    }) };
+}

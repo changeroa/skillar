@@ -9,12 +9,13 @@ import { TraceView } from "./trace";
 
 export function SessionPeek({ route, navigate, live, rows }: ViewProps & { readonly rows: readonly SessionListRow[] }) {
   installStyles("session-peek", `
-.session-peek{position:sticky;top:16px;align-self:start;max-height:calc(100dvh - 32px);overflow:auto;min-width:0;padding:12px;border:1px solid var(--line);background:var(--bg)}
-.session-peek__actions{display:flex;align-items:center;gap:4px;position:sticky;top:-12px;z-index:2;background:var(--bg);margin:-12px -12px 12px;padding:8px;border-bottom:1px solid var(--line)}
+.session-peek{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;min-width:0;padding:0;border:1px solid var(--line);background:var(--bg)}
+.session-peek__body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px}
+.session-peek__actions{display:flex;flex:none;align-items:center;gap:4px;z-index:2;background:var(--bg);padding:8px;border-bottom:1px solid var(--line)}
 .session-peek__actions>a{margin-right:auto;font-size:12px}.session-peek__actions>span{font-size:12px}
 .session-peek .trace__back{display:none}.session-peek .trace__console{display:block}.session-peek .trace__title{font-size:16px;overflow-wrap:anywhere}
 .session-peek .trace__inspector{border:0;padding:0;margin:12px 0}.session-peek .trace__scope{display:none}
-@media(max-width:1023px){.session-peek{position:fixed;inset:0;z-index:60;max-height:none;border:0;padding:12px}.session-peek__actions{top:-12px}}
+@media(max-width:1023px){.session-peek{position:fixed;inset:0;z-index:60;align-self:stretch;height:100dvh;max-height:100dvh;border:0}.session-peek__body{flex:1;padding-bottom:max(12px,env(safe-area-inset-bottom))}}
 `);
   const closeButton = useRef<HTMLButtonElement>(null);
   const originId = useRef(route.peek);
@@ -60,6 +61,10 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
       <CopyButton value={route.peek ?? ""} />
       <button ref={closeButton} class="pe-button" aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "목록" : ""}</button>
     </div>
-    <TraceView key={route.peek} route={{ ...route, view: "trace", sessionId: route.peek }} navigate={navigate} live={live} embedded presentation="peek" />
+    <div class="session-peek__body">
+      <TraceView key={route.peek} route={{ ...route, view: "trace", sessionId: route.peek }}
+        navigate={next => navigate({ ...next, view: "sessions", sessionId: undefined, peek: route.peek })}
+        live={live} embedded presentation="peek" />
+    </div>
   </aside>;
 }
