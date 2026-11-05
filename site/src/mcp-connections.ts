@@ -97,6 +97,15 @@ export function checkDraft(draft: PatDraft): DraftCheck {
   return { ok: false, problems: [...new Set(problems)] };
 }
 
+export function draftFieldProblems(draft: PatDraft, problems: readonly string[]): { field: "name" | "days"; text: string }[] {
+  const invalidName = draft.name.trim() === "" || draft.name.trim().length > 80;
+  const invalidDays = !/^\s*\d+\s*$/.test(draft.expiresInDays) || Number(draft.expiresInDays) < 1 || Number(draft.expiresInDays) > 30;
+  return [
+    ...(invalidName ? [{ field: "name" as const, text: problems.find(problem => problem.includes("토큰 이름") || problem.includes("이름은")) ?? "" }] : []),
+    ...(invalidDays ? [{ field: "days" as const, text: problems.find(problem => problem.includes("만료 기간")) ?? "" }] : []),
+  ];
+}
+
 export function connectionStatus(connection: McpConnectionSummary, nowSeconds: number): "active" | "expired" | "revoked" {
   return connection.revokedAt !== null ? "revoked" : connection.expiresAt <= nowSeconds ? "expired" : "active";
 }
@@ -168,6 +177,7 @@ async function mount(): Promise<void> {
   const name = q<HTMLInputElement>("#pat-name"), days = q<HTMLInputElement>("#pat-days"), record = q<HTMLInputElement>("#pat-record");
   const create = q<HTMLButtonElement>("#pat-create"), problems = q<HTMLElement>("#pat-problems"), patStatus = q<HTMLElement>("#pat-status");
   const patRetry = q<HTMLButtonElement>("#pat-retry");
+  const originalDescribedBy = new Map([name, days].map(field => [field, field.getAttribute("aria-describedby")]));
   const tokenPanel = q<HTMLElement>("#token-panel"), tokenTitle = q<HTMLElement>("#token-title"), token = q<HTMLInputElement>("#token");
   const toggle = q<HTMLButtonElement>("#token-toggle"), copy = q<HTMLButtonElement>("#token-copy"), dismiss = q<HTMLButtonElement>("#token-dismiss");
   const tokenStatus = q<HTMLElement>("#token-status"), list = q<HTMLElement>("#connection-list"), empty = q<HTMLElement>("#connections-empty");
@@ -256,15 +266,26 @@ async function mount(): Promise<void> {
     if (model.creating || model.token !== null) return;
     patRetry.hidden = true;
     const check = checkDraft(model.draft);
-    problems.replaceChildren(...(check.ok ? [] : check.problems).map(text => Object.assign(document.createElement("li"), { textContent: text })));
+    const errors = check.ok ? [] : draftFieldProblems(model.draft, check.problems).map(({ field, text }) => ({
+      element: field === "name" ? name : days,
+      item: Object.assign(document.createElement("li"), { id: `pat-problem-${field}`, textContent: text }),
+    }));
+    for (const field of [name, days]) {
+      const error = errors.find(item => item.element === field);
+      if (error) {
+        field.setAttribute("aria-invalid", "true");
+        field.setAttribute("aria-describedby", [originalDescribedBy.get(field), error.item.id].filter(Boolean).join(" "));
+      } else {
+        field.removeAttribute("aria-invalid");
+        const original = originalDescribedBy.get(field);
+        if (original == null) field.removeAttribute("aria-describedby");
+        else field.setAttribute("aria-describedby", original);
+      }
+    }
+    problems.replaceChildren(...errors.map(({ item }) => item));
     q<HTMLElement>("#pat-errors").hidden = check.ok;
-    name.removeAttribute("aria-invalid");
-    days.removeAttribute("aria-invalid");
     if (!check.ok) {
-      const invalidName = name.value.trim() === "" || name.value.trim().length > 80;
-      const field = invalidName ? name : days;
-      field.setAttribute("aria-invalid", "true");
-      field.focus();
+      errors[0]?.element.focus();
       return;
     }
     dispatch({ type: "create" });
