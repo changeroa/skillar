@@ -59,7 +59,7 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
       <button class="pe-button pe-icon-button" aria-label="이전 세션" disabled={index <= 0} onClick={() => move(-1)}><Icon name="previous" /></button>
       <button class="pe-button pe-icon-button" aria-label="다음 세션" disabled={index < 0 || index >= rows.length - 1} onClick={() => move(1)}><Icon name="next" /></button>
       <CopyButton value={route.peek ?? ""} />
-      <button ref={closeButton} class="pe-button" aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "목록" : ""}</button>
+      <button ref={closeButton} class="pe-button" aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "닫기" : ""}</button>
     </div>
     <div class="session-peek__body">
       <TraceView key={route.peek} route={{ ...route, view: "trace", sessionId: route.peek }}

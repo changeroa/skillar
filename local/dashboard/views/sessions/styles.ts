@@ -21,7 +21,7 @@ export function sessionsStyles() {
 .session-facets{border-right:1px solid var(--line);padding-right:12px;min-width:0}
 .pe-sheet .session-facets{display:block;border:0;padding:0}
 .session-sheet-period{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:12px}
-.session-sheet-period select{min-width:160px}
+.session-sheet-period select{min-width:160px;min-height:44px}
 .session-facets__scope{font-size:12px;color:var(--ink-2);margin:4px 0 12px}
 .session-facet{margin:0 0 16px;border:0;border-bottom:1px solid var(--line);padding:0 0 12px;min-width:0}
 .session-facet legend{font-weight:600;padding:0;font-size:12px}
