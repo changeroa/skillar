@@ -23,13 +23,14 @@ export function sortRows<Row>(rows: readonly Row[], column: TableColumn<Row>, di
   });
 }
 
-export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onSort }: {
+export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onSort, controls = true }: {
   readonly caption: string;
   readonly rows: readonly Row[];
   readonly columns: readonly TableColumn<Row>[];
   readonly rowId: (row: Row) => string;
   readonly initialSort?: TableSort;
   readonly onSort?: (sort: TableSort) => void;
+  readonly controls?: boolean;
 }) {
   const [sort, setSort] = useState<TableSort | undefined>(initialSort);
   const [hidden, setHidden] = useState<readonly string[]>([]);
@@ -45,7 +46,7 @@ export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onS
     onSort?.(next);
   };
   return h("section", { class: "ui-table", "data-density": density },
-    h("div", { class: "ui-toolbar" },
+    controls && h("div", { class: "ui-toolbar" },
       h("details", { class: "ui-columns" },
         h("summary", null, `열 표시 ${visible.length}/${columns.length}`),
         h("div", null, columns.map(column => h("label", { class: "ui-choice", key: column.id },

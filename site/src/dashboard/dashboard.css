@@ -18,6 +18,21 @@
 .dash-source-picker > summary { font-weight: 600; }
 .dash-source-picker { padding: 0; border: 0; background: none; }
 .dash-activity { min-width: 0; }
+.dash-refresh { grid-column: 1 / -1; }
+.dash-workspace--no-sources { grid-template-columns: minmax(0, 1fr); }
+.dash-checklist { margin-block: var(--s5); padding-inline-start: var(--s5); display: grid; gap: var(--s4); }
+.dash-checklist li { padding: var(--s3); background: var(--surface); border-radius: var(--radius); }
+.dash-checklist h3 { font-size: var(--body); }
+.dash-checklist .note { margin-top: var(--s2); }
+.dash-permissions { margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.dash-permissions h2 { font-size: 22px; }
+.dash-permissions > .note { margin-block: var(--s3); }
+.dash-permission-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+.dash-permission-list h3 { font-size: 18px; margin-bottom: var(--s2); }
+.dash-permission-facts { margin: 0; }
+.dash-permission-facts > div { grid-template-columns: minmax(0, 120px) minmax(0, 1fr); }
+.dash-permission-facts dd { overflow-wrap: anywhere; color: var(--ink); }
+.dashboard-page .dash-source-picker > summary:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dash-workspace .panel { margin: 0; padding: 0; border: 0; }
 .dashboard-page .panel h2 { letter-spacing: 0; line-height: 1.4; }
 .dash-sources .panel__head { align-items: start; gap: 12px; }
@@ -46,7 +61,7 @@
 .dash-management > summary { font-weight: 600; }
 .dashboard-page .local-alternative { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule); }
 @media (min-width: 1200px) {
-  .dash-workspace { grid-template-columns: 360px minmax(0, 1fr); }
+  .dash-workspace:not(.dash-workspace--no-sources) { grid-template-columns: 360px minmax(0, 1fr); }
 }
 @media (max-width: 899.98px) {
   .dashboard-header, .dashboard-page { width: calc(100% - 40px); }
@@ -131,6 +146,8 @@
 .command-item__technical code { display: block; padding-bottom: var(--s3); white-space: pre-wrap; font-size: var(--small); }
 .command-item__actions .note { flex-basis: 100%; }
 .dash-embed { margin-top: var(--s5); }
+.dash-embed > #dash-data-title { display: none; margin-block: 0 var(--s3); }
+.dash-embed:has(.tab[aria-selected="true"][href^="#/sessions"]) > #dash-data-title { display: block; }
 @media (max-width: 760px) {
   .panel { margin-top: var(--s6); }
   .source, .device, .connect { padding: var(--s3); }

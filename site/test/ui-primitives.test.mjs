@@ -32,6 +32,18 @@ test("descending numeric sorting keeps missing values last", () => {
   assert.deepEqual(ordered.map(row => row.id), ["a", "b", "c"]);
 });
 
+test("summary tables can omit view controls while retaining sortable semantic columns", async t => {
+  // Given
+  const { container } = await mount(t, DataTable, { ...tableProps, controls: false });
+  // When
+  await act(() => byTag(byTag(container, "th")[1], "button")[0].click());
+  // Then
+  assert.equal(byTag(container, "select").length, 0);
+  assert.equal(byTag(container, "input").length, 0);
+  assert.equal(byTag(container, "th")[1].getAttribute("aria-sort"), "ascending");
+  assert.deepEqual(byTag(container, "tbody")[0].children.map(row => row.children[0].textContent), ["나", "가", "다"]);
+});
+
 test("column visibility updates headers and cells but preserves one visible column", async t => {
   // Given
   const { container } = await mount(t, DataTable, tableProps);
@@ -177,6 +189,17 @@ test("line chart leaves a path gap at missing points", async t => {
   assert.equal((path.match(/M/g) ?? []).length, 2);
   assert.equal((path.match(/L/g) ?? []).length, 0);
   assert.equal(byTag(container, "circle").length, 2);
+});
+
+test("missing bar slots do not draw overlapping per-group labels", async t => {
+  // Given
+  const { container } = await mount(t, BarChart, { title: "요청", data: chart });
+  // When
+  const slots = byTag(container, "g");
+  // Then
+  assert.equal(slots.length, 6);
+  assert.equal(slots.filter(slot => slot.children.length === 0).length, 1);
+  assert.equal(slots.filter(slot => byTag(slot, "text").length === 1).length, 5);
 });
 
 test("unmeasured charts do not fabricate SVG points or bars", async t => {

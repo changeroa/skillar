@@ -78,6 +78,8 @@ async function dashboardRequests(t, fetchReport) {
     if (url === routes.session) return Response.json({ user });
     if (url === routes.profiles) return Response.json(profiles);
     if (url === routes.devices) return Response.json({ devices: [] });
+    if (url === "/api/skills") return Response.json({ revision: 1, skills: [] });
+    if (url === "/api/mcp/connections") return Response.json({ resource: "https://skillar.sh/mcp", connections: [] });
     return fetchReport(url, init);
   });
   const { dom, container } = await mount(t, Dashboard, { signal });
