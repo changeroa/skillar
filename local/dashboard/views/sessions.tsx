@@ -136,7 +136,11 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
         {ingest.lastError && (
           <>
             <dt>마지막 오류</dt>
-            <dd class="is-bad">{ingest.lastError.code} · {dateTimeFmt.format(ingest.lastError.ts)}</dd>
+            <dd class="is-bad">
+              {ingest.lastError.code === "unauthorized" ? "이벤트 수집 인증에 실패했습니다. 연결 상태를 확인하세요." : "이벤트를 수집하지 못했습니다. 연결 상태를 확인하세요."}
+              {" · "}{dateTimeFmt.format(ingest.lastError.ts)}
+              <details><summary>기술 세부 정보</summary><code>{ingest.lastError.code}</code></details>
+            </dd>
           </>
         )}
       </dl>
