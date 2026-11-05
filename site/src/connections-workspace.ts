@@ -154,7 +154,7 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
           { label: "활동 기록", value: current.mcp.recordActivity ? "켜짐 · 검색과 읽기를 기록합니다." : "꺼짐" },
         ] : []),
       ] }),
-      current.device && h(DeviceCard, { ...common, device: current.device, ingestEnabled }),
+      current.device && h(DeviceCard, { ...common, key: current.device.deviceId, device: current.device, ingestEnabled }),
       current.mcp && current.status !== "해제됨" && h("div", { class: "cluster connection__actions" },
         model.confirming === current.id ? [
           h("button", { class: "button secondary", type: "button", "data-action": "keep" }, "연결 유지"),
