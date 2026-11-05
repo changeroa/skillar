@@ -73,11 +73,12 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
 }
 
 export function AnalysisEmpty({ route, navigate }: Pick<ViewProps, "route" | "navigate">) {
-  return <section class="empty"><h2>아직 기록된 세션이 없습니다</h2>
-    <p>연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다.</p>
-    {serializeFilter(route.filter) ? <button class="pe-button" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>
+  const filtered = Boolean(serializeFilter(route.filter));
+  return <section class="empty"><h2>{filtered ? "조건에 맞는 세션이 없습니다" : "아직 기록된 세션이 없습니다"}</h2>
+    <p>{filtered ? "기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다." : "연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다."}</p>
+    {filtered ? <button class="pe-button" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>
       : <a class="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a>}
-    <code>skillar doctor</code>
+    {!filtered && <code>skillar doctor</code>}
   </section>;
 }
 

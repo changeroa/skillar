@@ -119,6 +119,7 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
   const weekStartLabel = grid ? DOW_LABEL[grid.weekStart] : DOW_LABEL[weekStart];
   const bucketLabel = grid ? `${grid.bucketHours}시간 단위${choice === "auto" ? " (자동)" : ""}` : "";
   const filtered = !isEmptyFilter(dataFilter);
+  const timezoneLabel = (heat?.tz ?? tz) === "Asia/Seoul" ? "한국 시간" : heat?.tz ?? tz;
 
   return (
     <section class="hm-stack analysis pe-console" aria-busy={report.busy} onKeyDown={event => {
@@ -133,14 +134,14 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
       {report.busy && <p class="dim" role="status">{grid ? `갱신 중: ${conditions(dataFilter)} · ${requestBucket}시간` : "활동 분포를 집계하는 중…"}</p>}
       <AnalysisError error={report.error} title="활동 분포를 불러올 수 없습니다" retry={report.refresh} />
-      {grid && <p class="analysis-scope" data-result-conditions>{conditions(resultFilter)} · {bucketHours}시간 · {heat?.tz}</p>}
+      {grid && <p class="analysis-scope" data-result-conditions>{conditions(resultFilter)} · {bucketHours}시간 · {timezoneLabel}</p>}
       <button class="pe-button" data-range-toggle aria-pressed={rangeMode} onClick={() => { setRangeMode(!rangeMode); clearSelection(); }}>범위 선택{rangeMode ? " · 켜짐" : ""}</button>
       {rangeMode && <p role="status">{rangeStart ? "끝 칸을 누르세요. 같은 요일의 시간 범위를 선택합니다." : "시작 칸을 누른 뒤 끝 칸을 누르세요."}</p>}
       {grid && (
         <article class="hmc" aria-labelledby="hm-dow-title">
           <header class="hmc__head">
             <h2 class="hmc__title" id="hm-dow-title">요일·시간대별 세션</h2>
-            <span class="hmc__meta">세션 {grid.total}개 {"\u00b7"} {heat?.tz ?? tz} {"\u00b7"} 주 시작 {weekStartLabel}요일 {"\u00b7"} {bucketLabel}</span>
+            <span class="hmc__meta">세션 {grid.total}개 {"\u00b7"} {timezoneLabel} {"\u00b7"} 주 시작 {weekStartLabel}요일 {"\u00b7"} {bucketLabel}</span>
             <BucketToggle choice={choice} onChange={setChoice} />
           </header>
           {grid.total === 0 && (

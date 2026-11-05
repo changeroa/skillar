@@ -34,6 +34,18 @@ successful requests because the server's weekly aggregate has UTC boundaries.
 Coverage stays visible, and failed trace retrieval is 미측정 rather than zero.
 Planning and review tracking codes never appear in user-facing copy.
 
+Flow charts retain the baseline pixels-per-value scale and fit all three
+columns at phone widths. Grow vertical spacing, never compress the bands or
+force a wider horizontal scroll canvas, to accommodate accessible targets.
+Each route handle and actionable node owns a real 44px square. Route targets
+are transparent and avoid measured label boxes, node bars and other targets;
+their count markers never cover a node label or count. Focus rings have clearance.
+Keyboard order follows source-column routes, then node columns. Non-actions
+are not Tab stops. Back from a session drill-down restores the chart opener.
+Visible names and counts, including truncation, remain in accessible names;
+full recorded labels remain available. Ingest diagnostics explain failures in
+Korean and retain exact codes only inside native technical disclosures.
+
 ## Approved local shell and sessions P-E (2026-11-05)
 
 Gate revision: overlays use a bounded `100dvh` scroll-body shell. The peek
