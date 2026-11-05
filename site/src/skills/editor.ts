@@ -2,7 +2,7 @@ import { h } from "preact";
 import type { JSX } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_RESOURCES } from "../../../shared/dist/private-skills.js";
-import { ENTRYPOINT, formatBytes, mediaTypeFor, mergePickedFiles, readFrontMatter, relativePaths, removeFile } from "./model.ts";
+import { draftIssues, ENTRYPOINT, formatBytes, mediaTypeFor, mergePickedFiles, readFrontMatter, relativePaths, removeFile } from "./model.ts";
 import type { Draft, DraftFile } from "./model.ts";
 
 export type EditorProps = {
@@ -10,6 +10,7 @@ export type EditorProps = {
   readonly idPrefix: string;
   readonly busy: boolean;
   readonly notes: readonly string[];
+  readonly showErrors?: boolean;
   readonly onChange: (next: Draft | ((current: Draft) => Draft), notes: readonly string[]) => void;
 };
 
@@ -58,7 +59,7 @@ export async function readSelection(list: FileList): Promise<PickedSelection> {
   return { files, notes };
 }
 
-export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorProps) {
+export function DraftEditor({ draft, idPrefix, busy, notes, onChange, showErrors = false }: EditorProps) {
   const folderInput = useRef<HTMLInputElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
   const generation = useRef(0);
@@ -90,6 +91,15 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
   }, []);
   const id = (name: string) => `${idPrefix}-${name}`;
   const front = readFrontMatter(draft.document);
+  const issues = showErrors ? draftIssues(draft) : [];
+  const documentErrors = issues.filter(issue => issue.field === "document");
+  const fileErrors = issues.filter(issue => issue.field === "files");
+  const acknowledgementErrors = issues.filter(issue => issue.field === "acknowledged");
+  useLayoutEffect(() => {
+    if (busy || !showErrors) return;
+    const field = documentErrors.length > 0 ? "document" : fileErrors.length > 0 ? "file-errors" : acknowledgementErrors.length > 0 ? "acknowledged" : null;
+    if (field !== null) document.getElementById(id(field))?.focus();
+  }, [busy, showErrors]);
 
   const picked = async (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
     const input = event.currentTarget;
@@ -116,12 +126,13 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
   const fileRows = draft.files.map(file => h("li", { key: file.path, class: "file-row" },
     h("div", { class: "file-row__name" },
       h("code", null, file.path),
-      h("span", { class: "note" }, `${formatBytes(file.bytes.length)} · ${file.mediaType}`)),
+      h("span", { class: "note" }, `${formatBytes(file.bytes.length)} · `, h("code", null, file.mediaType))),
     h("button", { class: "button secondary file-row__remove", type: "button", disabled: busy,
       "aria-label": `${file.path} 제거`, onClick: () => onChange(current => removeFile(current, file.path), []) }, "제거")));
 
   return h("div", { class: "editor" },
-    h("div", { class: "editor__files" },
+    h("fieldset", { class: "editor__files", "aria-labelledby": id("files-title"),
+      "aria-invalid": fileErrors.length > 0, "aria-describedby": fileErrors.length > 0 ? id("file-errors") : undefined },
       h("p", { id: id("pick-note") }, `${ENTRYPOINT}가 있는 폴더나 파일을 선택하세요. 폴더 안의 구조는 유지하고 최상위 폴더 이름은 제외합니다. 선택한 파일만, 선택할 때 읽습니다.`),
       h("div", { class: "cluster file-picker" },
         h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
@@ -133,6 +144,8 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
         h("input", { ref: filesInput, type: "file", disabled: busy, multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
       readError !== "" && h("p", { class: "note", role: "alert" }, readError),
       readMessage !== "" && h("p", { class: "note", role: "status" }, readMessage),
+      fileErrors.length > 0 && h("p", { id: id("file-errors"), class: "field-error", role: "alert", tabIndex: -1 },
+        fileErrors.map(issue => issue.message).join(" ")),
       undo !== null && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
         onChange(current => ({ ...current, document: undo.document, files: undo.files }), []);
         setUndo(null);
@@ -144,17 +157,22 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
         ? h("p", { class: "note" }, `아직 없습니다. ${ENTRYPOINT} 하나만으로도 스킬을 구성할 수 있습니다.`)
         : h("ul", { class: "file-list", "aria-labelledby": id("files-title") }, fileRows)),
     h("dl", { class: "account-status will-publish" },
-      h("div", null, h("dt", null, "이름"), h("dd", null, front.name ?? "SKILL.md 메타데이터에서 찾지 못했습니다")),
-      h("div", null, h("dt", null, "설명"), h("dd", null, front.description ?? "SKILL.md 메타데이터에서 찾지 못했습니다"))),
+      h("div", null, h("dt", null, "이름"), h("dd", null, front.name === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.name))),
+      h("div", null, h("dt", null, "설명"), h("dd", null, front.description === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.description)))),
     h("label", { class: "field-label document-label", for: id("document") }, `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`),
     h("textarea", { id: id("document"), class: "document-field", rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
+      "aria-invalid": documentErrors.length > 0, "aria-describedby": documentErrors.length > 0 ? id("document-errors") : undefined,
       value: draft.document,
       onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => {
         const document = event.currentTarget.value;
         onChange(current => ({ ...current, document }), []);
       } }),
+    documentErrors.length > 0 && h("p", { id: id("document-errors"), class: "field-error", role: "alert" },
+      documentErrors.map(issue => issue.message).join(" ")),
     h("label", { class: "choice choice--ack" },
-      h("input", { type: "checkbox", checked: draft.acknowledged, disabled: busy,
+      h("input", { id: id("acknowledged"), type: "checkbox", checked: draft.acknowledged, disabled: busy,
+        "aria-invalid": acknowledgementErrors.length > 0,
+        "aria-describedby": acknowledgementErrors.length > 0 ? id("acknowledgement-errors") : undefined,
         onChange: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
           const acknowledged = event.currentTarget.checked;
           onChange(current => ({ ...current, acknowledged }), []);
@@ -162,5 +180,7 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
       h("span", null,
         h("strong", null, "이 파일을 내 비공개 skillar 보관함에 업로드하는 데 동의합니다."),
         h("span", { class: "choice__detail" },
-          "기기 활동 수집 동의와 별개입니다. 위에 나열된 파일과 SKILL.md 텍스트만 전송하며, 삭제할 때까지 내 계정에 보관합니다."))));
+          "기기 활동 수집 동의와 별개입니다. 위에 나열된 파일과 SKILL.md 텍스트만 전송하며, 삭제할 때까지 내 계정에 보관합니다."))),
+    acknowledgementErrors.length > 0 && h("p", { id: id("acknowledgement-errors"), class: "field-error", role: "alert" },
+      acknowledgementErrors.map(issue => issue.message).join(" ")));
 }

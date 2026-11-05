@@ -1,10 +1,11 @@
 import { h } from "preact";
 import { useRef, useState } from "preact/hooks";
 import type { PrivateSkillId } from "../../../shared/dist/private-skills.js";
-import { classifyFailure, describeFailure, isUnauthorized, publishVersion, technicalDetail } from "./api.ts";
+import { classifyFailure, describeFailure, isUnauthorized, technicalDetail } from "./api.ts";
 import { DraftEditor, useDraftGuard } from "./editor.ts";
-import { buildPackage, emptyDraft } from "./model.ts";
+import { emptyDraft } from "./model.ts";
 import type { Draft } from "./model.ts";
+import { publishDraft } from "./skill-publish.ts";
 
 export type PublishProps = {
   readonly signal: AbortSignal;
@@ -42,15 +43,15 @@ export function PublishPanel({ signal, onPublished, onOpen, onUnauthorized }: Pu
     setOutcome({ kind: "none" });
     setDetail(null);
     try {
-      const built = await buildPackage(draft);
+      setMessage("게시 중\u2026");
+      const built = await publishDraft(draft, signal);
       if (!built.ok) {
         setProblems(built.problems);
         setMessage("");
         return;
       }
       setProblems([]);
-      setMessage("게시 중\u2026");
-      const published = await publishVersion(draft.skillId, null, built.package, signal);
+      const published = built.detail;
       setOutcome({ kind: "published", skillId: published.skill.skillId, name: published.skill.name, revision: published.skill.head.revision });
       setMessage(`${published.skill.name}을 리비전 ${published.skill.head.revision}으로 게시했습니다.`);
       setDraft(emptyDraft());
@@ -74,8 +75,9 @@ export function PublishPanel({ signal, onPublished, onOpen, onUnauthorized }: Pu
     h("h2", { id: "publish-title" }, "새 스킬 게시"),
     h("p", { class: "account-lead" }, "스킬은 SKILL.md와 선택적으로 추가하는 파일로 구성됩니다. 게시하면 내 계정의 새 스킬 ID에 리비전 1로 저장합니다. 이후 버전은 해당 스킬 화면에서 게시합니다."),
     h("form", { class: "publish", onSubmit: submit },
-      h(DraftEditor, { draft, idPrefix: "new-skill", busy, notes, onChange: change }),
-      problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
+      h(DraftEditor, { draft, idPrefix: "new-skill", busy, notes, onChange: change, showErrors: problems.length > 0 }),
+      problems.length > 0 && h("div", { role: "alert" },
+        h("ul", { class: "problems" }, problems.map(problem => h("li", { key: problem }, problem)))),
       h("div", { class: "cluster publish__actions" },
         h("button", { class: "button primary", type: "submit", disabled: busy }, "스킬 게시"),
         outcome.kind === "published" && h("button", { class: "button secondary", type: "button", onClick: () => onOpen(outcome.skillId) }, `${outcome.name} 열기`),
