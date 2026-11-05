@@ -4,6 +4,7 @@ export function consoleStyles() {
   installStyles("local-console", `
 .pe-shell,.pe-console{--fs-title:22px;--fs-body:14px;--fs-sm:14px;--fs-cap:12px;--fs-micro:12px;font-size:14px;line-height:1.5}
 .pe-icon{display:inline-block;flex:none;vertical-align:middle}
+.pe-shell .sr-only,.pe-console .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);border:0;white-space:nowrap}
 .pe-pill{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 7px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:12px;white-space:nowrap;color:var(--ink)}
 .pe-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:6px 10px;border:1px solid var(--line-2);border-radius:2px;background:var(--bg);color:var(--ink);font-size:14px;text-decoration:none;cursor:pointer}
 .pe-button:hover{background:var(--surface);color:var(--ink);text-decoration:none}
@@ -24,7 +25,7 @@ export function consoleStyles() {
 .pe-body{min-width:0}
 .pe-topbar{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--bg)}
 .pe-breadcrumb{display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;color:var(--ink-2)}
-.pe-breadcrumb a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink)}
+.pe-breadcrumb a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--ink)}
 .pe-breadcrumb code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pe-jump{flex:none;border:0;font-size:12px;color:var(--ink-2)}
 .pe-jump kbd{font-family:var(--font-mono);padding:1px 4px;border:1px solid var(--line);border-radius:2px}
@@ -43,8 +44,8 @@ export function consoleStyles() {
 @media(max-width:1279px){.pe-sessions-region:has(.session-peek){grid-template-columns:minmax(0,1fr) 480px}}
 @media(max-width:1023px){
  .pe-shell{display:block}.pe-sidebar{display:none}.pe-topbar{padding:0 12px}.pe-content{padding:12px}
- .pe-mobile-nav{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);gap:4px;padding:0 8px}
- .pe-mobile-nav>span{flex:none}.pe-mobile-nav .tab{display:inline-flex;align-items:center;gap:6px;min-height:44px;flex:none;padding:6px 10px;border:0;color:var(--ink);text-decoration:none;white-space:nowrap}
+ .pe-mobile-nav{display:flex;flex-wrap:nowrap;overflow-x:auto;border-bottom:1px solid var(--line);gap:4px;padding:0 8px}
+ .pe-mobile-nav>span{flex:none}.pe-mobile-nav .tab{display:inline-flex;align-items:center;gap:4px;min-height:44px;flex:none;padding:6px;font-size:12px;border:0;color:var(--ink);text-decoration:none;white-space:nowrap}
  .pe-mobile-nav [aria-current=page]{box-shadow:inset 0 -3px var(--accent)}
  .pe-jump kbd{display:none}.pe-jump{padding-inline:8px}
  .pe-breadcrumb{gap:5px}.pe-breadcrumb code{max-width:120px}

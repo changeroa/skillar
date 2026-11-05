@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { TraceStep } from "../../../src/types.js";
 import { api } from "../../api";
-import { Candidates } from "../../components/candidates";
+import { RankedCandidates } from "../../components/ranked-candidates";
 import { skillName } from "../../state";
 import { foldText, evalCasePayload, formatBytes, formatCost, formatDuration, formatMs, resourcePath, searchDetail, sessionBounds, shortDigest, toolArgsPreview, MODE_LABEL, ABSTAIN_LABEL, type SearchDetail, type PromptDetail, type LoadDetail, type ReadDetail, type NativeDetail, type LlmDetail, type ToolDetail, type ErrorDetail } from "./model";
 
@@ -69,7 +69,7 @@ function SearchBody({ detail }: { detail: SearchDetail }) {
           <SaveEvalButton detail={detail} />
         </div>
       ) : (
-        <Candidates candidates={detail.candidates} chosen={detail.chosen} query={detail.query} />
+        <RankedCandidates candidates={detail.candidates} chosen={detail.chosen} query={detail.query} />
       )}
     </div>
   );

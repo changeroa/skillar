@@ -32,7 +32,7 @@ column-density toolbar; applied filter pills; facet rail beside sessions/day his
 and semantic dense table; attribution/count footer. Select/Text facets expose counts
 in the loaded time/automation scope. Sorting is explicitly within the received range.
 URL state retains search, filters, sort, columns/density and peek selection.
-There is no 結果/결과 table column. `읽은 스킬` is actual reads only; exposed
+There is no 결과 table column. `읽은 스킬` is actual reads only; exposed
 candidates are separate, never substituted for reads. Missing measurements stay
 unknown and failures stay failures.
 

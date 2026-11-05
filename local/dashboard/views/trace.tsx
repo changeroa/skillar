@@ -5,10 +5,14 @@ import { RequestDetails } from "../components/requests";
 import { UnresolvedLoadNotice } from "../components/skill-evidence";
 import { buildHash, type ViewProps } from "../state";
 import { sessionBounds, traceCounts } from "./trace/model";
-import { createTimelineKeys, planTimeline } from "./trace/plan";
-import { Header, Inspector } from "./trace/header";
-import { Step, SpanGroup, NeverConsulted } from "./trace/timeline";
+import { createTimelineKeys } from "./trace/plan";
+import { Header } from "./trace/header";
+import { NeverConsulted } from "./trace/timeline";
 import { TRACE_CSS } from "./trace/styles";
+import { SessionSummary } from "./trace/summary";
+import { CompactTree } from "./trace/compact-tree";
+import { traceConsoleStyles } from "./trace/console-style";
+import { EventConsole } from "./trace/event-console";
 export * from "./trace/model";
 export * from "./trace/plan";
 
@@ -35,11 +39,12 @@ function ensureStyles() {
   document.head.append(el);
 }
 
-export function TraceView({ route, live, embedded = false }: ViewProps) {
+export function TraceView({ route, navigate, live, embedded = false, presentation = "page" }: ViewProps & { readonly presentation?: "page" | "peek" }) {
   ensureStyles();
+  traceConsoleStyles();
   const sessionId = route.sessionId ?? "";
-  const timelineKeys = useMemo(createTimelineKeys, [sessionId]);
-  const backHref = buildHash({ view: "sessions", filter: route.filter });
+  const timelineKeys = useMemo(() => createTimelineKeys(sessionId), [sessionId]);
+  const backHref = buildHash({ ...route, view: "sessions", sessionId: undefined, event: undefined, peek: undefined });
   const [steps, setSteps] = useState<TraceStep[]>();
   const [row, setRow] = useState<SessionListRow>();
   const [report, setReport] = useState<SessionSkillReportDto>();
@@ -104,32 +109,22 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
 
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
-  const items = planTimeline(timelineKeys(steps), report);
-  const Heading = embedded ? "h3" : "h2";
+  const source = timelineKeys(steps);
+  if (presentation === "peek") return <section class="trace pe-console" aria-busy={busy}>
+    <SessionSummary sessionId={sessionId} steps={steps} row={row} peek embedded backHref={backHref} />
+    {error && <p role="alert">{error}<button class="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button></p>}
+    <CompactTree items={source} startedAt={bounds.startedAt} route={route} />
+  </section>;
   return (
-    <section class="trace" aria-busy={busy}>
+    <section class="trace trace-console pe-console" data-pe-screen="session-detail" aria-busy={busy}>
       {error && <p class="notice" role="alert">실시간 갱신 실패: {error} <button type="button" class="btn"
         onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
-      <Header sessionId={sessionId} row={row} steps={steps} backHref={backHref} embedded={embedded} />
+      <SessionSummary sessionId={sessionId} row={row} steps={steps} backHref={backHref} embedded={embedded} peek={false} />
       {busy && <p role="status">추적 기록 불러오는 중…</p>}
-      <div class="trace__console">
-        <Inspector sessionId={sessionId} row={row} steps={steps} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} embedded={embedded} />
-        <div class="trace__events">
-          {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
-          {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
-          {items.length > 0 && (
-            <>
-              <Heading class="trace__subtitle">이벤트 순서</Heading>
-              <ol class="tl" aria-label="세션 이벤트 순서">
-                {items.map(item => (item.kind === "step"
-                  ? <Step key={item.key} step={item.step} bounds={bounds} />
-                  : <SpanGroup key={item.key} item={item} bounds={bounds} />))}
-              </ol>
-            </>
-          )}
-          <RequestDetails steps={steps} />
-        </div>
-      </div>
+      {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
+      {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
+      <EventConsole source={source} report={report} bounds={bounds} route={route} navigate={navigate} embedded={embedded} />
+      <RequestDetails steps={steps} />
     </section>
   );
 }

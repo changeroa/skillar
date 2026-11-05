@@ -13,6 +13,7 @@ import { TraceView } from "./views/trace";
 import { WorkspaceView, WorkspacesView } from "./views/workspaces";
 import { DashboardView } from "./views/dashboard";
 import { LocalShell } from "./components/local-shell";
+import { SessionPeek } from "./views/session-peek";
 
 function useRoute(): [Route, (next: Route) => void] {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
@@ -133,12 +134,13 @@ export type AppOptions = { embedded?: boolean };
 export function App({ embedded = false }: AppOptions = {}) {
   const [route, navigate] = useRoute();
   const live = useLive();
+  const [sessionRows, setSessionRows] = useState<SessionListRow[]>([]);
   const contentRef = useRef<HTMLElement | null>(null);
   const firstRoute = useRef(true);
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live, embedded };
   const Header = embedded ? "div" : "header";
-  const Content = embedded ? "div" : "main";
+  const Content = embedded || route.view === "sessions" || route.view === "trace" ? "div" : "main";
   useLayoutEffect(() => {
     if (!embedded) return;
     if (firstRoute.current) { firstRoute.current = false; return; }
@@ -268,10 +270,11 @@ export function App({ embedded = false }: AppOptions = {}) {
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
         <div id={embedded ? undefined : "skillar-local-panel"}>
         {(route.view === "sessions" || route.view === "trace") && (
-          <div class={route.view === "trace" ? "sessions-detail" : undefined}>
+          <div class={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
             {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
-              <SessionsView {...props} detail={route.view === "trace"} />
+              <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
             </div>}
+            {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
             {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
           </div>
         )}

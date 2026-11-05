@@ -13,24 +13,19 @@ export type TimelineItem =
  * (the store orders by ts, rowid), never by their mutable display or attribution payload.
  * This boundary receives the complete source trace, before any filtering or grouping.
  */
-export function createTimelineKeys() {
-  const eventIds = new Map<string, string[]>();
+export function createTimelineKeys(sessionId = "") {
   return (steps: readonly TraceStep[]): KeyedStep[] => {
     const occurrences = new Map<string, number>();
     return steps.map((step): KeyedStep => {
-      if (typeof step.detail.eventId === "string") return { kind: "step", step, key: `event:${step.detail.eventId}` };
+      if (typeof step.detail.eventId === "string") return { kind: "step", step, key: `event:${JSON.stringify([sessionId, step.detail.eventId])}` };
       const idField = ["loadId", "callId", "toolUseId", "traceId", "requestId"]
         .find(field => typeof step.detail[field] === "string" && step.detail[field] !== "");
       const record = idField === undefined
-        ? JSON.stringify([step.kind, step.ts])
-        : JSON.stringify([step.kind, idField, step.detail[idField]]);
+        ? JSON.stringify([sessionId, step.kind, step.ts])
+        : JSON.stringify([sessionId, step.kind, idField, step.detail[idField]]);
       const occurrence = occurrences.get(record) ?? 0;
       occurrences.set(record, occurrence + 1);
-      const ids = eventIds.get(record) ?? [];
-      const id = ids[occurrence] ?? crypto.randomUUID();
-      ids[occurrence] = id;
-      eventIds.set(record, ids);
-      return { kind: "step", step, key: `event:${id}` };
+      return { kind: "step", step, key: `event:${record}:${occurrence}` };
     });
   };
 }

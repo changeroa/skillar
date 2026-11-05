@@ -40,7 +40,9 @@ export function Step({ step, bounds }: { step: TraceStep; bounds: ReturnType<typ
   );
 }
 
-export function SpanGroup({ item, bounds }: { item: Extract<TimelineItem, { kind: "span" }>; bounds: ReturnType<typeof sessionBounds> }) {
+export function SpanGroup({ item, bounds, argumentIds }: {
+  item: Extract<TimelineItem, { kind: "span" }>; bounds: ReturnType<typeof sessionBounds>; readonly argumentIds?: ReadonlySet<string>;
+}) {
   const rows = callRows(item.span.events);
   return (
     <li class="tl__step tl__step--span" data-kind="skill_span" data-skill={item.span.skill} data-turn={item.turnId}>
@@ -53,7 +55,7 @@ export function SpanGroup({ item, bounds }: { item: Extract<TimelineItem, { kind
       <div class="tl__body">
         <Facts facts={spanFacts(item.span, rows.length, item.finding)} />
         <CallList rows={rows} />
-        {item.span.events.filter(event => event.kind === "tool_call").map(event => (
+        {item.span.events.filter(event => event.kind === "tool_call" && (argumentIds === undefined || argumentIds.has(event.id))).map(event => (
           <ToolArguments key={event.id} name={callRow(event).name} detail={{
             kind: "tool_call",
             args: event.text ?? (typeof event.data.args === "string" ? event.data.args : undefined),

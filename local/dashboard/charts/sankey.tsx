@@ -76,7 +76,7 @@ export function installStyles(key: string, css: string): void {
     return;
   }
   const el = document.createElement("style");
-  el.dataset.sheet = key;
+  el.setAttribute("data-sheet", key);
   el.textContent = css;
   document.head.append(el);
 }
