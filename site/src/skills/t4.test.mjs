@@ -245,6 +245,19 @@ test("request diagnostics stay separate from friendly errors and malformed JSON 
   assert.equal(classifyFailure(new SyntaxError("invalid JSON")), "unexpected");
 });
 
+test("supporting-file validation identifies the file group and focuses its described error", async t => {
+  // Given
+  const draft = { ...emptyDraft(skillId), document, acknowledged: true,
+    files: [{ path: "../escape.txt", mediaType: "text/plain", bytes: new TextEncoder().encode("fixture") }] };
+  // When
+  const { dom, container } = await mount(t, DraftEditor, { draft, idPrefix: "files", busy: false, notes: [], showErrors: true, onChange() {} });
+  // Then
+  const group = byTag(container, "fieldset")[0];
+  assert.deepEqual(draftIssues(draft).map(issue => issue.field), ["files"]);
+  assert.equal(group.getAttribute("aria-invalid"), "true");
+  assert.equal(dom.getElementById(group.getAttribute("aria-describedby")), dom.activeElement);
+});
+
 test("publication preparation refuses invalid drafts before any request", async t => {
   // Given
   const fetch = t.mock.method(globalThis, "fetch", () => { throw new Error("unexpected transfer"); });
