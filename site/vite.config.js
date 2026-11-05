@@ -11,6 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         landing: 'index.html',
+        notFound: '404.html',
         login: 'login/index.html',
         connect: 'connect/index.html',
         connections: 'connections/index.html',

@@ -22,6 +22,7 @@
 .dash-embed .top__row { min-height: 44px; }
 .dash-embed .tabs { gap: 8px; }
 .dash-embed .tab { padding-inline: 8px; }
+.dash-embed .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .dash-embed .button { font-size: var(--ui); font-weight: 600; }
 .dash-embed .button.primary:not(:disabled) { color: var(--on-accent); }
 .dash-embed .text-field { font-size: var(--ui); font-weight: 400; }
@@ -45,7 +46,7 @@
 }
 .dash-embed :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dash-embed .live--live .live__dot { animation: none; }
-.dash-embed .live--offline .live__dot { background: var(--neutral); }
+.dash-embed .live--offline .live__dot { background: var(--bad); }
 .dash-embed .top { border-bottom-color: var(--rule); }
 .dash-embed .card, .dash-embed .callout, .dash-embed .chip, .dash-embed .tag, .dash-embed .skill, .dash-embed .rt__mark { border-color: var(--line-2); }
 .dash-embed .card { overflow-x: auto; }

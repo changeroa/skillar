@@ -52,8 +52,8 @@ if (sessionStatus || accountLines.length) {
   if (authResult && callbackError !== null) {
     // Fixed copy per callback code; the query value itself is never rendered.
     authResult.textContent = callbackError === 'cancelled'
-      ? 'Sign-in was cancelled. Nothing was stored.'
-      : "Sign-in didn't complete. You can try again.";
+      ? '로그인이 취소되었습니다. 저장된 내용은 없습니다.'
+      : '로그인을 완료하지 못했습니다. 다시 시도하세요.';
   }
 
   const readSession = (payload: unknown): SessionResult => {
@@ -124,14 +124,14 @@ if (sessionStatus || accountLines.length) {
 
   const summary = (result: SessionResult): string => {
     switch (result.kind) {
-      case 'signed-in': return `Signed in as ${result.user.email}.`;
-      case 'signed-out': return 'Not signed in.';
-      case 'unreachable': return "Couldn't reach the account service, so sign-in status is unknown.";
-      case 'unexpected': return "The account service didn't answer as expected, so sign-in status is unknown.";
+      case 'signed-in': return `${result.user.email} 계정으로 로그인했습니다.`;
+      case 'signed-out': return '로그인하지 않았습니다.';
+      case 'unreachable': return '계정 서비스에 연결할 수 없어 로그인 상태를 확인하지 못했습니다.';
+      case 'unexpected': return '계정 서비스의 응답을 확인할 수 없어 로그인 상태를 알 수 없습니다.';
     }
   };
 
-  const checking = 'Checking your account…';
+  const checking = '계정 확인 중…';
   if (sessionStatus) sessionStatus.textContent = checking;
   for (const line of accountLines) line.textContent = checking;
 
@@ -148,11 +148,11 @@ if (sessionStatus || accountLines.length) {
       return;
     }
     if (result.kind === 'signed-out') {
-      sessionStatus.textContent = 'Not signed in.';
+      sessionStatus.textContent = '로그인하지 않았습니다.';
     } else if (result.kind === 'unreachable') {
-      sessionStatus.textContent = "Couldn't reach the account service. Check your connection and reload to see whether you're signed in.";
+      sessionStatus.textContent = '계정 서비스에 연결할 수 없습니다. 연결을 확인하고 새로고침해 로그인 상태를 확인하세요.';
     } else {
-      sessionStatus.textContent = "The account service didn't answer as expected. Try again later.";
+      sessionStatus.textContent = '계정 서비스의 응답을 확인할 수 없습니다. 잠시 후 다시 시도하세요.';
     }
   });
 }
