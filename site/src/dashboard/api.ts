@@ -8,6 +8,7 @@ import { commandStatusSchema } from "../../../shared/dist/activity-commands.js";
 import type { CommandStatus, CommandStatusRequest, SourceCommandRequest } from "../../../shared/dist/activity-commands.js";
 import { sessionResponseSchema } from "../../lib/account.ts";
 import type { SessionUser } from "../../lib/account.ts";
+import type { RequestFailure } from "./status";
 
 /** Same-origin browser routes. The Google session cookie is the only credential; nothing is stored here. */
 export const routes = {
@@ -72,9 +73,10 @@ export function describeFailure(error: unknown, action: string): string {
       case "not_found": return "해당 기기가 이 계정에 더 이상 없습니다.";
       case "invalid_consent": case "invalid_request": return `${action} 요청이 올바르지 않아 거부되었습니다. 입력 내용을 확인하고 다시 시도하세요.`;
       case "insufficient_scope": return `이 계정에서는 ${action} 요청이 허용되지 않습니다.`;
-      default: return `${action} 요청이 실패했습니다 (${error.code}).`;
+      default: return `${action} 요청을 완료하지 못했습니다. 다시 시도하세요.`;
     }
   }
+  if (error instanceof SyntaxError || error instanceof z.ZodError) return `${action} 요청의 응답 형식 오류입니다. 다시 시도하세요.`;
   if (error instanceof TypeError) return `${action} 요청이 skillar에 도달하지 못했습니다. 연결 상태를 확인하고 다시 시도하세요.`;
   return `${action} 요청이 예기치 않게 실패했습니다.`;
 }
@@ -87,6 +89,10 @@ async function errorCode(response: Response): Promise<string> {
     if (error instanceof SyntaxError || error instanceof TypeError) return `http_${response.status}`;
     throw error;
   }
+}
+
+export async function failureOf(response: Response): Promise<RequestFailure> {
+  return { status: response.status, code: await errorCode(response.clone()) };
 }
 
 type CallInit = { readonly body?: object; readonly signal?: AbortSignal | undefined };
@@ -114,7 +120,8 @@ export async function readSession(signal?: AbortSignal): Promise<SessionState> {
     payload = await response.json();
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    if (error instanceof TypeError || error instanceof SyntaxError) return { kind: "unreachable" };
+    if (error instanceof SyntaxError) return { kind: "unexpected" };
+    if (error instanceof TypeError) return { kind: "unreachable" };
     throw error;
   }
   const parsed = sessionResponseSchema.safeParse(payload);
