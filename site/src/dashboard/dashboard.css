@@ -18,6 +18,7 @@
 .dash-source-picker > summary { font-weight: 600; }
 .dash-source-picker { padding: 0; border: 0; background: none; }
 .dash-activity { min-width: 0; }
+.dash-refresh { grid-column: 1 / -1; }
 .dash-workspace--no-sources { grid-template-columns: minmax(0, 1fr); }
 .dash-checklist { margin-block: var(--s5); padding-inline-start: var(--s5); display: grid; gap: var(--s4); }
 .dash-checklist li { padding: var(--s3); background: var(--surface); border-radius: var(--radius); }
@@ -145,6 +146,8 @@
 .command-item__technical code { display: block; padding-bottom: var(--s3); white-space: pre-wrap; font-size: var(--small); }
 .command-item__actions .note { flex-basis: 100%; }
 .dash-embed { margin-top: var(--s5); }
+.dash-embed > #dash-data-title { display: none; margin-block: 0 var(--s3); }
+.dash-embed:has(.tab[aria-selected="true"][href^="#/sessions"]) > #dash-data-title { display: block; }
 @media (max-width: 760px) {
   .panel { margin-top: var(--s6); }
   .source, .device, .connect { padding: var(--s3); }

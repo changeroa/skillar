@@ -17,6 +17,73 @@ const common = { user, signal, selected: null, report: null, failure: null, onSe
 const picker = container => all(container, node => node.localName === "details" && node.getAttribute("class") === "dash-source-picker")[0];
 const home = container => all(container, node => node.id === "dash-empty-title")[0];
 
+for (const receivedAtMs of [null, profile.receivedAtMs]) {
+  test(`metadata-only sources keep the first viewable record pending after receipt ${receivedAtMs}`, async t => {
+    // Given
+    const consent = { mode: "metadata", version: 1, grantedAtMs: 1,
+      scope: { deviceId: profile.deviceId, projectIds: ["project"], rootIds: [] },
+      retention: { contentDays: 30, projectionDays: 30, backupDays: 30 } };
+    t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+      Response.json(response([{ ...profile, receivedAtMs, availability: "metadata-only" }])) :
+      url === routes.consent(profile.deviceId) ? Response.json({ version: 1, consent }) :
+        Response.json({ devices: [{ deviceId: profile.deviceId, createdAt: 1, revokedAt: null }] }));
+    const { dom, container } = await mount(t, SignedIn, common);
+    // When
+    await waitFor(dom, () => home(container)?.getAttribute("data-state") === "none" &&
+      all(container, node => node.localName === "ol")[0]?.children[0]?.getAttribute("data-state") === "done", "metadata-only checklist");
+    // Then
+    const steps = all(container, node => node.localName === "ol")[0].children;
+    assert.deepEqual([...steps].map(step => step.getAttribute("data-state")), ["done", "done", "pending"]);
+    assert.equal(picker(container), undefined);
+    assert.equal(all(container, node => node.getAttribute("data-availability") === "metadata-only").length, 1);
+    const manage = all(container, node => node.localName === "a" && node.getAttribute("href") === "#dashboard-management")[0];
+    await act(() => manage.click());
+    assert.equal(all(container, node => node.id === "dashboard-management")[0].open, true);
+  });
+}
+
+test("selected-source refresh failure exposes retry and stale facts without losing close focus", async t => {
+  // Given
+  let status = 200;
+  t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+    status === 200 ? Response.json(response([profile])) :
+      Response.json({ error: "dashboard_unavailable" }, { status }) : Response.json({ devices: [] }));
+  const props = { ...common, selected: profile };
+  const view = await mount(t, SignedIn, { ...props, onClose: () => view.show({ ...props, selected: null }) });
+  const { dom, container } = view;
+  await waitFor(dom, () => picker(container), "source read");
+  status = 503;
+  // When
+  await act(() => buttonNamed(container, "출처 다시 읽기")[0].click());
+  await waitFor(dom, () => buttonNamed(container, "다시 시도")[0], "visible refresh recovery");
+  // Then
+  assert.equal(home(container)?.getAttribute("data-state"), "failed");
+  assert.equal(all(container, node => node.id === "dash-empty-title" || node === picker(container))[0], home(container));
+  assert.ok(all(container, node => node.getAttribute("data-stale") === "true")[0]);
+  assert.ok(all(container, node => node.getAttribute("class") === "account-status snapshot__facts")[0]);
+  assert.ok(picker(container));
+  await act(() => buttonNamed(container, "기록 닫기")[0].click());
+  assert.equal(dom.activeElement, picker(container).children[0]);
+  status = 200;
+  await act(() => buttonNamed(container, "다시 시도")[0].click());
+  await waitFor(dom, () => home(container)?.getAttribute("data-state") === "choose", "retry recovered");
+  assert.equal(all(container, node => node.getAttribute("data-stale") === "true").length, 0);
+});
+
+test("explicitly selected data exposes the distinct sessions heading required by C6", async t => {
+  // Given
+  globalThis.__t10Cloud = () => ({ mode: "cloud", dispose() {}, refresh() {} });
+  t.mock.method(globalThis, "fetch", async url => url === routes.session ? Response.json({ user }) :
+    url === routes.profiles ? Response.json(response([profile])) : Response.json({ devices: [] }));
+  const { dom, container } = await mount(t, Dashboard, { signal });
+  await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
+  assert.equal(all(container, node => node.id === "dash-data-title").length, 0);
+  // When
+  await act(() => buttonNamed(container, "기록 보기")[0].click());
+  // Then
+  assert.equal(all(container, node => node.localName === "h2" && node.id === "dash-data-title")[0]?.textContent, "세션");
+});
+
 test("source loading transitions through failure and retry to explicit choice", async t => {
   // Given
   const held = Promise.withResolvers();

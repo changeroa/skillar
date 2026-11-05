@@ -104,6 +104,10 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   };
   const loadMessage = (state: Loaded<unknown>, loading: string): string =>
     state.status === "loading" ? loading : state.message;
+  const checklist = <HomeChecklist
+    state={profiles.status === "ready" ? hasViewableSources ? "choose" : "none" : profiles.status}
+    message={profiles.message} technical={profiles.technical} profiles={list} devices={devices} onRetry={reload}
+    stale={hasViewableSources} onManage={() => { if (management.current) management.current.open = true; }} />;
   return (
     <>
       <div class="dash-account">
@@ -116,11 +120,12 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
         </div>
         <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
       </div>
-      <div class={`dash-workspace${profiles.status === "ready" && hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
-        {profiles.status === "ready" && hasViewableSources && <aside class="dash-sources" aria-label="활동 출처">
+      <div class={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
+        {selected !== null && profiles.status !== "ready" && <div class="dash-refresh">{checklist}</div>}
+        {hasViewableSources && <aside class="dash-sources" aria-label="활동 출처">
           <details ref={sourcePicker} class="dash-source-picker" open={selected === null}>
             <summary ref={sourceSummary}>{selected === null ? "출처 선택" : <>출처 변경 및 상세 <code title={selected.sourceDomain}>{shortId(selected.sourceDomain)}</code></>}</summary>
-            <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={false}
+            <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
               message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => {
                 if (sourcePicker.current) sourcePicker.current.open = false;
                 onSelect(profile);
@@ -128,18 +133,15 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           </details>
         </aside>}
         <div class="dash-activity">
-          {selected !== null && current !== null ? (
+          {selected === null && checklist}
+          {selected !== null && current !== null && (
             <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}
               commands={
                 <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
                   signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />
               }>
-              <LocalViews key={profileKey(selected)} embedded />
+              <h2 id="dash-data-title">세션</h2><LocalViews key={profileKey(selected)} embedded />
             </SnapshotSection>
-          ) : (
-            <HomeChecklist state={profiles.status === "ready" ? hasViewableSources ? "choose" : "none" : profiles.status}
-              message={profiles.message} technical={profiles.technical} profiles={list} devices={devices} onRetry={reload}
-              onManage={() => { if (management.current) management.current.open = true; }} />
           )}
         </div>
       </div>

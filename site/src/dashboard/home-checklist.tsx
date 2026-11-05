@@ -1,5 +1,6 @@
 import type { DashboardProfile } from "../../../shared/dist/activity-dashboard.js";
 import type { DeviceState } from "./devices";
+import { availabilityCopy, profileKey, shortId } from "./status";
 
 export type ReadState<T> = {
   readonly status: "loading" | "ready" | "failed";
@@ -16,9 +17,10 @@ type Props = {
   readonly devices: ReadState<readonly DeviceState[]>;
   readonly onRetry: () => void;
   readonly onManage: () => void;
+  readonly stale?: boolean;
 };
 
-export function HomeChecklist({ state, message, technical, profiles, devices, onRetry, onManage }: Props) {
+export function HomeChecklist({ state, message, technical, profiles, devices, onRetry, onManage, stale = false }: Props) {
   let heading: string;
   switch (state) {
     case "loading": heading = "출처 확인 중"; break;
@@ -28,7 +30,8 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
     default: { const exhaustive: never = state; return exhaustive; }
   }
   const active = (devices.data ?? []).filter(device => device.revokedAt === null);
-  const received = profiles.some(profile => profile.receivedAtMs !== null);
+  const uploaded = profiles.some(profile => profile.receivedAtMs !== null);
+  const received = profiles.some(profile => profile.availability === "ready" && profile.receivedAtMs !== null);
   const granted = active.some(device => device.consent.mode !== "local-only");
   const deviceStatus = devices.status === "failed" ? "failed" : devices.status === "ready" && active.length > 0 ? "done" : "pending";
   const consentStatus = devices.status === "failed" ? "failed" : devices.status === "ready" && granted ? "done" : "pending";
@@ -38,7 +41,9 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
     { title: "기록 동의", status: consentStatus, detail: devices.status === "loading" ? "저장된 동의 확인 중" :
       devices.status === "failed" ? "동의를 확인하지 못했습니다. 다시 시도하세요." : granted ? "저장된 업로드 동의가 있습니다. 아래 권한 요약에서 범위를 확인하세요." : "연결만으로 기록되지 않습니다. 기기 관리에서 업로드할 범위를 직접 선택하세요." },
     { title: "첫 세션 수신", status: received ? "done" : "pending", detail: received ?
-      "출처 업로드를 수신했습니다. 조회 가능한 출처를 직접 선택해 세션을 확인하세요." : "아직 출처 업로드를 수신하지 못했습니다. 동의 후 CLI 동기화를 실행하고 다시 확인하세요." },
+      "조회 가능한 기록을 수신했습니다. 출처를 직접 선택해 세션을 확인하세요." : uploaded ?
+        "출처 업로드는 도착했지만 아직 조회할 수 있는 기록이 없습니다. 아래 출처 상태와 업로드 범위를 확인하세요." :
+        "아직 출처 업로드를 수신하지 못했습니다. 동의 후 CLI 동기화를 실행하고 다시 확인하세요." },
   ];
   return (
     <section class={`dash-empty${state === "loading" || state === "failed" ? " dash-source-picker" : ""}`} aria-labelledby="dash-empty-title">
@@ -46,6 +51,9 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
         <h2 id="dash-empty-title" data-state={state} role={state === "loading" ? "status" : undefined}>{heading}</h2>
         {state === "failed" && <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
       </div>
+      {stale && (state === "loading" || state === "failed") && <p role="status" data-stale="true">
+        마지막으로 확인한 기록을 표시하고 있습니다. 최신 정보가 아닐 수 있습니다.
+      </p>}
       {state === "failed" && <>
         <p role="status">{message}</p>
         {message.includes("허용되지") && <p>이 출처를 볼 권한이 없습니다</p>}
@@ -65,9 +73,15 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
             <p class="note">{step.detail}</p>
           </li>)}
         </ol>
+        {profiles.map(profile => {
+          const copy = availabilityCopy(profile.availability);
+          return <p class="note" key={profileKey(profile)} data-availability={profile.availability}>
+            <code>{shortId(profile.deviceId)}</code> · {copy.label}: {copy.explanation} {copy.next}
+          </p>;
+        })}
         {devices.status === "failed" && <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
         <div class="cluster">
-          <a class="button primary" href="#dashboard-management" onClick={onManage}>기기 연결 안내</a>
+          <a class="button primary" href="#dashboard-management" onClick={onManage}>{active.length > 0 ? "업로드 범위 확인" : "기기 연결 안내"}</a>
           <a class="button secondary" href="/#local-setup">로컬 설정 안내</a>
           <button class="button secondary" type="button" onClick={onRetry}>출처 다시 읽기</button>
         </div>
