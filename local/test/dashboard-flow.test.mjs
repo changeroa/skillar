@@ -186,7 +186,7 @@ test("route handles preserve every ribbon identity without overlapping touch tar
     const height = 356;
     const layout = sankey.layoutFlow(dto, { width, height: height - 22, top: 46, nodePadding: 44 });
     // When: target geometry is allocated independently of the data-scaled ribbon widths.
-    const handles = sankey.routeHandles(layout, height);
+    const handles = sankey.routeHandles(layout, { width, height, obstacles: [] });
     // Then: every original link has an in-bounds 44px square, separated from all other handles.
     assert.deepEqual([...handles.keys()].sort((a, b) => a - b), layout.links.map(link => link.index).sort((a, b) => a - b));
     for (const handle of handles.values()) {
@@ -195,6 +195,47 @@ test("route handles preserve every ribbon identity without overlapping touch tar
       for (const other of handles.values()) {
         if (other === handle) continue;
         assert.ok(Math.abs(handle.x - other.x) >= 44 || Math.abs(handle.y - other.y) >= 44);
+      }
+    }
+  }
+});
+
+test("interactive flow preserves the baseline node and band scale at phone and desktop widths", () => {
+  // Given: the recorded graphs and label metrics at both responsive layouts.
+  for (const dto of [FLOW, FLOW12]) for (const width of [326, 1140]) {
+    const narrow = width < 640;
+    const labels = new Map(dto.nodes.map(node => [node.id, { x: node.column === 2 && !narrow ? -84 : 0, y: -7, width: 84, height: 14 }]));
+    const baseline = sankey.layoutFlow(dto, { width: width - (narrow ? 80 : 0), height: sankey.chartHeight(dto, narrow), top: 24, nodePadding: narrow ? 10 : 14 });
+    // When: real touch targets are allocated without changing the value encoding.
+    const chart = sankey.interactiveFlow(dto, { width, narrow, labels });
+    // Then: every node and band remains within 5% of its baseline pixel size.
+    for (const node of chart.nodes) {
+      const original = baseline.nodes.find(item => item.id === node.id);
+      assert.ok(Math.abs((node.y1 - node.y0) / (original.y1 - original.y0) - 1) <= 0.05, node.id);
+    }
+    for (const link of chart.links) {
+      const original = baseline.links.find(item => item.index === link.index);
+      assert.ok(Math.abs(link.width / original.width - 1) <= 0.05, `route ${link.index}`);
+    }
+  }
+});
+
+test("route touch targets stay clear of complete node label boxes", () => {
+  // Given: full and twelve-session labels, including their count and glyph height.
+  for (const dto of [FLOW, FLOW12]) for (const width of [326, 1140]) {
+    const narrow = width < 640;
+    const labels = new Map(dto.nodes.map(node => [node.id, { x: node.column === 2 && !narrow ? -84 : 0, y: -7, width: 84, height: 14 }]));
+    // When: the chart chooses target locations using those measured extents.
+    const chart = sankey.interactiveFlow(dto, { width, narrow, labels });
+    // Then: no 44px hit rectangle intersects any label or loses a route identity.
+    assert.equal(chart.handles.size, chart.links.length);
+    for (const handle of chart.handles.values()) {
+      assert.ok(handle.x - 22 >= 0 && handle.x + 22 <= width);
+      for (const node of chart.nodes) {
+        const metric = labels.get(node.id);
+        const x = node.column === 2 && !narrow ? node.x0 - 6 + metric.x : node.x1 + 6 + metric.x;
+        const y = (node.y0 + node.y1) / 2 + metric.y;
+        assert.ok(handle.x + 22 <= x || handle.x - 22 >= x + metric.width || handle.y + 22 <= y || handle.y - 22 >= y + metric.height, node.id);
       }
     }
   }

@@ -34,29 +34,74 @@ const TIP_OFFSET = 12;
 const OUTCOME_MARGIN = 80;
 const TARGET_SIZE = 44;
 const TARGET_STEP = 48;
+type FlowBox = { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+type LabelMetric = FlowBox;
 
 // A chart is unmounted on drill-down. Keep the opener for browser Back, not the destination.
 let returnFocus: { readonly url: string; readonly action: string } | undefined;
 
-/** Separate route handles from data-scaled ribbon widths; each gap owns a non-overlapping grid. */
-export function routeHandles(layout: FlowLayout, height: number): Map<number, { x: number; y: number }> {
+/** Allocate independent targets only in space clear of labels, bars and node targets. */
+export function routeHandles(layout: FlowLayout, bounds: { readonly width: number; readonly height: number; readonly obstacles: readonly FlowBox[] }): Map<number, { x: number; y: number }> {
   const handles = new Map<number, { x: number; y: number }>();
-  for (const column of [0, 1]) {
-    const source = layout.nodes.find(node => node.column === column);
-    const destination = layout.nodes.find(node => node.column === column + 1);
-    if (!source || !destination) continue;
-    const cells: { x: number; y: number }[] = [];
-    for (let y = HEADER_HEIGHT + TARGET_SIZE / 2; y <= height - TARGET_SIZE / 2; y += TARGET_STEP) {
-      for (let x = source.x1 + TARGET_SIZE + TARGET_SIZE / 2; x <= destination.x0 - TARGET_SIZE - TARGET_SIZE / 2; x += TARGET_STEP) cells.push({ x, y });
-    }
-    for (const link of layout.links.filter(link => layout.nodes.some(node => node.id === link.source && node.column === column))) {
-      const middle = { x: (source.x1 + destination.x0) / 2, y: (link.y0 + link.y1) / 2 };
-      cells.sort((a, b) => Math.hypot(a.x - middle.x, a.y - middle.y) - Math.hypot(b.x - middle.x, b.y - middle.y));
-      const cell = cells.shift();
-      if (cell) handles.set(link.index, cell);
+  let cells: { x: number; y: number }[] = [];
+  for (let y = HEADER_HEIGHT + TARGET_SIZE / 2; y <= bounds.height - TARGET_SIZE / 2; y += 8) {
+    for (let x = TARGET_SIZE / 2; x <= bounds.width - TARGET_SIZE / 2; x += 8) {
+      if (!bounds.obstacles.some(box => x - 22 < box.x + box.width && x + 22 > box.x && y - 22 < box.y + box.height && y + 22 > box.y)) cells.push({ x, y });
     }
   }
+  for (const link of layout.links) {
+    const source = layout.nodes.find(node => node.id === link.source);
+    const destination = layout.nodes.find(node => node.id === link.target);
+    if (!source || !destination) continue;
+    const middle = { x: (source.x1 + destination.x0) / 2, y: (link.y0 + link.y1) / 2 };
+    let nearest: { x: number; y: number } | undefined;
+    let distance = Infinity;
+    for (const cell of cells) {
+      const candidate = (cell.x - middle.x) ** 2 + (cell.y - middle.y) ** 2;
+      if (candidate < distance) { nearest = cell; distance = candidate; }
+    }
+    if (!nearest) break;
+    const chosen = nearest;
+    handles.set(link.index, chosen);
+    cells = cells.filter(cell => Math.abs(cell.x - chosen.x) >= TARGET_SIZE || Math.abs(cell.y - chosen.y) >= TARGET_SIZE);
+  }
   return handles;
+}
+
+function nodeHit(node: LaidOutNode, height: number, narrow: boolean): FlowBox {
+  return {
+    x: node.column === 2 && !narrow ? node.x1 - TARGET_SIZE : node.x0,
+    y: Math.round(Math.max(HEADER_HEIGHT, Math.min(height - TARGET_SIZE, (node.y0 + node.y1 - TARGET_SIZE) / 2))),
+    width: TARGET_SIZE, height: TARGET_SIZE,
+  };
+}
+
+/** Extra target space comes from padding; the baseline pixels per value remain unchanged. */
+export function interactiveFlow(dto: FlowDto, options: { readonly width: number; readonly narrow: boolean; readonly labels: ReadonlyMap<string, LabelMetric> }): FlowLayout & { height: number; handles: Map<number, { x: number; y: number }> } {
+  const plotWidth = options.width - (options.narrow ? OUTCOME_MARGIN : 0);
+  const baseline = layoutFlow(dto, { width: plotWidth, height: chartHeight(dto, options.narrow), top: HEADER_HEIGHT, nodePadding: options.narrow ? 10 : 14 });
+  if (!baseline.nodes.length) return { ...baseline, height: chartHeight(dto, options.narrow), handles: new Map() };
+  const unit = Math.min(...baseline.nodes.filter(node => node.value > 0).map(node => (node.y1 - node.y0) / node.value));
+  for (let padding = TARGET_SIZE; ; padding += TARGET_STEP) {
+    const height = Math.ceil(HEADER_HEIGHT + TARGET_SIZE + Math.max(...[0, 1, 2].map(column => {
+      const nodes = baseline.nodes.filter(node => node.column === column);
+      return nodes.reduce((total, node) => total + node.value * unit, 0) + Math.max(0, nodes.length - 1) * padding;
+    })));
+    const layout = layoutFlow(dto, { width: plotWidth, height: height - TARGET_SIZE / 2, top: HEADER_HEIGHT + TARGET_SIZE / 2, nodePadding: padding });
+    if (layout.nodes.some(node => !options.labels.has(node.id))) return { ...layout, height, handles: new Map() };
+    const obstacles = layout.nodes.flatMap(node => {
+      const metric = options.labels.get(node.id);
+      if (!metric) return [];
+      const anchor = node.column === 2 && !options.narrow ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP;
+      return [
+        nodeHit(node, height, options.narrow),
+        { x: node.x0, y: node.y0, width: node.x1 - node.x0, height: node.y1 - node.y0 },
+        { x: anchor + metric.x - 2, y: (node.y0 + node.y1) / 2 + metric.y - 2, width: metric.width + 4, height: metric.height + 4 },
+      ];
+    });
+    const handles = routeHandles(layout, { width: options.width, height, obstacles });
+    if (handles.size === layout.links.length) return { ...layout, height, handles };
+  }
 }
 
 /** The value part of a node id: "t:review" -> "review", "s:skill://x/SKILL.md" -> "skill://x/SKILL.md". */
@@ -221,7 +266,7 @@ function describe(dto: FlowDto, target: FlowTarget): { title: string; sub: strin
 
 const SANKEY_CSS = `
 .sankey { position: relative; }
-.sankey.is-interactive { width: 100%; min-width: 0; box-sizing: border-box; contain: inline-size; overflow-x: auto; padding: 4px 4px var(--s-6); }
+.sankey.is-interactive { width: 100%; min-width: 0; box-sizing: border-box; padding: 4px; }
 .sankey__svg { display: block; overflow: visible; font: 500 var(--fs-cap) / 1 var(--font-sans); }
 .sankey__svg.is-narrow { font-size: var(--fs-micro); }
 .sankey__head { fill: var(--ink-3); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
@@ -247,8 +292,8 @@ const SANKEY_CSS = `
 .sankey a, .sankey [role="button"] { cursor: pointer; }
 .sankey a:focus-visible, .sankey [role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sankey__hit { fill: transparent; pointer-events: all; }
-.sankey__handle { fill: var(--surface); stroke: var(--line-2); pointer-events: none; }
-.sankey__handle-count { fill: var(--ink); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.sankey__handle { fill: transparent; stroke: none; pointer-events: none; }
+.sankey__handle-count { fill: var(--ink); text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; pointer-events: none; }
 .sankey__rect { pointer-events: none; }
 .sankey__tip { position: absolute; z-index: 2; max-width: 32ch; padding: var(--s-1) var(--s-2); border-radius: var(--r-sm); background: var(--ink); color: var(--bg); font-size: var(--fs-cap); font-weight: 500; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow-pop); pointer-events: none; }
 .sankey__tip-sub { opacity: 0.75; font-variant-numeric: tabular-nums; }
@@ -275,6 +320,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   const wrap = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<Hover>();
+  const [labelMetrics, setLabelMetrics] = useState<ReadonlyMap<string, LabelMetric>>(new Map());
   const actionable = Boolean(onExpandOther)
     || dto.nodes.some(node => hrefFor({ kind: "node", node }))
     || dto.links.some((link, index) => hrefFor({ kind: "link", link, index }));
@@ -290,21 +336,30 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   }, [actionable]);
 
   const narrow = width < NARROW_WIDTH;
-  const chartWidth = actionable ? Math.max(width, NARROW_WIDTH) : width;
+  const chartWidth = width;
   // Narrow screens keep outcome labels outside the bands (right margin); wide screens tuck them inside, left of the node.
   const plotWidth = narrow ? chartWidth - OUTCOME_MARGIN : chartWidth;
-  const columns = Math.max(1, Math.floor(((plotWidth - 3 * NODE_WIDTH) / 2 - 2 * TARGET_SIZE - TARGET_SIZE) / TARGET_STEP) + 1);
-  const sourceColumns = new Map(dto.nodes.map(node => [node.id, node.column]));
-  const routes = [0, 1].map(column => dto.links.filter(link => sourceColumns.get(link.source) === column).length);
-  const nodeRows = Math.max(...[0, 1, 2].map(column => dto.nodes.filter(node => node.column === column).length));
-  const height = actionable ? Math.max(chartHeight(dto, narrow), HEADER_HEIGHT + TARGET_SIZE + Math.ceil(Math.max(...routes) / columns) * TARGET_STEP, HEADER_HEIGHT + TARGET_SIZE + nodeRows * TARGET_STEP) : chartHeight(dto, narrow);
-  const layout = useMemo(
-    () => layoutFlow(dto, { width: plotWidth, height: actionable ? height - TARGET_SIZE / 2 : height, top: HEADER_HEIGHT + (actionable ? TARGET_SIZE / 2 : 0), nodeWidth: NODE_WIDTH, nodePadding: actionable ? TARGET_SIZE : narrow ? 10 : 14 }),
-    [dto, plotWidth, height, narrow, actionable],
+  const geometry = useMemo(
+    () => actionable ? interactiveFlow(dto, { width: chartWidth, narrow, labels: labelMetrics }) : {
+      ...layoutFlow(dto, { width: plotWidth, height: chartHeight(dto, narrow), top: HEADER_HEIGHT, nodePadding: narrow ? 10 : 14 }),
+      height: chartHeight(dto, narrow), handles: new Map<number, { x: number; y: number }>(),
+    },
+    [dto, chartWidth, plotWidth, narrow, actionable, labelMetrics],
   );
+  const { height, handles } = geometry;
+  const layout: FlowLayout = geometry;
+  useLayoutEffect(() => {
+    const metrics = new Map<string, LabelMetric>();
+    for (const text of wrap.current?.querySelectorAll<SVGTextElement>("[data-flow-label]") ?? []) {
+      const id = text.getAttribute("data-flow-label");
+      if (!id) continue;
+      const box = text.getBBox();
+      metrics.set(id, { x: box.x - Number(text.getAttribute("x")), y: box.y - Number(text.getAttribute("y")), width: box.width, height: box.height });
+    }
+    setLabelMetrics(metrics);
+  }, [dto, width]);
   const lit = useMemo(() => (hover ? connected(dto, hover.target) : undefined), [dto, hover?.target]);
   const nodeById = useMemo(() => new Map(layout.nodes.map((n) => [n.id, n])), [layout]);
-  const handles = useMemo(() => actionable ? routeHandles(layout, height) : new Map<number, { x: number; y: number }>(), [layout, height, actionable]);
   useLayoutEffect(() => {
     if (!returnFocus || returnFocus.url !== location.href || !layout.nodes.length) return;
     const opener = wrap.current?.querySelector<SVGElement>(`[data-flow-action="${CSS.escape(returnFocus.action)}"]`);
@@ -347,12 +402,10 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
           </g>
           <g aria-hidden="true">
             {layout.links.map(link => {
-              const source = nodeById.get(link.source), destination = nodeById.get(link.target), handle = handles.get(link.index);
+              const source = nodeById.get(link.source), destination = nodeById.get(link.target);
               if (!source || !destination) return null;
-              const left = (source.x1 + (handle?.x ?? 0)) / 2, right = ((handle?.x ?? 0) + destination.x0) / 2;
-              const path = handle ? `M${source.x1},${link.y0}C${left},${link.y0} ${left},${handle.y} ${handle.x},${handle.y}C${right},${handle.y} ${right},${link.y1} ${destination.x0},${link.y1}` : link.path;
               const target: FlowTarget = { kind: "link", link, index: link.index };
-              return <path key={link.index} class={`sankey__link is-${link.state}${!lit || lit.links.has(link.index) ? " is-on" : ""}`} d={path} stroke-width={Math.max(1, link.width)}
+              return <path key={link.index} class={`sankey__link is-${link.state}${!lit || lit.links.has(link.index) ? " is-on" : ""}`} d={link.path} stroke-width={Math.max(1, link.width)}
                 onPointerEnter={event => setHover({ target, ...place(event) })}
                 onPointerMove={event => setHover({ target, ...place(event) })}
                 onPointerLeave={() => setHover(undefined)}
@@ -389,12 +442,9 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const visibleLabel = truncate(displayLabel(node), maxChars);
               const body = (
                 <>
-                  {(href || expandable) && <rect class="sankey__hit"
-                    x={end ? node.x1 - TARGET_SIZE : node.x0}
-                    y={Math.round(Math.max(HEADER_HEIGHT, Math.min(height - TARGET_SIZE, (node.y0 + node.y1 - TARGET_SIZE) / 2)))}
-                    width={TARGET_SIZE} height={TARGET_SIZE} />}
+                  {(href || expandable) && <rect class="sankey__hit" {...nodeHit(node, height, narrow)} />}
                   <rect class="sankey__rect" x={node.x0} y={node.y0} width={node.x1 - node.x0} height={Math.max(1, node.y1 - node.y0)} rx={2} />
-                  <text class={`sankey__label${end ? " sankey__label--end" : ""}`} x={end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP} y={(node.y0 + node.y1) / 2}>
+                  <text data-flow-label={node.id} class={`sankey__label${end ? " sankey__label--end" : ""}`} x={end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP} y={(node.y0 + node.y1) / 2}>
                     {end ? <tspan class="sankey__count">{node.count} </tspan> : null}
                     <tspan dx={end ? LABEL_GAP : 0}>{visibleLabel}</tspan>
                     {end ? null : <tspan class="sankey__count" dx={LABEL_GAP}> {node.count}</tspan>}
