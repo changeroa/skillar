@@ -139,7 +139,7 @@ body:has(#skills-app) .dashboard-heading { margin-bottom: var(--s2); }
 body:has(#skills-app) #skill-breadcrumb { display: none; }
 .skills-breadcrumb-controls { display: inline-flex; align-items: center; gap: var(--s2); min-width: 0; }
 .skills-breadcrumb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 24ch; }
-.skills-version-label { display: inline-flex; align-items: center; gap: var(--s1); font-size: var(--small); }
+.skills-version-label { display: inline-flex; align-items: center; gap: var(--s1); font-size: var(--small); flex-shrink: 0; }
 .skills-version-label select { min-width: 0; max-width: 24ch; min-height: 44px; font-size: var(--small); }
 #skills-app .library { margin-top: 0; }
 .library-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s2); }
@@ -252,7 +252,7 @@ body:has(.skill--full) #skills-page-title { display: -webkit-box; -webkit-line-c
   .skills-table-main .ui-table caption { padding-block: 4px; }
   .skills-breadcrumb-name { max-width: 12ch; }
   .skills-version-label { font-size: 0; }
-  .skills-version-label select { max-width: 18ch; }
+  .skills-version-label select { max-width: 24ch; }
   .skills-table-main .ui-toolbar { flex-wrap: wrap; gap: var(--s1); }
   .search--compact { flex-basis: 100%; }
   .skills-table-main .ui-density { display: flex; margin-left: auto; }

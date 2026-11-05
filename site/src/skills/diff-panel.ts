@@ -62,7 +62,7 @@ export function VersionDiff({ detail, signal, onUnauthorized, active = true }: P
   return h("section", { class: "skill__section version-diff", "aria-labelledby": "diff-title" },
     h("h3", { id: "diff-title", class: "panel__subtitle" }, "버전 비교"),
     h("p", { class: "note" }, "보관된 두 버전의 SKILL.md를 비교합니다. − 삭제, + 추가, = 같은 줄입니다. 게시·현재 버전·고정 상태는 바뀌지 않습니다."),
-    h("p", { class: "note" }, "r번호는 보관된 버전의 생성 순서이며 현재 리비전 번호와 별개입니다. 날짜는 KST입니다."),
+    h("p", { class: "note" }, "현재 버전은 현재 리비전 번호로, 보관 버전은 생성 순서로 표시합니다. 날짜는 KST입니다."),
     h("div", { class: "diff-controls" },
       h("label", { class: "field-label", for: "diff-before" }, "이전 내용",
         h("select", { id: "diff-before", class: "text-field", value: beforeDigest,

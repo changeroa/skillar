@@ -10,6 +10,7 @@ import { draftIssues, draftProblems, emptyDraft } from "./model.ts";
 import { candidateHead, SearchBox } from "./search.ts";
 import { publishDraft } from "./skill-publish.ts";
 import { SkillsHeading } from "./heading.ts";
+import { versionLabel } from "./version-label.ts";
 import { act, all, byTag, buttonNamed, FakeEvent, input, mount, submit, waitFor } from "../../test/helpers/t10-dom.mjs";
 
 const skillId = "11223344-1122-4122-8122-112233445566";
@@ -104,8 +105,32 @@ test("search arrows announce candidates and Enter opens the active result instea
   assert.equal(active.getAttribute("aria-selected"), "true");
   assert.deepEqual(opened, [skillId]);
   assert.equal(requests, 1);
-  assert.ok(byTag(container, "input").some(field => field.value === candidate.digest && field.getAttribute("data-digest-copy") !== null));
+  const listbox = dom.getElementById("skill-search-results");
+  assert.equal(all(listbox, node => ["summary", "input", "select", "textarea"].includes(node.localName)).length, 0);
+  assert.equal(all(listbox, node => node.getAttribute("role") === "option").length, 1);
   assert.equal(/[a-f0-9]{64}/.test(container.textContent), false);
+});
+
+test("a rolled-back current version uses the head revision in compare and breadcrumb labels", () => {
+  // Given
+  const rollback = { ...detail, skill: { ...summary, head: { digest: versions[0].digest, revision: 4 } } };
+  // When
+  const label = versionLabel(rollback, versions[0].digest);
+  const breadcrumb = versionLabel(rollback, versions[0].digest, true);
+  // Then
+  assert.equal(label.split(" · ")[0], "r4");
+  assert.match(breadcrumb, /\br4\b/);
+  assert.equal(label.includes("r1"), false);
+});
+
+test("retained version order is not presented as a historical revision number", () => {
+  // Given
+  const rollback = { ...detail, skill: { ...summary, head: { digest: versions[0].digest, revision: 4 } } };
+  // When
+  const label = versionLabel(rollback, versions[1].digest);
+  // Then
+  assert.equal(/^r\d/.test(label), false);
+  assert.match(label, /#\d+ · [a-f0-9]{8}/);
 });
 
 test("failed search retries the same draft and clears technical failure after success", async t => {

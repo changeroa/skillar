@@ -27,7 +27,7 @@ function VersionBreadcrumb({ detail, digest, onSelect }: {
       h("select", { "aria-label": "스킬 버전", value: digest,
         onChange: (event: JSX.TargetedEvent<HTMLSelectElement>) => onSelect(event.currentTarget.value) },
       detail.versions.map(version => h("option", { value: version.digest, key: version.digest },
-        versionLabel(detail, version.digest)))))), target);
+        versionLabel(detail, version.digest, true)))))), target);
 }
 
 export function SkillView(controller: ReturnType<typeof useSkillController>) {

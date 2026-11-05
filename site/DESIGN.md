@@ -9,10 +9,13 @@ visible without crowding the phone axis.
 
 Comparison starts on opening its tab and refreshes on either selection using
 the existing export GETs. Inactive comparison tabs do not fetch. Options and
-summaries use `rN · digest8 · M/D` with current/pinned markers and KST dates.
-The API has no per-version revision: rN is explicitly labelled as retained
-creation order, separate from the mutable head revision. Full digests appear
-only in labelled, read-only monospace copy fields inside native disclosures.
+summaries use `rN · digest8 · M/D` for the current head, using its actual
+revision number. The API has no historical per-version revision, so other
+versions use `보관 #N` for retained creation order. Current/pinned markers and
+KST dates remain explicit. Breadcrumb options omit the date and put 현재
+first, with a nonshrinking field, so the marker remains visible on phones.
+Full digests appear only in detail-view read-only monospace copy fields
+inside native disclosures, never inside search listbox candidates.
 Long diffs start expanded and can be collapsed. Existing field, disclosure,
 status, spacing and focus primitives apply. Missing read data explains the
 connection needed in Korean, without internal proposal identifiers.

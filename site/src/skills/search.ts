@@ -5,7 +5,6 @@ import { parsePrivateSkillUri } from "../../../shared/dist/private-skills.js";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, searchSkills, technicalDetail } from "./api.ts";
 import type { SearchCandidate, SearchResult } from "./api.ts";
-import { DigestField } from "./version-label.ts";
 
 export function skillIdOf(candidate: SearchCandidate): PrivateSkillId | null {
   try {
@@ -124,7 +123,6 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, qu
             candidate.matched.length > 0 && h("span", { class: "note" }, "일치 항목: ", candidate.matched.join(", ")),
             h("p", { class: "note" }, "URI: ", h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))),
             h("p", { class: "note" }, "검색 당시 digest: ", h("code", null, candidate.digest.slice(0, 8))),
-            h(DigestField, { digest: candidate.digest }),
             h("p", { class: "note" }, { current: "현재 버전과 같습니다.", different: "현재 버전과 다릅니다.", unknown: "현재 버전과의 일치 여부를 확인하지 못했습니다." }[relation])),
           skillId === null ? h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))
             : h("button", { id: `search-result-${index}`, class: "button secondary", type: "button", role: "option",
