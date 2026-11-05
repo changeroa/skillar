@@ -114,10 +114,10 @@
           <form id="pat-form" class="pat-form" novalidate>
             <div class="consent__fields pat-form__fields">
               <label class="field-label">토큰을 구분할 이름 (필수)
-                <input id="pat-name" class="text-field" type="text" required aria-describedby="pat-problems" maxlength="80" autocomplete="off" spellcheck="false">
+                <input id="pat-name" class="text-field" type="text" required maxlength="80" autocomplete="off" spellcheck="false">
               </label>
               <label class="field-label">만료 기간(1~30일, 필수)
-                <input id="pat-days" class="text-field" type="number" required aria-describedby="pat-problems" inputmode="numeric" min="1" max="30" step="1" value="7">
+                <input id="pat-days" class="text-field" type="number" required inputmode="numeric" min="1" max="30" step="1" value="7">
               </label>
             </div>
             <label class="choice"><input id="pat-record" type="checkbox"><span>이 토큰을 사용하는 에이전트의 활동도 기록<span class="choice__detail">읽기 권한과 별도입니다. 에이전트의 검색과 스킬 읽기는 활동 대시보드의 관측 기록으로 저장되며, skillar 서버가 보고서를 만들기 위해 읽습니다. 끄면 에이전트의 사용 활동을 저장하지 않습니다.</span></span></label>
