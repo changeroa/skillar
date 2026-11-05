@@ -38,7 +38,7 @@ function Chart({ title, data, kind }: { readonly title: string; readonly data: C
           h("g", { key: index, class: `ui-series-${bar.seriesIndex % 2}` },
             bar.value !== null && h("rect", { x: x(bar.x), y: bar.y, width: x(bar.width), height: bar.height,
               "data-baseline": bar.baseline, "data-value": bar.value }),
-            h("text", { x: x(bar.x + bar.width / 2), y: bar.y - 8, "text-anchor": "middle" }, bar.value ?? "미측정"))) :
+            bar.value !== null && h("text", { x: x(bar.x + bar.width / 2), y: bar.y - 8, "text-anchor": "middle" }, bar.value))) :
           data.series.map((series, seriesIndex) => h("g", { key: series.label, class: `ui-series-${seriesIndex % 2}` },
             // Each missing point breaks the path rather than fabricating continuity.
             h("svg", { width: "100%", height: layout.height, viewBox: `0 0 ${layout.width} ${layout.height}`, preserveAspectRatio: "none", "aria-hidden": "true" },
@@ -50,7 +50,8 @@ function Chart({ title, data, kind }: { readonly title: string; readonly data: C
               h("text", { x: x(layout.left + (index + .5) * layout.groupWidth), y: layout.y(value) - 8, "text-anchor": "middle" }, value))))),
         data.labels.map((label, index) => h("text", { key: index, x: x(layout.left + (index + .5) * layout.groupWidth),
           y: layout.baseline + 28, "text-anchor": "middle" }, label))),
-    h("ul", { class: "ui-chart-legend" }, data.series.map((series, index) => h("li", { key: series.label, class: `ui-series-${index % 2}` }, series.label))));
+    h("ul", { class: "ui-chart-legend" }, data.series.map((series, index) => h("li", { key: series.label, class: `ui-series-${index % 2}` },
+      series.label, series.values.some(value => value === null) ? series.values.every(value => value === null) ? " · 미측정" : " · 일부 미측정" : ""))));
 }
 
 export function BarChart(props: { readonly title: string; readonly data: ChartData }) {

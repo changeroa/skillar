@@ -191,6 +191,17 @@ test("line chart leaves a path gap at missing points", async t => {
   assert.equal(byTag(container, "circle").length, 2);
 });
 
+test("missing bar slots do not draw overlapping per-group labels", async t => {
+  // Given
+  const { container } = await mount(t, BarChart, { title: "요청", data: chart });
+  // When
+  const slots = byTag(container, "g");
+  // Then
+  assert.equal(slots.length, 6);
+  assert.equal(slots.filter(slot => slot.children.length === 0).length, 1);
+  assert.equal(slots.filter(slot => byTag(slot, "text").length === 1).length, 5);
+});
+
 test("unmeasured charts do not fabricate SVG points or bars", async t => {
   // Given / When
   const { container } = await mount(t, BarChart, { title: "요청", data: {

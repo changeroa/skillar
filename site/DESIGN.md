@@ -7,6 +7,8 @@ BarChart/recent-skills DataTable, a connection-state DataTable, then three
 explicitly unmeasured usage slots with consent links. Use the shared `src/ui`
 primitives. DataTable adds only an optional `controls` switch (default true);
 the fixed top-five summary omits density/column controls but keeps sorting.
+BarChart leaves null slots empty and marks missing coverage in the shared
+legend, instead of repeating wide unmeasured labels between phone bars.
 Existing spacing, type and color tokens apply; widgets
 use a two-column zero-minimum grid above 1024px and stack below it. Tiles
 use four columns on desktop and two on phones. No account data in main.
