@@ -1,7 +1,6 @@
 import { h } from "preact";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { PrivateSkillCatalog, PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
-import type { SessionUser } from "../../lib/account.ts";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
 import type { SessionState } from "./api.ts";
 import { LibraryPanel } from "./library.ts";
@@ -32,16 +31,6 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     h("p", { class: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
 }
 
-function AccountLine({ user }: { readonly user: SessionUser }) {
-  return h("div", { class: "dash-account" },
-    h("div", { class: "account-user" },
-      h("div", null,
-        h("p", { class: "note" }, "로그인 계정"),
-        h("p", { class: "account-name" }, user.name === "" ? user.email : user.name),
-        user.name !== "" && h("p", { class: "account-email" }, user.email))),
-    h("form", { method: "post", action: "/auth/logout" }, h("button", { class: "button secondary", type: "submit" }, "로그아웃")));
-}
-
 type FocusTarget = { readonly skillId: PrivateSkillId; readonly n: number };
 
 export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
@@ -57,8 +46,15 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const approvedHash = useRef<string | null>(null);
+  const returnFocus = useRef(false);
   const onDirtyChange = useCallback((next: boolean) => { dirty.current = next; }, []);
   const onResolved = useCallback((skill: PrivateSkillSummary) => setResolved(skill), []);
+  useLayoutEffect(() => {
+    if (selected === null && returnFocus.current) {
+      returnFocus.current = false;
+      document.getElementById("library-title")?.focus();
+    }
+  }, [selected]);
 
   const expire = useCallback(() => {
     setPhase({ kind: "expired" });
@@ -81,6 +77,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
         return;
       }
       approvedHash.current = null;
+      if (skillId === null && selectedRef.current !== null) returnFocus.current = true;
       setSelected(skillId);
       if (openedByUser.current && skillId !== null) setFocusTarget(current => ({ skillId, n: (current?.n ?? 0) + 1 }));
       else setFocusTarget(null);
@@ -122,7 +119,6 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const back = () => {
     approvedHash.current = "";
     location.hash = "";
-    document.getElementById("library-title")?.focus();
   };
   const deleted = (name: string) => {
     setNotice(`삭제했습니다: ${name === "" ? "스킬" : name}.`);
@@ -136,7 +132,6 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   if (catalog.status === "unavailable") {
     return h("div", null,
       h(SkillsHeading, { name: "스킬" }),
-      h(AccountLine, { user: phase.user }),
       h("p", { class: "note skills-unavailable", role: "status", "aria-live": "polite" },
         "이 배포에서는 아직 비공개 스킬을 이용할 수 없습니다. 업로드한 내용이나 이 화면에서 저장한 내용은 없습니다."));
   }
@@ -146,11 +141,11 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   return h("div", null,
     h(SkillsHeading, { name: resolved !== null && resolved.skillId === selected ? resolved.name
       : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
-    h(AccountLine, { user: phase.user }),
     h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
       onReload: reload, onOpen: open, onUnauthorized: expire,
       detail: selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
         focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
         onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange, onResolved }) }),
-    h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire }));
+    h("div", { hidden: selected !== null },
+      h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire })));
 }

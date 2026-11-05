@@ -14,7 +14,7 @@ export function SkillView({ detailState, draftState, detail, name, head, heading
     h("h2", { id: "skill-title", ref: heading, tabIndex: -1 }, title),
     h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
       if (!dirty || confirm("저장하지 않은 수정 내용이 사라집니다. 보관함으로 돌아갈까요?")) onBack();
-    } }, "보관함으로 돌아가기"));
+    } }, "스킬 목록으로"));
 
   if (detailState.status === "gone") {
     return h("section", { class: "panel skill", "aria-labelledby": "skill-title" },
