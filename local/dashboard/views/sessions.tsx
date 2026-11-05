@@ -1,3 +1,4 @@
+import { kstDay } from "../time";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { RuntimeId } from "../../src/types.js";
 import { api, ApiError, type SessionListRow, type Stats } from "../api";
@@ -74,12 +75,12 @@ function UsageNote({ stats }: { stats: Stats }) {
   );
 }
 
-const timeFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
-const dateFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" });
-const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric" });
+const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
 function isSameLocalDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return kstDay(a.getTime()) === kstDay(b.getTime());
 }
 
 function formatDuration(ms: number): string {
@@ -95,7 +96,7 @@ function When({ row }: { row: SessionListRow }) {
   const started = new Date(row.startedAt);
   const dateLabel = isSameLocalDay(started, new Date()) ? "오늘" : dateFmt.format(started);
   return (
-    <time class="when" dateTime={started.toISOString()} title={started.toLocaleString("ko-KR")}>
+    <time class="when" dateTime={started.toISOString()} title={started.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>
       <span class="when__date">{dateLabel}</span>
       <span class="when__time">{timeFmt.format(started)}</span>
       {row.endedAt !== undefined && <span class="when__dur">{formatDuration(row.endedAt - row.startedAt)}</span>}

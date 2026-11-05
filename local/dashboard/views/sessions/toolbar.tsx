@@ -5,6 +5,7 @@ import { FILTER_KEYS, SESSION_COLUMNS, STATE_LABEL, withoutFilterKey, type ViewP
 import { Icon } from "../../components/icons";
 import { COLUMN_LABEL } from "./model";
 import { DEFAULT_COLUMNS } from "./table";
+import { kstPeriodStart } from "../../time";
 
 export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacets, sheet }: Pick<ViewProps, "route" | "navigate"> & {
   readonly count?: number; readonly facetsOpen: boolean; readonly toggleFacets: () => void; readonly sheet?: boolean;
@@ -25,7 +26,7 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
         onChange={event => {
           const days = event.currentTarget.value;
           const to = Date.now();
-          update(days === "all" ? { from: undefined, to: undefined } : { from: to - Number(days) * 86400000, to });
+          update(days === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(to, Number(days)), to });
         }}>
         <option value="all">전체 기간</option><option value="custom" disabled>지정 기간</option>
         <option value="7">최근 7일</option><option value="30">최근 30일</option><option value="60">최근 60일</option>

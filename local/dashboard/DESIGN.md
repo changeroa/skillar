@@ -1,5 +1,39 @@
 # skillar Dashboard Design System
 
+## Approved local analysis P-F (2026-11-05)
+
+The analysis screens reuse the P-E shell, controls, sheet and typography.
+The document owns vertical scrolling; charts and dense tables own labelled
+horizontal scroll regions. Workspace peek is a 560px right pane on desktop
+and a full-screen sheet below 1024px; its body alone scrolls.
+Number tiles use a four-column grid, two columns on phones. Dashboard
+widgets use a three-column grid, with the request chart spanning two columns;
+phones stack widgets in the wireframe order. Tiles are bordered data regions,
+not navigation cards. All text uses existing ink roles and controls are 44px.
+
+AnalysisToolbar preserves period, runtime and automation in the hash URL.
+Workspace queries support only period and automation; unsupported session
+filters are not displayed as applied. Tables preserve sort and selection in
+the URL, expose aria-sort, and sort only the received range. Facet counts
+describe that same received range, not a server-wide count.
+Reports retain their fetched conditions while pending selections are shown
+separately; failed refreshes keep their old labelled result with retry.
+Standalone reports refresh manually; embedded reports invalidate on live.seq.
+
+Dashboard order follows local/analysis.html: number tiles, request series,
+Top-N reads, search-result distribution, session-length histogram, read
+latency, activity heatmap and flow preview. Every aggregate names its source and sample
+coverage. Requests are normalized by requestRecords, not raw event count.
+Actual successful reads and search candidates remain separate. Read latency,
+skill-span and outcome quality remain 미측정 with reasons, never fake zeroes.
+All bar groups use a shared baseline and scale, equal bar widths, above-bar
+values and below-group labels; zero is a labelled 1px tick. No first-read flow.
+Local date labels, daily buckets, ISO weeks and period presets use Asia/Seoul
+even when the browser timezone is UTC. Weekly reads are rebuilt from timestamped
+successful requests because the server's weekly aggregate has UTC boundaries.
+Coverage stays visible, and failed trace retrieval is 미측정 rather than zero.
+Planning and review tracking codes never appear in user-facing copy.
+
 ## Approved local shell and sessions P-E (2026-11-05)
 
 Gate revision: overlays use a bounded `100dvh` scroll-body shell. The peek

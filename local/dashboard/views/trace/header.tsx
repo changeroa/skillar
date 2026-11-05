@@ -4,7 +4,7 @@ import { api, type SessionListRow } from "../../api";
 import { RequestCounts } from "../../components/requests";
 import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK, type ViewProps } from "../../state";
 import { firstPromptOf, traceCounts, sessionBounds, formatDuration } from "./model";
-const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
 function Runtime({ runtime }: { runtime: RuntimeId }) {
   return (

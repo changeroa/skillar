@@ -5,12 +5,12 @@ import { Facts } from "../../components/facts";
 import { KIND_LABEL, SPAN_KIND_LABEL, NEVER_CONSULTED, formatOffset, searchDetail, sessionBounds, type ToolDetail, type TraceCounts } from "./model";
 import { spanFacts, type TimelineItem } from "./plan";
 import { StepBody, ToolArguments } from "./bodies";
-const timeFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
 function StepTime({ ts, startedAt }: { ts: number; startedAt?: number }) {
   const offset = startedAt !== undefined ? formatOffset(ts - startedAt) : "";
   return (
-    <time class="tl__time" dateTime={new Date(ts).toISOString()} title={new Date(ts).toLocaleString("ko-KR")}>
+    <time class="tl__time" dateTime={new Date(ts).toISOString()} title={new Date(ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>
       <b>{timeFmt.format(ts)}</b>
       {offset && <span class="tl__offset">{offset}</span>}
     </time>

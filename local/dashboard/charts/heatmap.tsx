@@ -1,4 +1,5 @@
 import type { Filter, HeatmapDto, SkillUri, SkillWeekDto } from "../../src/types.js";
+import { useState } from "preact/hooks";
 import { DOW_LABEL } from "../state";
 
 // Colors derive from the DESIGN.md tokens: one hue (--accent) at five alphas for data cells, ink at
@@ -166,11 +167,7 @@ function skillLabel(uri: string): string {
 }
 
 export function localTimeZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
+  return "Asia/Seoul";
 }
 
 /** Locale week start via Intl.Locale#getWeekInfo (firstDay 7 = Sunday); anything else falls back to Monday. */
@@ -244,7 +241,7 @@ export function isoWeekRange(week: string): { start: Date; end: Date } | undefin
   return { start: new Date(start), end: new Date(start + 6 * DAY_MS) };
 }
 
-const weekDateFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", timeZone: "UTC" });
+const weekDateFmt = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", timeZone: "Asia/Seoul" });
 
 export function formatWeek(week: string): { short: string; range: string } {
   const r = isoWeekRange(week);
@@ -296,8 +293,10 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
   const cols = grid.hours.length;
   const labels = hourLabels(grid.bucketHours);
   const flipFrom = Math.ceil(cols / 2);
+  const [focused, setFocused] = useState({ dow: grid.dows[0] ?? 1, hour: grid.hours[0] ?? 0 });
+  const active = grid.dows.includes(focused.dow) && grid.hours.includes(focused.hour) ? focused : { dow: grid.dows[0] ?? 1, hour: grid.hours[0] ?? 0 };
   return (
-    <div class={`hm hm--cols-${cols}`} role="table" aria-label={label} style={`--hm-cols:${cols}`}>
+    <div class={`hm hm--cols-${cols}`} role="grid" aria-label={label} style={`--hm-cols:${cols}`}>
       <div class="hm__row" role="row">
         <div class="hm__corner" role="columnheader">요일</div>
         {grid.hours.map((hour, c) => (
@@ -316,15 +315,34 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
               const tip = cellTip(cell, grid.bucketHours, grid.total);
               const cls = `hm__cell hm__cell--l${cell.level}${selected ? " hm__cell--selected" : ""}${c >= flipFrom ? " hm__cell--end" : ""}`;
               return (
-                <div class="hm__c" role="cell" key={cell.hour}>
+                <div class="hm__c" role="gridcell" key={cell.hour}>
                   <button
                     type="button"
+                    tabIndex={active.dow === cell.dow && active.hour === cell.hour ? 0 : -1}
+                    onFocus={() => setFocused({ dow: cell.dow, hour: cell.hour })}
+                    onKeyDown={event => {
+                      let row = grid.dows.indexOf(cell.dow), column = grid.hours.indexOf(cell.hour);
+                      switch (event.key) {
+                        case "ArrowLeft": column--; break;
+                        case "ArrowRight": column++; break;
+                        case "ArrowUp": row--; break;
+                        case "ArrowDown": row++; break;
+                        case "Home": column = 0; if (event.ctrlKey) row = 0; break;
+                        case "End": column = grid.hours.length - 1; if (event.ctrlKey) row = grid.dows.length - 1; break;
+                        default: return;
+                      }
+                      event.preventDefault();
+                      const nextDow = grid.dows[Math.max(0, Math.min(grid.dows.length - 1, row))];
+                      const nextHour = grid.hours[Math.max(0, Math.min(grid.hours.length - 1, column))];
+                      event.currentTarget.closest(".hm")?.querySelector<HTMLButtonElement>(`[data-dow="${nextDow}"][data-hour="${nextHour}"]`)?.focus();
+                    }}
                     class={cls}
                     data-tip={tip}
                     data-dow={dow}
                     data-hour={cell.hour}
                     data-count={cell.count}
                     data-selected={selected ? "true" : undefined}
+                    aria-pressed={selected}
                     aria-label={selected ? `${tip} (선택됨)` : tip}
                     onClick={(event) => onCellClick(cell, event)}
                   />
@@ -332,7 +350,6 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
               );
             })}
             <div class="hm__rt" role="cell" title={`${DOW_LABEL[dow]}요일: ${plural(rowTotal, "session")}`}>
-              <span class="hm__rbar" style={`--v:${ratio(rowTotal, grid.maxRowTotal)}`} aria-hidden="true" />
               <span class="hm__n">{rowTotal}</span>
             </div>
           </div>
@@ -342,7 +359,6 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
         <div class="hm__d hm__d--total" role="rowheader">합계</div>
         {grid.colTotals.map((n, c) => (
           <div class="hm__ct" role="cell" key={grid.hours[c]} title={`${hourRangeLabel(grid.hours[c]!, grid.bucketHours)}: ${plural(n, "session")}`}>
-            <span class="hm__cbar" style={`--v:${ratio(n, grid.maxColTotal)}`} aria-hidden="true" />
             <span class="hm__n">{n}</span>
           </div>
         ))}
@@ -355,8 +371,11 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
 export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { grid: SkillWeekGrid; activeSkills: readonly SkillUri[]; onRowClick: (uri: SkillUri) => void; label: string }) {
   const cols = grid.weeks.length;
   const flipFrom = Math.ceil(cols / 2);
+  const [focused, setFocused] = useState({ row: 0, column: 0 });
+  const activeRow = Math.max(0, Math.min(grid.rows.length - 1, focused.row));
+  const activeColumn = Math.max(0, Math.min(cols - 1, focused.column));
   return (
-    <div class={`hm hm--skills hm--cols-${cols}`} role="table" aria-label={label} style={`--hm-cols:${cols}`}>
+    <div class={`hm hm--skills hm--cols-${cols}`} role="grid" aria-label={label} style={`--hm-cols:${cols}`}>
       <div class="hm__row" role="row">
         <div class="hm__corner" role="columnheader">스킬</div>
         {grid.weeks.map((week) => {
@@ -370,12 +389,12 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
         })}
         <div class="hm__h hm__h--total" role="columnheader">합계</div>
       </div>
-      {grid.rows.map((row) => {
+      {grid.rows.map((row, rowIndex) => {
         const active = activeSkills.includes(row.uri);
         return (
           <div class="hm__row" role="row" key={row.uri}>
             <div class="hm__d hm__d--skill" role="rowheader">
-              <button type="button" class="hm__skill" title={row.uri} aria-pressed={active} onClick={() => onRowClick(row.uri)}>{row.name}</button>
+              <button type="button" class="hm__skill" title={row.uri} aria-pressed={active} onClick={() => onRowClick(row.uri)}>{active ? "✓ " : ""}{row.name}</button>
             </div>
             {row.counts.map((count, c) => {
               const week = grid.weeks[c]!;
@@ -384,9 +403,29 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
                 ? `${row.name} \u00b7 ${short} (${range}) \u00b7 ${plural(count, "load")} \u00b7 ${formatShare(count, grid.total)}`
                 : `${row.name} \u00b7 ${short} (${range}) \u00b7 읽기 없음`;
               return (
-                <div class="hm__c" role="cell" key={week}>
+                <div class="hm__c" role="gridcell" key={week}>
                   <button
                     type="button"
+                    tabIndex={activeRow === rowIndex && activeColumn === c ? 0 : -1}
+                    data-week-row={rowIndex}
+                    data-week-column={c}
+                    onFocus={() => setFocused({ row: rowIndex, column: c })}
+                    onKeyDown={event => {
+                      let r = rowIndex, column = c;
+                      switch (event.key) {
+                        case "ArrowLeft": column--; break;
+                        case "ArrowRight": column++; break;
+                        case "ArrowUp": r--; break;
+                        case "ArrowDown": r++; break;
+                        case "Home": column = 0; if (event.ctrlKey) r = 0; break;
+                        case "End": column = cols - 1; if (event.ctrlKey) r = grid.rows.length - 1; break;
+                        default: return;
+                      }
+                      event.preventDefault();
+                      r = Math.max(0, Math.min(grid.rows.length - 1, r));
+                      column = Math.max(0, Math.min(cols - 1, column));
+                      event.currentTarget.closest(".hm")?.querySelector<HTMLButtonElement>(`[data-week-row="${r}"][data-week-column="${column}"]`)?.focus();
+                    }}
                     class={`hm__cell hm__cell--l${row.levels[c]}${c >= flipFrom ? " hm__cell--end" : ""}`}
                     data-tip={tip}
                     data-week={week}
@@ -398,7 +437,6 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
               );
             })}
             <div class="hm__rt" role="cell" title={`${row.name}: ${plural(row.total, "load")}`}>
-              <span class="hm__rbar" style={`--v:${ratio(row.total, grid.maxRowTotal)}`} aria-hidden="true" />
               <span class="hm__n">{row.total}</span>
             </div>
           </div>
@@ -408,7 +446,6 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
         <div class="hm__d hm__d--total" role="rowheader">합계</div>
         {grid.colTotals.map((n, c) => (
           <div class="hm__ct" role="cell" key={grid.weeks[c]} title={`${grid.weeks[c]}: ${plural(n, "load")}`}>
-            <span class="hm__cbar" style={`--v:${ratio(n, grid.maxColTotal)}`} aria-hidden="true" />
             <span class="hm__n">{n}</span>
           </div>
         ))}
@@ -424,7 +461,7 @@ export function HeatLegend({ ranges, unit }: { ranges: string[]; unit: string })
     <div class="hm__legend">
       <span>적음</span>
       {ranges.map((range, level) => (
-        <span key={level} class={`hm__sw hm__cell--l${level}`} role="img" title={describe(range)} aria-label={`${level}단계: ${describe(range)}`} />
+        <span key={level}><span class={`hm__sw hm__cell--l${level}`} role="img" title={describe(range)} aria-label={`${level}단계: ${describe(range)}`} /> {range}</span>
       ))}
       <span>많음</span>
     </div>

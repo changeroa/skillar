@@ -1,3 +1,4 @@
+import { kstPeriodStart } from "../../time";
 import { useState } from "preact/hooks";
 import type { SessionListRow } from "../../api";
 import { ConsoleSheet } from "../../components/console-sheet";
@@ -19,7 +20,7 @@ export function SessionFilterSheet({ route, navigate, rows, close }: Pick<ViewPr
           if (value === "all") setFilter({ ...filter, from: undefined, to: undefined });
           else if (value !== "custom") {
             const to = Date.now();
-            setFilter({ ...filter, from: to - Number(value) * 86_400_000, to });
+            setFilter({ ...filter, from: kstPeriodStart(to, Number(value)), to });
           }
         }}>
         <option value="all">전체 기간</option><option value="7">최근 7일</option><option value="30">최근 30일</option>

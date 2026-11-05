@@ -66,8 +66,9 @@ test("source event selection IDs reproduce across reloads and remain session sco
 
 test("every daily histogram bar shares the baseline, including labelled zero ticks", () => {
   const day = 86400000;
-  const rows = Array.from({ length: 31 }, (_, index) => Array.from({ length: (index * 7) % 13 }, () => ({ startedAt: index * day + 1000 }))).flat();
-  const bars = ui.histogramBars(rows, 0, 31 * day);
+  const start = Date.parse("2026-01-01T00:00:00+09:00");
+  const rows = Array.from({ length: 31 }, (_, index) => Array.from({ length: (index * 7) % 13 }, () => ({ startedAt: start + index * day + 1000 }))).flat();
+  const bars = ui.histogramBars(rows, start, start + 31 * day);
   assert.equal(bars.length, 31);
   assert.equal(bars.reduce((total, bar) => total + bar.count, 0), rows.length);
   for (const bar of bars) {
@@ -75,7 +76,7 @@ test("every daily histogram bar shares the baseline, including labelled zero tic
     assert.equal(bar.width, bars[0].width);
     if (bar.count === 0) assert.equal(bar.height, 1);
   }
-  const empty = ui.histogramBars([], 0, 3 * day);
+  const empty = ui.histogramBars([], start, start + 3 * day);
   assert.deepEqual(empty.map(bar => bar.count), [0, 0, 0]);
   for (const bar of empty) { assert.equal(bar.height, 1); assert.equal(bar.y + bar.height, bar.baseline); }
 });

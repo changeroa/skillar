@@ -41,7 +41,7 @@ function useLive(): LiveInfo & { invalidated?: boolean } {
 
 const LIVE_TEXT: Record<LiveState, string> = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
 
-const dateTime = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateTime = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
 type Chip = { key: FilterKey; label: string; value: string };
 
