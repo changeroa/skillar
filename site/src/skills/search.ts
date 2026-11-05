@@ -26,10 +26,15 @@ type Props = {
   readonly onOpen: (skillId: PrivateSkillId) => void;
   readonly onUnauthorized: () => void;
   readonly children?: ComponentChildren;
+  readonly query?: string;
+  readonly onQueryChange?: (query: string) => void;
+  readonly compact?: boolean;
 };
 
-export function SearchBox({ skills, signal, onOpen, onUnauthorized, children }: Props) {
-  const [query, setQuery] = useState("");
+export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, query: controlledQuery, onQueryChange, compact }: Props) {
+  const [localQuery, setLocalQuery] = useState("");
+  const query = controlledQuery ?? localQuery;
+  const setQuery = (value: string) => { setLocalQuery(value); onQueryChange?.(value); };
   const [result, setResult] = useState<SearchResult | null>(null);
   const [message, setMessage] = useState("");
   const [technical, setTechnical] = useState<string | null>(null);
@@ -85,7 +90,7 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children }: 
       }
     }
   };
-  return h("form", { class: "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
+  return h("form", { class: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
     h("div", { class: "search__row" },
       h("label", { id: "search-title", class: "field-label", for: "skill-search" }, "내 스킬 검색",
         h("input", { id: "skill-search", ref: input, class: "text-field", type: "search", autocomplete: "off", value: query, disabled: busy,
@@ -97,7 +102,7 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children }: 
           } })),
       h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
       children),
-    h("p", { class: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
+    (!compact || result !== null) && h("p", { class: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
     h("p", { class: "note", role: "status", "aria-live": "polite" }, message),
     result !== null && result.candidates.length === 0 && result.abstained === undefined &&
       h("button", { class: "button secondary", type: "button", onClick: () => {

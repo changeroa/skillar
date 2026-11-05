@@ -11,6 +11,8 @@ import { useSkillDraft } from "./skill-draft.ts";
 import { useSkillLoad } from "./skill-load.ts";
 import { useSkillConfirmation } from "./skill-delete.ts";
 import { SkillView } from "./skill-render.ts";
+import { PeekPanel, Toast } from "../ui/index.ts";
+import { useVersionPreview } from "./document.ts";
 export { confirmationText, confirmsDeletion } from "./skill-delete.ts";
 export type { SkillProps, DeleteTarget } from "./skill-state.ts";
 const silent: Note = { text: "", technical: null };
@@ -36,6 +38,9 @@ export function useSkillController(props: SkillProps) {
   const detail = detailState.status === "gone" ? null : detailState.detail;
   const name = detail?.skill.name ?? summary?.name ?? "";
   const head = detail?.skill.head ?? null;
+  const digest = detail?.versions.find(version => version.digest === props.view?.digest)?.digest ?? head?.digest ?? null;
+  const versionPreview = useVersionPreview({ detail, digest, draftState, signal, onUnauthorized,
+    retryHead: () => { if (head) void loadDraft(head); } });
   useLayoutEffect(() => {
     if (detail !== null) onResolved?.(detail.skill);
   }, [detail, onResolved]);
@@ -170,9 +175,30 @@ export function useSkillController(props: SkillProps) {
     }
   };
 
-  return { detailState, draftState, detail, name, head, heading, busy, dirty, pending, notes, problems, conflict, publishNote, versionsNote, deleteNote, setRetry, setDraftState, setNotes, loadDraft, run, review, publish, exportVersion, removeSkill, openConfirmation, confirmation, onBack, skillId, signal, onUnauthorized, summary };
+  return { detailState, draftState, detail, name, head, heading, busy, dirty, pending, notes, problems, conflict, publishNote, versionsNote, deleteNote, setRetry, setDraftState, setNotes, loadDraft, run, review, publish, exportVersion, removeSkill, openConfirmation, confirmation, onBack, skillId, signal, onUnauthorized, summary, workspace: props, digest, versionPreview };
 }
 
 export function SkillPanel(props: SkillProps) {
-  return h(SkillView, useSkillController(props));
+  const controller = useSkillController(props);
+  const [toast, setToast] = useState("");
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(props.skillId); setToast("스킬 ID를 복사했습니다."); }
+    catch (error) {
+      if (!(error instanceof Error)) throw error;
+      setToast("복사하지 못했습니다. 속성의 스킬 ID를 직접 복사하세요.");
+    }
+  };
+  const content = h(SkillView, controller);
+  if (props.view === undefined || props.view.full) return content;
+  return h(PeekPanel, { id: "skill-peek", selectedId: props.skillId,
+    title: controller.name || "스킬", fullPageHref: props.fullPageHref ?? "/skills/",
+    closeDisabled: controller.busy,
+    returnFocus: props.returnFocus ?? null, onClose: () => {
+      if (!controller.busy) props.onBack();
+    }, ...(props.onFullPage ? { onFullPage: props.onFullPage } : {}),
+    actions: h("div", { class: "skill-peek-actions cluster" },
+      h("button", { class: "button secondary", type: "button", disabled: !props.onPrevious || controller.busy, onClick: props.onPrevious }, "이전"),
+      h("button", { class: "button secondary", type: "button", disabled: !props.onNext || controller.busy, onClick: props.onNext }, "다음"),
+      h("button", { class: "button secondary", type: "button", onClick: copy }, "ID 복사")),
+    children: h("div", null, h(Toast, { message: toast, onDismiss: () => setToast("") }), content) });
 }

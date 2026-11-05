@@ -29,7 +29,7 @@ export function Toast({ message, onDismiss }: {
   readonly onDismiss: () => void;
 }) {
   return h("div", { class: message === "" ? "ui-toast ui-toast-empty" : "ui-toast" },
-    h("p", { role: "status", "aria-live": "polite", "aria-atomic": "true" }, message),
+    h("p", { role: message === "" ? undefined : "status", "aria-live": "polite", "aria-atomic": "true" }, message),
     h("button", { type: "button", class: "button secondary", hidden: message === "", onClick: onDismiss, "aria-label": "알림 닫기" }, "닫기"));
 }
 

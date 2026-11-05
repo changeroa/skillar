@@ -3,11 +3,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preac
 import type { PrivateSkillCatalog, PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
 import type { SessionState } from "./api.ts";
-import { LibraryPanel } from "./library.ts";
-import { skillHash, skillIdFromHash, sortByUpdated } from "./model.ts";
+import { LibraryPanel, visibleSkills } from "./library.ts";
+import { sortByUpdated } from "./model.ts";
 import { PublishPanel } from "./publish.ts";
 import { SkillPanel } from "./skill.ts";
 import { SkillsHeading } from "./heading.ts";
+import { readSkillsView, skillsViewUrl } from "./view-state.ts";
+import type { SkillsView } from "./view-state.ts";
 
 type Phase = SessionState | { readonly kind: "checking" } | { readonly kind: "expired" };
 type CatalogState = {
@@ -31,30 +33,33 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     h("p", { class: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
 }
 
-type FocusTarget = { readonly skillId: PrivateSkillId; readonly n: number };
-
 export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const [phase, setPhase] = useState<Phase>({ kind: "checking" });
   const [catalog, setCatalog] = useState<CatalogState>({ status: "loading", catalog: null, message: "" });
   const [tick, setTick] = useState(0);
-  const [selected, setSelected] = useState<PrivateSkillId | null>(() => skillIdFromHash(location.hash));
+  const [view, setView] = useState(() => readSkillsView(location.href));
+  const selected = view.selected;
   const [resolved, setResolved] = useState<PrivateSkillSummary | null>(null);
-  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [notice, setNotice] = useState("");
-  const openedByUser = useRef(false);
   const dirty = useRef(false);
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  const approvedHash = useRef<string | null>(null);
-  const returnFocus = useRef(false);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const wasFull = useRef(view.full);
   const onDirtyChange = useCallback((next: boolean) => { dirty.current = next; }, []);
   const onResolved = useCallback((skill: PrivateSkillSummary) => setResolved(skill), []);
   useLayoutEffect(() => {
     if (selected === null && returnFocus.current) {
-      returnFocus.current = false;
-      document.getElementById("library-title")?.focus();
+      (returnFocus.current.isConnected ? returnFocus.current : document.getElementById("library-title"))?.focus();
     }
   }, [selected]);
+  useLayoutEffect(() => {
+    if (view.full && !wasFull.current) {
+      const title = document.getElementById("skills-page-title");
+      if (title) { title.tabIndex = -1; title.focus(); }
+    }
+    wasFull.current = view.full;
+  }, [view.full]);
 
   const expire = useCallback(() => {
     setPhase({ kind: "expired" });
@@ -69,22 +74,18 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   }, [signal]);
 
   useEffect(() => {
-    const onHash = () => {
-      const skillId = skillIdFromHash(location.hash);
-      if (skillId !== selectedRef.current && approvedHash.current !== location.hash && dirty.current &&
+    const restore = () => {
+      const next = readSkillsView(location.href);
+      if (next.selected !== viewRef.current.selected && dirty.current &&
           !confirm("저장하지 않은 수정 내용이 사라집니다. 다른 화면으로 이동할까요?")) {
-        history.replaceState(null, "", selectedRef.current === null ? location.pathname : skillHash(selectedRef.current));
+        history.replaceState(null, "", skillsViewUrl(viewRef.current));
         return;
       }
-      approvedHash.current = null;
-      if (skillId === null && selectedRef.current !== null) returnFocus.current = true;
-      setSelected(skillId);
-      if (openedByUser.current && skillId !== null) setFocusTarget(current => ({ skillId, n: (current?.n ?? 0) + 1 }));
-      else setFocusTarget(null);
-      openedByUser.current = false;
+      setView(next);
     };
-    addEventListener("hashchange", onHash);
-    return () => removeEventListener("hashchange", onHash);
+    addEventListener("hashchange", restore);
+    addEventListener("popstate", restore);
+    return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
   }, []);
 
   useEffect(() => {
@@ -105,23 +106,21 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     return () => { active = false; };
   }, [phase.kind, tick, signal]);
 
-  const open = (skillId: PrivateSkillId) => {
-    if (skillId !== selected && dirty.current && !confirm("저장하지 않은 수정 내용이 사라집니다. 다른 스킬을 열까요?")) return;
+  const navigate = (next: SkillsView, replace = false) => {
+    if (next.selected !== selected && dirty.current && !confirm("저장하지 않은 수정 내용이 사라집니다. 다른 화면으로 이동할까요?")) return false;
+    history[replace ? "replaceState" : "pushState"](null, "", skillsViewUrl(next));
+    setView(next);
+    return true;
+  };
+  const open = (skillId: PrivateSkillId, target?: HTMLElement) => {
     setNotice("");
-    if (location.hash === skillHash(skillId)) {
-      setFocusTarget(current => ({ skillId, n: (current?.n ?? 0) + 1 }));
-      return;
-    }
-    openedByUser.current = true;
-    approvedHash.current = skillHash(skillId);
-    location.hash = skillHash(skillId);
+    if (navigate({ ...view, selected: skillId, full: false, digest: "", tab: "document" }))
+      returnFocus.current = target ?? document.getElementById(`skill-row-${skillId}`);
   };
-  const back = () => {
-    approvedHash.current = "";
-    location.hash = "";
-  };
+  const back = () => navigate({ ...view, selected: null, full: false, digest: "", tab: "document" });
   const deleted = (name: string) => {
     setNotice(`삭제했습니다: ${name === "" ? "스킬" : name}.`);
+    dirty.current = false;
     back();
     reload();
   };
@@ -138,14 +137,25 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const skills = catalog.catalog === null ? [] : sortByUpdated(catalog.catalog);
   const summary = selected === null ? null : skills.find(skill => skill.skillId === selected) ?? null;
   const libraryStatus = catalog.status === "ready" ? "ready" : catalog.status === "failed" ? "failed" : "loading";
+  const visible = visibleSkills(skills, view);
+  const index = visible.findIndex(skill => skill.skillId === selected);
+  const adjacent = (offset: number) => {
+    const skill = visible[index + offset];
+    if (skill) open(skill.skillId);
+  };
   return h("div", null,
-    h(SkillsHeading, { name: resolved !== null && resolved.skillId === selected ? resolved.name
+    h(SkillsHeading, { name: !view.full ? "스킬" : resolved !== null && resolved.skillId === selected ? resolved.name
       : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
-    h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
-      onReload: reload, onOpen: open, onUnauthorized: expire,
-      detail: selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
-        focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
-        onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange, onResolved }) }),
+    h("div", { hidden: view.full && selected !== null, class: selected !== null ? "skills-list-workspace skills-list-workspace--peek" : "skills-list-workspace" },
+      h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
+        onReload: reload, onOpen: open, onUnauthorized: expire, view, onViewChange: next => navigate(next, true) })),
+    selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
+        focusHeading: 0,
+        onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange, onResolved,
+        view, onViewChange: next => navigate(next, true), returnFocus: returnFocus.current,
+        onFullPage: () => navigate({ ...view, full: true }), fullPageHref: skillsViewUrl({ ...view, full: true }),
+        ...(index > 0 ? { onPrevious: () => adjacent(-1) } : {}),
+        ...(index >= 0 && index < visible.length - 1 ? { onNext: () => adjacent(1) } : {}) }),
     h("div", { hidden: selected !== null },
       h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire })));
 }

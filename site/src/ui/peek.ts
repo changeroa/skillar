@@ -1,5 +1,5 @@
 import { h } from "preact";
-import type { ComponentChildren } from "preact";
+import type { ComponentChildren, JSX } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 export function peekUrl(href: string, parameter: string, selectedId: string | null): string {
@@ -25,7 +25,7 @@ export function usePeekSelection(parameter = "selected"): readonly [string | nul
   return [selected, select];
 }
 
-export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, onClose, children }: {
+export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, onClose, children, actions, onFullPage, closeDisabled = false }: {
   readonly id: string;
   readonly selectedId: string | null;
   readonly title: string;
@@ -33,11 +33,14 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
   readonly returnFocus: HTMLElement | null;
   readonly onClose: () => void;
   readonly children: ComponentChildren;
+  readonly actions?: ComponentChildren;
+  readonly onFullPage?: () => void;
+  readonly closeDisabled?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const dismiss = useRef(onClose);
-  dismiss.current = onClose;
+  dismiss.current = () => { if (!closeDisabled) onClose(); };
   useLayoutEffect(() => {
     const panel = dialog.current;
     if (!panel || selectedId === null) return;
@@ -51,7 +54,7 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
     show();
     mobile.addEventListener("change", show);
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !mobile.matches &&
+      if (event.key === "Escape" && !event.defaultPrevented && !mobile.matches &&
           (panel.contains(document.activeElement) || document.activeElement === returnFocus)) {
         event.preventDefault();
         dismiss.current();
@@ -66,9 +69,11 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
     };
   }, [selectedId, returnFocus]);
   return h("dialog", { id, ref: dialog, class: "ui-peek", "aria-labelledby": `${id}-title`,
-    onCancel: event => { event.preventDefault(); onClose(); } },
+    onCancel: event => { event.preventDefault(); if (!closeDisabled) onClose(); } },
     h("header", null, h("h2", { id: `${id}-title` }, title),
-      fullPageHref && h("a", { class: "button secondary", href: fullPageHref }, "전체 페이지로 열기"),
-      h("button", { ref: close, type: "button", class: "button secondary", onClick: onClose }, "닫기")),
+      fullPageHref && h("a", { class: "button secondary", href: fullPageHref, onClick: onFullPage
+        ? (event: JSX.TargetedMouseEvent<HTMLAnchorElement>) => { event.preventDefault(); onFullPage(); } : undefined }, "전체 페이지로 열기"),
+      actions,
+      h("button", { ref: close, type: "button", class: "button secondary", disabled: closeDisabled, onClick: onClose }, "닫기")),
     h("div", { class: "ui-peek-body" }, children));
 }

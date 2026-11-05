@@ -58,6 +58,48 @@ Usage slots do not infer collection or consent from account/connection state.
 Existing checklist, metadata-only explanations, permission facts and stale
 503 recovery remain available. R7 uses shared chart geometry without a fork.
 
+## P-B approved skills workspace
+
+The approved v2 `skills-table`, `skills-peek` and `skill-full` wireframes
+define this composition. Reuse `src/ui` table, facets, peek, tabs, pills,
+key-value grid, toast, skeleton and chart primitives without a parallel kit.
+The table has four columns: name, current revision, updatedAt and an
+eight-character digest pill. No reads column. Facet counts cover the received
+catalog; revision facets use the current revision number, not an invented
+retained-version count. The selected workspace provides the actual retained
+version count. Date buckets use UTC, include zero days, and count skills by
+updatedAt, never reads. Bars share the primitive's scale and zero baseline.
+
+Desktop orders a 160px facet rail and a shrinkable table; the compact
+histogram precedes a single search/column/density toolbar. Metadata uses the
+14px role, rows are at least 44px. At phone width facets collapse into a
+native disclosure, the histogram stays legible and each row becomes two
+lines. Name and compact metadata stay available with no page overflow.
+Phone row densities are 64px, 80px and 96px so the density control remains
+meaningful even when two-line content determines the minimum row height.
+The shell main remains the scroll owner.
+Name is the required identity column. On phones, optional updated/digest
+columns become short-date and digest-pill metadata, and their visibility
+controls still govern those inline fields.
+
+Row selection preserves the list and opens the shared right-side peek.
+Below 1024px it is a full-screen modal sheet. Its action bar includes full
+page, previous/next, explicit ID copy feedback, and close/back. Escape and
+close restore the triggering row. A dirty draft still requires confirmation.
+Full-page expansion retains the controller and its in-memory draft.
+Query, sorting, facets, columns, density, selected ID, version and detail tab
+are URL state; old `#skill/<id>` links remain full-page links.
+
+The detail summary is a wrapping single metric strip: current revision,
+retained versions, selected digest, update time, and `미측정 · IG-14`.
+The full view has document/version/comparison/file tabs; the document tab
+keeps a version rail, Formatted/Raw views of the same verified bytes and an
+explicitly unmeasured per-version reads frame. Formatted Markdown is built
+as safe text nodes, never unsanitized HTML. Editing always targets current
+head, separately labelled from the read-only selected version. P14 typed
+deletion, export payloads, upload acknowledgement and retry semantics remain.
+No new palette, font, radius or motion is introduced.
+
 ## P-A approved app shell and shared UI
 
 The owner-approved wireframes v2 (`hosted/app-shell.html` and

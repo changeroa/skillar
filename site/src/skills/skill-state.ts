@@ -1,5 +1,6 @@
 import type { PrivateSkillDetail, PrivateSkillDigest, PrivateSkillId, PrivateSkillManifest, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import type { Draft } from "./model.ts";
+import type { SkillsView } from "./view-state.ts";
 export type SkillProps = {
   readonly skillId: PrivateSkillId;
   readonly summary: PrivateSkillSummary | null;
@@ -11,6 +12,13 @@ export type SkillProps = {
   readonly onUnauthorized: () => void;
   readonly onDirtyChange?: (dirty: boolean) => void;
   readonly onResolved?: (skill: PrivateSkillSummary) => void;
+  readonly view?: SkillsView;
+  readonly onViewChange?: (view: SkillsView) => void;
+  readonly returnFocus?: HTMLElement | null;
+  readonly fullPageHref?: string;
+  readonly onFullPage?: () => void;
+  readonly onPrevious?: () => void;
+  readonly onNext?: () => void;
 };
 
 export type Version = PrivateSkillDetail["versions"][number];

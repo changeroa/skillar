@@ -7,8 +7,10 @@ export function SkillsHeading({ name }: { readonly name: string }) {
   useLayoutEffect(() => {
     if (slot !== null) {
       const previous = slot.textContent;
+      const previousTitle = slot.title;
       slot.textContent = name;
-      return () => { slot.textContent = previous; };
+      slot.title = name;
+      return () => { slot.textContent = previous; slot.title = previousTitle; };
     }
     const previous = document.querySelector(".dashboard-heading h1");
     const parent = previous?.parentNode;

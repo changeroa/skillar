@@ -50,7 +50,7 @@ test("successful detail owns the entity h1 when the catalog fails and remains st
   const editor = dom.getElementById("edit-skill-document");
   // When
   await act(() => buttonNamed(container, "다시 시도")[0].click());
-  await waitFor(dom, () => all(container, node => node.getAttribute("class") === "skill-card").length === 1, "catalog recovery");
+  await waitFor(dom, () => all(container, node => node.id === `skill-row-${skillId}`).length === 1, "catalog recovery");
   // Then
   assert.equal(dom.getElementById("skills-page-title").textContent, detail.skill.name);
   assert.equal(dom.getElementById("edit-skill-document") === editor, true);
