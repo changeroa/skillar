@@ -40,8 +40,14 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
         "출처 업로드는 도착했지만 아직 조회할 수 있는 기록이 없습니다. 아래 출처 상태와 업로드 범위를 확인하세요." :
         "아직 출처 업로드를 수신하지 못했습니다. 동의 후 CLI 동기화를 실행하고 다시 확인하세요." },
   ];
+  const revoked = [...new Set([
+    ...(devices.data ?? []).filter(device => device.revokedAt !== null).map(device => device.deviceId),
+    ...profiles.filter(profile => profile.availability === "revoked").map(profile => profile.deviceId),
+  ])];
+  const availableProfiles = profiles.filter(profile => profile.availability !== "revoked");
+  const retryDevices = devices.status !== "ready";
   return (
-    <section class={`dash-empty${state === "loading" || state === "failed" ? " dash-source-picker" : ""}`} aria-labelledby="dash-empty-title">
+    <section class={`dash-empty${state === "none" ? " dash-setup-strip" : ""}${state === "loading" || state === "failed" ? " dash-source-picker" : ""}`} aria-labelledby="dash-empty-title">
       <div class="panel__head">
         <h2 id="dash-empty-title" data-state={state} role={state === "loading" ? "status" : undefined}>{heading}</h2>
         {state === "failed" && <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
@@ -59,29 +65,37 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
         <p class="note">아직 기록을 선택하지 않았습니다.</p>
       </>}
       {state === "none" && <>
-        <p>기기 연결부터 첫 기록 확인까지 진행하세요. 기기 연결과 기록 업로드 동의는 별개입니다.</p>
         <ol class="dash-checklist" aria-label="첫 기록 확인 단계">
-          {steps.map(step => <li key={step.title} data-state={step.status}>
-            <div class="source__head"><h3>{step.title}</h3><span class="source__state">
-              {step.status === "done" ? "완료" : step.status === "failed" ? "확인 실패" : "대기"}
-            </span></div>
-            <p class="note">{step.detail}</p>
+          {steps.map((step, index) => <li key={step.title} data-state={step.status} title={step.detail}>
+            <span class="source__state">{index + 1} {index === 2 ? "첫 세션" : step.title}{" "}
+              {step.status === "done" ? "완료" : step.status === "failed" ? "확인 실패" :
+                devices.status === "loading" && index < 2 ? "확인 중" : "대기"}
+            </span>
           </li>)}
         </ol>
-        {profiles.map(profile => {
-          const copy = availabilityCopy(profile.availability);
-          return <p class="note" key={profileKey(profile)} data-availability={profile.availability}>
-            <code>{shortId(profile.deviceId)}</code> · {copy.label}: {copy.explanation} {copy.next}
-          </p>;
-        })}
-        {devices.status === "failed" && <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
-        <div class="cluster">
-          <a class="button primary" href="#dashboard-management" onClick={onManage}>{active.length > 0 ? "업로드 범위 확인" : "기기 연결 안내"}</a>
-          <a class="button secondary" href="/#local-setup">로컬 설정 안내</a>
-          <button class="button secondary" type="button" onClick={onRetry}>출처 다시 읽기</button>
-        </div>
+        {retryDevices || (active.length > 0 && granted) ?
+          <button class="button primary dash-setup-action" type="button" onClick={onRetry}>
+            {devices.status === "failed" ? "다시 시도" : devices.status === "loading" ? "상태 다시 확인" : "첫 세션 확인"}
+          </button> :
+          <a class="button primary dash-setup-action" href="#dashboard-management" onClick={onManage}>
+            {active.length > 0 ? "업로드 범위 확인" : "기기 연결 안내"}
+          </a>}
+        {devices.status === "failed" && <p class="note" role="status">{devices.message}</p>}
+        {revoked.length > 0 && <details class="dash-revoked">
+          <summary>해제된 기기 {revoked.length}개</summary>
+          <ul>{revoked.map(id => <li key={id}><code>{id}</code> · 해제됨 · 새 업로드 불가</li>)}</ul>
+        </details>}
+        {availableProfiles.length > 0 && <details class="dash-setup-details">
+          <summary>출처 상태 확인</summary>
+          {availableProfiles.map(profile => {
+            const copy = availabilityCopy(profile.availability);
+            return <p class="note" key={profileKey(profile)} data-availability={profile.availability}>
+              <code>{shortId(profile.deviceId)}</code> · {copy.label}: {copy.explanation} {copy.next}
+            </p>;
+          })}
+        </details>}
       </>}
-      <p class="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>
+      {state !== "none" && <p class="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>}
     </section>
   );
 }

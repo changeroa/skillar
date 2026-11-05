@@ -42,8 +42,27 @@ test("recent changes sort the selected range and cap the list at five", () => {
   assert.deepEqual(changes.recent.map(row => row.skillId), ["0", "1", "2", "3", "4"]);
 });
 
+test("weekly changes include both KST boundary dates and exclude adjacent dates", () => {
+  // Given: November 5 starts at 15:00 UTC on November 4.
+  const now = Date.UTC(2026, 10, 4, 15);
+  const start = Date.UTC(2026, 9, 29, 15);
+  const end = Date.UTC(2026, 10, 5, 15);
+  const skills = [start - 1, start, end - 1, end].map((updatedAt, index) => ({
+    ...skill, skillId: String(index), updatedAt,
+  }));
+  // When
+  const changes = lastChanges(skills, recentDays(now, 7));
+  // Then
+  assert.equal(changes.total, 2);
+  assert.deepEqual(changes.recent.map(row => row.skillId), ["2", "1"]);
+  assert.deepEqual(recentDays(now - 1, 7), [
+    "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04",
+  ]);
+});
+
 test("home counts registrations without deduplication and excludes expired revoked and OAuth tokens", async t => {
   // Given
+  t.mock.method(Date, "now", () => clock);
   const reads = [];
   t.mock.method(globalThis, "fetch", async url => {
     reads.push(String(url));
@@ -57,11 +76,30 @@ test("home counts registrations without deduplication and excludes expired revok
   // When
   await waitFor(dom, () => tiles(container)[2] === "3", "registration count");
   // Then
-  assert.deepEqual(tiles(container), ["1", "미측정", "3", "1"]);
+  assert.deepEqual(tiles(container), ["1", "1", "3", "1"]);
   assert.deepEqual(reads.sort(), ["/api/mcp/connections", "/api/skills"]);
   assert.equal(all(container, node => node.localName === "rect" && node.getAttribute("data-value") === "0").length > 0, true);
   assert.equal(all(container, node => node.localName === "rect").every(node =>
     Number(node.getAttribute("y")) + Number(node.getAttribute("height")) === Number(node.getAttribute("data-baseline"))), true);
+});
+
+test("weekly tile counts the catalog seven-day range independently of the chart", async t => {
+  // Given
+  t.mock.method(Date, "now", () => clock);
+  const skills = [0, 6, 7].map((days, index) => ({
+    ...skill, skillId: `81000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    updatedAt: clock - days * 86400000,
+  }));
+  t.mock.method(globalThis, "fetch", async url => url === "/api/skills" ?
+    Response.json({ revision: 1, skills }) :
+    Response.json({ resource: "https://skillar.sh/mcp", connections: [] }));
+  // When: the default chart is five days, not seven.
+  const { dom, container } = await mount(t, HomeWidgets, props);
+  await waitFor(dom, () => tiles(container)[0] === "3", "catalog loaded");
+  // Then
+  assert.equal(tiles(container)[1], "2");
+  const chart = all(container, node => node.getAttribute("class") === "home-widget home-changes")[0];
+  assert.equal(all(chart, node => node.localName === "rect" && node.getAttribute("data-value") === "1").length, 1);
 });
 
 test("failed catalog is unknown rather than zero and retry replaces it with a confirmed empty catalog", async t => {

@@ -20,6 +20,19 @@ when the record has no separate full-page route; it must not link to itself.
 
 ## P-C approved dashboard home B
 
+P-C2 replaces the no-viewable-source checklist cards with one wrapping status
+strip: three numbered, textual state chips and one primary next-step action.
+Device loading/failure remains explicit and never reuses stale consent as done.
+Connection and consent actions open existing management; after consent the
+action refreshes sources for the first session. Revoked notices are grouped
+behind one counted native disclosure; opaque IDs appear only when expanded.
+The strip uses existing surface, Pill geometry, spacing and 44px action tokens.
+At 1440x900 both tiles and the R7 chart begin within the first viewport.
+The second tile is 이번 주 변경 수: skills with last updatedAt in the seven
+KST calendar dates ending today, independent of the chart's selected range.
+Its caption identifies updatedAt, the seven-day range and KST; missing catalog
+data remains unknown and retained data keeps the existing stale-read notice.
+
 Home follows `hosted/dashboard-widgets-b.html`: four NumberTiles, a paired
 BarChart/recent-skills DataTable, a connection-state DataTable, then three
 explicitly unmeasured usage slots with consent links. Use the shared `src/ui`
@@ -36,7 +49,7 @@ restoration. Selected activity retains the existing embedded views.
 Asset counts describe the entire returned catalog; the chart and top five
 describe the selected recent KST calendar-day range, including both ends.
 The chart counts last `updatedAt`, not a complete change-event history.
-Version count and creation series stay unmeasured: the catalog has no version
+The version creation series stays unmeasured: the catalog has no version
 list and home does not eagerly fan out detail reads. Empty catalog establishes
 zero versions. Device + MCP registration counts are not deduplicated physical
 clients; active means unrevoked and, for MCP, unexpired, not online.
