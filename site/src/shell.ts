@@ -122,6 +122,10 @@ export function bindCommandPalette(
     if (empty) empty.hidden = visible.length !== 0;
   };
   const dismiss = () => { dialog.close(); opener.focus(); };
+  const activate = (option: HTMLAnchorElement) => {
+    dialog.close();
+    window.location.assign(option.href);
+  };
   const open = () => {
     if (!document.body.classList.contains('app-shell')) return;
     if (drawer?.open) {
@@ -146,15 +150,27 @@ export function bindCommandPalette(
   dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
   input.addEventListener('input', filter);
   input.addEventListener('keydown', event => {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      select(active + (event.key === 'ArrowDown' ? 1 : -1));
-    } else if (event.key === 'Enter' && visible[active]) {
-      event.preventDefault();
-      visible[active]?.click();
+    if (event.isComposing) return;
+    switch (event.key) {
+      case 'ArrowDown': select(active + 1); break;
+      case 'ArrowUp': select(active - 1); break;
+      case 'Home': select(0); break;
+      case 'End': select(visible.length - 1); break;
+      case 'Enter': {
+        const option = visible[active];
+        if (option) activate(option);
+        break;
+      }
+      default: return;
     }
+    event.preventDefault();
+    event.stopPropagation();
+  }, { capture: true });
+  for (const option of options) option.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    activate(option);
   });
-  for (const option of options) option.addEventListener('click', dismiss);
   window.addEventListener('keydown', shortcut);
   return () => window.removeEventListener('keydown', shortcut);
 }
