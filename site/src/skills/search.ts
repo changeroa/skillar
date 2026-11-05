@@ -1,5 +1,5 @@
 import { h } from "preact";
-import type { JSX } from "preact";
+import type { ComponentChildren, JSX } from "preact";
 import { useRef, useState } from "preact/hooks";
 import { parsePrivateSkillUri } from "../../../shared/dist/private-skills.js";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
@@ -25,10 +25,16 @@ type Props = {
   readonly signal: AbortSignal;
   readonly onOpen: (skillId: PrivateSkillId) => void;
   readonly onUnauthorized: () => void;
+  readonly children?: ComponentChildren;
+  readonly query?: string;
+  readonly onQueryChange?: (query: string) => void;
+  readonly compact?: boolean;
 };
 
-export function SearchBox({ skills, signal, onOpen, onUnauthorized }: Props) {
-  const [query, setQuery] = useState("");
+export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, query: controlledQuery, onQueryChange, compact }: Props) {
+  const [localQuery, setLocalQuery] = useState("");
+  const query = controlledQuery ?? localQuery;
+  const setQuery = (value: string) => { setLocalQuery(value); onQueryChange?.(value); };
   const [result, setResult] = useState<SearchResult | null>(null);
   const [message, setMessage] = useState("");
   const [technical, setTechnical] = useState<string | null>(null);
@@ -84,18 +90,19 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized }: Props) {
       }
     }
   };
-  return h("form", { class: "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
-    h("h3", { id: "search-title", class: "panel__subtitle" }, "내 스킬 검색"),
+  return h("form", { class: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
     h("div", { class: "search__row" },
-      h("label", { class: "field-label", for: "skill-search" }, "이름·설명·문서에서 찾을 말",
+      h("label", { id: "search-title", class: "field-label", for: "skill-search" }, "내 스킬 검색",
         h("input", { id: "skill-search", ref: input, class: "text-field", type: "search", autocomplete: "off", value: query, disabled: busy,
+          placeholder: "이름·설명·문서에서 검색",
           role: "combobox", "aria-autocomplete": "list", "aria-expanded": (result?.candidates.length ?? 0) > 0,
           "aria-controls": "skill-search-results", "aria-activedescendant": active >= 0 ? `search-result-${active}` : undefined,
           onKeyDown: navigate, onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
             setQuery(event.currentTarget.value); setActive(-1);
           } })),
-      h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색")),
-    h("p", { class: "note" }, "결과는 위·아래 화살표로 선택하고 ", h("code", null, "Enter"), "로 현재 버전을 엽니다. 보관함 정렬은 검색 순위에 영향을 주지 않습니다."),
+      h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
+      children),
+    (!compact || result !== null) && h("p", { class: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
     h("p", { class: "note", role: "status", "aria-live": "polite" }, message),
     result !== null && result.candidates.length === 0 && result.abstained === undefined &&
       h("button", { class: "button secondary", type: "button", onClick: () => {

@@ -1,5 +1,6 @@
 import "./main.ts";
 import "./skills/skills.css";
+import "./ui/ui.css";
 import { h, render } from "preact";
 import { SkillsApp } from "./skills/app.ts";
 

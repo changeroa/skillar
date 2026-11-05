@@ -10,7 +10,7 @@
 .ui-table th button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-width: 44px; min-height: 44px; padding: 0; border: 0; color: var(--ink); background: transparent; font: inherit; text-align: left; }
 .ui-table [data-density="normal"], .ui-table[data-density="normal"] td { height: 48px; }
 .ui-table[data-density="spacious"] td { height: 64px; }
-.ui-columns { position: relative; }
+.ui-columns { position: relative; padding: 0; background: transparent; }
 .ui-columns summary { min-height: 44px; padding: var(--s1) var(--s2); border: 1px solid var(--border); border-radius: var(--radius); }
 .ui-columns > div { position: absolute; top: 100%; inset-inline-start: 0; z-index: 2; width: 224px; max-width: calc(100vw - var(--s5)); padding: var(--s2); background: var(--bg); border: 1px solid var(--border); }
 .ui-choice { display: flex; align-items: center; gap: var(--s1); min-height: 44px; font-size: var(--small); cursor: pointer; }

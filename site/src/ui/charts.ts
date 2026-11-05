@@ -5,30 +5,31 @@ export type ChartData = { readonly labels: readonly string[]; readonly series: r
 const geometry = { width: 640, height: 280, left: 48, right: 592, top: 32, baseline: 232, gap: 8 } as const;
 
 /** Every series shares this scale and zero baseline; null is not a zero. */
-export function chartLayout(data: ChartData) {
+export function chartLayout(data: ChartData, height: number = geometry.height) {
+  const baseline = height - (geometry.height - geometry.baseline);
   const max = Math.max(1, ...data.series.flatMap(series => series.values.filter(value => value !== null)));
   const groupWidth = (geometry.right - geometry.left) / Math.max(1, data.labels.length);
   const gap = Math.min(geometry.gap, groupWidth / Math.max(4, data.series.length * 4));
   const width = (groupWidth - gap * (data.series.length + 1)) / Math.max(1, data.series.length);
-  const y = (value: number) => geometry.baseline - value / max * (geometry.baseline - geometry.top);
+  const y = (value: number) => baseline - value / max * (baseline - geometry.top);
   const bars = data.labels.flatMap((label, group) => data.series.map((series, seriesIndex) => {
     const value = series.values[group] ?? null;
     // Integer SVG geometry keeps the rendered bottom exact even after the
     // browser stores rect coordinates as float32 values.
-    const height = value === null ? 0 : Math.max(1, Math.round(geometry.baseline - y(value)));
+    const height = value === null ? 0 : Math.max(1, Math.round(baseline - y(value)));
     return { label, series: series.label, seriesIndex, value, x: geometry.left + group * groupWidth + gap + seriesIndex * (width + gap),
-      y: geometry.baseline - height, width, height, baseline: geometry.baseline };
+      y: baseline - height, width, height, baseline };
   }));
-  return { ...geometry, max, groupWidth, bars, y };
+  return { ...geometry, height, baseline, max, groupWidth, bars, y };
 }
 
-function Chart({ title, data, kind }: { readonly title: string; readonly data: ChartData; readonly kind: "bar" | "line" }) {
-  const layout = chartLayout(data);
+function Chart({ title, data, kind, height }: { readonly title: string; readonly data: ChartData; readonly kind: "bar" | "line"; readonly height?: number }) {
+  const layout = chartLayout(data, height);
   const x = (value: number) => `${value / layout.width * 100}%`;
   const measured = data.series.some(series => series.values.some(value => value !== null));
   return h("figure", { class: "ui-chart" }, h("figcaption", null, title),
     !measured ? h("p", { class: "ui-empty" }, "미측정") :
-      h("svg", { width: "100%", height: layout.height, role: "img", "aria-label": title },
+      h("svg", { width: "100%", height: layout.height, style: { height: layout.height }, role: "img", "aria-label": title },
         h("title", null, title),
         h("desc", null, data.labels.map((label, index) =>
           `${label}: ${data.series.map(series => `${series.label} ${series.values[index] ?? "미측정"}`).join(", ")}`).join("; ")),
@@ -54,7 +55,7 @@ function Chart({ title, data, kind }: { readonly title: string; readonly data: C
       series.label, series.values.some(value => value === null) ? series.values.every(value => value === null) ? " · 미측정" : " · 일부 미측정" : ""))));
 }
 
-export function BarChart(props: { readonly title: string; readonly data: ChartData }) {
+export function BarChart(props: { readonly title: string; readonly data: ChartData; readonly height?: number }) {
   return h(Chart, { ...props, kind: "bar" });
 }
 export function LineChart(props: { readonly title: string; readonly data: ChartData }) {

@@ -13,6 +13,19 @@ const rows = [{ id: "a", name: "가", count: 3 }, { id: "b", name: "나", count:
   { id: "c", name: "다", count: null }];
 const tableProps = { caption: "현재 범위", columns, rows, rowId: row => row.id };
 
+test("toast keeps its live region mounted but exposes a status only when a message exists", async t => {
+  // Given
+  const api = await mount(t, Toast, { message: "", onDismiss() {} });
+  const region = byTag(api.container, "p")[0];
+  // When
+  assert.equal(region.getAttribute("aria-live"), "polite");
+  assert.equal(region.getAttribute("role"), null);
+  await api.show({ message: "copied", onDismiss() {} });
+  // Then
+  assert.equal(byTag(api.container, "p")[0], region);
+  assert.equal(region.getAttribute("role"), "status");
+});
+
 test("table sorts its rendered range and exposes the selected header direction", async t => {
   // Given
   const { container } = await mount(t, DataTable, tableProps);
@@ -23,6 +36,17 @@ test("table sorts its rendered range and exposes the selected header direction",
   assert.equal(byTag(container, "th")[1].getAttribute("aria-sort"), "ascending");
   assert.deepEqual(byTag(container, "tbody")[0].children.map(row => row.children[0].textContent), ["나", "가", "다"]);
   assert.deepEqual(rows.map(row => row.id), ["a", "b", "c"]);
+});
+
+test("required identity columns cannot be hidden by controlled URL state", async t => {
+  // Given / When
+  const { container } = await mount(t, DataTable, {
+    ...tableProps, columns: [{ ...columns[0], hideable: false }, columns[1]], hidden: ["name"],
+  });
+  // Then
+  assert.equal(byTag(container, "th").length, 2);
+  assert.equal(byTag(container, "input")[0].checked, true);
+  assert.equal(byTag(container, "input")[0].disabled, true);
 });
 
 test("descending numeric sorting keeps missing values last", () => {

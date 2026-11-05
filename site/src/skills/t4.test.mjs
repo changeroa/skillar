@@ -43,7 +43,7 @@ test("sort uses response timestamps by default and names when selected without m
   assert.deepEqual(skills, [older, summary]);
 });
 
-test("library places search and sorting before cards and selected detail immediately after its card", async t => {
+test("library places search and sortable headers before rows and retains the selected workspace", async t => {
   // Given
   const { h } = await import("preact");
   const props = { ...searchProps, skills: [summary, older], status: "ready", message: "", notice: "",
@@ -51,13 +51,14 @@ test("library places search and sorting before cards and selected detail immedia
   // When
   const { dom, container } = await mount(t, LibraryPanel, props);
   // Then
-  const list = all(container, n => n.getAttribute("class") === "source-list skill-list")[0];
-  assert.equal(list.childNodes[1].childNodes[0].id, "selected-detail");
+  const list = byTag(container, "tbody")[0];
+  assert.equal(list.children.length, 2);
+  assert.ok(dom.getElementById("selected-detail"));
   assert.equal(byTag(container, "form")[0].getAttribute("role"), "search");
-  assert.equal(byTag(container, "select")[0].value, "updated");
+  assert.equal(byTag(container, "th")[2].getAttribute("aria-sort"), "descending");
   assert.equal(dom.getElementById("library-title").getAttribute("tabindex"), "-1");
   const selectedDetail = dom.getElementById("selected-detail");
-  await input(byTag(container, "select")[0], "name", "change");
+  await act(() => byTag(byTag(container, "th")[0], "button")[0].click());
   assert.equal(list.childNodes[0].textContent.includes("가"), true);
   assert.equal(dom.getElementById("selected-detail"), selectedDetail);
 });
