@@ -1,0 +1,52 @@
+/* Shared shell: the document owns scrolling; the rail only scrolls if necessary. */
+.app-topbar { border-bottom: 1px solid var(--rule); }
+.app-topbar .theme-label { margin-left: auto; }
+.app-menu { display: none; }
+.app-navigation { position: static; width: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--ink); }
+.app-navigation nav { gap: var(--s1); }
+.app-navigation a { display: flex; align-items: center; min-height: 48px; padding: var(--s2) var(--s3); font-size: var(--ui); }
+.app-navigation a[aria-current="page"] { font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+.app-drawer { margin: 0; padding: var(--s4); border: 0; border-right: 1px solid var(--rule); color: var(--ink); background: var(--bg); }
+.app-shell { --app-rail: 256px; }
+.app-shell > :is(.preview-notice, main, footer) { margin-left: var(--app-rail); }
+.app-shell > main.shell, .app-shell > .app-topbar.shell { width: auto; max-width: none; margin-right: 0; padding-inline: var(--s5); }
+.app-shell > main { min-height: 65vh; }
+.app-shell .app-topbar { min-height: var(--s8); margin-left: var(--app-rail); padding-block: var(--s4); }
+.app-shell .app-topbar > .wordmark { position: fixed; left: var(--s4); top: var(--s4); z-index: 5; margin: 0; }
+.app-shell .app-navigation { position: fixed; inset: var(--s8) auto 0 0; width: var(--app-rail); max-height: calc(100dvh - var(--s8)); overflow-y: auto; padding: var(--s3) var(--s3); border-right: 1px solid var(--rule); z-index: 4; }
+.app-shell .app-navigation::before { content: ""; position: fixed; left: calc(var(--app-rail) - 1px); top: 0; height: var(--s8); border-right: 1px solid var(--rule); }
+.app-shell .app-navigation nav { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+.app-shell .app-navigation a:hover { background: var(--surface); }
+.app-shell .app-navigation a[aria-current="page"] { background: var(--surface); }
+.app-shell .preview-notice .shell, .app-shell .account-footer .shell { width: auto; padding-inline: var(--s5); }
+.skill-breadcrumb { display: flex; flex-wrap: wrap; gap: var(--s1); align-items: center; margin-bottom: var(--s4); font-size: var(--small); overflow-wrap: anywhere; }
+.skill-breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+.skill-breadcrumb [data-skill-version]::before { content: "› "; }
+.skill-breadcrumb [hidden], .skill-breadcrumb[hidden] { display: none; }
+.not-found { min-height: 65vh; padding-block: var(--s7); }
+.not-found p, .not-found .cluster { margin-top: var(--s4); }
+@media (max-width: 1023.98px) {
+  .app-shell > :is(.preview-notice, main, footer), .app-shell .app-topbar { margin-left: 0; }
+  .app-shell > main.shell, .app-shell > .app-topbar.shell { padding-inline: var(--s4); }
+  .app-shell .app-topbar { min-height: var(--s8); gap: var(--s2); }
+  .app-shell .app-topbar > .wordmark { position: static; margin-right: auto; }
+  .app-shell .app-topbar .theme-label { margin-left: 0; }
+  .app-shell .app-menu, .app-shell .app-menu-close { display: inline-flex; align-items: center; justify-content: center; min-width: 48px; min-height: 48px; padding: var(--s1); border: 1px solid var(--border); border-radius: var(--radius); color: var(--ink); background: var(--bg); font-size: var(--ui); }
+  .app-shell .app-menu { gap: var(--s1); }
+  .app-shell .app-menu svg { width: 20px; height: 20px; }
+  .app-shell .app-navigation { position: static; width: 100%; max-height: none; overflow: visible; padding: 0; border: 0; }
+  .app-shell .app-navigation::before { display: none; }
+  .app-drawer { inset: 0 auto 0 0; width: min(320px, calc(100% - var(--s6))); height: 100dvh; max-height: 100dvh; }
+  .app-drawer::backdrop { background: color-mix(in srgb, var(--ink) 40%, transparent); }
+  .app-shell .app-navigation__title { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s4); }
+  .app-shell:has(.app-drawer:modal) { overflow: hidden; }
+  .app-shell .preview-notice .shell, .app-shell .account-footer .shell { padding-inline: var(--s4); }
+}
+@media (max-width: 420px) {
+  .app-shell .app-topbar .theme-label { font-size: 0; gap: 0; }
+}
+@media (scripting: none) and (max-width: 1023.98px) {
+  .app-shell .app-navigation { position: static; width: 100%; height: auto; border: 0; padding: 0; }
+  .app-shell .app-navigation nav { display: flex; flex-wrap: wrap; }
+  .app-shell .app-menu, .app-shell .app-menu-close, .app-shell .app-navigation__title { display: none; }
+}

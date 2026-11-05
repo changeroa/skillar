@@ -3,7 +3,7 @@
 .preview-notice a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
 .account-main { padding-block: var(--s6) var(--s8); }
 .account-main h1 { font-size: var(--heading); }
-.account-main h2 { font-size: var(--subhead); letter-spacing: -.025em; }
+.account-main h2 { font-size: var(--subhead); letter-spacing: 0; }
 .account-main p + p { margin-top: var(--s3); }
 .account-main a, .account-footer a { overflow-wrap: anywhere; }
 .steps { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin: 0 0 var(--s7); padding: 0; list-style-position: inside; color: var(--muted); font-size: var(--small); }
@@ -25,12 +25,12 @@
 .account-user img[hidden] { display: none; }
 .account-user > div { min-width: 0; }
 .account-user p + p { margin-top: 0; }
-.account-name { font-size: var(--subhead); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; overflow-wrap: anywhere; }
+.account-name { font-size: var(--subhead); font-weight: 600; letter-spacing: 0; line-height: 1.2; overflow-wrap: anywhere; }
 .account-email { font-size: var(--small); color: var(--muted); overflow-wrap: anywhere; }
 .auth-actions .account-status { margin: 0; }
 .account-status div[hidden] { display: none; }
 .account-times[hidden] { display: none; }
-.account-header a[aria-current="page"], .view-nav a[aria-current="page"] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; }
+.account-header a[aria-current="page"], .view-nav a[aria-current="page"] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: var(--accent); }
 .account-footer { border-top: 1px solid var(--muted); padding-block: var(--s4); font-size: var(--small); }
 .account-footer .text-link { margin-top: 0; }
 .account-status { margin-block: var(--s5) var(--s4); }
@@ -41,7 +41,7 @@
 a.onward + .note { margin-top: var(--s3); }
 .config-panel { margin-top: var(--s4); }
 .copy-example { background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--code-muted); }
-.copy-example:focus-visible { outline-color: var(--code-ink); }
+.copy-example:focus-visible { outline-color: var(--accent); }
 .copy-example[hidden] { display: none; }
 .config-panel .code-foot { display: grid; gap: var(--s3); justify-items: start; }
 .config-panel pre { padding-top: 0; }

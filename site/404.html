@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="description" content="요청한 페이지를 찾을 수 없습니다. skillar 홈, 스킬 또는 대시보드로 이동하세요.">
+    <title>페이지를 찾을 수 없습니다 — skillar</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
+      } catch (error) {
+        if (!(error instanceof DOMException)) throw error;
+      }
+    </script>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="/src/shell.css">
+  </head>
+  <body>
+    <a class="skip" href="#main">본문으로 건너뛰기</a>
+    <header class="shell header">
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <label class="theme-label">테마
+        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
+      </label>
+    </header>
+    <main id="main" class="shell not-found" tabindex="-1">
+      <p class="note">404 · 없는 페이지</p>
+      <h1>페이지를 찾을 수 없습니다</h1>
+      <p>주소가 잘못되었거나 페이지가 이동했을 수 있습니다. 아래에서 이동할 곳을 선택하세요.</p>
+      <nav class="cluster" aria-label="돌아갈 곳">
+        <a class="button primary" href="/">홈으로</a>
+        <a class="button secondary" href="/skills/">스킬</a>
+        <a class="button secondary" href="/dashboard/">대시보드</a>
+      </nav>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

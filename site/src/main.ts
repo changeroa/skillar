@@ -39,11 +39,11 @@ const installCommand = document.querySelector<HTMLElement>('#install-command');
 if (copyButton && copyStatus && installCommand) {
   copyButton.addEventListener('click', async () => {
     if (await writeClipboard(installCommand.textContent ?? '')) {
-      copyStatus.textContent = 'Install command copied.';
+      copyStatus.textContent = '설치 명령을 복사했습니다.';
       return;
     }
     selectContents(installCommand);
-    copyStatus.textContent = "Couldn't copy. The install command is selected; copy it manually.";
+    copyStatus.textContent = "복사하지 못했습니다. 선택된 설치 명령을 직접 복사하세요.";
   });
 }
 

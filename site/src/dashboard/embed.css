@@ -45,7 +45,7 @@
 }
 .dash-embed :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dash-embed .live--live .live__dot { animation: none; }
-.dash-embed .live--offline .live__dot { background: var(--neutral); }
+.dash-embed .live--offline .live__dot { background: var(--bad); }
 .dash-embed .top { border-bottom-color: var(--rule); }
 .dash-embed .card, .dash-embed .callout, .dash-embed .chip, .dash-embed .tag, .dash-embed .skill, .dash-embed .rt__mark { border-color: var(--line-2); }
 .dash-embed .card { overflow-x: auto; }

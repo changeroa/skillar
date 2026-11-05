@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Connect Codex, Claude Code or any MCP client to the private skills in your skillar account with OAuth or a personal access token, and manage each connection.">
+    <meta name="description" content="OAuth 또는 개인 액세스 토큰으로 Codex, Claude Code 등 MCP 클라이언트를 계정의 비공개 스킬에 연결하고 관리하세요.">
     <meta name="theme-color" content="#171916">
-    <meta property="og:title" content="MCP connections — skillar">
-    <meta property="og:description" content="A home for your agent skills.">
+    <meta property="og:title" content="연결 — skillar">
+    <meta property="og:description" content="에이전트 스킬을 보관하는 곳.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skillar.sh/connections/">
     <meta property="og:image" content="https://skillar.sh/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="skillar — A home for your agent skills.">
+    <meta property="og:image:alt" content="skillar — 에이전트 스킬을 보관하는 곳.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://skillar.sh/og.png">
     <link rel="canonical" href="https://skillar.sh/connections/">
-    <title>MCP connections — skillar</title>
+    <title>연결 — skillar</title>
     <script>
       try {
         document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
@@ -30,96 +30,103 @@
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" href="/src/style.css">
     <link rel="stylesheet" href="/src/account.css">
+    <link rel="stylesheet" href="/src/shell.css">
     <link rel="stylesheet" href="/src/dashboard/dashboard.css">
     <link rel="stylesheet" href="/src/mcp-connections.css">
   </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header class="shell header account-header">
-      <a class="wordmark" href="/" aria-label="skillar home"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
-      <label class="theme-label">Theme
-        <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+  <body class="app-shell">
+    <a class="skip" href="#main">본문으로 건너뛰기</a>
+    <header class="shell header app-topbar">
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <label class="theme-label">테마
+        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
-      <nav aria-label="Account"><a href="/login/">Account</a><a href="/connections/" aria-current="page">Connections</a><a href="/dashboard/">Dashboard</a><a href="/skills/">Skills</a></nav>
+      <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
+      <aside id="app-navigation" class="app-navigation">
+        <nav aria-label="주요 메뉴"><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/" aria-current="page">연결</a><a href="/login/">계정</a></nav>
+      </aside>
+      <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
+        <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
+      </dialog>
     </header>
-    <aside class="preview-notice" aria-label="What works today">
-      <div class="shell"><strong>Google sign-in, the activity dashboard, your private skills library and MCP connections work.</strong> A connection lets an agent read the private skills you have published; nothing is written over MCP, and nothing about the agent's use is recorded unless you turn recording on for that connection. <a href="/">Back to skillar ↗</a></div>
+    <aside class="preview-notice" aria-label="현재 이용할 수 있는 기능">
+      <div class="shell"><strong>Google 로그인, 활동 대시보드, 비공개 스킬 보관함과 MCP 연결을 이용할 수 있습니다.</strong> 연결된 에이전트는 내가 게시한 비공개 스킬을 읽을 수 있습니다. MCP로 쓰기 작업은 하지 않으며, 해당 연결에서 기록을 켜기 전에는 에이전트 사용 활동을 기록하지 않습니다. <a href="/">skillar로 돌아가기 ↗</a></div>
     </aside>
     <main id="main" class="shell account-main" tabindex="-1">
-      <div class="dashboard-heading"><div><h1>One endpoint.<br>Your connections.</h1><p class="account-lead">Give Codex, Claude Code or any MCP client read access to the skills in your account. Approve the agent with OAuth from inside the agent, or create a personal access token for one that can't open a browser. Every connection is listed below with what it may do and when it expires, and you can revoke it at any time.</p></div></div>
+      <div class="dashboard-heading"><div><h1>연결</h1><p class="account-lead">Codex, Claude Code 등 MCP 클라이언트가 계정의 스킬을 읽도록 허용하세요. 에이전트에서 OAuth로 승인하거나 브라우저를 열 수 없는 클라이언트를 위해 개인 액세스 토큰을 만드세요. 각 연결의 권한과 만료 시각은 아래에서 확인하고 언제든 해제할 수 있습니다.</p></div></div>
       <noscript>
-        <p class="note">JavaScript is off. This page needs it to read your connections, create tokens and revoke access. Signing in and out still work.</p>
+        <p class="note">JavaScript가 꺼져 있습니다. 연결 확인, 토큰 생성과 접근 해제에는 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
         <div class="auth-actions">
-          <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Continue with Google <span aria-hidden="true">→</span></a>
-          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out of this browser</button></form>
+          <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Google로 계속하기 <span aria-hidden="true">→</span></a>
+          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">이 브라우저에서 로그아웃</button></form>
         </div>
       </noscript>
       <p id="connections-status" class="note session-status" role="status" aria-live="polite"></p>
-      <button id="retry" class="button secondary" type="button" hidden>Try again</button>
+      <button id="retry" class="button secondary" type="button" hidden>다시 시도</button>
       <div id="signed-out" class="auth-actions" hidden>
-        <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Continue with Google <span aria-hidden="true">→</span></a>
-        <p class="note">You come back to this page after signing in. Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained.</p>
+        <a class="button primary" href="/auth/google?returnTo=%2Fconnections%2F">Google로 계속하기 <span aria-hidden="true">→</span></a>
+        <p class="note">로그인 후 이 화면으로 돌아옵니다. Google이 자체 화면에서 동의를 요청하며, skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키로 유지하고 Google 토큰은 보관하지 않습니다.</p>
       </div>
-      <p id="disabled" class="note connections-unavailable" hidden>MCP connections aren't available on this deployment yet. Nothing was issued, and nothing on this page is stored.</p>
+      <p id="disabled" class="note connections-unavailable" hidden>이 배포에서는 아직 MCP 연결을 이용할 수 없습니다. 발급된 것은 없으며 이 화면의 내용도 저장되지 않습니다.</p>
       <div id="connections-app" hidden>
         <section class="panel" aria-labelledby="endpoint-title">
-          <div class="panel__head"><h2 id="endpoint-title">Connect an agent with OAuth.</h2></div>
-          <p class="account-lead">Add the endpoint below to your agent as a remote HTTP MCP server. The agent opens skillar's approval page in your browser, where you sign in with Google and allow read access; no credential is typed or copied here. Your browser's sign-in cookie and device connector tokens are never MCP credentials.</p>
+          <div class="panel__head"><h2 id="endpoint-title">OAuth로 에이전트 연결</h2></div>
+          <p class="account-lead">아래 주소를 에이전트의 원격 HTTP MCP 서버로 추가하세요. 에이전트가 브라우저에서 skillar 승인 화면을 열면 Google로 로그인하고 읽기를 허용합니다. 이곳에서 인증 정보를 입력하거나 복사하지 않습니다. 브라우저 로그인 쿠키와 기기 연결 토큰은 MCP 인증 정보가 아닙니다.</p>
           <dl class="account-status connections__facts">
-            <div><dt>Endpoint</dt><dd><code id="resource" data-resource></code></dd></div>
-            <div><dt>Permission</dt><dd>Read private skills (<code>skills:read</code>). No connection can change, publish or delete a skill.</dd></div>
-            <div><dt>Recording</dt><dd>Off unless you also allow <code>activity:record</code> on the approval page.</dd></div>
+            <div><dt>서버 주소</dt><dd><code id="resource" data-resource></code></dd></div>
+            <div><dt>권한</dt><dd>비공개 스킬 읽기(<code>skills:read</code>). 연결은 스킬을 수정·게시·삭제할 수 없습니다.</dd></div>
+            <div><dt>활동 기록</dt><dd>승인 화면에서 <code>activity:record</code>도 허용하기 전에는 꺼져 있습니다.</dd></div>
           </dl>
           <div class="connect connections__guide">
             <h3>Claude Code</h3>
             <pre class="command">claude mcp add --transport http skillar <span data-resource></span></pre>
-            <h3>JSON client configuration (<code>mcpServers</code>)</h3>
+            <h3>JSON 클라이언트 설정 (<code>mcpServers</code>)</h3>
             <pre class="command">{
   "mcpServers": {
     "skillar": { "type": "http", "url": "<span data-resource></span>" }
   }
 }</pre>
-            <p class="note">Codex and other clients name this differently; use their remote HTTP MCP option with the same URL. When the agent asks you to sign in, approve read access in the browser window it opens. The approval appears in the list below as an OAuth connection.</p>
+            <p class="note">클라이언트마다 설정 이름이 다를 수 있습니다. Codex 등의 원격 HTTP MCP 옵션에 같은 URL을 사용하세요. 에이전트가 로그인을 요청하면 열린 브라우저에서 읽기를 허용하세요. 승인한 항목은 아래 목록에 OAuth 연결로 표시됩니다.</p>
           </div>
         </section>
         <section class="panel" aria-labelledby="pat-title">
-          <div class="panel__head"><h2 id="pat-title">Create a personal access token.</h2></div>
-          <p class="account-lead">For agents that can't open a browser. The token is shown once, right after you create it; skillar keeps only a hash, so it can't be shown again. It expires after the days you choose, at most 30, and you can revoke it below at any time.</p>
+          <div class="panel__head"><h2 id="pat-title">개인 액세스 토큰 만들기</h2></div>
+          <p class="account-lead">브라우저를 열 수 없는 에이전트를 위한 토큰입니다. 생성 직후 한 번만 표시되며, skillar는 해시만 저장하므로 다시 볼 수 없습니다. 선택한 기간(최대 30일) 후 만료되며 아래에서 언제든 해제할 수 있습니다.</p>
           <form id="pat-form" class="pat-form" novalidate>
             <div class="consent__fields pat-form__fields">
-              <label class="field-label">Name, so you can tell tokens apart
+              <label class="field-label">토큰을 구분할 이름
                 <input id="pat-name" class="text-field" type="text" maxlength="80" autocomplete="off" spellcheck="false">
               </label>
-              <label class="field-label">Expires in days, 1 to 30
+              <label class="field-label">만료 기간(1~30일)
                 <input id="pat-days" class="text-field" type="number" inputmode="numeric" min="1" max="30" step="1" value="7">
               </label>
             </div>
-            <label class="choice"><input id="pat-record" type="checkbox"><span>Also record what this token's agent does<span class="choice__detail">Separate from reading. The searches the agent runs and the skills it opens are kept as observations in your activity dashboard, and skillar's server reads them to build those reports. Leave this off and nothing about the agent's use is stored.</span></span></label>
+            <label class="choice"><input id="pat-record" type="checkbox"><span>이 토큰을 사용하는 에이전트의 활동도 기록<span class="choice__detail">읽기 권한과 별도입니다. 에이전트의 검색과 스킬 읽기는 활동 대시보드의 관측 기록으로 저장되며, skillar 서버가 보고서를 만들기 위해 읽습니다. 끄면 에이전트의 사용 활동을 저장하지 않습니다.</span></span></label>
             <div class="cluster pat-form__actions">
-              <button id="pat-create" class="button primary" type="submit">Create token</button>
+              <button id="pat-create" class="button primary" type="submit">토큰 만들기</button>
               <p id="pat-status" class="note" role="status" aria-live="polite"></p>
             </div>
             <ul id="pat-problems" class="problems" role="alert"></ul>
           </form>
           <section id="token-panel" class="token" aria-labelledby="token-title" hidden>
-            <h3 id="token-title" tabindex="-1">Your new token. Shown once.</h3>
-            <p class="note">Copy it into your agent now. Once you dismiss it, it is gone from this page and can't be shown again; create another token if you lose it.</p>
-            <label class="field-label" for="token">Token</label>
+            <h3 id="token-title" tabindex="-1">새 토큰 · 한 번만 표시</h3>
+            <p class="note">지금 에이전트에 복사하세요. 닫으면 이 화면에서 사라지고 다시 표시할 수 없습니다. 잃어버린 경우 새 토큰을 만드세요.</p>
+            <label class="field-label" for="token">토큰</label>
             <input id="token" class="text-field token__value" type="password" readonly autocomplete="off" spellcheck="false" aria-describedby="token-status">
             <div class="cluster token__actions">
-              <button id="token-toggle" class="button secondary" type="button" aria-pressed="false">Show token</button>
-              <button id="token-copy" class="button secondary" type="button">Copy token</button>
-              <button id="token-dismiss" class="button secondary" type="button">Dismiss token</button>
+              <button id="token-toggle" class="button secondary" type="button" aria-pressed="false">토큰 표시</button>
+              <button id="token-copy" class="button secondary" type="button">토큰 복사</button>
+              <button id="token-dismiss" class="button secondary" type="button">토큰 닫기</button>
             </div>
             <p id="token-status" class="note" role="status" aria-live="polite"></p>
-            <p class="note">Agents send it as <code>Authorization: Bearer &lt;token&gt;</code>. Claude Code: <code>claude mcp add --transport http skillar <span data-resource></span> --header "Authorization: Bearer &lt;token&gt;"</code></p>
+            <p class="note">에이전트는 다음 헤더로 전송합니다: <code>Authorization: Bearer &lt;token&gt;</code>. Claude Code: <code>claude mcp add --transport http skillar <span data-resource></span> --header "Authorization: Bearer &lt;token&gt;"</code></p>
           </section>
         </section>
         <section class="panel" aria-labelledby="connections-title">
-          <div class="panel__head"><h2 id="connections-title">Connections</h2></div>
-          <p class="account-lead">Every OAuth approval and token appears here with what it may do, whether it records activity, and when it expires. Revoking one takes effect immediately for the agent using it; activity it already recorded stays in your dashboard.</p>
+          <div class="panel__head"><h2 id="connections-title">연결 목록</h2></div>
+          <p class="account-lead">모든 OAuth 승인과 토큰의 권한, 활동 기록 여부와 만료 시각이 표시됩니다. 해제하면 해당 에이전트의 접근이 즉시 중단되며, 이미 기록된 활동은 대시보드에 남습니다.</p>
           <p id="list-status" class="note" role="status" aria-live="polite" tabindex="-1"></p>
-          <p id="connections-empty" class="note" hidden>No connections yet. Approve an agent with OAuth or create a token above, and it appears here.</p>
+          <p id="connections-empty" class="note" hidden>아직 연결이 없습니다. OAuth로 에이전트를 승인하거나 위에서 토큰을 만들면 여기에 표시됩니다.</p>
           <ul id="connection-list" class="source-list connection-list"></ul>
         </section>
       </div>
@@ -127,23 +134,24 @@
         <li class="source connection" data-id="">
           <div class="source__head"><h3 data-name></h3><span class="source__state" data-status></span></div>
           <dl class="account-status source__facts">
-            <div><dt>Kind</dt><dd data-kind></dd></div>
-            <div><dt>Permissions</dt><dd data-scopes></dd></div>
-            <div><dt>Recording</dt><dd data-recording></dd></div>
-            <div><dt>Created</dt><dd data-created></dd></div>
-            <div><dt>Expires</dt><dd data-expires></dd></div>
+            <div><dt>종류</dt><dd data-kind></dd></div>
+            <div><dt>권한</dt><dd data-scopes></dd></div>
+            <div><dt>활동 기록</dt><dd data-recording></dd></div>
+            <div><dt>생성 시각</dt><dd data-created></dd></div>
+            <div><dt>만료 시각</dt><dd data-expires></dd></div>
           </dl>
           <div class="cluster connection__actions">
-            <button class="button secondary" type="button" data-action="revoke">Revoke…</button>
-            <button class="button secondary" type="button" data-action="keep" hidden>Keep connection</button>
-            <button class="button primary" type="button" data-action="confirm" hidden>Confirm revoke</button>
-            <span class="note" data-consequence hidden>The agent using this connection loses access immediately. It cannot be undone; activity already recorded stays in your dashboard.</span>
+            <button class="button secondary" type="button" data-action="revoke">연결 해제…</button>
+            <button class="button secondary" type="button" data-action="keep" hidden>연결 유지</button>
+            <button class="button primary" type="button" data-action="confirm" hidden>연결 해제 확인</button>
+            <span class="note" data-consequence hidden>이 연결을 사용하는 에이전트의 접근이 즉시 중단됩니다. 되돌릴 수 없으며 이미 기록된 활동은 대시보드에 남습니다.</span>
           </div>
         </li>
       </template>
     </main>
-    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">Back to skillar</a><a class="text-link" href="/skills/">Private skills</a><a class="text-link" href="/dashboard/">Activity dashboard</a></div></footer>
+    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/skills/">비공개 스킬</a><a class="text-link" href="/dashboard/">활동 대시보드</a></div></footer>
     <script type="module" src="/src/main.ts"></script>
     <script type="module" src="/src/mcp-connections.ts"></script>
+    <script type="module" src="/src/shell.ts"></script>
   </body>
 </html>

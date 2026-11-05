@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="내 기기가 명시적 동의에 따라 업로드한 활동 기록으로 만든 세션, 작업 공간, 사용 흐름, 활동 분포.">
     <meta name="theme-color" content="#171916">
-    <meta property="og:title" content="대시보드 미리보기 — skillar">
-    <meta property="og:description" content="A home for your agent skills.">
+    <meta property="og:title" content="대시보드 — skillar">
+    <meta property="og:description" content="동의한 출처의 세션과 스킬 읽기 기록을 확인하세요.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skillar.sh/dashboard/">
     <meta property="og:image" content="https://skillar.sh/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="skillar — A home for your agent skills.">
+    <meta property="og:image:alt" content="skillar — 동의한 출처의 세션과 스킬 읽기 기록을 확인하세요.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://skillar.sh/og.png">
     <link rel="canonical" href="https://skillar.sh/dashboard/">
@@ -30,19 +30,26 @@
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" href="/src/style.css">
     <link rel="stylesheet" href="/src/account.css">
+    <link rel="stylesheet" href="/src/shell.css">
     <link rel="stylesheet" href="/src/dashboard/dashboard.css">
   </head>
-  <body>
+  <body class="app-shell">
     <a class="skip" href="#main">본문으로 건너뛰기</a>
-    <header class="shell header account-header dashboard-header">
+    <header class="shell header app-topbar">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
       <label class="theme-label">테마
         <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
-      <nav aria-label="계정"><a href="/login/">계정</a><a href="/connections/">연결</a><a href="/dashboard/" aria-current="page">대시보드</a><a href="/skills/">스킬</a></nav>
+      <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
+      <aside id="app-navigation" class="app-navigation">
+        <nav aria-label="주요 메뉴"><a href="/dashboard/" aria-current="page">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></nav>
+      </aside>
+      <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
+        <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
+      </dialog>
     </header>
     <main id="main" class="shell account-main dashboard-page" tabindex="-1">
-      <div class="dashboard-heading"><div><h1>세션과 읽기 기록</h1><p class="account-lead">동의한 출처의 검색·읽기 기록을 확인하세요. 기기와 MCP 연결의 기록 수집은 각각 기본 꺼짐이며, 별도 동의가 필요합니다.</p></div></div>
+      <div class="dashboard-heading"><div><h1>대시보드</h1><p class="account-lead">동의한 출처의 검색·읽기 기록을 확인하세요. 기기와 MCP 연결의 기록 수집은 각각 기본 꺼짐이며, 별도 동의가 필요합니다.</p></div></div>
       <noscript>
         <p class="note">JavaScript가 꺼져 있습니다. 대시보드가 출처를 읽고 활동을 보여 주려면 JavaScript가 필요합니다. 로그인과 로그아웃은 그대로 할 수 있습니다.</p>
         <div class="auth-actions">
@@ -55,5 +62,6 @@
     </main>
     <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/connections/">MCP 연결</a></div></footer>
     <script type="module" src="/src/dashboard/main.tsx"></script>
+    <script type="module" src="/src/shell.ts"></script>
   </body>
 </html>
