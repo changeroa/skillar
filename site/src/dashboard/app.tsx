@@ -12,6 +12,7 @@ import { PrivatePacks } from "./packs";
 import { DevicesSection } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { HomeChecklist } from "./home-checklist";
+import { HomeWidgets } from "./home-widgets";
 import { loadDevices, PermissionSummary } from "./permission-summary";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
@@ -110,20 +111,10 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     stale={hasViewableSources} onManage={() => { if (management.current) management.current.open = true; }} />;
   return (
     <>
-      <div class="dash-account">
-        <div class="account-user">
-          <div>
-            <p class="note">로그인 계정</p>
-            <p class="account-name">{user.name === "" ? user.email : user.name}</p>
-            {user.name !== "" && <p class="account-email">{user.email}</p>}
-          </div>
-        </div>
-        <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
-      </div>
       <div class={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
         {selected !== null && profiles.status !== "ready" && <div class="dash-refresh">{checklist}</div>}
         {hasViewableSources && <aside class="dash-sources" aria-label="활동 출처">
-          <details ref={sourcePicker} class="dash-source-picker" open={selected === null}>
+          <details ref={sourcePicker} class="dash-source-picker">
             <summary ref={sourceSummary}>{selected === null ? "출처 선택" : <>출처 변경 및 상세 <code title={selected.sourceDomain}>{shortId(selected.sourceDomain)}</code></>}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
               message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => {
@@ -133,6 +124,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           </details>
         </aside>}
         <div class="dash-activity">
+          {selected === null && <HomeWidgets signal={signal} devices={devices} onRetryDevices={reloadDevices} onUnauthorized={onUnauthorized} />}
           {selected === null && checklist}
           {selected !== null && current !== null && (
             <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}

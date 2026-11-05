@@ -32,6 +32,18 @@ test("descending numeric sorting keeps missing values last", () => {
   assert.deepEqual(ordered.map(row => row.id), ["a", "b", "c"]);
 });
 
+test("summary tables can omit view controls while retaining sortable semantic columns", async t => {
+  // Given
+  const { container } = await mount(t, DataTable, { ...tableProps, controls: false });
+  // When
+  await act(() => byTag(byTag(container, "th")[1], "button")[0].click());
+  // Then
+  assert.equal(byTag(container, "select").length, 0);
+  assert.equal(byTag(container, "input").length, 0);
+  assert.equal(byTag(container, "th")[1].getAttribute("aria-sort"), "ascending");
+  assert.deepEqual(byTag(container, "tbody")[0].children.map(row => row.children[0].textContent), ["나", "가", "다"]);
+});
+
 test("column visibility updates headers and cells but preserves one visible column", async t => {
   // Given
   const { container } = await mount(t, DataTable, tableProps);

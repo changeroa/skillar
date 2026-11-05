@@ -1,5 +1,30 @@
 # skillar.sh
 
+## P-C approved dashboard home B
+
+Home follows `hosted/dashboard-widgets-b.html`: four NumberTiles, a paired
+BarChart/recent-skills DataTable, a connection-state DataTable, then three
+explicitly unmeasured usage slots with consent links. Use the shared `src/ui`
+primitives. DataTable adds only an optional `controls` switch (default true);
+the fixed top-five summary omits density/column controls but keeps sorting.
+Existing spacing, type and color tokens apply; widgets
+use a two-column zero-minimum grid above 1024px and stack below it. Tiles
+use four columns on desktop and two on phones. No account data in main.
+The compact source disclosure retains explicit selection and close-focus
+restoration. Selected activity retains the existing embedded views.
+
+Asset counts describe the entire returned catalog; the chart and top five
+describe the selected recent KST calendar-day range, including both ends.
+The chart counts last `updatedAt`, not a complete change-event history.
+Version count and creation series stay unmeasured: the catalog has no version
+list and home does not eagerly fan out detail reads. Empty catalog establishes
+zero versions. Device + MCP registration counts are not deduplicated physical
+clients; active means unrevoked and, for MCP, unexpired, not online.
+PATs alone count as active tokens. Every missing/failed source stays explicit.
+Usage slots do not infer collection or consent from account/connection state.
+Existing checklist, metadata-only explanations, permission facts and stale
+503 recovery remain available. R7 uses shared chart geometry without a fork.
+
 ## P-A approved app shell and shared UI
 
 The owner-approved wireframes v2 (`hosted/app-shell.html` and

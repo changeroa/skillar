@@ -1,13 +1,8 @@
 import type { DashboardProfile } from "../../../shared/dist/activity-dashboard.js";
 import type { DeviceState } from "./devices";
 import { availabilityCopy, profileKey, shortId } from "./status";
-
-export type ReadState<T> = {
-  readonly status: "loading" | "ready" | "failed";
-  readonly data: T | null;
-  readonly message: string;
-  readonly technical: string;
-};
+import type { ReadState } from "./home-data";
+export type { ReadState } from "./home-data";
 
 type Props = {
   readonly state: "loading" | "failed" | "none" | "choose";
