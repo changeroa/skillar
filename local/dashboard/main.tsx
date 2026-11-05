@@ -11,6 +11,9 @@ import { HeatmapView } from "./views/heatmap";
 import { SessionsView } from "./views/sessions";
 import { TraceView } from "./views/trace";
 import { WorkspaceView, WorkspacesView } from "./views/workspaces";
+import { DashboardView } from "./views/dashboard";
+import { LocalShell } from "./components/local-shell";
+import { SessionPeek } from "./views/session-peek";
 
 function useRoute(): [Route, (next: Route) => void] {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
@@ -113,30 +116,31 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
 }
 
 const VIEW_LABEL: Record<View, string> = {
-  sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "사용 흐름", heatmap: "활동 분포",
+  dashboard: "대시보드", sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
 };
 const TABS: { view: View; label: string }[] = [
   { view: "sessions", label: VIEW_LABEL.sessions },
-  { view: "workspaces", label: VIEW_LABEL.workspaces },
   { view: "flow", label: VIEW_LABEL.flow },
+  { view: "workspaces", label: VIEW_LABEL.workspaces },
   { view: "heatmap", label: VIEW_LABEL.heatmap },
 ];
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap",
+  dashboard: "dashboard", sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
 };
 
 export type AppOptions = { embedded?: boolean };
 export function App({ embedded = false }: AppOptions = {}) {
   const [route, navigate] = useRoute();
   const live = useLive();
+  const [sessionRows, setSessionRows] = useState<SessionListRow[]>([]);
   const contentRef = useRef<HTMLElement | null>(null);
   const firstRoute = useRef(true);
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live, embedded };
   const Header = embedded ? "div" : "header";
-  const Content = embedded ? "div" : "main";
+  const Content = embedded || route.view === "sessions" || route.view === "trace" ? "div" : "main";
   useLayoutEffect(() => {
     if (!embedded) return;
     if (firstRoute.current) { firstRoute.current = false; return; }
@@ -144,6 +148,7 @@ export function App({ embedded = false }: AppOptions = {}) {
     if (content === null) return;
     const header = content.previousElementSibling;
     if (header === null) return;
+    if (header.querySelector('[role="tablist"]')?.contains(document.activeElement)) return;
     content.style.scrollMarginTop = `${header.getBoundingClientRect().height}px`;
     content.scrollIntoView({ block: "start" });
     content.focus({ preventScroll: true });
@@ -215,31 +220,30 @@ export function App({ embedded = false }: AppOptions = {}) {
   }, [embedded]);
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
-    <>
-      <Header class="top">
+    <LocalShell {...props} automation={<AutomatedToggle route={route} navigate={navigate} live={live} />}>
+      {embedded && <Header class="top local-top">
         <div class="wrap top__row">
-          {!embedded && (
-            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>
-              {/* Canonical wordmark (site/public/wordmark-*.svg): geometry verbatim, fills through the brand role tokens. */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 100" role="img" aria-label="skillar" focusable="false">
-                <title>skillar</title>
-                <g transform="translate(-9.25 1.99)">
-                  <path class="brand__prompt" d="M0 31L19 50L0 69L7 76L33 50L7 24Z" transform="translate(16.5 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M47 35C36 27 5 27 4 46C3 60 16 62 29 65C43 68 40 79 27 80C18 81 10 78 3 73L0 83C10 91 34 94 46 82C55 71 49 57 34 54L21 51C7 47 24 35 43 44Z" transform="translate(70 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M3 8H15V54L39 31H55L28 57L57 89H41L15 61V89H3Z" transform="translate(131 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M14 31H38V77H56V89H14V77H26V43H14Z" transform="translate(192 0)" fill-rule="evenodd" />
-                  <circle class="brand__ink" cx="224" cy="13" r="7" />
-                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(256 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(320 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M45 89H34V83C23 95 0 90 0 71C0 53 22 49 34 55V50C34 35 13 37 5 44L2 33C22 23 46 28 46 50V89ZM34 65C22 57 11 63 11 72C11 83 27 84 34 74Z" transform="translate(391.5 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M3 31H15V41C23 29 35 27 44 31L41 43C27 39 15 48 15 62V89H3Z" transform="translate(458 0)" fill-rule="evenodd" />
-                </g>
-              </svg>
-            </a>
-          )}
-          <nav class="tabs" aria-label="화면 선택">
+          <nav class="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
+            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="tab"]'));
+            const index = tabs.findIndex(tab => tab === event.target);
+            let next: number;
+            switch (event.key) {
+              case "ArrowRight": next = (index + 1) % tabs.length; break;
+              case "ArrowLeft": next = (index + tabs.length - 1) % tabs.length; break;
+              case "Home": next = 0; break;
+              case "End": next = tabs.length - 1; break;
+              default: return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            for (const [tabIndex, tab] of tabs.entries()) tab.tabIndex = tabIndex === next ? 0 : -1;
+            tabs[next]?.focus();
+            tabs[next]?.click();
+          }}>
             {TABS.map((tab) => (
-              <a key={tab.view} class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
+              <a key={tab.view} id={`skillar-local-tab-${tab.view}`} role="tab" aria-controls="skillar-local-panel"
+                aria-selected={activeTab === tab.view} tabIndex={activeTab === tab.view || activeTab === "not-found" ? 0 : -1}
+                class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
                 {tab.label}
               </a>
             ))}
@@ -253,19 +257,40 @@ export function App({ embedded = false }: AppOptions = {}) {
             <AutomatedToggle route={route} navigate={navigate} live={live} />
           </div>
         </div>
-      </Header>
-      <Content class="page wrap"
+        <div class="wrap"><p class="local-location" aria-label="현재 위치">
+          <span>출처: {embedded ? "선택한 출처" : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
+          {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
+          {route.view === "workspace" && <> › <code>{route.flowId}</code></>}
+        </p></div>
+      </Header>}
+      <Content class={embedded ? "page wrap" : "pe-content"}
+        id={embedded ? "skillar-local-panel" : undefined}
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
-        tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
+        tabIndex={embedded ? -1 : undefined} role={embedded ? "tabpanel" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
-        {route.view === "sessions" && <SessionsView {...props} />}
-        {route.view === "trace" && <TraceView {...props} />}
+        <div id={embedded ? undefined : "skillar-local-panel"}>
+        {(route.view === "sessions" || route.view === "trace") && (
+          <div class={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
+            {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
+              <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
+            </div>}
+            {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
+            {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
+          </div>
+        )}
         {route.view === "workspaces" && <WorkspacesView {...props} />}
+        {route.view === "dashboard" && <DashboardView {...props} />}
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
+        {route.view === "not-found" && <section class="empty">
+          {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
+          <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>
+          <a class="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
+        </section>}
+        </div>
       </Content>
-    </>
+    </LocalShell>
   );
 }
 

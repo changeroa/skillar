@@ -8,9 +8,9 @@ export type CandidateLike = Candidate & { chosen?: boolean };
 
 export type CandidatesProps = { candidates: readonly CandidateLike[]; chosen?: readonly SkillUri[]; query?: string };
 
-/** Rank order as the router returned it; the match score is coverage-scaled and need not descend with rank. */
+/** Match score descending; the recorded router rank breaks ties and stays visible. */
 export function orderCandidates<T extends CandidateLike>(candidates: readonly T[]): T[] {
-  return [...candidates].sort((a, b) => a.rank - b.rank);
+  return [...candidates].sort((a, b) => b.score - a.score || a.rank - b.rank);
 }
 
 /** "3/5 terms": query terms the candidate matched, counted with the router's own term rules; undefined without terms. */
@@ -103,10 +103,15 @@ export function Candidates({ candidates, chosen, query }: CandidatesProps) {
             <span class="cand__score">{formatScore(candidate.score)}</span>
             <span class="cand__cov">{coverage ?? ""}</span>
             <span class="cand__pick">{isChosen ? <CheckIcon /> : null}</span>
-            <span class="cand__desc">
+            <details class="cand__desc">
+              <summary>후보 내용 보기</summary>
+              <p>{candidate.name}</p>
+              <code>{candidate.uri}</code>
+              <p>
               {candidate.description}
               {candidate.matched?.length ? <span class="cand__matched"> {"\u00b7"} 일치 단어 {candidate.matched.join(", ")}</span> : null}
-            </span>
+              </p>
+            </details>
           </li>
         );
       })}

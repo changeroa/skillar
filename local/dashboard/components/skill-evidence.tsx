@@ -16,8 +16,14 @@ export function UnresolvedLoadNotice({ loads }: { loads: UnattributedLoads }) {
 function openTurn(id: string): void {
   const target = document.getElementById(`turn-${id}`);
   if (!(target instanceof HTMLDetailsElement)) return;
+  let ancestor = target.parentElement;
+  while (ancestor !== null) {
+    if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+    ancestor = ancestor.parentElement;
+  }
   target.open = true;
   target.querySelector("summary")?.focus();
+  target.scrollIntoView({ block: "nearest" });
 }
 
 export function FindingEvidence({ finding }: { finding: TurnFindingDto }) {

@@ -194,6 +194,14 @@ test("missed-later link opens and focuses the actual folded turn", () => {
   const session = reports.evidence;
   const index = ui.reportIndex({ finding: { sessions: [session.finding] }, usage: { sessions: [session.usage] } });
   const target = render(ui.Turn, { turn: session.tree.turns[2], index: 2, finding: finding(2), usageBySpan: index.usageBySpan, open: false });
+  const pane = document.createElement("details");
+  const outer = document.createElement("details");
+  // Extend only the small test DOM's missing native surface; the real handler runs unchanged.
+  const proto = Object.getPrototypeOf(pane);
+  Object.defineProperty(proto, "parentElement", { configurable: true, get() { return this.parentNode; } });
+  proto.scrollIntoView = function () { this.scrolled = true; };
+  outer.appendChild(pane);
+  pane.appendChild(target);
   const source = findingView();
   const missed = attr(source, "data-missed-skill", "later-missed");
   const anchor = missed.querySelector("a");
@@ -202,6 +210,8 @@ test("missed-later link opens and focuses the actual folded turn", () => {
   listener.call(anchor, { type, currentTarget: anchor, preventDefault() {} });
   assert.equal(attr(target, "data-turn", "evidence-3").open, true);
   assert.equal(target.querySelector("summary").focused, true);
+  assert.equal(pane.open, true);
+  assert.equal(outer.open, true);
 });
 test("correction status exposes matched terms and heuristic basis", () => {
   const node = attr(usageView("lower"), "data-correction", "correction");

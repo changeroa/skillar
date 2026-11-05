@@ -18,8 +18,19 @@ export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_onl
 export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
-export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap";
-export type Route = { view: View; sessionId?: string; flowId?: string; filter: Filter };
+export type View = "dashboard" | "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "not-found";
+export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "state", "-state", "reads", "-reads", "duration", "-duration"] as const;
+export type SessionSort = (typeof SESSION_SORTS)[number];
+export const SESSION_COLUMNS = ["started", "runtime", "state", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
+export type SessionColumn = (typeof SESSION_COLUMNS)[number];
+export type SessionDensity = "compact" | "normal" | "comfortable";
+export type Route = {
+  view: View; sessionId?: string; flowId?: string; filter: Filter;
+  readonly sort?: SessionSort; readonly peek?: string;
+  readonly columns?: readonly SessionColumn[]; readonly density?: SessionDensity;
+  readonly event?: string; readonly traceTab?: "tree" | "timeline";
+  readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
+};
 /** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
 /** Props every mounted view receives from main.tsx (trace/flow/heatmap stubs are replaced by todos 15-17). */
@@ -215,17 +226,39 @@ export function parseHash(hash: string): Route {
   const h = hash.startsWith("#") ? hash.slice(1) : hash;
   const qi = h.indexOf("?");
   const path = (qi >= 0 ? h.slice(0, qi) : h).replace(/^\/+|\/+$/g, "");
-  const filter = parseFilter(qi >= 0 ? h.slice(qi + 1) : "");
+  const query = qi >= 0 ? h.slice(qi + 1) : "";
+  const filter = parseFilter(query);
+  const params = new URLSearchParams(query);
+  const sort = SESSION_SORTS.find(value => value === params.get("sort"));
+  const columns = params.has("columns")
+    ? SESSION_COLUMNS.filter(value => params.get("columns")?.split(",").includes(value))
+    : undefined;
+  const density = params.get("density");
+  const traceTab = params.get("tab"), format = params.get("format");
+  const ui = {
+    ...(sort ? { sort } : {}),
+    ...(params.get("peek") ? { peek: params.get("peek") ?? undefined } : {}),
+    ...(columns ? { columns } : {}),
+    ...(density === "compact" || density === "normal" || density === "comfortable" ? { density } : {}),
+    ...(params.get("event") ? { event: params.get("event") ?? undefined } : {}),
+    ...(traceTab === "tree" || traceTab === "timeline" ? { traceTab } : {}),
+    ...(format === "formatted" || format === "raw" ? { format } : {}),
+    ...(params.get("attributes") === "1" ? { attributes: true } : {}),
+  } satisfies Partial<Route>;
   const segments = path ? path.split("/").map(decode) : [];
+  if (segments.length > 2 || (segments.length > 1 && segments[0] !== "sessions" && segments[0] !== "workspaces")) {
+    return { ...ui, view: "not-found", filter };
+  }
   switch (segments[0]) {
-    case "flow": return { view: "flow", filter };
-    case "heatmap": return { view: "heatmap", filter };
+    case "dashboard": return { ...ui, view: "dashboard", filter };
+    case "flow": return { ...ui, view: "flow", filter };
+    case "heatmap": return { ...ui, view: "heatmap", filter };
     case "workspaces":
-      return segments[1] ? { view: "workspace", flowId: segments[1], filter } : { view: "workspaces", filter };
+      return segments[1] ? { ...ui, view: "workspace", flowId: segments[1], filter } : { ...ui, view: "workspaces", filter };
     case "sessions":
-      return segments[1] ? { view: "trace", sessionId: segments[1], filter } : { view: "sessions", filter };
-    default:
-      return { view: "sessions", filter };
+      return segments[1] ? { ...ui, view: "trace", sessionId: segments[1], filter } : { ...ui, view: "sessions", filter };
+    case undefined: return { ...ui, view: "sessions", filter };
+    default: return { ...ui, view: "not-found", filter };
   }
 }
 
@@ -235,7 +268,16 @@ export function buildHash(route: Route): string {
     : route.view === "workspace"
       ? `/workspaces/${encodeURIComponent(route.flowId ?? "")}`
       : `/${route.view}`;
-  const query = serializeFilter(route.filter);
+  const parts = [serializeFilter(route.filter)];
+  if (route.sort) parts.push(`sort=${route.sort}`);
+  if (route.columns) parts.push(`columns=${route.columns.join(",")}`);
+  if (route.density) parts.push(`density=${route.density}`);
+  if (route.view === "sessions" && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
+  if ((route.view === "sessions" || route.view === "trace") && route.event) parts.push(`event=${encodeURIComponent(route.event)}`);
+  if (route.traceTab) parts.push(`tab=${route.traceTab}`);
+  if (route.format) parts.push(`format=${route.format}`);
+  if (route.attributes) parts.push("attributes=1");
+  const query = parts.filter(Boolean).join("&");
   return `#${path}${query ? `?${query}` : ""}`;
 }
 
