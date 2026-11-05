@@ -11,6 +11,8 @@ import { HeatmapView } from "./views/heatmap";
 import { SessionsView } from "./views/sessions";
 import { TraceView } from "./views/trace";
 import { WorkspaceView, WorkspacesView } from "./views/workspaces";
+import { DashboardView } from "./views/dashboard";
+import { LocalShell } from "./components/local-shell";
 
 function useRoute(): [Route, (next: Route) => void] {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
@@ -113,7 +115,7 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
 }
 
 const VIEW_LABEL: Record<View, string> = {
-  sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
+  dashboard: "대시보드", sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
 };
 const TABS: { view: View; label: string }[] = [
   { view: "sessions", label: VIEW_LABEL.sessions },
@@ -124,7 +126,7 @@ const TABS: { view: View; label: string }[] = [
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
+  dashboard: "dashboard", sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
 };
 
 export type AppOptions = { embedded?: boolean };
@@ -216,29 +218,9 @@ export function App({ embedded = false }: AppOptions = {}) {
   }, [embedded]);
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
-    <>
-      <Header class="top local-top">
+    <LocalShell {...props} automation={<AutomatedToggle route={route} navigate={navigate} live={live} />}>
+      {embedded && <Header class="top local-top">
         <div class="wrap top__row">
-          {!embedded && (
-            <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>
-              {/* Canonical wordmark (site/public/wordmark-*.svg): geometry verbatim, fills through the brand role tokens. */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 100" role="img" aria-label="skillar" focusable="false">
-                <title>skillar</title>
-                <g transform="translate(-9.25 1.99)">
-                  <path class="brand__prompt" d="M0 31L19 50L0 69L7 76L33 50L7 24Z" transform="translate(16.5 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M47 35C36 27 5 27 4 46C3 60 16 62 29 65C43 68 40 79 27 80C18 81 10 78 3 73L0 83C10 91 34 94 46 82C55 71 49 57 34 54L21 51C7 47 24 35 43 44Z" transform="translate(70 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M3 8H15V54L39 31H55L28 57L57 89H41L15 61V89H3Z" transform="translate(131 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M14 31H38V77H56V89H14V77H26V43H14Z" transform="translate(192 0)" fill-rule="evenodd" />
-                  <circle class="brand__ink" cx="224" cy="13" r="7" />
-                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(256 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M14 8H38V77H56V89H14V77H26V20H14Z" transform="translate(320 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M45 89H34V83C23 95 0 90 0 71C0 53 22 49 34 55V50C34 35 13 37 5 44L2 33C22 23 46 28 46 50V89ZM34 65C22 57 11 63 11 72C11 83 27 84 34 74Z" transform="translate(391.5 0)" fill-rule="evenodd" />
-                  <path class="brand__ink" d="M3 31H15V41C23 29 35 27 44 31L41 43C27 39 15 48 15 62V89H3Z" transform="translate(458 0)" fill-rule="evenodd" />
-                </g>
-              </svg>
-            </a>
-          )}
-          {!embedded && <a class="btn" href="https://skillar.sh">skillar.sh 열기</a>}
           <nav class="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
             const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="tab"]'));
             const index = tabs.findIndex(tab => tab === event.target);
@@ -278,23 +260,23 @@ export function App({ embedded = false }: AppOptions = {}) {
           {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
           {route.view === "workspace" && <> › <code>{route.flowId}</code></>}
         </p></div>
-      </Header>
-      <Content class="page wrap"
+      </Header>}
+      <Content class={embedded ? "page wrap" : "pe-content"}
         id={embedded ? "skillar-local-panel" : undefined}
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
         tabIndex={embedded ? -1 : undefined} role={embedded ? "tabpanel" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
-        <div id={embedded ? undefined : "skillar-local-panel"} role={embedded || route.view === "not-found" ? undefined : "tabpanel"}
-          aria-labelledby={embedded || route.view === "not-found" ? undefined : `skillar-local-tab-${activeTab}`}>
+        <div id={embedded ? undefined : "skillar-local-panel"}>
         {(route.view === "sessions" || route.view === "trace") && (
           <div class={route.view === "trace" ? "sessions-detail" : undefined}>
-            <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
+            {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
               <SessionsView {...props} detail={route.view === "trace"} />
-            </div>
+            </div>}
             {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
           </div>
         )}
         {route.view === "workspaces" && <WorkspacesView {...props} />}
+        {route.view === "dashboard" && <DashboardView {...props} />}
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
@@ -305,7 +287,7 @@ export function App({ embedded = false }: AppOptions = {}) {
         </section>}
         </div>
       </Content>
-    </>
+    </LocalShell>
   );
 }
 

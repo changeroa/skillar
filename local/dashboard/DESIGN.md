@@ -1,5 +1,72 @@
 # skillar Dashboard Design System
 
+## Approved local shell and sessions P-E (2026-11-05)
+
+This section supersedes the older shell, sessions and trace compositions below.
+The owner-approved v2 references are
+`research/wireframes/local/{sessions-table,sessions-peek,session-detail}.html`
+and their desktop/phone PNGs in the `skillar-ux-overhaul` lane evidence.
+`research/langfuse/components.md` and `structure-rules.md` R1-R7 define semantics.
+The local app is independent of the hosted shell: no `site/`, daemon or API changes.
+
+Use the existing Evidence Console light/dark palette and system font stacks.
+New layout tokens: sidebar 220px, facet rail 232px, peek 560px, top bar 48px,
+desktop gutter 16px, phone gutter 12px, split gap 16px. UI/body metadata is
+14px, small auxiliary labels 12px, title 22px, type icons 16px. The spacing
+scale remains 4/8/12/16/20/24/32/48/64. Controls retain 44px targets and visible
+keyboard focus; compact/normal/comfortable rows are 44/52/64px, with compact
+two-line rows at phone widths. Data pills have a 10px radius and 22px height.
+This approved component set replaces the older "no pills" rule for these views.
+
+Shell: a persistent grouped sidebar (관찰: 세션; 분석: 대시보드, 흐름, 작업 공간,
+활동), bottom current-source/live status and `skillar.sh 열기`. The top bar
+contains source/location/item breadcrumb and a visible navigation-only `이동… ⌘K`
+button. The palette is a labelled dialog: arrow selection, Enter navigation,
+Escape dismissal and return to the trigger. At widths below 1024px use a compact
+source/header and horizontally scrollable navigation, never primary-content overflow.
+The existing embedded tablist remains a host-owned compatibility surface, with its
+roving focus and resolved panel labels preserved.
+
+Sessions structure, in order: title with one short subtitle; search/range/count/
+column-density toolbar; applied filter pills; facet rail beside sessions/day histogram
+and semantic dense table; attribution/count footer. Select/Text facets expose counts
+in the loaded time/automation scope. Sorting is explicitly within the received range.
+URL state retains search, filters, sort, columns/density and peek selection.
+There is no 結果/결과 table column. `읽은 스킬` is actual reads only; exposed
+candidates are separate, never substituted for reads. Missing measurements stay
+unknown and failures stay failures.
+
+Histogram R7: derive counts from session `startedAt` and state the timezone/range.
+All bars use the same numeric y-scale and baseline, equal widths and group spacing.
+Zero counts are 1px ticks labelled `0`; value labels sit above and dates below.
+The exported geometry must satisfy `y + height === baseline` for every bar.
+
+Peek: keep the table visible at desktop widths, with action bar (full page,
+previous, next, copy ID, close), summary pills, KV grid and typed event tree.
+Below 1024px it becomes a full-screen sheet with a visible return action. Escape
+closes it, preserves list URL state and restores focus to its row.
+
+Detail: back link, session ID/copy and first-request disclosure, one wrapping
+summary line, then tree/timeline beside selected-event inspector. Graph is disabled
+with the missing-relationship-data reason. Gantt points use actual event offsets;
+only explicitly bounded intervals become bars. No invented durations or causal edges.
+Inspector supports preview/attributes and Formatted/Raw for the same event, full
+captured content and ranked candidates. At phone widths an event inspector is a
+sheet. Candidate relevance and later reads are observations, not a quality outcome.
+
+CV-022 invariants remain mandatory: assign keys to the entire raw source trace
+before filtering/grouping, carry those keyed records through every representation,
+and use immutable activation-event member IDs for groups. Event inspector bodies
+are the actual persistent keyed bodies, not disposable copies or hidden test-only
+evidence. Selecting another event or receiving a report must not reset the surviving
+event's native disclosures. Preserve all existing T6/T10 behavior tests.
+
+Verification: R1-R7 and wireframe component-presence/order assertions, desktop and
+phone in both color schemes, each local VQA manifest independently with unchanged
+expectations, and no new failures relative to the recorded baseline. Public evidence
+is one Langfuse demo / approved wireframe / before / after row for each of the three
+screens, without annotations copied into product UI.
+
 ## Evidence Console V2 foundations (PR1)
 
 Owner chose04 (Ev0CEN1JB875); lead authorized Phase C on2026-11-04. This visual contract supersedes earlier workshop/Linear color, typography, radius and target-size drawings below. Existing routing, auth, consent, command recovery, request outcomes, unknown values and all other behavior contracts remain unchanged. Approved source: /Users/iyen/.dori/state/lane-results/skillar-redesign/v2/sheets/04-evidence/DESIGN.md.
