@@ -35,8 +35,8 @@ function Editor({ busy = false }) {
   return h(DraftEditor, { draft, idPrefix: "test", busy, notes: [], onChange: next => setDraft(next) });
 }
 
-function pick(node, file) {
-  node.files = [file];
+function pick(node, ...files) {
+  node.files = files;
   const event = { type: "change", currentTarget: node, target: node };
   return node.listeners.find(entry => entry.type === "change").listener.call(node, event);
 }
@@ -186,19 +186,36 @@ for (const completesWhileBusy of [false, true]) {
   });
 }
 
-test("CV-032 concurrent folder and file fields both retain their selected files", async t => {
-  // Given
-  const folder = Promise.withResolvers(), single = Promise.withResolvers();
-  const { container } = await mount(t, Editor, {});
-  const nodes = byTag(container, "input").filter(node => node.type === "file");
-  let folderRead, singleRead;
-  await act(() => {
-    folderRead = pick(nodes[0], file("folder-notes.txt", folder.promise));
-    singleRead = pick(nodes[1], file("single-notes.txt", single.promise));
-  });
-  // When
-  await act(async () => { single.resolve(bytes("single").buffer); await singleRead; folder.resolve(bytes("folder").buffer); await folderRead; });
-  // Then
-  assert.equal(container.textContent.includes("folder-notes.txt"), true);
-  assert.equal(container.textContent.includes("single-notes.txt"), true);
-});
+for (const folderFirst of [true, false]) {
+  for (const latestCompletesFirst of [true, false]) {
+    for (const busy of [false, true]) {
+      test(`CV-032 ${folderFirst ? "folder-then-file" : "file-then-folder"}, ${latestCompletesFirst ? "latest-first" : "older-first"} completion, ${busy ? "busy" : "idle"} applies only the latest selection`, async t => {
+        // Given
+        const older = Promise.withResolvers(), latest = Promise.withResolvers();
+        const { container, show } = await mount(t, Editor, { busy: false });
+        const nodes = byTag(container, "input").filter(node => node.type === "file");
+        let olderRead, latestRead;
+        await act(() => {
+          olderRead = pick(nodes[folderFirst ? 0 : 1],
+            file("SKILL.md", older.promise), file("older-notes.txt", older.promise));
+          latestRead = pick(nodes[folderFirst ? 1 : 0],
+            file("SKILL.md", latest.promise), file("latest-notes.txt", latest.promise));
+        });
+        if (busy) await show({ busy: true });
+        // When
+        const completions = [
+          [older, olderRead, document + "\nolder"],
+          [latest, latestRead, document + "\nlatest"],
+        ];
+        for (const [pending, reading, content] of latestCompletesFirst ? completions.toReversed() : completions) {
+          await act(async () => { pending.resolve(bytes(content).buffer); await reading; });
+        }
+        if (busy) await show({ busy: false });
+        // Then
+        assert.equal(byTag(container, "textarea")[0].value, document + "\nlatest");
+        assert.equal(container.textContent.includes("older-notes.txt"), false);
+        assert.equal(container.textContent.includes("latest-notes.txt"), true);
+      });
+    }
+  }
+}

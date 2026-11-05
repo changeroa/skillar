@@ -61,8 +61,8 @@ export async function readSelection(list: FileList): Promise<PickedSelection> {
 export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorProps) {
   const folderInput = useRef<HTMLInputElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
-  const generations = useRef(new WeakMap<HTMLInputElement, number>());
-  const queued = useRef(new Map<HTMLInputElement, { readonly generation: number; readonly selection: PickedSelection }>());
+  const generation = useRef(0);
+  const queued = useRef<{ readonly generation: number; readonly selection: PickedSelection } | null>(null);
   const latest = useRef(draft);
   const locked = useRef(busy);
   latest.current = draft;
@@ -79,15 +79,14 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
   };
   useLayoutEffect(() => {
     if (busy) return;
-    for (const [input, pending] of queued.current) {
-      if (generations.current.get(input) === pending.generation) applySelection(pending.selection);
-    }
-    queued.current.clear();
+    const pending = queued.current;
+    queued.current = null;
+    if (pending !== null && generation.current === pending.generation) applySelection(pending.selection);
     setReadMessage("");
   }, [busy]);
   useEffect(() => () => {
-    generations.current = new WeakMap();
-    queued.current.clear();
+    generation.current += 1;
+    queued.current = null;
   }, []);
   const id = (name: string) => `${idPrefix}-${name}`;
   const front = readFrontMatter(draft.document);
@@ -96,22 +95,21 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
     const input = event.currentTarget;
     const list = input.files;
     if (busy || list === null || list.length === 0) return;
-    const id = (generations.current.get(input) ?? 0) + 1;
-    generations.current.set(input, id);
-    queued.current.delete(input);
+    const id = ++generation.current;
+    queued.current = null;
     setReadError("");
     try {
       const reading = readSelection(list);
       input.value = "";
       const selection = await reading;
-      if (id !== generations.current.get(input)) return;
+      if (id !== generation.current) return;
       if (locked.current) {
-        queued.current.set(input, { generation: id, selection });
+        queued.current = { generation: id, selection };
         setReadMessage("선택한 파일을 읽었습니다. 진행 중인 작업이 끝나면 수정 내용에 적용합니다.");
       } else applySelection(selection);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
-      if (id === generations.current.get(input)) setReadError("파일을 읽지 못했습니다. 수정 내용은 유지했습니다. 파일을 다시 선택하세요.");
+      if (id === generation.current) setReadError("파일을 읽지 못했습니다. 수정 내용은 유지했습니다. 파일을 다시 선택하세요.");
     }
   };
 
