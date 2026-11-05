@@ -8,6 +8,7 @@ import { LibraryPanel } from "./library.ts";
 import { skillHash, skillIdFromHash, sortByUpdated } from "./model.ts";
 import { PublishPanel } from "./publish.ts";
 import { SkillPanel } from "./skill.ts";
+import { SkillsHeading } from "./heading.ts";
 
 type Phase = SessionState | { readonly kind: "checking" } | { readonly kind: "expired" };
 type CatalogState = {
@@ -127,10 +128,12 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     reload();
   };
 
-  if (phase.kind === "checking") return h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, "계정 확인 중\u2026");
-  if (phase.kind !== "signed-in") return h(SignedOut, { phase });
+  if (phase.kind === "checking") return h("div", null, h(SkillsHeading, { name: "스킬" }),
+    h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, "계정 확인 중\u2026"));
+  if (phase.kind !== "signed-in") return h("div", null, h(SkillsHeading, { name: "스킬" }), h(SignedOut, { phase }));
   if (catalog.status === "unavailable") {
     return h("div", null,
+      h(SkillsHeading, { name: "스킬" }),
       h(AccountLine, { user: phase.user }),
       h("p", { class: "note skills-unavailable", role: "status", "aria-live": "polite" },
         "이 배포에서는 아직 비공개 스킬을 이용할 수 없습니다. 업로드한 내용이나 이 화면에서 저장한 내용은 없습니다."));
@@ -139,11 +142,12 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const summary = selected === null ? null : skills.find(skill => skill.skillId === selected) ?? null;
   const libraryStatus = catalog.status === "ready" ? "ready" : catalog.status === "failed" ? "failed" : "loading";
   return h("div", null,
+    h(SkillsHeading, { name: summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
     h(AccountLine, { user: phase.user }),
     h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
-      onReload: reload, onOpen: open, onUnauthorized: expire }),
-    selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
-      focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
-      onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange }),
+      onReload: reload, onOpen: open, onUnauthorized: expire,
+      detail: selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
+        focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
+        onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange }) }),
     h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire }));
 }

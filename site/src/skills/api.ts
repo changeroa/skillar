@@ -74,7 +74,7 @@ export function classifyFailure(error: unknown): FailureKind {
     }
   }
   if (error instanceof TypeError) return "unreachable";
-  if (error instanceof Error && /ZodError$/.test(error.name)) return "unexpected";
+  if (error instanceof SyntaxError || (error instanceof Error && /ZodError$/.test(error.name))) return "unexpected";
   return "other";
 }
 
@@ -97,13 +97,13 @@ export function describeFailure(error: unknown, action: string): string {
     case "rate-limited": return "요청이 너무 많습니다. 1분 후 다시 시도하세요.";
     case "unavailable": return "지금은 비공개 스킬을 이용할 수 없습니다. 나중에 다시 시도하세요.";
     case "unreachable": return `${action} 중 skillar에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요.`;
-    case "unexpected": return `${action} 응답의 형식을 확인할 수 없습니다. 이 화면의 상태는 바뀌지 않았습니다.`;
-    case "other": return error instanceof SkillsRequestError ? `${action}에 실패했습니다 (${error.code}).` : `${action} 중 예상하지 못한 오류가 발생했습니다.`;
+    case "unexpected": return `${action} 응답의 형식을 확인할 수 없습니다. 보관함을 다시 불러와 실제 상태를 확인하세요.`;
+    case "other": return `${action} 중 예상하지 못한 오류가 발생했습니다. 다시 시도하세요.`;
   }
 }
 
 export function technicalDetail(error: unknown): string | null {
-  return error instanceof SkillsRequestError ? `${error.status} (${error.code})` : null;
+  return error instanceof SkillsRequestError ? `${error.status} (${error.code})` : error instanceof Error ? error.message : null;
 }
 
 async function errorCode(response: Response): Promise<string> {
