@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { mcpConnectionsSchema, mcpPatRequestSchema, mcpPatResponseSchema } from "../../shared/dist/mcp-auth.js";
 import {
-  checkDraft, classifyFailure, connectionStatus, createPat, emptyDraft, initialModel, readConnections, revokeConnection, routes,
+  checkDraft, classifyFailure, connectionStatus, createPat, draftFieldProblems, emptyDraft, initialModel, readConnections, revokeConnection, routes,
   sortConnections, update,
 } from "../src/mcp-connections.ts";
 
@@ -67,6 +67,19 @@ test("a complete draft becomes the shared PAT request with a trimmed name; each 
   }
   assert.equal(checkDraft({ ...draft, name: "x".repeat(81) }).problems.length, 1);
   assert.equal(checkDraft({ ...draft, name: "   ", expiresInDays: "0" }).problems.length, 2);
+});
+
+test("PAT field errors map independently and disappear when a field is corrected", () => {
+  const both = checkDraft({ name: "", expiresInDays: "0", recordActivity: false });
+  assert.equal(both.problems.length, 2);
+  assert.deepEqual(draftFieldProblems({ name: "", expiresInDays: "0", recordActivity: false }, both.problems), [
+    { field: "name", text: both.problems[0] },
+    { field: "days", text: both.problems[1] },
+  ]);
+  const one = checkDraft({ name: "valid name", expiresInDays: "0", recordActivity: false });
+  assert.deepEqual(draftFieldProblems({ name: "valid name", expiresInDays: "0", recordActivity: false }, one.problems), [
+    { field: "days", text: one.problems[0] },
+  ]);
 });
 
 test("listing connections is a same-origin GET parsed with the shared schema", async t => {
