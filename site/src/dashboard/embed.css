@@ -22,6 +22,7 @@
 .dash-embed .top__row { min-height: 44px; }
 .dash-embed .tabs { gap: 8px; }
 .dash-embed .tab { padding-inline: 8px; }
+.dash-embed .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .dash-embed .button { font-size: var(--ui); font-weight: 600; }
 .dash-embed .button.primary:not(:disabled) { color: var(--on-accent); }
 .dash-embed .text-field { font-size: var(--ui); font-weight: 400; }
