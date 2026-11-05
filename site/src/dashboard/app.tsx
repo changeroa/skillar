@@ -16,7 +16,7 @@ import type { DeviceState } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
-import { dashboardPaths, dashboardQuerySchema } from "../../../shared/dist/activity-dashboard.js";
+import { dashboardPaths, dashboardQuerySchema, dashboardReferenceSchema, dashboardReportStatusSchema, dashboardResultPartRequestSchema } from "../../../shared/dist/activity-dashboard.js";
 
 type Loaded<T> = {
   readonly status: "loading" | "ready" | "failed"; readonly data: T | null;
@@ -203,6 +203,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   const [reports, setReports] = useState<ReadonlyMap<string, DashboardReportStatus>>(new Map());
   const [failures, setFailures] = useState<ReadonlyMap<string, RequestFailure>>(new Map());
   const cloud = useRef<CloudApi | null>(null);
+  const failureEpoch = useRef(0);
   const close = useCallback(() => {
     cloud.current?.dispose();
     cloud.current = null;
@@ -226,21 +227,43 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   const select = (profile: DashboardProfile) => {
     if (selected !== null && profileKey(selected) === profileKey(profile)) return;
     close();
+    let sequence = 0;
+    const runs = new Map<string, number>();
+    const requests = new Map<string, number>();
+    const jobs = new Map<string, { readonly key: string; readonly run: number; readonly epoch: number }>();
     const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain }, {
       signal, onUnauthorized: expire, live: {},
       onReport: status => setReports(current => new Map(current).set(status.jobId, status)),
       fetch: async (input, init) => {
-        const response = await fetch(input, init);
         const request = input instanceof Request ? input : null;
-        const path = request?.url ?? String(input);
-        const query = path === dashboardPaths.query && typeof init?.body === "string"
+        const url = new URL(request?.url ?? String(input), location.origin);
+        const query = url.pathname === dashboardPaths.query && typeof init?.body === "string"
           ? dashboardQuerySchema.parse(JSON.parse(init.body)) : null;
-        const key = JSON.stringify([init?.method ?? request?.method ?? "GET",
-          path, query === null ? init?.body ?? "" : { profile: query.profile, query: query.query, tz: query.tz }]);
+        const reference = typeof init?.body === "string" &&
+          (url.pathname === dashboardPaths.reportStatus || url.pathname === dashboardPaths.reportResult)
+          ? (url.pathname === dashboardPaths.reportResult ? dashboardResultPartRequestSchema : dashboardReferenceSchema).parse(JSON.parse(init.body))
+          : null;
+        const job = reference === null ? undefined : jobs.get(reference.jobId);
+        const key = query === null ? job?.key ?? JSON.stringify([init?.method ?? request?.method ?? "GET", url.href, init?.body ?? ""])
+          : JSON.stringify(["report", query.profile, query.query, query.tz]);
+        const id = ++sequence;
+        const run = query === null ? job?.run ?? id : id;
+        const epoch = query === null ? job?.epoch ?? failureEpoch.current : failureEpoch.current;
+        if (query !== null || job === undefined) runs.set(key, run);
+        if (runs.get(key) === run && epoch === failureEpoch.current) requests.set(key, id);
+        const current = () => cloud.current === api && epoch === failureEpoch.current &&
+          runs.get(key) === run && requests.get(key) === id;
+        const response = await fetch(input, init);
+        if (response.ok && query !== null) {
+          const status = dashboardReportStatusSchema.safeParse(await response.clone().json());
+          if (status.success && (jobs.get(status.data.jobId)?.run ?? 0) < run) {
+            jobs.set(status.data.jobId, { key, run, epoch });
+          }
+        }
         if (!response.ok && response.status !== 401) {
           const failure = await failureOf(response);
-          if (cloud.current === api) setFailures(current => new Map(current).set(key, failure));
-        } else if (response.ok && cloud.current === api) {
+          if (current()) setFailures(previous => new Map(previous).set(key, failure));
+        } else if (response.ok && current()) {
           setFailures(current => {
             if (!current.has(key)) return current;
             const next = new Map(current);
@@ -261,6 +284,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failures.values().next().value ?? null} onSelect={select}
       onClose={close} onUnauthorized={expire}
       onRebuild={() => {
+        failureEpoch.current += 1;
         setReports(new Map());
         setFailures(new Map());
         cloud.current?.refresh();

@@ -61,17 +61,34 @@ export async function readSelection(list: FileList): Promise<PickedSelection> {
 export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorProps) {
   const folderInput = useRef<HTMLInputElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
-  const generation = useRef(0);
+  const generations = useRef(new WeakMap<HTMLInputElement, number>());
+  const queued = useRef(new Map<HTMLInputElement, { readonly generation: number; readonly selection: PickedSelection }>());
   const latest = useRef(draft);
   const locked = useRef(busy);
   latest.current = draft;
   locked.current = busy;
   const [undo, setUndo] = useState<Draft | null>(null);
   const [readError, setReadError] = useState("");
-  useEffect(() => {
-    if (busy) generation.current += 1;
+  const [readMessage, setReadMessage] = useState("");
+  const applySelection = (selection: PickedSelection) => {
+    const previous = latest.current;
+    const merged = mergePickedFiles(previous, selection.files);
+    if (selection.files.length > 0) setUndo(previous);
+    latest.current = merged.draft;
+    onChange(current => mergePickedFiles(current, selection.files).draft, [...selection.notes, ...merged.notes]);
+  };
+  useLayoutEffect(() => {
+    if (busy) return;
+    for (const [input, pending] of queued.current) {
+      if (generations.current.get(input) === pending.generation) applySelection(pending.selection);
+    }
+    queued.current.clear();
+    setReadMessage("");
   }, [busy]);
-  useEffect(() => () => { generation.current += 1; }, []);
+  useEffect(() => () => {
+    generations.current = new WeakMap();
+    queued.current.clear();
+  }, []);
   const id = (name: string) => `${idPrefix}-${name}`;
   const front = readFrontMatter(draft.document);
 
@@ -79,20 +96,22 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
     const input = event.currentTarget;
     const list = input.files;
     if (busy || list === null || list.length === 0) return;
-    const id = ++generation.current;
+    const id = (generations.current.get(input) ?? 0) + 1;
+    generations.current.set(input, id);
+    queued.current.delete(input);
     setReadError("");
     try {
       const reading = readSelection(list);
       input.value = "";
       const selection = await reading;
-      if (id !== generation.current || locked.current) return;
-      const previous = latest.current;
-      const merged = mergePickedFiles(previous, selection.files);
-      if (selection.files.length > 0) setUndo(previous);
-      onChange(current => mergePickedFiles(current, selection.files).draft, [...selection.notes, ...merged.notes]);
+      if (id !== generations.current.get(input)) return;
+      if (locked.current) {
+        queued.current.set(input, { generation: id, selection });
+        setReadMessage("선택한 파일을 읽었습니다. 진행 중인 작업이 끝나면 수정 내용에 적용합니다.");
+      } else applySelection(selection);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
-      if (id === generation.current) setReadError("파일을 읽지 못했습니다. 수정 내용은 유지했습니다. 파일을 다시 선택하세요.");
+      if (id === generations.current.get(input)) setReadError("파일을 읽지 못했습니다. 수정 내용은 유지했습니다. 파일을 다시 선택하세요.");
     }
   };
 
@@ -115,6 +134,7 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
           "aria-hidden": "true", onChange: picked }),
         h("input", { ref: filesInput, type: "file", disabled: busy, multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
       readError !== "" && h("p", { class: "note", role: "alert" }, readError),
+      readMessage !== "" && h("p", { class: "note", role: "status" }, readMessage),
       undo !== null && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
         onChange(current => ({ ...current, document: undo.document, files: undo.files }), []);
         setUndo(null);

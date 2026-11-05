@@ -30,9 +30,9 @@ async function skill(t, overrides = {}) {
   });
 }
 
-function Editor() {
+function Editor({ busy = false }) {
   const [draft, setDraft] = useState(() => ({ ...emptyDraft(skillId), document }));
-  return h(DraftEditor, { draft, idPrefix: "test", busy: false, notes: [], onChange: next => setDraft(next) });
+  return h(DraftEditor, { draft, idPrefix: "test", busy, notes: [], onChange: next => setDraft(next) });
 }
 
 function pick(node, file) {
@@ -162,4 +162,43 @@ test("CV-032 read failure keeps the draft and permits reselecting the same file"
   assert.equal(byTag(container, "textarea")[0].value, document);
   assert.equal(node.value, "");
   assert.equal(all(container, node => node.getAttribute("role") === "alert").length, 1);
+});
+
+for (const completesWhileBusy of [false, true]) {
+  test(`CV-032 pending selection survives unrelated busy action when read completes ${completesWhileBusy ? "during" : "after"} it`, async t => {
+    // Given
+    const held = Promise.withResolvers();
+    const { container, show } = await mount(t, Editor, { busy: false });
+    const node = byTag(container, "input").find(node => node.type === "file");
+    let reading;
+    await act(() => { reading = pick(node, file("pending-notes.txt", held.promise)); });
+    // When
+    await show({ busy: true });
+    if (completesWhileBusy) {
+      await act(async () => { held.resolve(bytes("notes").buffer); await reading; });
+      assert.equal(container.textContent.includes("pending-notes.txt"), false);
+    }
+    await show({ busy: false });
+    if (!completesWhileBusy) await act(async () => { held.resolve(bytes("notes").buffer); await reading; });
+    // Then
+    assert.equal(container.textContent.includes("pending-notes.txt"), true);
+    assert.equal(byTag(container, "textarea")[0].value, document);
+  });
+}
+
+test("CV-032 concurrent folder and file fields both retain their selected files", async t => {
+  // Given
+  const folder = Promise.withResolvers(), single = Promise.withResolvers();
+  const { container } = await mount(t, Editor, {});
+  const nodes = byTag(container, "input").filter(node => node.type === "file");
+  let folderRead, singleRead;
+  await act(() => {
+    folderRead = pick(nodes[0], file("folder-notes.txt", folder.promise));
+    singleRead = pick(nodes[1], file("single-notes.txt", single.promise));
+  });
+  // When
+  await act(async () => { single.resolve(bytes("single").buffer); await singleRead; folder.resolve(bytes("folder").buffer); await folderRead; });
+  // Then
+  assert.equal(container.textContent.includes("folder-notes.txt"), true);
+  assert.equal(container.textContent.includes("single-notes.txt"), true);
 });
