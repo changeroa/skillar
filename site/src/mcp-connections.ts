@@ -92,8 +92,8 @@ export function checkDraft(draft: PatDraft): DraftCheck {
   const days = /^\s*\d+\s*$/.test(draft.expiresInDays) ? Number(draft.expiresInDays) : Number.NaN;
   const parsed = mcpPatRequestSchema.safeParse({ name: draft.name, expiresInDays: days, recordActivity: draft.recordActivity });
   if (parsed.success) return { ok: true, body: parsed.data };
-  const problems = parsed.error.issues.map(issue => issue.path[0] !== "name" ? "Expiry must be a whole number of days from 1 to 30."
-    : draft.name.trim() === "" ? "Give the token a name, so you can tell it apart later." : "Keep the name to 80 characters.");
+  const problems = parsed.error.issues.map(issue => issue.path[0] !== "name" ? "만료 기간은 1~30일 사이의 정수로 입력하세요."
+    : draft.name.trim() === "" ? "나중에 구분할 수 있도록 토큰 이름을 입력하세요." : "이름은 80자 이내로 입력하세요.");
   return { ok: false, problems: [...new Set(problems)] };
 }
 
@@ -144,23 +144,20 @@ export function update(model: Model, event: Event): Model {
 }
 
 const FAILURE_TEXT: Record<Failure, string> = {
-  "signed-out": "Not signed in, or your session ended. Sign in to see and manage your connections.",
-  disabled: "That connection no longer exists, or MCP connections are switched off on this deployment.",
-  rejected: "skillar rejected the request. Check the form and try again.",
-  "rate-limited": "Too many requests. Wait a minute and try again.",
-  unavailable: "MCP connections are unavailable right now. Try again later.",
-  unreachable: "Couldn't reach skillar. Check your connection and try again.",
+  "signed-out": "로그인하고 연결을 관리하세요",
+  disabled: "이 배포에서는 MCP 연결을 이용할 수 없거나 해당 연결이 없습니다.",
+  rejected: "요청이 거부되었습니다. 입력 내용을 확인하고 다시 시도하세요.",
+  "rate-limited": "요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
+  unavailable: "지금은 MCP 연결을 불러올 수 없습니다. 다시 시도하세요.",
+  unreachable: "skillar에 도달하지 못했습니다. 네트워크를 확인하고 다시 시도하세요.",
   unexpected: "응답 형식을 확인하지 못했습니다. 연결 목록을 다시 불러오세요.",
   unconfirmed: "요청은 전송됐지만 결과를 확인하지 못했습니다. 목록을 다시 불러와 실제 상태를 확인하세요",
-  other: "The request failed.",
+  other: "요청을 완료하지 못했습니다.",
 };
-const SCOPE_TEXT: Record<McpConnectionSummary["scopes"][number], string> = {
-  "skills:read": "Read private skills", "activity:record": "Record searches and reads", offline_access: "Stay connected without re-approval",
-};
-const whenFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
-const formatSeconds = (seconds: number): string => whenFormat.format(new Date(seconds * 1000));
-
-function mount(): void {
+async function mount(): Promise<void> {
+  const [{ h, render: renderView }, { ConnectionsWorkspace }, { Skeleton, Toast }] = await Promise.all([
+    import("preact"), import("./connections-workspace"), import("./ui"),
+  ]);
   const q = <T extends Element>(selector: string): T => {
     const element = document.querySelector<T>(selector);
     if (element === null) throw new Error(`The connections page has no ${selector} element.`);
@@ -173,38 +170,23 @@ function mount(): void {
   const tokenPanel = q<HTMLElement>("#token-panel"), tokenTitle = q<HTMLElement>("#token-title"), token = q<HTMLInputElement>("#token");
   const toggle = q<HTMLButtonElement>("#token-toggle"), copy = q<HTMLButtonElement>("#token-copy"), dismiss = q<HTMLButtonElement>("#token-dismiss");
   const tokenStatus = q<HTMLElement>("#token-status"), list = q<HTMLElement>("#connection-list"), empty = q<HTMLElement>("#connections-empty");
-  const listStatus = q<HTMLElement>("#list-status"), card = q<HTMLTemplateElement>("#connection-card");
+  const listStatus = q<HTMLElement>("#list-status");
+  const skeleton = q<HTMLElement>("#connections-loading"), toast = q<HTMLElement>("#connections-toast");
   let model = initialModel;
   let focusAfter: string | null = null;
-
-  const renderCard = (connection: McpConnectionSummary): HTMLElement => {
-    const item = card.content.firstElementChild?.cloneNode(true);
-    if (!(item instanceof HTMLElement)) throw new Error("The connection card template is empty.");
-    const state = connectionStatus(connection, Date.now() / 1000);
-    const confirming = model.confirming === connection.connectionId;
-    item.dataset["id"] = connection.connectionId;
-    const facts: Record<string, string> = {
-      name: connection.name, kind: connection.kind === "oauth" ? "OAuth client" : "Personal access token",
-      scopes: connection.scopes.map(scope => SCOPE_TEXT[scope]).join(", "),
-      recording: connection.recordActivity ? "On. Searches and reads are recorded." : "Off",
-      created: formatSeconds(connection.createdAt), expires: formatSeconds(connection.expiresAt),
-      status: state === "revoked" ? `Revoked ${formatSeconds(connection.revokedAt ?? connection.expiresAt)}` : state === "expired" ? "Expired" : "Active",
-    };
-    for (const [key, text] of Object.entries(facts)) item.querySelectorAll<HTMLElement>(`[data-${key}]`).forEach(element => { element.textContent = text; });
-    item.querySelectorAll<HTMLElement>("[data-action], [data-consequence]").forEach(control => {
-      control.hidden = state === "revoked" || (control.dataset["action"] === "revoke" ? confirming : !confirming);
-      if (control instanceof HTMLButtonElement) control.disabled = model.revoking !== null;
-    });
-    return item;
+  const notify = (message: string) => {
+    renderView(h(Toast, { message, onDismiss: () => notify("") }), toast);
   };
   const render = () => {
     const phase = model.phase;
-    status.textContent = phase === "checking" ? "Checking your connections\u2026" : phase === "loading" ? "Loading your connections\u2026"
-      : phase === "ready" ? "" : FAILURE_TEXT[phase];
+    status.hidden = phase === "ready";
+    status.textContent = phase === "checking" ? "연결을 확인하는 중…" : phase === "loading" ? "연결을 불러오는 중…"
+      : phase === "ready" ? "연결 목록을 불러왔습니다." : FAILURE_TEXT[phase];
     retry.hidden = ["checking", "loading", "ready", "signed-out", "disabled"].includes(phase);
     signedOut.hidden = phase !== "signed-out";
     disabled.hidden = phase !== "disabled";
     app.hidden = model.resource === null;
+    renderView(phase === "checking" || phase === "loading" ? h(Skeleton, { label: "연결을 불러오는 중", rows: 4 }) : null, skeleton);
     document.querySelectorAll<HTMLElement>("[data-resource]").forEach(element => { element.textContent = model.resource ?? ""; });
     if (name.value !== model.draft.name) name.value = model.draft.name;
     if (days.value !== model.draft.expiresInDays) days.value = model.draft.expiresInDays;
@@ -214,9 +196,13 @@ function mount(): void {
     if (model.token !== null) patStatus.textContent = "표시된 일회성 토큰을 보관하고 닫은 뒤 새 토큰을 만들 수 있습니다.";
     tokenPanel.hidden = model.token === null;
     Object.assign(token, { value: model.token ?? "", type: model.tokenVisible ? "text" : "password" });
-    Object.assign(toggle, { textContent: model.tokenVisible ? "Hide token" : "Show token", ariaPressed: String(model.tokenVisible) });
-    empty.hidden = model.resource === null || model.connections.length > 0;
-    list.replaceChildren(...model.connections.map(renderCard));
+    Object.assign(toggle, { textContent: model.tokenVisible ? "토큰 숨기기" : "토큰 표시", ariaPressed: String(model.tokenVisible) });
+    empty.hidden = true;
+    if (model.resource !== null) renderView(h(ConnectionsWorkspace, {
+      model, operationMessage: listStatus.textContent ?? "",
+      onUnauthorized: () => dispatch({ type: "load-failed", failure: "signed-out" }),
+    }), list);
+    else renderView(null, list);
     if (focusAfter !== null) document.querySelector<HTMLElement>(focusAfter)?.focus();
     focusAfter = null;
   };
@@ -225,7 +211,7 @@ function mount(): void {
     const failure = classifyFailure(error);
     if (failure === "signed-out") dispatch({ type: "load-failed", failure });
     else {
-      target.textContent = failure === "other" && error instanceof ConnectionsRequestError ? `The request failed (${error.code}).` : FAILURE_TEXT[failure];
+      target.textContent = FAILURE_TEXT[failure];
       if (failure === "unconfirmed") {
         const reload = document.createElement("button");
         reload.type = "button";
@@ -243,15 +229,18 @@ function mount(): void {
   };
   const revoke = async (connectionId: string) => {
     dispatch({ type: "revoke" });
-    listStatus.textContent = "Revoking\u2026";
+    listStatus.textContent = "연결을 해제하는 중…";
+    render();
     listStatus.focus({ preventScroll: true });
     try {
       await revokeConnection(connectionId);
       dispatch({ type: "revoked", connectionId, at: Math.floor(Date.now() / 1000) });
-      listStatus.textContent = "Revoked. The agent that used it has lost access.";
+      listStatus.textContent = "연결을 해제했습니다. 해당 에이전트의 접근이 중단되었습니다.";
+      render();
     } catch (error) {
       dispatch({ type: "revoke-failed" });
       fail(error, listStatus);
+      render();
     }
   };
 
@@ -261,12 +250,20 @@ function mount(): void {
     if (model.creating || model.token !== null) return;
     const check = checkDraft(model.draft);
     problems.replaceChildren(...(check.ok ? [] : check.problems).map(text => Object.assign(document.createElement("li"), { textContent: text })));
-    if (!check.ok) return;
+    name.removeAttribute("aria-invalid");
+    days.removeAttribute("aria-invalid");
+    if (!check.ok) {
+      const invalidName = name.value.trim() === "" || name.value.trim().length > 80;
+      const field = invalidName ? name : days;
+      field.setAttribute("aria-invalid", "true");
+      field.focus();
+      return;
+    }
     dispatch({ type: "create" });
-    patStatus.textContent = "Creating the token\u2026";
+    patStatus.textContent = "토큰을 만드는 중…";
     try {
       dispatch({ type: "created", result: await createPat(check.body) });
-      tokenStatus.textContent = "";
+      tokenStatus.textContent = "새 토큰을 만들었습니다";
       tokenTitle.focus();
     } catch (error) {
       dispatch({ type: "create-failed" });
@@ -278,16 +275,34 @@ function mount(): void {
     if (model.token === null) return;
     try {
       await navigator.clipboard.writeText(model.token);
-      tokenStatus.textContent = "Token copied. Paste it into your agent, then dismiss it here.";
+      tokenStatus.textContent = "토큰을 복사했습니다. 에이전트에 붙여 넣은 뒤 여기서 닫으세요.";
+      notify("복사됨 · 토큰을 클립보드에 복사했습니다.");
     } catch (error) {
       // Insecure contexts expose no clipboard (TypeError); denied permission is a DOMException.
       if (!(error instanceof DOMException || error instanceof TypeError)) throw error;
       dispatch({ type: "token-visible", visible: true });
       token.select();
-      tokenStatus.textContent = "Couldn't copy. The token is shown and selected; copy it manually.";
+      tokenStatus.textContent = "복사하지 못했습니다. 선택된 토큰을 직접 복사하세요.";
     }
   });
   dismiss.addEventListener("click", () => { dispatch({ type: "token-dismissed" }); patStatus.textContent = tokenStatus.textContent = ""; name.focus(); });
+  q<HTMLSelectElement>("#execution-location").addEventListener("change", event => {
+    const remote = event.currentTarget instanceof HTMLSelectElement && event.currentTarget.value === "remote";
+    q<HTMLDetailsElement>(".connections-token-form").open = remote;
+    notify(remote ? "원격 환경에서 브라우저를 열 수 없다면 개인 액세스 토큰을 사용하세요." : "내 컴퓨터의 MCP 클라이언트에 명령을 추가하고 OAuth로 승인하세요.");
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-copy-command]").forEach(button => {
+    button.addEventListener("click", async () => {
+      const command = document.querySelector<HTMLElement>(button.dataset["copyCommand"] ?? "")?.textContent ?? "";
+      try {
+        await navigator.clipboard.writeText(command);
+        notify("복사됨 · 명령을 클립보드에 복사했습니다.");
+      } catch (error) {
+        if (!(error instanceof DOMException || error instanceof TypeError)) throw error;
+        notify("복사하지 못했습니다. 명령을 선택해 직접 복사하세요.");
+      }
+    });
+  });
   list.addEventListener("click", event => {
     const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button[data-action]") : null;
     const connectionId = button?.closest<HTMLElement>("[data-id]")?.dataset["id"];
@@ -304,4 +319,4 @@ function mount(): void {
   void load();
 }
 
-if (typeof document !== "undefined" && document.querySelector("#connections-app") !== null) mount();
+if (typeof document !== "undefined" && document.querySelector("#connections-app") !== null) void mount();

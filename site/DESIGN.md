@@ -1,5 +1,23 @@
 # skillar.sh
 
+## P-D connections
+
+Connections keeps the existing shell and orders execution location, MCP setup,
+upload consent, copyable command, then the devices/MCP table. Token creation
+and pairing remain in disclosures after the table. The workspace reuses
+DataTable, FacetPanel, Pill, KeyValueGrid, PeekPanel, Toast and Skeleton.
+Kind/status facets count the returned range before filtering; search, facets,
+sort and selected connection persist in URL parameters. Unknown usage is
+미측정. Active means registered and unrevoked/unexpired, never online.
+The desktop facet rail and table use zero-minimum columns; on phones facets
+collapse behind a disclosure and the table owns horizontal overflow. Main
+keeps vertical scroll ownership; the shared peek owns its detail scroll.
+Existing device consent, disconnect confirmation and pairing components are
+reused, with no changes to their requests or confirmation semantics.
+DataTable accepts an optional controlled sort so URL restoration does not
+reset column visibility or density. PeekPanel can omit its full-page link
+when the record has no separate full-page route; it must not link to itself.
+
 ## P-C approved dashboard home B
 
 Home follows `hosted/dashboard-widgets-b.html`: four NumberTiles, a paired

@@ -18,7 +18,7 @@ type Common = {
 };
 const LOCAL_ONLY: Consent = { mode: "local-only" };
 
-function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & { readonly origin: string }) {
+export function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & { readonly origin: string }) {
   const [grant, setGrant] = useState<DeviceGrant | null>(null);
   const [allowPrivateSkills, setAllowPrivateSkills] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,7 +56,7 @@ function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & {
         </label>
         <div class="cluster">
           <button class="button primary" type="button" onClick={connect} disabled={busy}>기기 연결</button>
-          <span class="note" role="status" aria-live="polite">{message}</span>
+          <span class="note" role="status" aria-live="polite" aria-label="기기 연결 상태">{message}</span>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & {
   );
 }
 
-function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnauthorized }: Common & {
+export function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnauthorized }: Common & {
   readonly device: DeviceState; readonly ingestEnabled: boolean;
 }) {
   const [message, setMessage] = useState("");
@@ -157,7 +157,7 @@ function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnauthorized }
           ) : (
             <button ref={revokeButton} class="button secondary" type="button" disabled={busy} onClick={() => setConfirming(true)}>기기 연결 해제{"\u2026"}</button>
           )}
-          <span class="note" role="status" aria-live="polite">{message}</span>
+          <span class="note" role="status" aria-live="polite" aria-label="기기 작업 상태">{message}</span>
         </div>
       )}
     </article>

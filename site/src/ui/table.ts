@@ -23,16 +23,18 @@ export function sortRows<Row>(rows: readonly Row[], column: TableColumn<Row>, di
   });
 }
 
-export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onSort, controls = true }: {
+export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, sort: controlledSort, onSort, controls = true }: {
   readonly caption: string;
   readonly rows: readonly Row[];
   readonly columns: readonly TableColumn<Row>[];
   readonly rowId: (row: Row) => string;
   readonly initialSort?: TableSort;
+  readonly sort?: TableSort;
   readonly onSort?: (sort: TableSort) => void;
   readonly controls?: boolean;
 }) {
-  const [sort, setSort] = useState<TableSort | undefined>(initialSort);
+  const [localSort, setSort] = useState<TableSort | undefined>(initialSort);
+  const sort = controlledSort ?? localSort;
   const [hidden, setHidden] = useState<readonly string[]>([]);
   const [density, setDensity] = useState("compact");
   const visible = columns.filter(column => !hidden.includes(column.id));

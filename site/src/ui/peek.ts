@@ -29,7 +29,7 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
   readonly id: string;
   readonly selectedId: string | null;
   readonly title: string;
-  readonly fullPageHref: string;
+  readonly fullPageHref?: string;
   readonly returnFocus: HTMLElement | null;
   readonly onClose: () => void;
   readonly children: ComponentChildren;
@@ -68,7 +68,7 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
   return h("dialog", { id, ref: dialog, class: "ui-peek", "aria-labelledby": `${id}-title`,
     onCancel: event => { event.preventDefault(); onClose(); } },
     h("header", null, h("h2", { id: `${id}-title` }, title),
-      h("a", { class: "button secondary", href: fullPageHref }, "전체 페이지로 열기"),
+      fullPageHref && h("a", { class: "button secondary", href: fullPageHref }, "전체 페이지로 열기"),
       h("button", { ref: close, type: "button", class: "button secondary", onClick: onClose }, "닫기")),
     h("div", { class: "ui-peek-body" }, children));
 }
