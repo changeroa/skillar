@@ -2,6 +2,13 @@
 
 ## Skill evidence and dashboard recovery (PR3)
 
+Authored skills-page copy is plain Korean throughout: navigation, account
+states, library/search, editor, upload consent, publishing, version actions,
+errors and deletion confirmation. Keep stored names and document content,
+SKILL.md, digest, MCP, product names and code tokens unchanged. In particular,
+typed deletion still compares the exact stored skill name or digest prefix;
+localizing the instruction must never localize the required value.
+
 The selected skill remains a real document and version workspace, using the
 existing hash route, editor, verified package and version actions. Make the
 current revision, full digest, files and retained versions easy to distinguish.

@@ -84,21 +84,21 @@ export function isUnauthorized(error: unknown): boolean {
 
 export function describeFailure(error: unknown, action: string): string {
   switch (classifyFailure(error)) {
-    case "cancelled": return `${action} was cancelled.`;
-    case "unauthorized": return "Your session ended. Sign in again to continue.";
-    case "forbidden": return `${action} is not allowed for this account.`;
-    case "gone": return "That skill no longer exists in your library. It may have been deleted elsewhere.";
-    case "conflict": return "This skill changed elsewhere since you loaded it. Your draft is kept; review the current version before publishing again.";
-    case "protected": return "The current version and pinned versions can't be deleted. Make another version current or unpin it first.";
-    case "deleting": return "This skill is being deleted. Reload the library to see what remains.";
-    case "invalid-skill": return "SKILL.md was rejected. It needs front matter with a name and a description.";
-    case "invalid": return `${action} was rejected as invalid. Review the files and try again.`;
-    case "too-large": return "The package is larger than one request allows. Remove or shrink files and try again.";
-    case "rate-limited": return "Too many requests. Wait a minute and try again.";
-    case "unavailable": return "Private skills are unavailable right now. Try again later.";
-    case "unreachable": return `${action} couldn't reach skillar. Check your connection and retry.`;
-    case "unexpected": return `${action} got an answer skillar's contract doesn't recognise. Nothing was changed on this page.`;
-    case "other": return error instanceof SkillsRequestError ? `${action} failed (${error.code}).` : `${action} failed unexpectedly.`;
+    case "cancelled": return `${action} 작업이 취소되었습니다.`;
+    case "unauthorized": return "로그인이 만료되었습니다. 계속하려면 다시 로그인하세요.";
+    case "forbidden": return `이 계정에서는 ${action} 작업을 할 수 없습니다.`;
+    case "gone": return "보관함에서 이 스킬을 찾을 수 없습니다. 다른 곳에서 삭제했을 수 있습니다.";
+    case "conflict": return "불러온 뒤 다른 곳에서 스킬이 바뀌었습니다. 수정 내용은 유지했습니다. 현재 버전을 확인한 뒤 다시 게시하세요.";
+    case "protected": return "현재 버전과 고정한 버전은 삭제할 수 없습니다. 먼저 다른 버전을 현재 버전으로 선택하거나 고정을 해제하세요.";
+    case "deleting": return "스킬을 삭제하는 중입니다. 보관함을 새로고침해 남은 내용을 확인하세요.";
+    case "invalid-skill": return "SKILL.md를 처리하지 못했습니다. 맨 위 메타데이터에 name과 description이 필요합니다.";
+    case "invalid": return `${action} 요청이 올바르지 않습니다. 파일을 확인하고 다시 시도하세요.`;
+    case "too-large": return "패키지가 요청 한 번에 보낼 수 있는 크기를 넘었습니다. 파일을 줄이거나 제거한 뒤 다시 시도하세요.";
+    case "rate-limited": return "요청이 너무 많습니다. 1분 후 다시 시도하세요.";
+    case "unavailable": return "지금은 비공개 스킬을 이용할 수 없습니다. 나중에 다시 시도하세요.";
+    case "unreachable": return `${action} 중 skillar에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요.`;
+    case "unexpected": return `${action} 응답의 형식을 확인할 수 없습니다. 이 화면의 상태는 바뀌지 않았습니다.`;
+    case "other": return error instanceof SkillsRequestError ? `${action}에 실패했습니다 (${error.code}).` : `${action} 중 예상하지 못한 오류가 발생했습니다.`;
   }
 }
 

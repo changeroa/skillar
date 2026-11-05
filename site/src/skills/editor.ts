@@ -24,7 +24,7 @@ function isHidden(path: string): boolean {
 /** Only the picked files are read, after the pick, and oversize or hidden entries are skipped by name before any byte is read. */
 export async function readSelection(list: FileList): Promise<PickedSelection> {
   if (list.length > PICK_LIMIT) {
-    return { files: [], notes: [`That selection has ${list.length} files; a skill holds at most ${PRIVATE_SKILL_MAX_RESOURCES}. Pick a smaller folder.`] };
+    return { files: [], notes: [`선택한 파일은 ${list.length}개입니다. 스킬 하나에는 최대 ${PRIVATE_SKILL_MAX_RESOURCES}개를 담을 수 있습니다. 더 작은 폴더를 선택하세요.`] };
   }
   const picked = Array.from(list);
   const paths = relativePaths(picked.map(file => ({ name: file.name, relativePath: file.webkitRelativePath })));
@@ -35,10 +35,10 @@ export async function readSelection(list: FileList): Promise<PickedSelection> {
     const path = paths[index] ?? file.name;
     if (isHidden(path)) hidden += 1;
     else if (file.size > PRIVATE_SKILL_MAX_RESOURCE_BYTES) {
-      notes.push(`${path} (${formatBytes(file.size)}) was skipped; each file must be at most ${formatBytes(PRIVATE_SKILL_MAX_RESOURCE_BYTES)}.`);
+      notes.push(`${path} (${formatBytes(file.size)})는 제외했습니다. 파일 하나는 ${formatBytes(PRIVATE_SKILL_MAX_RESOURCE_BYTES)} 이하여야 합니다.`);
     } else kept.push({ file, path });
   }
-  if (hidden > 0) notes.push(`${hidden} hidden ${hidden === 1 ? "file" : "files"} (names starting with a dot) ${hidden === 1 ? "was" : "were"} skipped.`);
+  if (hidden > 0) notes.push(`이름이 점으로 시작하는 숨김 파일 ${hidden}개는 제외했습니다.`);
   const files = await Promise.all(kept.map(async ({ file, path }): Promise<DraftFile> => ({
     path, mediaType: mediaTypeFor(path, file.type), bytes: new Uint8Array(await file.arrayBuffer()),
   })));
@@ -66,29 +66,29 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
       h("code", null, file.path),
       h("span", { class: "note" }, `${formatBytes(file.bytes.length)} · ${file.mediaType}`)),
     h("button", { class: "button secondary file-row__remove", type: "button", disabled: busy,
-      "aria-label": `Remove ${file.path}`, onClick: () => onChange(removeFile(draft, file.path), []) }, "Remove")));
+      "aria-label": `${file.path} 제거`, onClick: () => onChange(removeFile(draft, file.path), []) }, "제거")));
 
   return h("div", { class: "editor" },
     h("div", { class: "editor__files" },
-      h("p", { id: id("pick-note") }, `Pick the folder that holds ${ENTRYPOINT}, or individual files. Folder structure is kept; the folder's own name is not. Only the files you pick are read, and only when you pick them.`),
+      h("p", { id: id("pick-note") }, `${ENTRYPOINT}가 있는 폴더나 파일을 선택하세요. 폴더 안의 구조는 유지하고 최상위 폴더 이름은 제외합니다. 선택한 파일만, 선택할 때 읽습니다.`),
       h("div", { class: "cluster file-picker" },
         h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
-          onClick: () => folderInput.current?.click() }, "Choose a skill folder\u2026"),
+          onClick: () => folderInput.current?.click() }, "스킬 폴더 선택\u2026"),
         h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
-          onClick: () => filesInput.current?.click() }, "Choose files\u2026"),
+          onClick: () => filesInput.current?.click() }, "파일 선택\u2026"),
         h("input", { ref: folderInput, type: "file", webkitdirectory: true, multiple: true, hidden: true, tabIndex: -1,
           "aria-hidden": "true", onChange: picked }),
         h("input", { ref: filesInput, type: "file", multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
       notes.length > 0 && h("ul", { class: "editor__notes", role: "status", "aria-live": "polite" },
         notes.map(note => h("li", { key: note, class: "note" }, note))),
-      h("p", { class: "editor__subtitle", id: id("files-title") }, "Supporting files"),
+      h("p", { class: "editor__subtitle", id: id("files-title") }, "추가 파일"),
       draft.files.length === 0
-        ? h("p", { class: "note" }, `None yet. ${ENTRYPOINT} alone is a complete skill.`)
+        ? h("p", { class: "note" }, `아직 없습니다. ${ENTRYPOINT} 하나만으로도 스킬을 구성할 수 있습니다.`)
         : h("ul", { class: "file-list", "aria-labelledby": id("files-title") }, fileRows)),
     h("dl", { class: "account-status will-publish" },
-      h("div", null, h("dt", null, "Name"), h("dd", null, front.name ?? "Not found in the front matter yet")),
-      h("div", null, h("dt", null, "Description"), h("dd", null, front.description ?? "Not found in the front matter yet"))),
-    h("label", { class: "field-label document-label", for: id("document") }, `${ENTRYPOINT} (plain text, never rendered)`),
+      h("div", null, h("dt", null, "이름"), h("dd", null, front.name ?? "SKILL.md 메타데이터에서 찾지 못했습니다")),
+      h("div", null, h("dt", null, "설명"), h("dd", null, front.description ?? "SKILL.md 메타데이터에서 찾지 못했습니다"))),
+    h("label", { class: "field-label document-label", for: id("document") }, `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`),
     h("textarea", { id: id("document"), class: "document-field", rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
       value: draft.document,
       onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => onChange({ ...draft, document: event.currentTarget.value }, []) }),
@@ -96,7 +96,7 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
       h("input", { type: "checkbox", checked: draft.acknowledged, disabled: busy,
         onChange: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => onChange({ ...draft, acknowledged: event.currentTarget.checked }, []) }),
       h("span", null,
-        h("strong", null, "Upload these files to my private skillar library."),
+        h("strong", null, "이 파일을 내 비공개 skillar 보관함에 업로드하는 데 동의합니다."),
         h("span", { class: "choice__detail" },
-          "This is separate from device activity consent. Only the files listed above and the SKILL.md text are sent, and they stay under your account until you delete them."))));
+          "기기 활동 수집 동의와 별개입니다. 위에 나열된 파일과 SKILL.md 텍스트만 전송하며, 삭제할 때까지 내 계정에 보관합니다."))));
 }

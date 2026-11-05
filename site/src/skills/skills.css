@@ -1,5 +1,6 @@
 body:has(#skills-app) h1 { font-size: 28px; line-height: 1.3; }
 body:has(#skills-app) h2 { letter-spacing: normal; }
+body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty; }
 #skills-app > .session-status { margin-top: var(--s5); }
 .skills-unavailable { margin-top: var(--s5); max-width: 70ch; }
 .panel__subtitle { font-size: var(--body); letter-spacing: 0; line-height: 1.3; }

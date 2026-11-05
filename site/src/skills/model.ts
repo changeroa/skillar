@@ -101,14 +101,14 @@ export function mergePickedFiles(draft: Draft, picked: readonly DraftFile[]): Me
     if (file.path === ENTRYPOINT) {
       try {
         document = decodeDocument(file.bytes);
-        if (draft.document !== "") notes.push("SKILL.md text was replaced by the picked file.");
+        if (draft.document !== "") notes.push("선택한 파일로 SKILL.md 텍스트를 바꿨습니다.");
       } catch (error) {
         if (!(error instanceof SkillDraftError)) throw error;
-        notes.push("The picked SKILL.md isn't UTF-8 text, so it was not used.");
+        notes.push("선택한 SKILL.md는 UTF-8 텍스트가 아니어서 사용하지 않았습니다.");
       }
       continue;
     }
-    if (files.has(file.path.toLowerCase())) notes.push(`${file.path} replaced the earlier file with that path.`);
+    if (files.has(file.path.toLowerCase())) notes.push(`${file.path}로 같은 경로의 기존 파일을 바꿨습니다.`);
     files.set(file.path.toLowerCase(), file);
   }
   return { draft: { ...draft, document, files: [...files.values()] }, notes };
@@ -121,26 +121,26 @@ export function removeFile(draft: Draft, path: string): Draft {
 export function draftProblems(draft: Draft): readonly string[] {
   const problems: string[] = [];
   const document = encoder.encode(draft.document);
-  if (draft.document.trim() === "") problems.push("Add a SKILL.md: pick a folder or files that contain one, or type the document.");
+  if (draft.document.trim() === "") problems.push("SKILL.md가 있는 폴더나 파일을 선택하거나 문서를 직접 입력하세요.");
   else {
     const front = readFrontMatter(draft.document);
-    if (front.name === null) problems.push("SKILL.md front matter needs a name: line; the library shows that name.");
-    if (front.description === null) problems.push("SKILL.md front matter needs a description: line; the library shows that description.");
-    if (document.length > ENTRYPOINT_MAX_BYTES) problems.push(`SKILL.md must be at most ${formatBytes(ENTRYPOINT_MAX_BYTES)}; it is ${formatBytes(document.length)}.`);
+    if (front.name === null) problems.push("SKILL.md 맨 위 메타데이터에 name: 항목이 필요합니다. 보관함에 표시할 이름입니다.");
+    if (front.description === null) problems.push("SKILL.md 맨 위 메타데이터에 description: 항목이 필요합니다. 보관함에 표시할 설명입니다.");
+    if (document.length > ENTRYPOINT_MAX_BYTES) problems.push(`SKILL.md는 ${formatBytes(ENTRYPOINT_MAX_BYTES)} 이하여야 합니다. 현재 크기는 ${formatBytes(document.length)}입니다.`);
   }
-  if (draft.files.length + 1 > PRIVATE_SKILL_MAX_RESOURCES) problems.push(`A skill can hold at most ${PRIVATE_SKILL_MAX_RESOURCES} files including SKILL.md.`);
+  if (draft.files.length + 1 > PRIVATE_SKILL_MAX_RESOURCES) problems.push(`스킬 하나에는 SKILL.md를 포함해 파일을 최대 ${PRIVATE_SKILL_MAX_RESOURCES}개 담을 수 있습니다.`);
   for (const file of draft.files) {
-    if (file.path === ENTRYPOINT) problems.push("SKILL.md belongs in the document field, not in the supporting files.");
+    if (file.path === ENTRYPOINT) problems.push("SKILL.md는 추가 파일이 아니라 문서 입력란에 넣어야 합니다.");
     else if (!privateSkillPathSchema.safeParse(file.path).success) {
-      problems.push(`${file.path} isn't a portable path. Use letters, numbers, spaces, dots, dashes and underscores, and no archive extension.`);
+      problems.push(`${file.path}는 지원하는 경로 형식이 아닙니다. 문자·숫자·공백·점·하이픈·밑줄을 사용하고 압축 파일 확장자는 제외하세요.`);
     }
     if (file.bytes.length > PRIVATE_SKILL_MAX_RESOURCE_BYTES) {
-      problems.push(`${file.path} is ${formatBytes(file.bytes.length)}; each file must be at most ${formatBytes(PRIVATE_SKILL_MAX_RESOURCE_BYTES)}.`);
+      problems.push(`${file.path}의 크기는 ${formatBytes(file.bytes.length)}입니다. 파일 하나는 ${formatBytes(PRIVATE_SKILL_MAX_RESOURCE_BYTES)} 이하여야 합니다.`);
     }
   }
   const total = document.length + draft.files.reduce((sum, file) => sum + file.bytes.length, 0);
-  if (total > PRIVATE_SKILL_MAX_BYTES) problems.push(`All files together are ${formatBytes(total)}; the limit is ${formatBytes(PRIVATE_SKILL_MAX_BYTES)}.`);
-  if (!draft.acknowledged) problems.push("Confirm the upload with the checkbox before publishing.");
+  if (total > PRIVATE_SKILL_MAX_BYTES) problems.push(`전체 파일 크기는 ${formatBytes(total)}입니다. 최대 ${formatBytes(PRIVATE_SKILL_MAX_BYTES)}까지 보낼 수 있습니다.`);
+  if (!draft.acknowledged) problems.push("게시하려면 체크박스로 업로드에 동의하세요.");
   return problems;
 }
 
@@ -157,10 +157,10 @@ export async function buildPackage(draft: Draft): Promise<Built> {
     if (error.code === "archive_not_supported") {
       const archive = await findArchive(entry, draft.files);
       return { ok: false, problems: [archive === null
-        ? "One file is a compressed archive. Archives aren't supported; add the extracted files instead."
-        : `${archive} is a compressed archive. Archives aren't supported; add the extracted files instead.`] };
+        ? "압축 파일이 포함되어 있습니다. 압축 파일은 지원하지 않으므로 압축을 푼 파일을 추가하세요."
+        : `${archive}는 압축 파일입니다. 압축 파일은 지원하지 않으므로 압축을 푼 파일을 추가하세요.`] };
     }
-    return { ok: false, problems: ["The files can't form one skill package. Check for paths that differ only by case or a file that is also a folder."] };
+    return { ok: false, problems: ["스킬 패키지를 만들 수 없습니다. 대소문자만 다른 경로나 파일과 폴더가 같은 경로를 쓰는지 확인하세요."] };
   }
 }
 

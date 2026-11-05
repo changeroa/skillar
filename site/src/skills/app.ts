@@ -21,24 +21,24 @@ function isAbort(error: unknown): boolean {
 }
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
-  const text = phase.kind === "expired" ? "Your session ended, so your skills were cleared from this page. Sign in again to continue." :
-    phase.kind === "signed-out" ? "Not signed in. Your private skills are shown only after you sign in." :
-    phase.kind === "unreachable" ? "Couldn't reach the account service. Check your connection and reload." :
-    "The account service didn't answer as expected. Try again later.";
+  const text = phase.kind === "expired" ? "로그인이 만료되어 이 화면에서 스킬 정보를 지웠습니다. 계속하려면 다시 로그인하세요." :
+    phase.kind === "signed-out" ? "로그인하지 않았습니다. 비공개 스킬은 로그인한 뒤에만 볼 수 있습니다." :
+    phase.kind === "unreachable" ? "계정 서비스에 연결하지 못했습니다. 연결을 확인하고 새로고침하세요." :
+    "계정 서비스의 응답을 확인할 수 없습니다. 나중에 다시 시도하세요.";
   return h("div", { class: "auth-actions dash-signed-out" },
     h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, text),
-    h("a", { class: "button primary", href: "/auth/google" }, "Continue with Google ", h("span", { "aria-hidden": "true" }, "\u2192")),
-    h("p", { class: "note" }, "Google asks for your consent on its own page. skillar then stores your Google ID, email, name, picture, and your first and latest sign-in times. Your session is a signed, secure cookie. Google tokens aren't retained."));
+    h("a", { class: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")),
+    h("p", { class: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
 }
 
 function AccountLine({ user }: { readonly user: SessionUser }) {
   return h("div", { class: "dash-account" },
     h("div", { class: "account-user" },
       h("div", null,
-        h("p", { class: "note" }, "Signed in as"),
+        h("p", { class: "note" }, "로그인 계정"),
         h("p", { class: "account-name" }, user.name === "" ? user.email : user.name),
         user.name !== "" && h("p", { class: "account-email" }, user.email))),
-    h("form", { method: "post", action: "/auth/logout" }, h("button", { class: "button secondary", type: "submit" }, "Sign out")));
+    h("form", { method: "post", action: "/auth/logout" }, h("button", { class: "button secondary", type: "submit" }, "로그아웃")));
 }
 
 type FocusTarget = { readonly skillId: PrivateSkillId; readonly n: number };
@@ -89,7 +89,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
         return;
       }
       if (classifyFailure(error) === "gone") setCatalog({ status: "unavailable", catalog: null, message: "" });
-      else setCatalog(current => ({ status: "failed", catalog: current.catalog, message: describeFailure(error, "Loading your skills") }));
+      else setCatalog(current => ({ status: "failed", catalog: current.catalog, message: describeFailure(error, "스킬 불러오기") }));
     });
     return () => { active = false; };
   }, [phase.kind, tick, signal]);
@@ -108,18 +108,18 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     document.getElementById("library-title")?.focus();
   };
   const deleted = (name: string) => {
-    setNotice(`Deleted ${name === "" ? "the skill" : name}.`);
+    setNotice(`삭제했습니다: ${name === "" ? "스킬" : name}.`);
     back();
     reload();
   };
 
-  if (phase.kind === "checking") return h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, "Checking your account\u2026");
+  if (phase.kind === "checking") return h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, "계정 확인 중\u2026");
   if (phase.kind !== "signed-in") return h(SignedOut, { phase });
   if (catalog.status === "unavailable") {
     return h("div", null,
       h(AccountLine, { user: phase.user }),
       h("p", { class: "note skills-unavailable", role: "status", "aria-live": "polite" },
-        "Private skills aren't available on this deployment yet. Nothing was uploaded, and nothing on this page is stored."));
+        "이 배포에서는 아직 비공개 스킬을 이용할 수 없습니다. 업로드한 내용이나 이 화면에서 저장한 내용은 없습니다."));
   }
   const skills = catalog.catalog === null ? [] : sortByUpdated(catalog.catalog);
   const summary = selected === null ? null : skills.find(skill => skill.skillId === selected) ?? null;
