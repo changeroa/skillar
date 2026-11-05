@@ -3,15 +3,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { createTrustedInput } from "./helpers/trusted-input.mjs";
 
 const keys = { k: ["KeyK", 75], ArrowDown: ["ArrowDown", 40], ArrowUp: ["ArrowUp", 38],
   Home: ["Home", 36], End: ["End", 35], Enter: ["Enter", 13], Escape: ["Escape", 27] };
-
-async function press(page, key, modifiers = 0) {
-  const [code, windowsVirtualKeyCode] = keys[key];
-  for (const type of ["keyDown", "keyUp"])
-    await page._sendToTarget("Input.dispatchKeyEvent", { type, key, code, windowsVirtualKeyCode, modifiers });
-}
 
 async function ready(page) {
   await page.evaluate(() => new Promise((resolve, reject) => {
@@ -45,21 +40,21 @@ async function navigate(page, expected, activate) {
 /** Shared by the standalone browser regression and vqa's interaction script. */
 export async function runPaletteInteractions(page, startURL) {
   const origin = new URL(startURL).origin, evidence = [];
+  const input = await createTrustedInput(page);
+  const press = async (key, modifiers = 0) => {
+    const [code, windowsVirtualKeyCode] = keys[key];
+    await input.press({ key, code, windowsVirtualKeyCode, modifiers });
+  };
   const reset = async () => {
     await page.goto(`${origin}/dashboard/`, { waitUntil: "domcontentloaded" });
     await ready(page);
   };
   const open = async (modifiers = 4) => {
-    await page.evaluate(() => {
-      window.__paletteKeys = [];
-      document.addEventListener("keydown", event => window.__paletteKeys.push({ key: event.key, trusted: event.isTrusted }), { capture: true });
-    });
-    await press(page, "k", modifiers);
+    await press("k", modifiers);
     assert.deepEqual(await page.evaluate(() => ({
       open: document.querySelector("#app-command").open,
       focused: document.activeElement === document.querySelector("#app-command input"),
-      trusted: window.__paletteKeys.at(-1)?.trusted,
-    })), { open: true, focused: true, trusted: true });
+    })), { open: true, focused: true });
   };
   const selected = async expected => assert.deepEqual(await page.evaluate(() => ({
     active: document.querySelector("#app-command input").getAttribute("aria-activedescendant"),
@@ -68,27 +63,27 @@ export async function runPaletteInteractions(page, startURL) {
   try {
     // This must change dashboard -> skills, not merely close the dialog.
     await reset(); await open();
-    await press(page, "ArrowDown"); await selected("jump-sessions");
-    await press(page, "ArrowDown"); await selected("jump-skills");
-    assert.ok((await page.evaluate(() => window.__paletteKeys)).every(event => event.trusted));
-    await navigate(page, `${origin}/skills/`, () => press(page, "Enter"));
+    await press("ArrowDown"); await selected("jump-sessions");
+    await press("ArrowDown"); await selected("jump-skills");
+    await navigate(page, `${origin}/skills/`, () => press("Enter"));
     evidence.push({ case: "Meta+K, ArrowDown x2, Enter", url: `${origin}/skills/`, trusted: true });
 
     await reset(); await open();
     for (const [key, expected] of [["ArrowUp", "jump-account"], ["ArrowDown", "jump-dashboard"],
       ["End", "jump-account"], ["Home", "jump-dashboard"]]) {
-      await press(page, key); await selected(expected);
+      await press(key); await selected(expected);
     }
-    await press(page, "Escape");
+    await press("Escape");
     assert.deepEqual(await page.evaluate(() => ({
       open: document.querySelector("#app-command").open, focus: document.activeElement.id,
     })), { open: false, focus: "app-jump" });
     evidence.push({ case: "wrap, Home/End, Escape focus return", trusted: true });
 
     await reset(); await open();
+    await input.focus();
     await page._sendToTarget("Input.insertText", { text: "연결" });
     await selected("jump-connections");
-    await navigate(page, `${origin}/connections/`, () => press(page, "Enter"));
+    await navigate(page, `${origin}/connections/`, () => press("Enter"));
     evidence.push({ case: "type-filter + Enter", url: `${origin}/connections/`, trusted: true });
 
     await reset(); await open(2);
@@ -98,16 +93,20 @@ export async function runPaletteInteractions(page, startURL) {
       return { x, y, hit: document.elementFromPoint(x, y)?.closest("a")?.id };
     });
     assert.equal(point.hit, "jump-skills");
+    await input.focus();
     await navigate(page, `${origin}/skills/`, async () => {
       await page._sendToTarget("Input.dispatchMouseEvent", { type: "mouseMoved", x: point.x, y: point.y });
       for (const type of ["mousePressed", "mouseReleased"])
         await page._sendToTarget("Input.dispatchMouseEvent", { type, x: point.x, y: point.y, button: "left", clickCount: 1 });
     });
     evidence.push({ case: "Control+K, hit-tested mouse click", url: `${origin}/skills/`, trusted: true });
+    evidence.push({ case: "window keydown delivery", count: input.delivered });
     return evidence;
   } finally {
-    await page.goto(startURL, { waitUntil: "domcontentloaded" });
-    await ready(page);
+    try {
+      await page.goto(startURL, { waitUntil: "domcontentloaded" });
+      await ready(page);
+    } finally { await input.dispose(); }
   }
 }
 
