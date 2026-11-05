@@ -81,24 +81,30 @@ test("tab semantics also apply while the embedded view panel is not mounted", ()
   assert.ok(tabs.every(tab => !tab.hasAttribute("aria-current")));
 });
 
-for (const modifier of ["metaKey", "ctrlKey"]) {
-  test(`command jump opens with ${modifier}, arrows select, Enter activates, and Escape restores focus`, t => {
-    // Given
+function palette(t) {
     const document = installFakeDom();
     document.body.classList = { contains: value => value === "app-shell" };
     const window = new EventTarget();
+    const navigations = [];
+    window.location = { assign: href => navigations.push(href) };
     globalThis.window = window;
     const opener = document.createElement("button"), dialog = document.createElement("dialog");
     const field = document.createElement("input"), close = document.createElement("button");
     const options = ["dashboard", "sessions", "skills", "connections", "account"].map(id => {
       const option = document.createElement("a");
       option.id = id;
+      option.href = `https://skillar.sh/${id}/`;
+      // Model the browser's uncancelled anchor default action, not just the
+      // callback. Both native activation and explicit navigation must work.
+      option.click = () => {
+        const event = new FakeEvent("click");
+        option.dispatchEvent(event);
+        if (!event.defaultPrevented) window.location.assign(option.href);
+      };
       option.appendChild(document.createTextNode(id));
       dialog.appendChild(option);
       return option;
     });
-    let activated = null;
-    for (const option of options) option.addEventListener("click", () => { activated = option.id; });
     dialog.querySelector = () => null;
     dialog.showModal = () => { dialog.open = true; };
     dialog.close = () => { dialog.open = false; };
@@ -108,6 +114,13 @@ for (const modifier of ["metaKey", "ctrlKey"]) {
     dialog.appendChild(close);
     const cleanup = bindCommandPalette(opener, dialog, field, options, close);
     t.after(() => { cleanup(); delete globalThis.window; });
+    return { document, window, opener, dialog, field, options, navigations };
+}
+
+for (const modifier of ["metaKey", "ctrlKey"]) {
+  test(`command jump opens with ${modifier} and Escape restores the opener`, t => {
+    // Given
+    const { document, window, opener, dialog, field } = palette(t);
     // When
     const shortcut = new Event("keydown", { cancelable: true });
     Object.assign(shortcut, { key: "k", [modifier]: true });
@@ -116,17 +129,56 @@ for (const modifier of ["metaKey", "ctrlKey"]) {
     assert.equal(dialog.open, true);
     assert.equal(document.activeElement, field);
     assert.equal(field.getAttribute("aria-activedescendant"), "dashboard");
-    field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
-    assert.equal(field.getAttribute("aria-activedescendant"), "sessions");
-    field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowUp" }));
-    assert.equal(field.getAttribute("aria-activedescendant"), "dashboard");
-    field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
-    assert.equal(activated, "dashboard");
-    assert.equal(document.activeElement, opener);
-    opener.click();
     dialog.dispatchEvent(new FakeEvent("cancel"));
     assert.equal(dialog.open, false);
     assert.equal(document.activeElement, opener);
-    assert.equal(options.length, 5);
   });
 }
+
+test("two ArrowDown presses and Enter navigate to the third destination", t => {
+  const { opener, field, navigations, dialog } = palette(t);
+  opener.click();
+  field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
+  field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
+  assert.equal(field.getAttribute("aria-activedescendant"), "skills");
+  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
+  assert.deepEqual(navigations, ["https://skillar.sh/skills/"]);
+  assert.equal(dialog.open, false);
+});
+
+test("arrows wrap and Home and End select the visible endpoints", t => {
+  const { opener, field, options } = palette(t);
+  opener.click();
+  for (const [key, expected] of [
+    ["ArrowUp", "account"], ["ArrowDown", "dashboard"], ["End", "account"],
+    ["Home", "dashboard"], ["ArrowDown", "sessions"],
+  ]) {
+    field.dispatchEvent(new FakeEvent("keydown", { key }));
+    assert.equal(field.getAttribute("aria-activedescendant"), expected);
+    assert.deepEqual(options.filter(option => option.getAttribute("aria-selected") === "true").map(option => option.id), [expected]);
+  }
+});
+
+test("filtered Enter and option clicks use the destination URL", t => {
+  const { opener, field, options, navigations } = palette(t);
+  opener.click();
+  field.value = "skills";
+  field.dispatchEvent(new FakeEvent("input"));
+  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
+  opener.click();
+  options[3].click();
+  assert.deepEqual(navigations, ["https://skillar.sh/skills/", "https://skillar.sh/connections/"]);
+});
+
+test("Enter with no match or an active IME composition does not navigate", t => {
+  const { opener, field, navigations } = palette(t);
+  opener.click();
+  const composition = new FakeEvent("keydown", { key: "Enter" });
+  composition.isComposing = true;
+  field.dispatchEvent(composition);
+  field.value = "no-match";
+  field.dispatchEvent(new FakeEvent("input"));
+  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
+  assert.deepEqual(navigations, []);
+  assert.equal(field.getAttribute("aria-activedescendant"), null);
+});

@@ -50,7 +50,8 @@ The top bar orders breadcrumb then the visible 이동… ⌘K button. Breadcrumb
 dropdowns contain real navigation destinations, with skill name and revision
 derived from already-rendered detail; `#skills-page-title` remains mounted.
 The native command dialog is navigation-only: local label filtering, five
-destinations, wrapping Up/Down selection, Enter navigation and Escape focus
+destinations, wrapping Up/Down selection, Home/End endpoints, explicit URL
+activation for Enter/click and Escape focus
 return. It is instant, including reduced motion. Page headings have at most
 one short subtitle (80 characters); introductory banners and repeated account
 boxes do not occupy the content workspace. Public landing/login/404 keep
