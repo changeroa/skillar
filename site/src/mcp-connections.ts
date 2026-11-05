@@ -167,6 +167,7 @@ async function mount(): Promise<void> {
   const disabled = q<HTMLElement>("#disabled"), app = q<HTMLElement>("#connections-app"), form = q<HTMLFormElement>("#pat-form");
   const name = q<HTMLInputElement>("#pat-name"), days = q<HTMLInputElement>("#pat-days"), record = q<HTMLInputElement>("#pat-record");
   const create = q<HTMLButtonElement>("#pat-create"), problems = q<HTMLElement>("#pat-problems"), patStatus = q<HTMLElement>("#pat-status");
+  const patRetry = q<HTMLButtonElement>("#pat-retry");
   const tokenPanel = q<HTMLElement>("#token-panel"), tokenTitle = q<HTMLElement>("#token-title"), token = q<HTMLInputElement>("#token");
   const toggle = q<HTMLButtonElement>("#token-toggle"), copy = q<HTMLButtonElement>("#token-copy"), dismiss = q<HTMLButtonElement>("#token-dismiss");
   const tokenStatus = q<HTMLElement>("#token-status"), list = q<HTMLElement>("#connection-list"), empty = q<HTMLElement>("#connections-empty");
@@ -211,7 +212,9 @@ async function mount(): Promise<void> {
     const failure = classifyFailure(error);
     if (failure === "signed-out") dispatch({ type: "load-failed", failure });
     else {
-      target.textContent = FAILURE_TEXT[failure];
+      target.textContent = target === patStatus && failure === "unavailable"
+        ? "지금은 토큰을 만들 수 없습니다. 다시 시도하세요." : FAILURE_TEXT[failure];
+      if (target === patStatus) patRetry.hidden = !["unavailable", "rate-limited", "rejected", "other"].includes(failure);
       if (failure === "unconfirmed") {
         const reload = document.createElement("button");
         reload.type = "button";
@@ -244,12 +247,17 @@ async function mount(): Promise<void> {
     }
   };
 
-  form.addEventListener("input", () => dispatch({ type: "draft", draft: { name: name.value, expiresInDays: days.value, recordActivity: record.checked } }));
+  form.addEventListener("input", () => {
+    patRetry.hidden = true;
+    dispatch({ type: "draft", draft: { name: name.value, expiresInDays: days.value, recordActivity: record.checked } });
+  });
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (model.creating || model.token !== null) return;
+    patRetry.hidden = true;
     const check = checkDraft(model.draft);
     problems.replaceChildren(...(check.ok ? [] : check.problems).map(text => Object.assign(document.createElement("li"), { textContent: text })));
+    q<HTMLElement>("#pat-errors").hidden = check.ok;
     name.removeAttribute("aria-invalid");
     days.removeAttribute("aria-invalid");
     if (!check.ok) {

@@ -402,12 +402,20 @@ export function summarizeOperation(operation: SourceOperation | null): string {
   }
 }
 
-export type ResultEntry = { readonly key: string; readonly value: string };
+export type ResultEntry = { readonly key: string; readonly label: string; readonly value: string };
+
+const RESULT_LABELS: ReadonlyMap<string, string> = new Map(Object.entries({
+  id: "식별자", name: "이름", version: "버전", digest: "다이제스트", createdMs: "생성 시각",
+  created: "새로 생성됨", workspaceId: "작업 공간 식별자", tabId: "탭 식별자", label: "표시 이름",
+  registeredMs: "등록 시각", spec: "워크플로 정의", flowId: "흐름 식별자", paneId: "패널 식별자",
+  stepId: "단계 식별자", endedMs: "종료 시각", alreadyEnded: "이미 종료됨", stored: "저장 여부",
+}));
 
 export function resultEntries(status: CommandStatus | null): readonly ResultEntry[] {
   if (status === null || status.result === null) return [];
   return Object.entries(status.result).map(([key, value]) => ({
-    key, value: typeof value === "string" ? value : JSON.stringify(value) ?? "undefined",
+    key, label: RESULT_LABELS.get(key) ?? "추가 결과",
+    value: typeof value === "string" ? value : JSON.stringify(value) ?? "undefined",
   }));
 }
 
