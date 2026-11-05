@@ -1,0 +1,150 @@
+import type { ComponentChildren } from "preact";
+import { useEffect, useState } from "preact/hooks";
+import type { Filter } from "../../src/types.js";
+import { ApiError } from "../api";
+import { DOW_LABEL, RUNTIME_IDS, RUNTIME_LABEL, STATE_LABEL, buildHash, serializeFilter, skillName, type ViewProps } from "../state";
+import { installStyles } from "../charts/sankey";
+import { kstPeriodStart } from "../time";
+
+/** Keep a report and the exact conditions that produced it together. */
+export function useAnalysisReport<T>(key: string, load: () => Promise<T>, sequence: number) {
+  const [snapshot, setSnapshot] = useState<{ readonly value: T; readonly key: string }>();
+  const [busy, setBusy] = useState(true), [error, setError] = useState<unknown>();
+  const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setBusy(true); setError(undefined);
+    load().then(value => {
+      if (!cancelled) setSnapshot({ value, key });
+    }, reason => { if (!cancelled) setError(reason); })
+      .finally(() => { if (!cancelled) setBusy(false); });
+    return () => { cancelled = true; };
+  }, [key, sequence, refresh]);
+  return { snapshot, busy, error, refresh: () => setRefresh(value => value + 1) };
+}
+
+export function AnalysisError({ error, retry, title }: { readonly error: unknown; readonly retry: () => void; readonly title: string }) {
+  if (error === undefined) return null;
+  return <div class="notice" role="alert">
+    <p>{error instanceof ApiError && error.status === 403 ? "이 기록을 볼 권한이 없습니다" : title}</p>
+    <button class="pe-button" onClick={retry}>다시 시도</button>
+    <details><summary>기술 세부 정보</summary><pre>{error instanceof Error ? error.message : String(error)}</pre></details>
+  </div>;
+}
+
+export function conditions(filter: Filter) {
+  const date = (value: number) => new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  return [
+    filter.from === undefined ? "시작 제한 없음" : date(filter.from),
+    filter.to === undefined ? "종료 제한 없음" : date(filter.to),
+    filter.runtime?.map(value => RUNTIME_LABEL[value]).join(", "),
+    filter.skill?.map(skillName).join(", "), filter.q,
+    filter.automated === "include" ? "자동 실행 포함" : filter.automated === "only" ? "자동 실행만" : "자동 실행 제외",
+    filter.searchStatus?.map(value => `검색 ${STATE_LABEL[value]}`).join(", "),
+    filter.loadStatus?.map(value => `읽기 ${STATE_LABEL[value]}`).join(", "),
+    filter.searchResult?.map(value => value === "candidates_found" ? "후보 있음" : "후보 없음").join(", "),
+    filter.state?.map(value => STATE_LABEL[value]).join(", "),
+    filter.dow === undefined ? undefined : `${DOW_LABEL[filter.dow]}요일`,
+    filter.hour === undefined ? undefined : `${filter.hour}시부터 ${filter.hourSpan ?? 1}시간`,
+  ].filter(Boolean).join(" · ");
+}
+
+export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = false }: Pick<ViewProps, "route" | "navigate"> & {
+  readonly refresh: () => void; readonly busy: boolean; readonly workspace?: boolean;
+}) {
+  const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
+  return <div class="analysis-toolbar">
+    <label>기간<select class="field" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={event => {
+      const value = event.currentTarget.value, now = Date.now();
+      update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
+    }}><option value="all">전체 기간</option><option value="custom" disabled>지정 기간</option>
+      <option value="7">최근 7일</option><option value="30">최근 30일</option><option value="60">최근 60일</option></select></label>
+    {!workspace && <label>실행 환경<select class="field" value={route.filter.runtime?.[0] ?? ""} onChange={event => {
+      const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
+      update({ runtime: runtime ? [runtime] : undefined });
+    }}><option value="">전체</option>{RUNTIME_IDS.map(value => <option value={value} key={value}>{RUNTIME_LABEL[value]}</option>)}</select></label>}
+    <label>자동 실행<select class="field" value={route.filter.automated ?? "exclude"} onChange={event => {
+      const value = event.currentTarget.value;
+      update({ automated: value === "include" || value === "only" ? value : undefined });
+    }}><option value="exclude">제외</option><option value="include">포함</option><option value="only">자동 실행만</option></select></label>
+    <button class="pe-button analysis-refresh" onClick={refresh} disabled={busy} aria-label={busy ? "갱신 중" : "새로 고침"} title="새로 고침"><span aria-hidden="true">↻</span><span class="analysis-refresh__text">{busy ? "갱신 중…" : "새로 고침"}</span></button>
+    {serializeFilter(route.filter) && <button class="pe-button" onClick={() => navigate({ ...route, peek: undefined, filter: {} })}>필터 지우기</button>}
+  </div>;
+}
+
+export function AnalysisEmpty({ route, navigate }: Pick<ViewProps, "route" | "navigate">) {
+  return <section class="empty"><h2>아직 기록된 세션이 없습니다</h2>
+    <p>연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다.</p>
+    {serializeFilter(route.filter) ? <button class="pe-button" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>
+      : <a class="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a>}
+    <code>skillar doctor</code>
+  </section>;
+}
+
+export function Metric({ label, value, children }: { readonly label: string; readonly value: ComponentChildren; readonly children?: ComponentChildren }) {
+  return <section class="analysis-tile"><h2>{label}</h2><p class="analysis-number">{value}</p><div class="pe-muted">{children}</div></section>;
+}
+
+installStyles("analysis", `
+.analysis{display:grid;gap:16px;min-width:0;line-height:1.65}
+.analysis .page-title{margin:0}.analysis .page-title h1,.analysis .page-title h2{font-size:22px;margin:0}
+.analysis .page-title p{margin:4px 0;color:var(--ink-2)}
+.analysis-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
+.analysis-toolbar label{display:grid;gap:4px;font-size:12px;color:var(--ink-2)}
+.analysis-toolbar select{min-width:100px;min-height:44px}
+.analysis-scope{font-size:12px;color:var(--ink-2);margin:0;overflow-wrap:anywhere}
+.analysis-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.analysis-tile,.analysis-widget{border:1px solid var(--line);padding:16px;min-width:0;background:var(--bg)}
+.analysis-tile h2,.analysis-widget h2{font-size:14px;margin:0 0 8px;font-weight:600}
+.analysis-number{font-size:28px;line-height:1.4;font-weight:600;font-variant-numeric:tabular-nums;margin:0 0 8px}
+.analysis-tile .pe-muted,.analysis-widget .pe-muted{font-size:12px}
+.analysis-widgets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.analysis-widget--wide{grid-column:span 2}
+.analysis-scroll{overflow-x:auto;min-width:0;scrollbar-gutter:stable}
+.analysis-table{border-collapse:collapse;width:100%;font-size:14px}
+.analysis-table th,.analysis-table td{text-align:left;border-bottom:1px solid var(--line);padding:0 8px;height:44px;overflow-wrap:anywhere}
+.analysis-table th{color:var(--ink-2);font-size:12px;font-weight:500}
+.analysis-table th button{border:0;background:transparent;padding:4px 0;min-height:44px;min-width:44px;text-align:left;color:inherit;cursor:pointer}
+.analysis-table a,.analysis-table td>button{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:var(--ink);background:none;border:0;text-decoration:none;text-align:left;cursor:pointer;font:inherit}
+.analysis-table tbody tr:hover,.analysis-table tr[aria-selected=true]{background:var(--wash)}
+.analysis-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.analysis .notice p{margin:0}.analysis details summary{min-height:44px;cursor:pointer}.analysis pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.analysis-facets{display:flex;gap:8px;flex-wrap:wrap}.analysis-facets [aria-pressed=true]{background:var(--wash-2);font-weight:600}
+.analysis-chart{margin:0}.analysis-chart svg{display:block;color:var(--ink-2);font-size:12px;max-width:none}
+.analysis-chart text{fill:currentColor}.analysis-legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;margin:8px 0}
+.analysis-key{display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--ink-2)}.analysis-key--read{background:var(--accent)}
+.analysis-unmeasured{border:1px dashed var(--line-2);padding:16px;margin-top:8px}
+.workspace-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.workspace-split:has(.workspace-peek){grid-template-columns:minmax(0,1fr) 560px}
+.workspace-peek{border:1px solid var(--line);height:calc(100dvh - 48px);position:fixed;top:48px;right:0;width:560px;z-index:20;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.workspace-peek__head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line)}
+.workspace-peek__body{overflow:auto;min-height:0;flex:1;padding:12px}.workspace-peek h2{font-size:18px}
+.analysis .seg__btn,.analysis .seg__b{height:44px;min-width:44px}.analysis .seg{overflow:visible;flex-wrap:wrap}
+.analysis>.seg{justify-self:start;margin-inline-start:0}
+.analysis .seg__btn:focus-visible,.analysis .seg__b:focus-visible{outline-offset:2px}
+.analysis .toolbar,.analysis .flow__legend{margin:0}
+.analysis .paths th{padding:0 8px;height:44px}
+.analysis .paths__share{background:none}.analysis .paths__skill{display:inline-flex;align-items:center;min-width:44px;min-height:44px}
+.analysis .ws__back,.analysis .sess__link{min-width:44px;min-height:44px;display:inline-flex;align-items:center}
+.analysis .pane__sum,.analysis .turn__sum{min-height:44px}.analysis .ws__title,.analysis .hmc__title{letter-spacing:0}
+.analysis .hmc__title{font-size:18px}.analysis .hmc{background:var(--bg)}
+.analysis .hm{min-width:calc(var(--hm-cols) * 48px + 120px)}
+.analysis .hm__cell,.analysis .hm__skill{min-width:44px;min-height:44px}
+.analysis [data-tip][data-tooltip-dismissed]::after{display:none}
+.analysis .hm__cell:focus-visible{outline-offset:2px}
+.analysis .hm__legend{flex-wrap:wrap;line-height:1.65}
+.analysis [data-widget=flow]{display:flex;flex-direction:column}
+.analysis [data-widget=flow]>.pe-button{margin-top:auto;align-self:start}
+.analysis [data-widget=activity]{display:flex;flex-direction:column}
+.analysis [data-widget=activity]>.pe-button{margin-top:auto;align-self:start}
+.dashboard-activity-grid{border-collapse:separate;border-spacing:2px;width:100%;font-size:12px;text-align:center}
+.dashboard-activity-grid caption{text-align:left;color:var(--ink-2);margin-bottom:8px}
+.dashboard-activity-grid th{font-weight:500;color:var(--ink-2)}
+.dashboard-activity-grid td{height:24px;min-width:24px;background:var(--wash)}
+.dashboard-activity-grid [data-level="1"]{background:var(--wash-2)}
+.dashboard-activity-grid [data-level="2"]{background:color-mix(in srgb,var(--accent) 15%,var(--bg))}
+.dashboard-activity-grid [data-level="3"]{background:color-mix(in srgb,var(--accent) 30%,var(--bg))}
+.dashboard-activity-grid [data-level="4"]{background:var(--accent);color:var(--on-accent)}
+@media(max-width:1023px){.workspace-split:has(.workspace-peek){display:block}.workspace-peek{position:fixed;inset:0;height:100dvh;z-index:100;width:100%}}
+@media(max-width:639px){.analysis-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.analysis-tile,.analysis-widget{padding:12px}.analysis-number{font-size:22px}.analysis-widgets{grid-template-columns:minmax(0,1fr)}.analysis-widget--wide{grid-column:auto}.analysis-toolbar{gap:6px}.analysis-toolbar label{flex:1;min-width:0}.analysis-toolbar select{min-width:0;width:100%;padding-inline:4px}.analysis-refresh{width:44px;padding:0}.analysis-refresh__text{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.analysis-table th,.analysis-table td{padding:0 4px}}
+@media(max-width:639px){.analysis .paths td{padding:0 8px}}
+`);

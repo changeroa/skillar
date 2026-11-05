@@ -30,6 +30,8 @@ export type Route = {
   readonly columns?: readonly SessionColumn[]; readonly density?: SessionDensity;
   readonly event?: string; readonly traceTab?: "tree" | "timeline";
   readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
+  readonly analysisSort?: string; readonly analysisQuery?: string; readonly facet?: string;
+  readonly flowUnit?: "search_requests" | "load_requests"; readonly flowMode?: "chart" | "table";
 };
 /** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
@@ -236,6 +238,11 @@ export function parseHash(hash: string): Route {
   const density = params.get("density");
   const traceTab = params.get("tab"), format = params.get("format");
   const ui = {
+    ...(params.get("asort") ? { analysisSort: params.get("asort") ?? undefined } : {}),
+    ...(params.get("aq") ? { analysisQuery: params.get("aq") ?? undefined } : {}),
+    ...(params.get("facet") ? { facet: params.get("facet") ?? undefined } : {}),
+    ...(params.get("unit") === "search_requests" || params.get("unit") === "load_requests" ? { flowUnit: params.get("unit") === "search_requests" ? "search_requests" : "load_requests" } : {}),
+    ...(params.get("mode") === "chart" || params.get("mode") === "table" ? { flowMode: params.get("mode") === "chart" ? "chart" : "table" } : {}),
     ...(sort ? { sort } : {}),
     ...(params.get("peek") ? { peek: params.get("peek") ?? undefined } : {}),
     ...(columns ? { columns } : {}),
@@ -272,7 +279,12 @@ export function buildHash(route: Route): string {
   if (route.sort) parts.push(`sort=${route.sort}`);
   if (route.columns) parts.push(`columns=${route.columns.join(",")}`);
   if (route.density) parts.push(`density=${route.density}`);
-  if (route.view === "sessions" && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
+  if ((route.view === "sessions" || route.view === "workspaces") && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
+  if (route.analysisSort) parts.push(`asort=${encodeURIComponent(route.analysisSort)}`);
+  if (route.analysisQuery) parts.push(`aq=${encodeURIComponent(route.analysisQuery)}`);
+  if (route.facet) parts.push(`facet=${encodeURIComponent(route.facet)}`);
+  if (route.flowUnit) parts.push(`unit=${route.flowUnit}`);
+  if (route.flowMode) parts.push(`mode=${route.flowMode}`);
   if ((route.view === "sessions" || route.view === "trace") && route.event) parts.push(`event=${encodeURIComponent(route.event)}`);
   if (route.traceTab) parts.push(`tab=${route.traceTab}`);
   if (route.format) parts.push(`format=${route.format}`);

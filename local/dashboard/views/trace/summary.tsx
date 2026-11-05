@@ -7,7 +7,7 @@ import { useNarrow } from "../../components/use-narrow";
 import { ATTRIBUTION_LABEL, RUNTIME_LABEL, skillName } from "../../state";
 import { firstPromptOf, formatCost, formatDuration, sessionBounds, traceCounts } from "./model";
 
-const date = new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const date = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 export function summaryFacts(steps: readonly TraceStep[]) {
   const reads = [...new Set(steps.flatMap(step => step.kind === "load" && typeof step.detail.uri === "string" ? [step.detail.uri] : []))];
   const models = steps.filter(step => step.kind === "llm_call");

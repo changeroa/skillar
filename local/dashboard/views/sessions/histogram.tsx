@@ -1,14 +1,15 @@
 import type { Filter } from "../../../src/types.js";
 import type { SessionListRow } from "../../api";
+import { kstDay } from "../../time";
 
 const DAY = 86_400_000;
 export function histogramBars(rows: readonly Pick<SessionListRow, "startedAt">[], from?: number, to?: number) {
   if (rows.length === 0 && (from === undefined || to === undefined)) return [];
-  const first = Math.floor((from ?? Math.min(...rows.map(row => row.startedAt))) / DAY);
-  const last = Math.floor((to === undefined ? Math.max(...rows.map(row => row.startedAt)) : to - 1) / DAY);
+  const first = kstDay(from ?? Math.min(...rows.map(row => row.startedAt)));
+  const last = kstDay(to === undefined ? Math.max(...rows.map(row => row.startedAt)) : to - 1);
   const counts = Array.from({ length: Math.max(0, last - first + 1) }, () => 0);
   for (const row of rows) {
-    const index = Math.floor(row.startedAt / DAY) - first;
+    const index = kstDay(row.startedAt) - first;
     if (index >= 0 && index < counts.length) counts[index]++;
   }
   const maximum = Math.max(1, ...counts), baseline = 82, slot = 92 / counts.length;
@@ -24,7 +25,7 @@ export function SessionHistogram({ rows, filter }: { readonly rows: readonly Ses
   if (!bars.length) return null;
   const stride = Math.max(1, Math.ceil(bars.length / 6));
   return <figure class="session-histogram" aria-labelledby="session-histogram-title">
-    <figcaption id="session-histogram-title">일별 세션 <span class="pe-muted">· UTC · 수신된 기간</span></figcaption>
+    <figcaption id="session-histogram-title">일별 세션 <span class="pe-muted">· 한국 시간 · 수신된 기간</span></figcaption>
     <div class="session-histogram__plot">
       <svg width="100%" height="112" role="img" aria-label={`일별 세션 ${rows.length}개`} style={`min-width:${Math.max(280, bars.length * 14)}px`}>
         <line x1="3%" x2="99%" y1="82" y2="82" stroke="var(--line-2)" />

@@ -6,7 +6,7 @@ import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK, SESSION_COLUMNS, STATE_
   type SessionColumn, type SessionSort, type ViewProps } from "../../state";
 import { COLUMN_LABEL, candidateSkills, readSkills } from "./model";
 
-const date = new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+const date = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
 export const DEFAULT_COLUMNS: readonly SessionColumn[] = SESSION_COLUMNS.slice(0, 7);
 const sortable: Partial<Record<SessionColumn, SessionSort>> = { started: "started", runtime: "runtime", state: "state", reads: "reads", duration: "duration" };
 function Skills({ values }: { readonly values: readonly string[] }) {
@@ -19,7 +19,7 @@ export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" 
   const select = (row: SessionListRow) => ({ ...route, view: "sessions" as const, peek: row.id, event: undefined });
   function cell(row: SessionListRow, column: SessionColumn): ComponentChildren {
     switch (column) {
-      case "started": return <time dateTime={new Date(row.startedAt).toISOString()} title={new Date(row.startedAt).toLocaleString("ko-KR")}>{date.format(row.startedAt)}</time>;
+      case "started": return <time dateTime={new Date(row.startedAt).toISOString()} title={new Date(row.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>{date.format(row.startedAt)}</time>;
       case "runtime": return <span class="pe-pill"><code aria-hidden="true">{RUNTIME_MARK[row.runtime]}</code>{RUNTIME_LABEL[row.runtime]}</span>;
       case "state": return <span class="pe-pill" data-state={row.state}>{STATE_LABEL[row.state]}</span>;
       case "reads": return <Skills values={readSkills(row)} />;
