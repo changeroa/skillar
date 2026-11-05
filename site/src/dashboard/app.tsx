@@ -90,6 +90,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   const list = profiles.data?.profiles ?? [];
   const hasViewableSources = list.some(profile => profile.availability === "ready");
   const sourcesLoad = profiles.completedLoads;
+  const needsSourceGuidance = profiles.status !== "ready" || !hasViewableSources;
   useEffect(() => {
     if (selected === null || profiles.status !== "ready") return;
     const key = profileKey(selected);
@@ -111,6 +112,16 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     stale={hasViewableSources} onManage={() => { if (management.current) management.current.open = true; }} />;
   return (
     <>
+      <div class="dash-account">
+        <div class="account-user">
+          <div>
+            <p class="note">로그인 계정</p>
+            <p class="account-name">{user.name === "" ? user.email : user.name}</p>
+            {user.name !== "" && <p class="account-email">{user.email}</p>}
+          </div>
+        </div>
+        <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
+      </div>
       <div class={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
         {selected !== null && profiles.status !== "ready" && <div class="dash-refresh">{checklist}</div>}
         {hasViewableSources && <aside class="dash-sources" aria-label="활동 출처">
@@ -124,8 +135,9 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           </details>
         </aside>}
         <div class="dash-activity">
+          {selected === null && needsSourceGuidance && checklist}
           {selected === null && <HomeWidgets signal={signal} devices={devices} onRetryDevices={reloadDevices} onUnauthorized={onUnauthorized} />}
-          {selected === null && checklist}
+          {selected === null && !needsSourceGuidance && checklist}
           {selected !== null && current !== null && (
             <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}
               commands={

@@ -17,6 +17,46 @@ const common = { user, signal, selected: null, report: null, failure: null, onSe
 const picker = container => all(container, node => node.localName === "details" && node.getAttribute("class") === "dash-source-picker")[0];
 const home = container => all(container, node => node.id === "dash-empty-title")[0];
 
+for (const name of [user.name, ""]) {
+  test(`signed-in dashboard supplies the shell account and native logout with name ${JSON.stringify(name)}`, async t => {
+    // Given
+    t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+      Response.json(response([])) : Response.json({ devices: [] }));
+    // When
+    const { container } = await mount(t, SignedIn, { ...common, user: { ...user, name } });
+    // Then
+    const account = all(container, node => node.getAttribute("class") === "dash-account")[0];
+    assert.ok(account, "the shell needs its account producer");
+    assert.equal(all(account, node => node.getAttribute("class") === "account-name")[0]?.textContent, name || user.email);
+    assert.ok(account.textContent.includes(user.email));
+    const forms = all(account, node => node.localName === "form");
+    assert.equal(forms.length, 1);
+    assert.equal(forms[0].getAttribute("method"), "post");
+    assert.equal(forms[0].getAttribute("action"), "/auth/logout");
+    assert.equal(buttonNamed(account, "로그아웃")[0]?.type, "submit");
+  });
+}
+
+for (const state of ["loading", "failed", "none"]) {
+  test(`${state} source guidance precedes the first asset widget`, async t => {
+    // Given
+    const held = Promise.withResolvers();
+    t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+      state === "loading" ? held.promise : state === "failed" ?
+        Response.json({ error: "dashboard_unavailable" }, { status: 503 }) : Response.json(response([])) :
+      url === "/api/skills" ? Response.json({ revision: 1, skills: [] }) :
+      url === "/api/mcp/connections" ? Response.json({ resource: "https://skillar.sh/mcp", connections: [] }) :
+      Response.json({ devices: [] }));
+    const { dom, container } = await mount(t, SignedIn, common);
+    // When
+    await waitFor(dom, () => home(container)?.getAttribute("data-state") === state, `${state} guidance`);
+    // Then
+    const panels = all(container, node => node.localName === "section" &&
+      ["dash-empty", "home-widgets"].includes(node.getAttribute("class")?.split(" ")[0]));
+    assert.deepEqual(panels.map(node => node.getAttribute("class").split(" ")[0]), ["dash-empty", "home-widgets"]);
+  });
+}
+
 for (const receivedAtMs of [null, profile.receivedAtMs]) {
   test(`metadata-only sources keep the first viewable record pending after receipt ${receivedAtMs}`, async t => {
     // Given
