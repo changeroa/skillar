@@ -23,13 +23,14 @@ const MODES: readonly { readonly value: ConsentMode; readonly label: string; rea
   { value: "managed-content", label: "메타데이터와 선택한 내용", detail: "아래에서 체크한 내용 범주만 추가합니다. 이 페이지의 보고서에는 일곱 가지가 모두 필요합니다." },
 ];
 
-function NumberField({ label, value, min, max, onInput }: {
+function NumberField({ label, value, min, max, disabled = false, onInput }: {
   readonly label: string; readonly value: string; readonly min: number; readonly max?: number;
+  readonly disabled?: boolean;
   readonly onInput: (next: string) => void;
 }) {
   return (
     <label class="field-label">{label}
-      <input class="text-field" type="number" inputMode="numeric" min={min} {...(max === undefined ? {} : { max })}
+      <input class="text-field" type="number" disabled={disabled} inputMode="numeric" min={min} {...(max === undefined ? {} : { max })}
         value={value} onInput={event => onInput(event.currentTarget.value)} />
     </label>
   );
@@ -51,6 +52,7 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
 
   const submit = async (event: Event) => {
     event.preventDefault();
+    if (busy) return;
     const built = buildConsent(draft, deviceId, version, Date.now());
     if (!built.ok) {
       setProblems(built.problems);
@@ -76,7 +78,7 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
 
   return (
     <form class="consent" onSubmit={submit} aria-describedby={id("scope")}>
-      <fieldset class="consent__group">
+      <fieldset class="consent__group" disabled={busy}>
         <legend>이 기기가 업로드할 수 있는 것</legend>
         {MODES.map(mode => (
           <label class="choice" key={mode.value}>
@@ -87,7 +89,7 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
         ))}
       </fieldset>
       {draft.mode === "managed-content" && (
-        <fieldset class="consent__group">
+        <fieldset class="consent__group" disabled={busy}>
           <legend>내용 범주</legend>
           <p class="note">미리 선택된 항목은 없습니다. 여기에서 체크한 범주만 업로드됩니다.</p>
           {CONTENT_KINDS.map(kind => (
@@ -108,7 +110,7 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
         </fieldset>
       )}
       {uploads && (
-        <fieldset class="consent__group">
+        <fieldset class="consent__group" disabled={busy}>
           <legend>보존 기간</legend>
           <div class="consent__fields">
             <NumberField label="내용 보존 기간(일)" value={draft.contentDays} min={1} onInput={contentDays => patch({ contentDays })} />
@@ -124,21 +126,21 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
           <summary>준비된 과거 스냅샷 포함(선택 사항)</summary>
           <p class="note">기기에서 <code>skillar sync prepare</code>를 실행하고 출력된 스냅샷 ID와 저널 컷을 복사하세요. 정확히 그 스냅샷, 컷, 범위만 과거 기록으로 업로드할 수 있습니다.</p>
           <label class="choice">
-            <input type="checkbox" checked={draft.backfill.enabled} onChange={event => patchBackfill({ enabled: event.currentTarget.checked })} />
+            <input type="checkbox" disabled={busy} checked={draft.backfill.enabled} onChange={event => patchBackfill({ enabled: event.currentTarget.checked })} />
             <span><strong>준비된 스냅샷 하나 허용</strong></span>
           </label>
           {draft.backfill.enabled && (
             <>
               <div class="consent__fields">
               <label class="field-label">스냅샷 ID
-                <input class="text-field" type="text" autocomplete="off" spellcheck={false} value={draft.backfill.snapshotId}
+                <input class="text-field" type="text" disabled={busy} autocomplete="off" spellcheck={false} value={draft.backfill.snapshotId}
                   onInput={event => patchBackfill({ snapshotId: event.currentTarget.value })} />
               </label>
-              <NumberField label="저널 컷" value={draft.backfill.journalCut} min={0} onInput={journalCut => patchBackfill({ journalCut })} />
-              <NumberField label="매니페스트 버전" value={draft.backfill.version} min={1} onInput={backfillVersion => patchBackfill({ version: backfillVersion })} />
+              <NumberField label="저널 컷" disabled={busy} value={draft.backfill.journalCut} min={0} onInput={journalCut => patchBackfill({ journalCut })} />
+              <NumberField label="매니페스트 버전" disabled={busy} value={draft.backfill.version} min={1} onInput={backfillVersion => patchBackfill({ version: backfillVersion })} />
               </div>
               <label class="choice">
-                <input type="checkbox" checked={draft.backfill.allHistory}
+                <input type="checkbox" disabled={busy} checked={draft.backfill.allHistory}
                   onChange={event => patchBackfill({ allHistory: event.currentTarget.checked })} />
                 <span><strong>이 준비된 스냅샷의 모든 과거 기록 허용</strong>
                   <span class="choice__detail">바로 이 스냅샷에 기록된 모든 날짜를 포함합니다. 날짜 범위를 직접 고르려면 체크하지 마세요.</span>
@@ -146,11 +148,11 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
               </label>
               {!draft.backfill.allHistory && <div class="consent__fields">
               <label class="field-label">과거 기록 시작
-                <input class="text-field" type={isExactMilliseconds(draft.backfill.from) ? "text" : "datetime-local"} value={draft.backfill.from}
+                <input class="text-field" disabled={busy} type={isExactMilliseconds(draft.backfill.from) ? "text" : "datetime-local"} value={draft.backfill.from}
                   onInput={event => patchBackfill({ from: event.currentTarget.value })} />
               </label>
               <label class="field-label">과거 기록 끝
-                <input class="text-field" type={isExactMilliseconds(draft.backfill.to) ? "text" : "datetime-local"} value={draft.backfill.to}
+                <input class="text-field" disabled={busy} type={isExactMilliseconds(draft.backfill.to) ? "text" : "datetime-local"} value={draft.backfill.to}
                   onInput={event => patchBackfill({ to: event.currentTarget.value })} />
               </label>
               </div>}

@@ -212,7 +212,8 @@ function useFlowSummaries(ids: readonly string[], query: FlowsQuery, refresh: nu
       return;
     }
     let cancelled = false;
-    setSummaries((prev) => Object.fromEntries(ids.map((id) => [id, prev[id] ?? { status: "loading" } as SummaryState])));
+    setSummaries((prev) => Object.fromEntries(ids.map((id) => [id,
+      prev[id]?.status === "ready" ? prev[id] : { status: "loading" } as SummaryState])));
     const queue = [...ids];
     const worker = async (): Promise<void> => {
       for (let next = queue.shift(); next !== undefined && !cancelled; next = queue.shift()) {
@@ -232,7 +233,7 @@ function useFlowSummaries(ids: readonly string[], query: FlowsQuery, refresh: nu
   return summaries;
 }
 
-function FlowRow({ entry, route, summary }: { entry: FlowListEntry; route: Route; summary: SummaryState | undefined }) {
+function FlowRow({ entry, route, summary, onRetry }: { entry: FlowListEntry; route: Route; summary: SummaryState | undefined; onRetry: () => void }) {
   const href = buildHash({ view: "workspace", flowId: entry.id, filter: route.filter });
   return (
     <li class="wsrow" data-flow={entry.id}>
@@ -245,7 +246,7 @@ function FlowRow({ entry, route, summary }: { entry: FlowListEntry; route: Route
       {summary === undefined || summary.status === "loading"
         ? <p class="facts wsrow__sum dim" data-summary="loading">스킬 구간을 읽는 중{"\u2026"}</p>
         : summary.status === "error"
-          ? <p class="facts wsrow__sum dim" data-summary="error">스킬 구간 요약을 가져올 수 없음</p>
+          ? <p class="facts wsrow__sum dim" data-summary="error">스킬 구간 요약을 가져올 수 없음 <button type="button" class="btn" onClick={onRetry}>다시 시도</button></p>
           : <Facts facts={summaryFacts(summary.summary)} className="facts wsrow__sum" />}
     </li>
   );
@@ -278,6 +279,7 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
   const [flows, setFlows] = useState<FlowListEntry[]>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     if (live.seq === 0) return;
@@ -287,6 +289,7 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
 
   useEffect(() => {
     let cancelled = false;
+    setBusy(true);
     api.flows(query)
       .then((dto) => {
         if (cancelled) return;
@@ -295,7 +298,7 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
+      }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [queryKey, refresh]);
 
@@ -303,13 +306,15 @@ export function WorkspacesView({ route, navigate, live }: ViewProps) {
   const filtered = query.from !== undefined || query.to !== undefined;
 
   return (
-    <section class="ws" aria-busy={flows === undefined}>
-      {error && <p class="notice" role="alert">작업 공간을 불러올 수 없습니다: {error}</p>}
+    <section class="ws" aria-busy={busy}>
+      {error && <p class="notice" role="alert">작업 공간을 불러올 수 없습니다: {error} <button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       {flows !== undefined && flows.length === 0 && <ListEmpty filtered={filtered} route={route} navigate={navigate} />}
       {flows !== undefined && flows.length > 0 && (
         <div class="card">
           <ul class="wslist" aria-label="herdr 작업 공간">
-            {flows.map((entry) => <FlowRow key={entry.id} entry={entry} route={route} summary={summaries[entry.id]} />)}
+            {flows.map((entry) => <FlowRow key={entry.id} entry={entry} route={route} summary={summaries[entry.id]}
+              onRetry={() => setRefresh(n => n + 1)} />)}
           </ul>
         </div>
       )}
@@ -435,7 +440,7 @@ export function Session({ link, session, route, findings, usageBySpan, flow, pan
 }) {
   const open = turnsOpen(session.turns.length);
   const outside = !sessionInWindow(session, flow ?? null);
-  const lifecycle = session.endedAt !== null ? "ended" : paneClosed || newerSession || flow?.endedMs != null ? "end_not_observed" : "in_progress";
+  const lifecycle = session.endedAt !== null ? "ended" : paneClosed || newerSession || flow?.endedMs != null ? "end_not_observed" : "unknown";
   return (
     <article class="sess" data-session={session.id}>
       <header class="sess__head">
@@ -446,7 +451,7 @@ export function Session({ link, session, route, findings, usageBySpan, flow, pan
           {link ? link.basis === "reported" ? "herdr 직접 기록" : "skillar 추정" : "herdr 외부"}
         </span>
         <span class="sess__meta">대화 차례 {session.turns.length}개</span>
-        <span class="tag" data-session-status={lifecycle}>{lifecycle === "ended" ? "종료됨" : lifecycle === "end_not_observed" ? "종료 미확인" : "진행 중"}</span>
+        <span class="tag" data-session-status={lifecycle}>{lifecycle === "ended" ? "종료됨" : lifecycle === "end_not_observed" ? "종료 미확인" : "상태 미상"}</span>
         {outside && <span class="tag" data-session-window="outside" title="이 워크플로 실행 구간 밖의 패널 기록으로, 단계 결과에는 포함되지 않습니다">워크플로 구간 밖</span>}
       </header>
       {session.turns.length === 0
@@ -556,7 +561,7 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
         </div>
         <div>
           <dt>종료</dt>
-          <dd class={report.flow?.endedMs ? undefined : "dim"}>{report.flow?.endedMs ? formatStarted(report.flow.endedMs) : "진행 중"}</dd>
+          <dd class={report.flow?.endedMs != null ? undefined : "dim"}>{report.flow?.endedMs != null ? formatStarted(report.flow.endedMs) : "상태 미상"}</dd>
         </div>
         <div>
           <dt>패널</dt>
@@ -644,7 +649,8 @@ export function WorkspaceView({ route, live, embedded = false }: ViewProps) {
   if (error !== undefined && report === undefined) {
     return (
       <section class="ws">
-        <p class="notice" role="alert">이 워크플로를 불러올 수 없습니다: {error}</p>
+        <p class="notice" role="alert">이 워크플로를 불러올 수 없습니다: {error} <button type="button" class="btn"
+          onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>
         <a class="btn ws__backbtn" href={backHref}>작업 공간 목록으로</a>
       </section>
     );

@@ -115,9 +115,9 @@ test("a token is issued only by an explicit POST of the validated draft and the 
   assert.deepEqual(result, mcpPatResponseSchema.parse({ connection: pat, token: syntheticToken }));
 });
 
-test("a response whose token is not a skm_ credential is refused", async t => {
+test("a success response whose token is not a skm_ credential has an unconfirmed outcome", async t => {
   mockFetch(t, 200, { connection: pat, token: "skm_short" });
-  await assert.rejects(createPat(checkDraft(draft).body), error => classifyFailure(error) === "unexpected");
+  await assert.rejects(createPat(checkDraft(draft).body), error => classifyFailure(error) === "unconfirmed");
 });
 
 test("the model holds a created token masked, in memory only, until dismissed; the connection stays listed", () => {
@@ -194,9 +194,9 @@ test("revocation needs a confirmation step, keeping is free of requests, and con
   assert.equal(update(revoking, { type: "revoke-failed" }).revoking, null);
 });
 
-test("a revoke answer other than revoked:true is refused and a 404 is reported as disabled", async t => {
+test("a success revoke answer other than revoked:true is unconfirmed and a 404 is reported as disabled", async t => {
   mockFetch(t, 200, { revoked: false });
-  await assert.rejects(revokeConnection(connectionId), error => classifyFailure(error) === "unexpected");
+  await assert.rejects(revokeConnection(connectionId), error => classifyFailure(error) === "unconfirmed");
   mockFetch(t, 404, { error: "not_found" });
   await assert.rejects(revokeConnection(connectionId), error => classifyFailure(error) === "disabled");
 });

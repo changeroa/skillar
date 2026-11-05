@@ -1,6 +1,6 @@
 import { h } from "preact";
 import type { JSX } from "preact";
-import { useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_RESOURCES } from "../../../shared/dist/private-skills.js";
 import { ENTRYPOINT, formatBytes, mediaTypeFor, mergePickedFiles, readFrontMatter, relativePaths, removeFile } from "./model.ts";
 import type { Draft, DraftFile } from "./model.ts";
@@ -10,10 +10,23 @@ export type EditorProps = {
   readonly idPrefix: string;
   readonly busy: boolean;
   readonly notes: readonly string[];
-  readonly onChange: (next: Draft, notes: readonly string[]) => void;
+  readonly onChange: (next: Draft | ((current: Draft) => Draft), notes: readonly string[]) => void;
 };
 
 const PICK_LIMIT = 400;
+
+/** Drafts stay in memory; a page exit must not silently discard them. */
+export function useDraftGuard(dirty: boolean): void {
+  useLayoutEffect(() => {
+    if (!dirty || typeof window === "undefined") return;
+    const leave = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", leave);
+    return () => window.removeEventListener("beforeunload", leave);
+  }, [dirty]);
+}
 
 export type PickedSelection = { readonly files: readonly DraftFile[]; readonly notes: readonly string[] };
 
@@ -48,17 +61,56 @@ export async function readSelection(list: FileList): Promise<PickedSelection> {
 export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorProps) {
   const folderInput = useRef<HTMLInputElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
+  const generation = useRef(0);
+  const queued = useRef<{ readonly generation: number; readonly selection: PickedSelection } | null>(null);
+  const latest = useRef(draft);
+  const locked = useRef(busy);
+  latest.current = draft;
+  locked.current = busy;
+  const [undo, setUndo] = useState<Draft | null>(null);
+  const [readError, setReadError] = useState("");
+  const [readMessage, setReadMessage] = useState("");
+  const applySelection = (selection: PickedSelection) => {
+    const previous = latest.current;
+    const merged = mergePickedFiles(previous, selection.files);
+    if (selection.files.length > 0) setUndo(previous);
+    latest.current = merged.draft;
+    onChange(current => mergePickedFiles(current, selection.files).draft, [...selection.notes, ...merged.notes]);
+  };
+  useLayoutEffect(() => {
+    if (busy) return;
+    const pending = queued.current;
+    queued.current = null;
+    if (pending !== null && generation.current === pending.generation) applySelection(pending.selection);
+    setReadMessage("");
+  }, [busy]);
+  useEffect(() => () => {
+    generation.current += 1;
+    queued.current = null;
+  }, []);
   const id = (name: string) => `${idPrefix}-${name}`;
   const front = readFrontMatter(draft.document);
 
   const picked = async (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
     const input = event.currentTarget;
     const list = input.files;
-    if (list === null || list.length === 0) return;
-    const selection = await readSelection(list);
-    input.value = "";
-    const merged = mergePickedFiles(draft, selection.files);
-    onChange(merged.draft, [...selection.notes, ...merged.notes]);
+    if (busy || list === null || list.length === 0) return;
+    const id = ++generation.current;
+    queued.current = null;
+    setReadError("");
+    try {
+      const reading = readSelection(list);
+      input.value = "";
+      const selection = await reading;
+      if (id !== generation.current) return;
+      if (locked.current) {
+        queued.current = { generation: id, selection };
+        setReadMessage("선택한 파일을 읽었습니다. 진행 중인 작업이 끝나면 수정 내용에 적용합니다.");
+      } else applySelection(selection);
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      if (id === generation.current) setReadError("파일을 읽지 못했습니다. 수정 내용은 유지했습니다. 파일을 다시 선택하세요.");
+    }
   };
 
   const fileRows = draft.files.map(file => h("li", { key: file.path, class: "file-row" },
@@ -66,7 +118,7 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
       h("code", null, file.path),
       h("span", { class: "note" }, `${formatBytes(file.bytes.length)} · ${file.mediaType}`)),
     h("button", { class: "button secondary file-row__remove", type: "button", disabled: busy,
-      "aria-label": `${file.path} 제거`, onClick: () => onChange(removeFile(draft, file.path), []) }, "제거")));
+      "aria-label": `${file.path} 제거`, onClick: () => onChange(current => removeFile(current, file.path), []) }, "제거")));
 
   return h("div", { class: "editor" },
     h("div", { class: "editor__files" },
@@ -76,9 +128,15 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
           onClick: () => folderInput.current?.click() }, "스킬 폴더 선택\u2026"),
         h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
           onClick: () => filesInput.current?.click() }, "파일 선택\u2026"),
-        h("input", { ref: folderInput, type: "file", webkitdirectory: true, multiple: true, hidden: true, tabIndex: -1,
+        h("input", { ref: folderInput, type: "file", disabled: busy, webkitdirectory: true, multiple: true, hidden: true, tabIndex: -1,
           "aria-hidden": "true", onChange: picked }),
-        h("input", { ref: filesInput, type: "file", multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
+        h("input", { ref: filesInput, type: "file", disabled: busy, multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
+      readError !== "" && h("p", { class: "note", role: "alert" }, readError),
+      readMessage !== "" && h("p", { class: "note", role: "status" }, readMessage),
+      undo !== null && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
+        onChange(current => ({ ...current, document: undo.document, files: undo.files }), []);
+        setUndo(null);
+      } }, "되돌리기"),
       notes.length > 0 && h("ul", { class: "editor__notes", role: "status", "aria-live": "polite" },
         notes.map(note => h("li", { key: note, class: "note" }, note))),
       h("p", { class: "editor__subtitle", id: id("files-title") }, "추가 파일"),
@@ -91,10 +149,16 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange }: EditorPr
     h("label", { class: "field-label document-label", for: id("document") }, `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`),
     h("textarea", { id: id("document"), class: "document-field", rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
       value: draft.document,
-      onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => onChange({ ...draft, document: event.currentTarget.value }, []) }),
+      onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => {
+        const document = event.currentTarget.value;
+        onChange(current => ({ ...current, document }), []);
+      } }),
     h("label", { class: "choice choice--ack" },
       h("input", { type: "checkbox", checked: draft.acknowledged, disabled: busy,
-        onChange: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => onChange({ ...draft, acknowledged: event.currentTarget.checked }, []) }),
+        onChange: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+          const acknowledged = event.currentTarget.checked;
+          onChange(current => ({ ...current, acknowledged }), []);
+        } }),
       h("span", null,
         h("strong", null, "이 파일을 내 비공개 skillar 보관함에 업로드하는 데 동의합니다."),
         h("span", { class: "choice__detail" },

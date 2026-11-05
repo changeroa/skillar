@@ -64,6 +64,7 @@ export function HeatmapView({ route, navigate, live }: ViewProps) {
   const [skillWeek, setSkillWeek] = useState<SkillWeekDto>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(true);
   const [selection, setSelection] = useState<HourSelection | undefined>(() => selectionFromFilter(route.filter));
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export function HeatmapView({ route, navigate, live }: ViewProps) {
 
   useEffect(() => {
     let cancelled = false;
+    setBusy(true);
     Promise.all([api.heatmap(dataFilter, { tz, weekStart, bucket: requestBucket }), api.skillWeek(dataFilter)])
       .then(([nextHeat, nextSkillWeek]) => {
         if (cancelled) return;
@@ -87,7 +89,7 @@ export function HeatmapView({ route, navigate, live }: ViewProps) {
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
+      }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [filterKey, tz, weekStart, requestBucket, refresh]);
 
@@ -129,9 +131,10 @@ export function HeatmapView({ route, navigate, live }: ViewProps) {
   const filtered = !isEmptyFilter(dataFilter);
 
   return (
-    <section class="hm-stack" aria-busy={grid === undefined}>
+    <section class="hm-stack" aria-busy={busy}>
       <HeatmapStyles />
-      {error && <p class="notice" role="alert">활동 분포를 불러올 수 없습니다: {error}</p>}
+      {error && <p class="notice" role="alert">활동 분포를 불러올 수 없습니다: {error} <button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       {!grid && !error && <p class="dim" role="status">활동 분포를 집계하는 중{"\u2026"}</p>}
       {grid && (
         <article class="hmc" aria-labelledby="hm-dow-title">

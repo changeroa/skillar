@@ -16,6 +16,7 @@ import type { DeviceState } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
+import { dashboardPaths, dashboardQuerySchema, dashboardReferenceSchema, dashboardReportStatusSchema, dashboardResultPartRequestSchema } from "../../../shared/dist/activity-dashboard.js";
 
 type Loaded<T> = {
   readonly status: "loading" | "ready" | "failed"; readonly data: T | null;
@@ -154,7 +155,15 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
             </SnapshotSection>
           ) : (
             <section class="dash-empty" aria-labelledby="dash-empty-title">
-              {profiles.status === "ready" && !hasViewableSources ? (
+              {profiles.status === "loading" ? (
+                <h2 id="dash-empty-title" data-state="loading">출처 확인 중</h2>
+              ) : profiles.status === "failed" ? (
+                <>
+                  <h2 id="dash-empty-title" data-state="failed">출처를 불러오지 못했습니다</h2>
+                  <p role="alert">{profiles.message}</p>
+                  <button class="button secondary" type="button" onClick={reloadProfiles}>다시 시도</button>
+                </>
+              ) : !hasViewableSources ? (
                 <>
                   <h2 id="dash-empty-title">조회할 수 있는 출처가 없습니다</h2>
                   <p>새 기기를 연결하거나 로컬 대시보드에서 기록을 확인하세요. 기기 연결과 기록 업로드 동의는 별개입니다.</p>
@@ -192,14 +201,15 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   const [phase, setPhase] = useState<Phase>({ kind: "checking" });
   const [selected, setSelected] = useState<DashboardProfile | null>(null);
   const [reports, setReports] = useState<ReadonlyMap<string, DashboardReportStatus>>(new Map());
-  const [failure, setFailure] = useState<RequestFailure | null>(null);
+  const [failures, setFailures] = useState<ReadonlyMap<string, RequestFailure>>(new Map());
   const cloud = useRef<CloudApi | null>(null);
+  const failureEpoch = useRef(0);
   const close = useCallback(() => {
     cloud.current?.dispose();
     cloud.current = null;
     setSelected(null);
     setReports(new Map());
-    setFailure(null);
+    setFailures(new Map());
   }, []);
   const expire = useCallback(() => {
     close();
@@ -217,12 +227,50 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   const select = (profile: DashboardProfile) => {
     if (selected !== null && profileKey(selected) === profileKey(profile)) return;
     close();
+    let sequence = 0;
+    const runs = new Map<string, number>();
+    const requests = new Map<string, number>();
+    const jobs = new Map<string, { readonly key: string; readonly run: number; readonly epoch: number }>();
     const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain }, {
       signal, onUnauthorized: expire, live: {},
       onReport: status => setReports(current => new Map(current).set(status.jobId, status)),
       fetch: async (input, init) => {
+        const request = input instanceof Request ? input : null;
+        const url = new URL(request?.url ?? String(input), location.origin);
+        const query = url.pathname === dashboardPaths.query && typeof init?.body === "string"
+          ? dashboardQuerySchema.parse(JSON.parse(init.body)) : null;
+        const reference = typeof init?.body === "string" &&
+          (url.pathname === dashboardPaths.reportStatus || url.pathname === dashboardPaths.reportResult)
+          ? (url.pathname === dashboardPaths.reportResult ? dashboardResultPartRequestSchema : dashboardReferenceSchema).parse(JSON.parse(init.body))
+          : null;
+        const job = reference === null ? undefined : jobs.get(reference.jobId);
+        const key = query === null ? job?.key ?? JSON.stringify([init?.method ?? request?.method ?? "GET", url.href, init?.body ?? ""])
+          : JSON.stringify(["report", query.profile, query.query, query.tz]);
+        const id = ++sequence;
+        const run = query === null ? job?.run ?? id : id;
+        const epoch = query === null ? job?.epoch ?? failureEpoch.current : failureEpoch.current;
+        if (query !== null || job === undefined) runs.set(key, run);
+        if (runs.get(key) === run && epoch === failureEpoch.current) requests.set(key, id);
+        const current = () => cloud.current === api && epoch === failureEpoch.current &&
+          runs.get(key) === run && requests.get(key) === id;
         const response = await fetch(input, init);
-        if (!response.ok && response.status !== 401) setFailure(await failureOf(response));
+        if (response.ok && query !== null) {
+          const status = dashboardReportStatusSchema.safeParse(await response.clone().json());
+          if (status.success && (jobs.get(status.data.jobId)?.run ?? 0) < run) {
+            jobs.set(status.data.jobId, { key, run, epoch });
+          }
+        }
+        if (!response.ok && response.status !== 401) {
+          const failure = await failureOf(response);
+          if (current()) setFailures(previous => new Map(previous).set(key, failure));
+        } else if (response.ok && current()) {
+          setFailures(current => {
+            if (!current.has(key)) return current;
+            const next = new Map(current);
+            next.delete(key);
+            return next;
+          });
+        }
         return response;
       },
     });
@@ -233,11 +281,12 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   if (phase.kind === "checking") return <p class="note session-status" role="status" aria-live="polite">계정을 확인하는 중{"\u2026"}</p>;
   if (phase.kind !== "signed-in") return <SignedOut phase={phase} />;
   return (
-    <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failure} onSelect={select}
+    <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failures.values().next().value ?? null} onSelect={select}
       onClose={close} onUnauthorized={expire}
       onRebuild={() => {
+        failureEpoch.current += 1;
         setReports(new Map());
-        setFailure(null);
+        setFailures(new Map());
         cloud.current?.refresh();
       }} />
   );

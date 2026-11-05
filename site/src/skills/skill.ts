@@ -10,7 +10,7 @@ import {
   classifyFailure, deleteSkill, deleteVersion, describeFailure, isUnauthorized, publishVersion, readExport, readSkill, setHead,
   setPinned, technicalDetail,
 } from "./api.ts";
-import { DraftEditor } from "./editor.ts";
+import { DraftEditor, useDraftGuard } from "./editor.ts";
 import { buildPackage, draftFromExport, exportFileName, formatBytes, SkillDraftError } from "./model.ts";
 import type { Draft } from "./model.ts";
 import { when } from "./library.ts";
@@ -24,6 +24,7 @@ export type SkillProps = {
   readonly onDeleted: (name: string) => void;
   readonly onBack: () => void;
   readonly onUnauthorized: () => void;
+  readonly onDirtyChange?: (dirty: boolean) => void;
 };
 
 type Version = PrivateSkillDetail["versions"][number];
@@ -89,7 +90,7 @@ function NoteLine({ note }: { readonly note: Note }) {
   ];
 }
 
-export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, onDeleted, onBack, onUnauthorized }: SkillProps) {
+export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, onDeleted, onBack, onUnauthorized, onDirtyChange }: SkillProps) {
   const [detailState, setDetailState] = useState<DetailState>({ status: "loading", detail: null });
   const [draftState, setDraftState] = useState<DraftState>({ status: "loading" });
   const [notes, setNotes] = useState<readonly string[]>([]);
@@ -101,10 +102,18 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
   const [conflict, setConflict] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [typed, setTyped] = useState("");
+  const [retry, setRetry] = useState(0);
+  const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const confirmField = useRef<HTMLInputElement | null>(null);
   const draftRef = useRef<DraftState>(draftState);
   draftRef.current = draftState;
+  const dirty = isDirty(draftState);
+  useDraftGuard(dirty);
+  useLayoutEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
 
   const detail = detailState.status === "gone" ? null : detailState.detail;
   const name = detail?.skill.name ?? summary?.name ?? "";
@@ -174,7 +183,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       else setDetailState(current => ({ status: "failed", detail: current.status === "gone" ? null : current.detail, message: describeFailure(error, "스킬 열기") }));
     });
     return () => { active = false; };
-  }, [skillId, signal]);
+  }, [skillId, signal, retry]);
 
   useLayoutEffect(() => {
     if (focusHeading > 0) heading.current?.focus();
@@ -248,17 +257,18 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
 
   const publish = async (event: Event) => {
     event.preventDefault();
-    if (draftState.status !== "ready" || head === null) return;
-    const draft = draftState.draft;
-    const built = await buildPackage(draft);
-    if (!built.ok) {
-      setProblems(built.problems);
-      return;
-    }
-    setProblems([]);
+    if (submitting.current || busy || draftState.status !== "ready" || head === null) return;
+    submitting.current = true;
     setBusy(true);
-    setPublishNote({ text: "게시 중\u2026", technical: null });
+    const draft = draftState.draft;
     try {
+      const built = await buildPackage(draft);
+      if (!built.ok) {
+        setProblems(built.problems);
+        return;
+      }
+      setProblems([]);
+      setPublishNote({ text: "게시 중\u2026", technical: null });
       const next = await publishVersion(skillId, draft.base, built.package, signal);
       afterPublish(next, draft, built.package);
       setPublishNote({ text: `리비전 ${next.skill.head.revision}을 게시했습니다.`, technical: null });
@@ -273,6 +283,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       gone(error, "게시");
       setPublishNote(failureNote(error, "게시"));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
@@ -342,7 +353,9 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
   const title = name === "" ? "스킬" : `스킬: ${name}`;
   const panelHead = h("div", { class: "panel__head" },
     h("h2", { id: "skill-title", ref: heading, tabIndex: -1 }, title),
-    h("button", { class: "button secondary", type: "button", onClick: onBack }, "보관함으로 돌아가기"));
+    h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
+      if (!dirty || confirm("저장하지 않은 수정 내용이 사라집니다. 보관함으로 돌아갈까요?")) onBack();
+    } }, "보관함으로 돌아가기"));
 
   if (detailState.status === "gone") {
     return h("section", { class: "panel skill", "aria-labelledby": "skill-title" },
@@ -387,6 +400,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     (detail?.skill.description ?? summary?.description) !== undefined && h("p", { class: "account-lead" }, detail?.skill.description ?? summary?.description),
     h("p", { class: "note skill__status", role: "status", "aria-live": "polite" },
       detailState.status === "loading" ? "스킬 불러오는 중\u2026" : detailState.status === "failed" ? detailState.message : ""),
+    detailState.status === "failed" && h("button", { class: "button secondary", type: "button", onClick: () => setRetry(current => current + 1) }, "다시 시도"),
     detail !== null && h("dl", { class: "account-status skill__facts" },
       h("div", null, h("dt", null, "현재 리비전"), h("dd", null, String(detail.skill.head.revision))),
       h("div", null, h("dt", null, "보관 버전 수"), h("dd", null, String(detail.versions.length))),
@@ -413,13 +427,22 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
           draftState.status === "ready"
             ? h("dl", { class: "account-status resource-list" }, draftState.resources.map(resource =>
               h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)), h("dd", null, `${formatBytes(resource.bytes)} \u00b7 ${resource.mediaType}`))))
-            : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "현재 버전 불러오는 중\u2026" : draftState.message)),
+            : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "현재 버전 불러오는 중\u2026" : draftState.message),
+          draftState.status === "failed" && head !== null && h("button", {
+            class: "button secondary", type: "button", disabled: busy, onClick: () => loadDraft(head),
+          }, "다시 시도")),
         draftState.status === "ready" && h("form", { class: "skill__section publish", onSubmit: publish, "aria-labelledby": "edit-title" },
           h("h3", { id: "edit-title", class: "panel__subtitle" }, "새 버전 편집·게시"),
           h("p", { class: "note" }, `게시하기 전까지 수정 내용은 이 화면에만 있습니다. 게시하면 리비전 ${draftState.draft.base?.revision ?? detail.skill.head.revision}을 기준으로 리비전 ${detail.skill.head.revision + 1}을 만들며, 이전 버전은 보관합니다.`),
           h(DraftEditor, { draft: draftState.draft, idPrefix: "edit-skill", busy, notes,
             onChange: (next, newNotes) => {
-              setDraftState({ ...draftState, draft: next });
+              setDraftState(current => {
+                switch (current.status) {
+                  case "ready": return { ...current, draft: typeof next === "function" ? next(current.draft) : next };
+                  case "loading": case "failed": return current;
+                  default: { const exhaustive: never = current; return exhaustive; }
+                }
+              });
               if (newNotes.length > 0) setNotes(newNotes);
             } }),
           problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),

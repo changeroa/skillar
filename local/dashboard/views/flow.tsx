@@ -283,7 +283,8 @@ export function FlowView({ route, navigate, live }: ViewProps) {
 
   return (
     <section aria-busy={dto === undefined && !error} data-mode={dto ? shown : undefined} data-top={top} data-unit={unit}>
-      {error && <p class="notice" role="alert">사용 흐름을 불러올 수 없습니다: {error}</p>}
+      {error && <p class="notice" role="alert">사용 흐름을 불러올 수 없습니다: {error} <button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       {body}
     </section>
   );

@@ -160,7 +160,7 @@ test("searchDetail normalizes a sparse detail and evalCasePayload posts query pl
   assert.deepEqual(trace.evalCasePayload(detail), { query: "Terraform으로 R2 버킷 만들어줘", fromTraceId: "tr_c03785ef" });
 
   const sparse = trace.searchDetail({ ts: 1, kind: "search", summary: "", detail: { kind: "search", candidates: [{ uri: "x", score: 0.5, rank: 1 }] } });
-  assert.deepEqual(sparse, { kind: "search", traceId: "", chosen: [], query: "", mode: "automatic", candidates: [{ uri: "x", score: 0.5, rank: 1 }], abstained: undefined, elapsedMs: 0, total: 1 });
+  assert.deepEqual(sparse, { kind: "search", traceId: "", chosen: [], query: "", mode: "automatic", candidates: [{ uri: "x", score: 0.5, rank: 1 }], abstained: undefined, elapsedMs: undefined, total: 1 });
   assert.deepEqual(trace.evalCasePayload(sparse), { query: "" }, "no trace id -> fromTraceId omitted");
   assert.equal(trace.isSearchStep(step), true);
   assert.equal(trace.isSearchStep(fixtures.traces[ABSTAINED_SESSION][0]), false);
