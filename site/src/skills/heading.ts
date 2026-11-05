@@ -3,7 +3,7 @@ import { useLayoutEffect } from "preact/hooks";
 
 /** T1 may supply the shared title slot. Older shells keep their introduction but not a duplicate h1. */
 export function SkillsHeading({ name }: { readonly name: string }) {
-  const slot = document.querySelector<HTMLElement>("[data-page-title]");
+  const slot = document.querySelector<HTMLElement>("#skills-page-title, [data-page-title]");
   useLayoutEffect(() => {
     if (slot !== null) {
       const previous = slot.textContent;

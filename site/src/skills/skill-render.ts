@@ -9,7 +9,7 @@ import type { Version } from "./skill-state.ts";
 import type { useSkillController } from "./skill.ts";
 import { VersionDiff } from "./diff-panel.ts";
 export function SkillView({ detailState, draftState, detail, name, head, heading, busy, dirty, pending, notes, problems, conflict, publishNote, versionsNote, deleteNote, setRetry, setDraftState, setNotes, loadDraft, run, review, publish, exportVersion, removeSkill, openConfirmation, confirmation, onBack, skillId, signal, onUnauthorized, summary }: ReturnType<typeof useSkillController>) {
-  const title = name === "" ? "스킬" : `스킬: ${name}`;
+  const title = name === "" ? "스킬" : name;
   const panelHead = h("div", { class: "panel__head" },
     h("h2", { id: "skill-title", ref: heading, tabIndex: -1 }, title),
     h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {

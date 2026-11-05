@@ -9,6 +9,7 @@ import { LibraryPanel, sortSkills } from "./library.ts";
 import { draftIssues, draftProblems, emptyDraft } from "./model.ts";
 import { candidateHead, SearchBox } from "./search.ts";
 import { publishDraft } from "./skill-publish.ts";
+import { SkillsHeading } from "./heading.ts";
 import { act, all, byTag, buttonNamed, FakeEvent, input, mount, submit, waitFor } from "../../test/helpers/t10-dom.mjs";
 
 const skillId = "11223344-1122-4122-8122-112233445566";
@@ -251,4 +252,19 @@ test("publication preparation preserves the existing base and explicit acknowled
   assert.deepEqual(body.base, summary.head);
   assert.equal(body.acknowledgePrivateUpload, true);
   assert.equal(body.package.manifestDigest, packages[0].manifestDigest);
+});
+
+test("entity heading updates T1's h1 container without creating a duplicate", async t => {
+  // Given
+  const { h } = await import("preact");
+  function Shell({ name }) {
+    globalThis.document.querySelector = () => globalThis.document.getElementById("skills-page-title");
+    return h("div", null, h("h1", { id: "skills-page-title" }, "스킬"), h(SkillsHeading, { name }));
+  }
+  const { container, show } = await mount(t, Shell, { name: "선택한 스킬" });
+  // When
+  await show({ name: "다른 스킬" });
+  // Then
+  assert.equal(byTag(container, "h1").length, 1);
+  assert.equal(byTag(container, "h1")[0].textContent, "다른 스킬");
 });
