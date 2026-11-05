@@ -4,7 +4,7 @@ import { sourceOperationSchema } from "../../shared/dist/activity-commands.js";
 import { DashboardRequestError, readCommandStatus, routes, submitCommand } from "../src/dashboard/api.ts";
 import {
   COMMAND_KINDS, COMMAND_STATE_COPY, buildOperation, checkFailed, checked, classifyFailure, commandRequest, draftFromOperation,
-  emptyCommandDraft, fromStatus, isCommandId, newSubmission, nextActions, statusRequest, submitFailed, submitted,
+  emptyCommandDraft, fromStatus, isCommandId, newSubmission, nextActions, resultEntries, statusRequest, submitFailed, submitted,
 } from "../src/dashboard/commands.ts";
 
 const profile = { deviceId: "device-under-test", sourceDomain: "source-a" };
@@ -20,6 +20,21 @@ const drafts = {
 };
 const pending = { commandId, state: "pending", baseRevision: 40, sourceRevision: null, result: null, error: null };
 const operation = kind => buildOperation(drafts[kind]).operation;
+
+test("result entries retain exact machine keys and values alongside human labels", () => {
+  // Given a result with known fields, a structured value and an unfamiliar key.
+  const result = { stored: true, flowId: "flow-1", spec: { version: 2 }, toString: false };
+  // When it is projected into display entries.
+  const entries = resultEntries({ ...pending, state: "applied", result });
+  // Then the technical representation loses no keys or values.
+  assert.deepEqual(entries.map(({ key, value }) => ({ key, value })), [
+    { key: "stored", value: "true" }, { key: "flowId", value: "flow-1" },
+    { key: "spec", value: '{"version":2}' }, { key: "toString", value: "false" },
+  ]);
+  assert.ok(entries.every(entry => typeof entry.label === "string" && entry.label !== entry.key));
+  assert.deepEqual(resultEntries(null), []);
+  assert.deepEqual(resultEntries(pending), []);
+});
 
 function mockFetch(t, status, body) {
   const calls = [];

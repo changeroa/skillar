@@ -117,6 +117,7 @@ function CommandItem({ submission, busy, journalThrough, sourcesBusy, sourcesLoa
   const technical = outcome.kind === "refused" ? outcome.technical : outcome.kind === "tracked" ? outcome.status.error ?? outcome.technical : null;
   const checkNote = outcome.kind === "tracked" && outcome.check !== "ok" ? CHECK_COPY[outcome.check] : "";
   const waitingForUpload = actions.refresh && !actions.resubmit && submission.operation !== null && sourcesLoad > submission.sourcesLoad;
+  const results = resultEntries(status);
   const titleId = `command-${submission.commandId}`;
   return (
     <li class="command-item" aria-labelledby={titleId}>
@@ -129,14 +130,19 @@ function CommandItem({ submission, busy, journalThrough, sourcesBusy, sourcesLoa
         <div><dt>기준 리비전</dt><dd>저널 {submission.baseRevision}</dd></div>
         <div data-tone={copy.tone}><dt>상태</dt><dd>{copy.explanation}</dd></div>
         {status !== null && status.sourceRevision !== null && <div><dt>출처 리비전</dt><dd>{status.sourceRevision}</dd></div>}
-        {resultEntries(status).map(entry => <div key={entry.key}><dt>결과: {entry.key}</dt><dd><code>{entry.value}</code></dd></div>)}
+        {results.map(entry => <div key={entry.key}><dt>결과: {entry.label}</dt><dd><code>{entry.value}</code></dd></div>)}
       </dl>
       {copy.next !== null && <p class="note">{copy.next}</p>}
       {waitingForUpload && (
         <p class="note">출처를 새로 고쳤지만 여기 표시된 리비전은 아직 저널 {journalThrough}입니다. 기기의 다음 업로드를 기다린 뒤 다시 새로 고치세요.</p>
       )}
-      {technical !== null && (
-        <details class="command-item__technical"><summary>기술 정보</summary><p><code>{technical}</code></p></details>
+      {(technical !== null || results.length > 0) && (
+        <details class="command-item__technical"><summary>기술 정보</summary>
+          {technical !== null && <p><code>{technical}</code></p>}
+          {results.length > 0 && <dl class="account-status command__facts">
+            {results.map(entry => <div key={entry.key}><dt><code>{entry.key}</code></dt><dd><code>{entry.value}</code></dd></div>)}
+          </dl>}
+        </details>
       )}
       <div class="cluster command-item__actions">
         {actions.retry && <button class="button secondary" type="button" disabled={busy} onClick={onRetry}>같은 ID로 다시 시도</button>}

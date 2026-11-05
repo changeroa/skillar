@@ -91,7 +91,7 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
       {draft.mode === "managed-content" && (
         <fieldset class="consent__group" disabled={busy}>
           <legend>내용 범주</legend>
-          <p class="note">미리 선택된 항목은 없습니다. 여기에서 체크한 범주만 업로드됩니다.</p>
+          <p class="note">여기에서 체크한 범주만 업로드됩니다. 저장된 동의가 있으면 해당 선택을 표시합니다.</p>
           {CONTENT_KINDS.map(kind => (
             <label class="choice" key={kind}>
               <input type="checkbox" checked={draft.kinds.includes(kind)}
