@@ -180,6 +180,26 @@ test("layoutFlow survives narrow widths, drops dangling links, and yields nothin
   assert.equal(sankey.chartHeight(FLOW, true) <= 560, true);
 });
 
+test("route handles preserve every ribbon identity without overlapping touch targets", () => {
+  // Given: the full and twelve-session graphs at the chart's phone and desktop plot widths.
+  for (const dto of [FLOW, FLOW12]) for (const width of [560, 1140]) {
+    const height = 356;
+    const layout = sankey.layoutFlow(dto, { width, height: height - 22, top: 46, nodePadding: 44 });
+    // When: target geometry is allocated independently of the data-scaled ribbon widths.
+    const handles = sankey.routeHandles(layout, height);
+    // Then: every original link has an in-bounds 44px square, separated from all other handles.
+    assert.deepEqual([...handles.keys()].sort((a, b) => a - b), layout.links.map(link => link.index).sort((a, b) => a - b));
+    for (const handle of handles.values()) {
+      assert.ok(handle.x - 22 >= 0 && handle.x + 22 <= width);
+      assert.ok(handle.y - 22 >= 24 && handle.y + 22 <= height);
+      for (const other of handles.values()) {
+        if (other === handle) continue;
+        assert.ok(Math.abs(handle.x - other.x) >= 44 || Math.abs(handle.y - other.y) >= 44);
+      }
+    }
+  }
+});
+
 test("connected follows a session's state through both hops (upstream and downstream)", () => {
   const cols = columnOf(FLOW);
   const loaded = sankey.connected(FLOW, { kind: "node", node: FLOW.nodes.find((n) => n.id === "st:loaded") });

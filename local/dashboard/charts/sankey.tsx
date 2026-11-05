@@ -1,6 +1,6 @@
 import { REQUEST_STATUSES } from "../../src/request-status.js";
 import { sankey as sankeyLayout, sankeyLinkHorizontal, type SankeyNode } from "d3-sankey";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { FlowState as AdoptionState, FlowDto } from "../../src/types.js";
 import { STATE_LABEL } from "../state";
 
@@ -32,6 +32,32 @@ const NARROW_WIDTH = 640;
 const LABEL_GAP = 6;
 const TIP_OFFSET = 12;
 const OUTCOME_MARGIN = 80;
+const TARGET_SIZE = 44;
+const TARGET_STEP = 48;
+
+// A chart is unmounted on drill-down. Keep the opener for browser Back, not the destination.
+let returnFocus: { readonly url: string; readonly action: string } | undefined;
+
+/** Separate route handles from data-scaled ribbon widths; each gap owns a non-overlapping grid. */
+export function routeHandles(layout: FlowLayout, height: number): Map<number, { x: number; y: number }> {
+  const handles = new Map<number, { x: number; y: number }>();
+  for (const column of [0, 1]) {
+    const source = layout.nodes.find(node => node.column === column);
+    const destination = layout.nodes.find(node => node.column === column + 1);
+    if (!source || !destination) continue;
+    const cells: { x: number; y: number }[] = [];
+    for (let y = HEADER_HEIGHT + TARGET_SIZE / 2; y <= height - TARGET_SIZE / 2; y += TARGET_STEP) {
+      for (let x = source.x1 + TARGET_SIZE + TARGET_SIZE / 2; x <= destination.x0 - TARGET_SIZE - TARGET_SIZE / 2; x += TARGET_STEP) cells.push({ x, y });
+    }
+    for (const link of layout.links.filter(link => layout.nodes.some(node => node.id === link.source && node.column === column))) {
+      const middle = { x: (source.x1 + destination.x0) / 2, y: (link.y0 + link.y1) / 2 };
+      cells.sort((a, b) => Math.hypot(a.x - middle.x, a.y - middle.y) - Math.hypot(b.x - middle.x, b.y - middle.y));
+      const cell = cells.shift();
+      if (cell) handles.set(link.index, cell);
+    }
+  }
+  return handles;
+}
 
 /** The value part of a node id: "t:review" -> "review", "s:skill://x/SKILL.md" -> "skill://x/SKILL.md". */
 export function nodeValue(node: Pick<FlowNode, "id">): string {
@@ -195,6 +221,7 @@ function describe(dto: FlowDto, target: FlowTarget): { title: string; sub: strin
 
 const SANKEY_CSS = `
 .sankey { position: relative; }
+.sankey.is-interactive { width: 100%; min-width: 0; box-sizing: border-box; contain: inline-size; overflow-x: auto; padding: 4px 4px var(--s-6); }
 .sankey__svg { display: block; overflow: visible; font: 500 var(--fs-cap) / 1 var(--font-sans); }
 .sankey__svg.is-narrow { font-size: var(--fs-micro); }
 .sankey__head { fill: var(--ink-3); font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
@@ -217,9 +244,12 @@ const SANKEY_CSS = `
 .sankey__label--end, .sankey__head--end { text-anchor: end; }
 .sankey__head--mid { text-anchor: middle; }
 .sankey__count { fill: var(--ink-3); font-variant-numeric: tabular-nums; }
-.sankey a, .sankey [role="button"] { cursor: pointer; outline: none; }
-.sankey a:focus-visible .sankey__rect, .sankey [role="button"]:focus-visible .sankey__rect { stroke: var(--accent); stroke-width: 2px; }
-.sankey a:focus-visible .sankey__link { stroke-opacity: 0.85; }
+.sankey a, .sankey [role="button"] { cursor: pointer; }
+.sankey a:focus-visible, .sankey [role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sankey__hit { fill: transparent; pointer-events: all; }
+.sankey__handle { fill: var(--surface); stroke: var(--line-2); pointer-events: none; }
+.sankey__handle-count { fill: var(--ink); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.sankey__rect { pointer-events: none; }
 .sankey__tip { position: absolute; z-index: 2; max-width: 32ch; padding: var(--s-1) var(--s-2); border-radius: var(--r-sm); background: var(--ink); color: var(--bg); font-size: var(--fs-cap); font-weight: 500; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow-pop); pointer-events: none; }
 .sankey__tip-sub { opacity: 0.75; font-variant-numeric: tabular-nums; }
 `;
@@ -245,27 +275,41 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   const wrap = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<Hover>();
+  const actionable = Boolean(onExpandOther)
+    || dto.nodes.some(node => hrefFor({ kind: "node", node }))
+    || dto.links.some((link, index) => hrefFor({ kind: "link", link, index }));
 
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;
-    const measure = () => setWidth(Math.floor(el.getBoundingClientRect().width));
+    const measure = () => setWidth(Math.floor(el.clientWidth - (actionable ? 8 : 0)));
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [actionable]);
 
   const narrow = width < NARROW_WIDTH;
-  const height = chartHeight(dto, narrow);
+  const chartWidth = actionable ? Math.max(width, NARROW_WIDTH) : width;
   // Narrow screens keep outcome labels outside the bands (right margin); wide screens tuck them inside, left of the node.
-  const plotWidth = narrow ? width - OUTCOME_MARGIN : width;
+  const plotWidth = narrow ? chartWidth - OUTCOME_MARGIN : chartWidth;
+  const columns = Math.max(1, Math.floor(((plotWidth - 3 * NODE_WIDTH) / 2 - 2 * TARGET_SIZE - TARGET_SIZE) / TARGET_STEP) + 1);
+  const sourceColumns = new Map(dto.nodes.map(node => [node.id, node.column]));
+  const routes = [0, 1].map(column => dto.links.filter(link => sourceColumns.get(link.source) === column).length);
+  const nodeRows = Math.max(...[0, 1, 2].map(column => dto.nodes.filter(node => node.column === column).length));
+  const height = actionable ? Math.max(chartHeight(dto, narrow), HEADER_HEIGHT + TARGET_SIZE + Math.ceil(Math.max(...routes) / columns) * TARGET_STEP, HEADER_HEIGHT + TARGET_SIZE + nodeRows * TARGET_STEP) : chartHeight(dto, narrow);
   const layout = useMemo(
-    () => layoutFlow(dto, { width: plotWidth, height, top: HEADER_HEIGHT, nodeWidth: NODE_WIDTH, nodePadding: narrow ? 10 : 14 }),
-    [dto, plotWidth, height, narrow],
+    () => layoutFlow(dto, { width: plotWidth, height: actionable ? height - TARGET_SIZE / 2 : height, top: HEADER_HEIGHT + (actionable ? TARGET_SIZE / 2 : 0), nodeWidth: NODE_WIDTH, nodePadding: actionable ? TARGET_SIZE : narrow ? 10 : 14 }),
+    [dto, plotWidth, height, narrow, actionable],
   );
   const lit = useMemo(() => (hover ? connected(dto, hover.target) : undefined), [dto, hover?.target]);
   const nodeById = useMemo(() => new Map(layout.nodes.map((n) => [n.id, n])), [layout]);
+  const handles = useMemo(() => actionable ? routeHandles(layout, height) : new Map<number, { x: number; y: number }>(), [layout, height, actionable]);
+  useLayoutEffect(() => {
+    if (!returnFocus || returnFocus.url !== location.href || !layout.nodes.length) return;
+    const opener = wrap.current?.querySelector<SVGElement>(`[data-flow-action="${CSS.escape(returnFocus.action)}"]`);
+    if (opener) { opener.focus(); returnFocus = undefined; }
+  }, [layout]);
   // A gap holds one column's labels (narrow, 11px: ~6.2px per character) or two columns' labels (wide, 12px: ~7px), plus the count.
   const gap = (plotWidth - 3 * NODE_WIDTH) / 2;
   const maxChars = Math.max(8, Math.min(24, narrow ? Math.floor((gap * 0.95 - 22) / 6.2) : Math.floor((gap * 0.5 - 24) / 7)));
@@ -282,9 +326,10 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
     onFocus: () => setHover({ target, ...focusPoint }),
     onBlur: () => setHover(undefined),
   });
-  const activate = (target: FlowTarget) => (event: MouseEvent) => {
+  const activate = (target: FlowTarget, action: string) => (event: MouseEvent) => {
     if (!isPlainClick(event)) return;
     event.preventDefault();
+    returnFocus = { url: location.href, action };
     onActivate(target);
   };
 
@@ -292,30 +337,47 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   const flip = hover ? hover.x > width / 2 : false;
 
   return (
-    <div class="sankey" ref={wrap} style={{ minHeight: `${height}px` }}>
+    <div class={`sankey${actionable ? " is-interactive" : ""}`} ref={wrap} style={{ minHeight: `${height}px` }}>
       {layout.nodes.length > 0 && (
-        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`작업 유형에서 스킬, 결과로 이어지는 ${countText(dto, dto.requestCount ?? dto.sessionCount)}의 사용 흐름`}>
+        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={chartWidth} height={height} viewBox={`0 0 ${chartWidth} ${height}`} role="group" aria-label={`작업 유형에서 스킬, 결과로 이어지는 ${countText(dto, dto.requestCount ?? dto.sessionCount)}의 사용 흐름`}>
           <g aria-hidden="true">
             <text class="sankey__head" x={0} y={10}>{COLUMN_TITLE[dto.columns[0]]}</text>
             <text class="sankey__head sankey__head--mid" x={plotWidth / 2} y={10}>{COLUMN_TITLE[dto.columns[1]]}</text>
             <text class={narrow ? "sankey__head" : "sankey__head sankey__head--end"} x={narrow ? plotWidth - NODE_WIDTH : plotWidth} y={10}>{COLUMN_TITLE[dto.columns[2]]}</text>
           </g>
-          <g>
+          <g aria-hidden="true">
+            {layout.links.map(link => {
+              const source = nodeById.get(link.source), destination = nodeById.get(link.target), handle = handles.get(link.index);
+              if (!source || !destination) return null;
+              const left = (source.x1 + (handle?.x ?? 0)) / 2, right = ((handle?.x ?? 0) + destination.x0) / 2;
+              const path = handle ? `M${source.x1},${link.y0}C${left},${link.y0} ${left},${handle.y} ${handle.x},${handle.y}C${right},${handle.y} ${right},${link.y1} ${destination.x0},${link.y1}` : link.path;
+              const target: FlowTarget = { kind: "link", link, index: link.index };
+              return <path key={link.index} class={`sankey__link is-${link.state}${!lit || lit.links.has(link.index) ? " is-on" : ""}`} d={path} stroke-width={Math.max(1, link.width)}
+                onPointerEnter={event => setHover({ target, ...place(event) })}
+                onPointerMove={event => setHover({ target, ...place(event) })}
+                onPointerLeave={() => setHover(undefined)}
+                onClick={hrefFor(target) ? activate(target, `l${link.index}`) : undefined} />;
+            })}
+          </g>
+          <g role="group" aria-label="작업 유형 순서의 경로, 이어서 스킬 순서의 결과 경로">
             {layout.links.map((link) => {
               const target: FlowTarget = { kind: "link", link, index: link.index };
               const href = hrefFor(target);
               const source = nodeById.get(link.source);
               const dest = nodeById.get(link.target);
-              const on = !lit || lit.links.has(link.index);
-              const path = <path class={`sankey__link is-${link.state}${on ? " is-on" : ""}`} d={link.path} stroke-width={Math.max(1, link.width)} />;
-              const label = `${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
-              const handlers = bind(target, { x: ((source?.x1 ?? 0) + (dest?.x0 ?? plotWidth)) / 2, y: (link.y0 + link.y1) / 2 });
-              return href
-                ? <a key={`l${link.index}`} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{path}</a>
-                : <g key={`l${link.index}`} {...handlers}>{path}</g>;
+              const handle = handles.get(link.index);
+              if (!handle || !href) return null;
+              const { x, y } = handle;
+              const label = `${link.count} · ${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
+              const handlers = bind(target, handle);
+              return <a key={`l${link.index}`} data-flow-action={`l${link.index}`} tabindex={0} href={href} aria-label={label} onClick={activate(target, `l${link.index}`)} {...handlers}>
+                  <rect class="sankey__hit" x={x - TARGET_SIZE / 2} y={y - TARGET_SIZE / 2} width={TARGET_SIZE} height={TARGET_SIZE} />
+                  <rect class="sankey__handle" x={x - 16} y={y - 12} width={32} height={24} rx={2} />
+                  <text class="sankey__handle-count" x={x} y={y}>{link.count}</text>
+              </a>;
             })}
           </g>
-          <g>
+          <g role="group" aria-label="작업 유형, 스킬, 결과 열 순서의 항목">
             {layout.nodes.map((node) => {
               const target: FlowTarget = { kind: "node", node };
               const href = hrefFor(target);
@@ -324,27 +386,33 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const value = nodeValue(node);
               const cls = `sankey__node is-c${node.column}${node.other ? " is-other" : ""}${node.column === 2 && STATE_VALUES.has(value) ? ` is-${value}` : ""}${on ? " is-on" : ""}`;
               const end = labelLeft(node);
+              const visibleLabel = truncate(displayLabel(node), maxChars);
               const body = (
                 <>
+                  {(href || expandable) && <rect class="sankey__hit"
+                    x={end ? node.x1 - TARGET_SIZE : node.x0}
+                    y={Math.round(Math.max(HEADER_HEIGHT, Math.min(height - TARGET_SIZE, (node.y0 + node.y1 - TARGET_SIZE) / 2)))}
+                    width={TARGET_SIZE} height={TARGET_SIZE} />}
                   <rect class="sankey__rect" x={node.x0} y={node.y0} width={node.x1 - node.x0} height={Math.max(1, node.y1 - node.y0)} rx={2} />
                   <text class={`sankey__label${end ? " sankey__label--end" : ""}`} x={end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP} y={(node.y0 + node.y1) / 2}>
-                    {end ? <tspan class="sankey__count">{node.count}</tspan> : null}
-                    <tspan dx={end ? LABEL_GAP : 0}>{truncate(displayLabel(node), maxChars)}</tspan>
-                    {end ? null : <tspan class="sankey__count" dx={LABEL_GAP}>{node.count}</tspan>}
+                    {end ? <tspan class="sankey__count">{node.count} </tspan> : null}
+                    <tspan dx={end ? LABEL_GAP : 0}>{visibleLabel}</tspan>
+                    {end ? null : <tspan class="sankey__count" dx={LABEL_GAP}> {node.count}</tspan>}
                   </text>
                 </>
               );
-              const label = `${displayLabel(node)}: ${countText(dto, node.count)} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})`;
+              const label = `${end ? `${node.count} ${visibleLabel}` : `${visibleLabel} ${node.count}`}: ${countText(dto, node.count)} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})${visibleLabel !== displayLabel(node) ? ` · ${displayLabel(node)}` : ""}`;
               const handlers = bind(target, { x: end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP, y: (node.y0 + node.y1) / 2 });
-              if (href) return <a key={node.id} class={cls} href={href} aria-label={label} onClick={activate(target)} {...handlers}>{body}</a>;
+              if (href) return <a key={node.id} data-flow-action={node.id} tabindex={0} class={cls} href={href} aria-label={label} onClick={activate(target, node.id)} {...handlers}>{body}</a>;
               if (expandable) {
                 return (
                   <g
                     key={node.id}
+                    data-flow-action={node.id}
                     class={cls}
                     role="button"
                     tabindex={0}
-                    aria-label={`${displayLabel(node)}: 열별 최대 15개까지 표시`}
+                    aria-label={`${label} · 열별 최대 15개까지 표시`}
                     onClick={() => onExpandOther?.()}
                     onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onExpandOther?.(); } }}
                     {...handlers}
@@ -353,7 +421,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
                   </g>
                 );
               }
-              return <g key={node.id} class={cls} {...handlers}>{body}</g>;
+              return <g key={node.id} class={cls} tabindex={-1} {...handlers}>{body}</g>;
             })}
           </g>
         </svg>
