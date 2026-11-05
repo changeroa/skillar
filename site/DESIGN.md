@@ -17,6 +17,15 @@ reused, with no changes to their requests or confirmation semantics.
 DataTable accepts an optional controlled sort so URL restoration does not
 reset column visibility or density. PeekPanel can omit its full-page link
 when the record has no separate full-page route; it must not link to itself.
+Connections starts with the active status facet selected. The visible
+해제됨 보기 toggle uses `revoked=1` and clears the status facet to show all
+statuses; turning it off restores active-only. Explicit status facets still
+override that view, and `status=all` preserves a cleared facet on reload.
+The caption counts visible rows and names hidden revoked rows. Neither the
+table nor its counts appear until both connection lists have settled; a
+failed list keeps the count unknown. Table cells share a top-aligned 26px
+line box, with the status badge's borders included and the 44px name action
+aligned to the start rather than vertically centered.
 
 ## P-C approved dashboard home B
 

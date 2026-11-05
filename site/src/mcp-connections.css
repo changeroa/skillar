@@ -39,7 +39,7 @@
 .connections-help, .connections-filters, .connections-grid .ui-columns { padding: 0; margin: 0; background: transparent; border: 0; }
 .connections-help > summary, .connections-filters > summary { padding: var(--s1) 0; }
 .connections-list-section { margin-block: var(--s3); }
-.connections-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
+.connections-toolbar { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s2); }
 .connections-toolbar h2 { font-size: var(--ui); }
 .connections-search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: var(--small); }
 .connections-search input { min-width: 0; max-width: 100%; min-height: 44px; }
@@ -47,8 +47,10 @@
 .connections-filters .ui-facets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); border-inline-end: 0; }
 .connections-filters .ui-facets > p { grid-column: 1 / -1; }
 .connections-grid > * { min-width: 0; }
-.connection-row { display: block; min-height: 44px; min-width: 44px; max-width: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: start; font: inherit; overflow-wrap: anywhere; cursor: pointer; }
+.connection-row { display: flex; align-items: flex-start; min-height: 44px; min-width: 44px; max-width: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: start; font: inherit; overflow-wrap: anywhere; cursor: pointer; }
 .connection-row:hover { text-decoration: underline; }
+.connections-grid .ui-table td { vertical-align: top; line-height: 26px; }
+.connections-grid .ui-table .ui-pill { vertical-align: top; line-height: 24px; }
 .connections-grid .ui-table td:first-child { min-width: 132px; }
 .connections-grid .ui-table th { white-space: nowrap; }
 .connections-pairing, .connections-token-form { border-top: 1px solid var(--rule); margin-block: var(--s3); }
