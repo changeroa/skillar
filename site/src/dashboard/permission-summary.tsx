@@ -60,7 +60,7 @@ export function PermissionSummary({ devices, onRetry }: {
         <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>
       </> : devices.data?.length === 0 ? <p>연결된 기기가 없습니다. 읽기·기록·서버 처리·과거 데이터 권한을 확인할 기기가 아직 없습니다.</p> :
         <ul class="dash-permission-list">{devices.data?.map(device => <li key={device.deviceId}>
-          <h3>기기 <code title={device.deviceId}>{shortId(device.deviceId)}</code></h3>
+          <h3>{device.revokedAt !== null ? "해제된 기기" : <>기기 <code title={device.deviceId}>{shortId(device.deviceId)}</code></>}</h3>
           <ConsentFacts consent={device.consent} revoked={device.revokedAt !== null} />
         </li>)}</ul>}
   </section>;

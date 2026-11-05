@@ -76,9 +76,7 @@ for (const receivedAtMs of [null, profile.receivedAtMs]) {
     assert.deepEqual([...steps].map(step => step.getAttribute("data-state")), ["done", "done", "pending"]);
     assert.equal(picker(container), undefined);
     assert.equal(all(container, node => node.getAttribute("data-availability") === "metadata-only").length, 1);
-    const manage = all(container, node => node.localName === "a" && node.getAttribute("href") === "#dashboard-management")[0];
-    await act(() => manage.click());
-    assert.equal(all(container, node => node.id === "dashboard-management")[0].open, true);
+    assert.ok(buttonNamed(container, "첫 세션 확인")[0]);
   });
 }
 
@@ -217,6 +215,51 @@ test("failed device reads never reuse stale consent as completed checklist steps
   const steps = all(container, node => node.localName === "li");
   // Then
   assert.deepEqual(steps.map(step => step.getAttribute("data-state")), ["failed", "failed", "pending"]);
+});
+
+for (const [devices, expectedAction] of [
+  [readyDevices([]), "기기 연결 안내"],
+  [readyDevices([localDevice]), "업로드 범위 확인"],
+  [readyDevices([{ ...localDevice, consent: { mode: "metadata" } }]), "첫 세션 확인"],
+  [{ status: "loading", data: null, message: "", technical: "" }, "상태 다시 확인"],
+  [{ status: "failed", data: [localDevice], message: "조회 실패", technical: "" }, "다시 시도"],
+]) {
+  test(`setup strip offers one next action for ${devices.status} ${expectedAction}`, async t => {
+    // Given
+    let managed = 0, retried = 0;
+    const { container } = await mount(t, HomeChecklist, {
+      state: "none", message: "", technical: "", profiles: [], devices,
+      onRetry() { retried++; }, onManage() { managed++; },
+    });
+    const actions = all(container, node => node.localName === "a" || node.localName === "button");
+    // When
+    await act(() => actions[0].click());
+    // Then
+    assert.equal(actions.length, 1);
+    assert.equal(actions[0].textContent, expectedAction);
+    assert.equal(managed, expectedAction === "기기 연결 안내" || expectedAction === "업로드 범위 확인" ? 1 : 0);
+    assert.equal(retried, 1 - managed);
+  });
+}
+
+test("revoked notices deduplicate devices and keep raw IDs inside one closed disclosure", async t => {
+  // Given
+  const revoked = { ...localDevice, revokedAt: 2 };
+  const { container } = await mount(t, HomeChecklist, {
+    state: "none", message: "", technical: "",
+    profiles: [{ ...profile, availability: "revoked" }, { ...profile, sourceDomain: "second", availability: "revoked" }],
+    devices: readyDevices([revoked]), onRetry() {}, onManage() {},
+  });
+  // When
+  const disclosures = all(container, node => node.localName === "details");
+  const ids = all(container, node => node.localName === "code");
+  // Then
+  assert.equal(disclosures.length, 1);
+  assert.equal(disclosures[0].hasAttribute("open"), false);
+  assert.equal(disclosures[0].children[0].textContent, "해제된 기기 1개");
+  assert.equal(ids.length, 1);
+  assert.equal(ids[0].textContent, profile.deviceId);
+  assert.equal(disclosures[0].contains(ids[0]), true);
 });
 
 test("permission summary remains read only for each returned consent mode", async t => {

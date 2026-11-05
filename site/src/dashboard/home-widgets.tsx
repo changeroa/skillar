@@ -17,7 +17,8 @@ type ConnectionRow = {
 };
 const connectionColumns: readonly TableColumn<ConnectionRow>[] = [
   { id: "name", label: "대상 / 등록 ID", value: row => row.name,
-    render: row => <><span>{row.kind === "기기" ? <>기기 <code>{shortId(row.id)}</code></> : row.name}</span><small><code>{row.id}</code></small></> },
+    render: row => row.kind === "기기" && row.status === "철회됨" ? <span>해제된 기기</span> :
+      <><span>{row.kind === "기기" ? <>기기 <code>{shortId(row.id)}</code></> : row.name}</span><small><code>{row.id}</code></small></> },
   { id: "kind", label: "종류", value: row => row.kind },
   { id: "status", label: "등록 상태", value: row => row.status, render: row => <Pill>{row.status}</Pill> },
   { id: "consent", label: "업로드 동의", value: row => row.consent },
@@ -60,6 +61,7 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
   const dates = recentDays(now, range);
   const skills = catalog.data?.skills ?? [];
   const changes = lastChanges(skills, dates);
+  const weeklyChanges = lastChanges(skills, recentDays(now, 7)).total;
   const activeDevices = devices.data?.filter(device => device.revokedAt === null) ?? [];
   const connections = mcp.data?.connections ?? [];
   const activeMcp = connections.filter(connection => connectionStatus(connection, now / 1000) === "active");
@@ -76,8 +78,8 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
   return <section class="home-widgets" aria-label="자산·연결 요약" data-home-variant="B">
     <div class="home-number-tiles">
       <NumberTile label="스킬 수" value={catalog.data?.skills.length ?? null} note="보관함 전체 · 현재 등록된 스킬" />
-      <NumberTile label="보관 버전 수" value={catalog.data?.skills.length === 0 ? 0 : null}
-        note={catalog.data?.skills.length === 0 ? "보관함이 비어 있어 보관 버전도 없습니다." : "미측정 · 목록 응답에 버전 목록이 없습니다."} />
+      <NumberTile label="이번 주 변경 수" value={catalog.data === null ? null : weeklyChanges}
+        note="updatedAt 기준 · 최근 7일 · KST" />
       <NumberTile label="등록된 연결 수" value={devices.data !== null && mcp.data !== null ? activeDevices.length + activeMcp.length : null}
         note="활성 기기 + MCP 등록 · 중복 제거 안 함" />
       <NumberTile label="활성 토큰 수" value={mcp.data === null ? null : activeMcp.filter(connection => connection.kind === "pat").length}
