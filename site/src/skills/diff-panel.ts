@@ -21,14 +21,16 @@ type Comparison =
 export function VersionDiff({ detail, signal, onUnauthorized }: Props) {
   const [before, setBefore] = useState(detail.versions.find(v => v.digest !== detail.skill.head.digest)?.digest ?? detail.skill.head.digest);
   const [after, setAfter] = useState(detail.skill.head.digest);
+  const beforeDigest = detail.versions.some(v => v.digest === before) ? before : detail.skill.head.digest;
+  const afterDigest = detail.versions.some(v => v.digest === after) ? after : detail.skill.head.digest;
   const [comparison, setComparison] = useState<Comparison>({ kind: "idle" });
   const generation = useRef(0);
   const running = useRef(false);
   useEffect(() => () => { generation.current += 1; }, []);
   const compare = async () => {
     if (running.current) return;
-    const oldVersion = detail.versions.find(v => v.digest === before);
-    const newVersion = detail.versions.find(v => v.digest === after);
+    const oldVersion = detail.versions.find(v => v.digest === beforeDigest);
+    const newVersion = detail.versions.find(v => v.digest === afterDigest);
     if (oldVersion === undefined || newVersion === undefined) return;
     const id = ++generation.current;
     running.current = true;
@@ -38,7 +40,7 @@ export function VersionDiff({ detail, signal, onUnauthorized }: Props) {
         await readExport(detail.skill.skillId, digest, signal), { digest, revision: detail.skill.head.revision });
       const [oldDraft, newDraft] = await Promise.all([read(oldVersion.digest), read(newVersion.digest)]);
       if (id === generation.current) setComparison({
-        kind: "ready", before, after, rows: lineDiff(oldDraft.document, newDraft.document),
+        kind: "ready", before: oldVersion.digest, after: newVersion.digest, rows: lineDiff(oldDraft.document, newDraft.document),
       });
     } catch (error) {
       if (id !== generation.current || (error instanceof DOMException && error.name === "AbortError")) return;
@@ -55,13 +57,13 @@ export function VersionDiff({ detail, signal, onUnauthorized }: Props) {
     h("p", { class: "note" }, "보관된 두 버전의 SKILL.md를 비교합니다. − 삭제, + 추가, = 같은 줄입니다. 게시·현재 버전·고정 상태는 바뀌지 않습니다."),
     h("div", { class: "diff-controls" },
       h("label", { class: "field-label", for: "diff-before" }, "이전 내용",
-        h("select", { id: "diff-before", class: "text-field", value: before, disabled: busy,
+        h("select", { id: "diff-before", class: "text-field", value: beforeDigest, disabled: busy,
           onChange: (event: JSX.TargetedEvent<HTMLSelectElement, Event>) => {
             const value = detail.versions.find(v => v.digest === event.currentTarget.value);
             if (value !== undefined) { setBefore(value.digest); changed(); }
           } }, detail.versions.map(v => h("option", { key: v.digest, value: v.digest }, v.digest)))),
       h("label", { class: "field-label", for: "diff-after" }, "이후 내용",
-        h("select", { id: "diff-after", class: "text-field", value: after, disabled: busy,
+        h("select", { id: "diff-after", class: "text-field", value: afterDigest, disabled: busy,
           onChange: (event: JSX.TargetedEvent<HTMLSelectElement, Event>) => {
             const value = detail.versions.find(v => v.digest === event.currentTarget.value);
             if (value !== undefined) { setAfter(value.digest); changed(); }

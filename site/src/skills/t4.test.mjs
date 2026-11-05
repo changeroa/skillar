@@ -203,6 +203,21 @@ test("comparison expires the account on unauthorized reads", { timeout: 15000 },
   assert.equal(expired, 1);
 });
 
+test("comparison stays usable when a previously selected retained version is deleted", async t => {
+  // Given
+  const reads = [];
+  t.mock.method(globalThis, "fetch", async url => { reads.push(url); return Response.json(exported(url.split("/").at(-1))); });
+  const { dom, container, show } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
+  const current = { ...detail, versions: [versions[1]] };
+  await show({ detail: current, signal, onUnauthorized() {} });
+  // When
+  await act(() => buttonNamed(container, "변경점 보기")[0].click());
+  await waitFor(dom, () => byTag(container, "ol")[0], "retained selection");
+  // Then
+  assert.deepEqual(byTag(container, "select").map(n => n.value), [versions[1].digest, versions[1].digest]);
+  assert.deepEqual(reads, [routes.version(skillId, versions[1].digest), routes.version(skillId, versions[1].digest)]);
+});
+
 test("validation associates document and acknowledgement errors and focuses the first invalid field", async t => {
   // Given
   const draft = emptyDraft(skillId);
