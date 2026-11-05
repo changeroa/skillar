@@ -1,4 +1,25 @@
 const themeSelect = document.querySelector<HTMLSelectElement>('#theme');
+
+// Relocate the existing identity and native sign-out form, not their auth logic.
+// Preact retains ownership of its account node and removes it on session expiry.
+const sidebarAccount = document.querySelector<HTMLElement>('#sidebar-account');
+const accountSource = document.querySelector<HTMLElement>('#dashboard-app, #skills-app, #signed-in');
+if (sidebarAccount && accountSource) {
+  const moveAccount = () => {
+    const account = accountSource.querySelector<HTMLElement>('.dash-account');
+    if (account) sidebarAccount.append(account);
+    if (accountSource.id === 'signed-in' && !accountSource.hidden) {
+      const identity = accountSource.querySelector<HTMLElement>('.account-user');
+      const signout = accountSource.querySelector<HTMLFormElement>('form[action="/auth/logout"]');
+      if (identity) sidebarAccount.append(identity);
+      if (signout) sidebarAccount.append(signout);
+    }
+  };
+  new MutationObserver(moveAccount).observe(accountSource, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'],
+  });
+  moveAccount();
+}
 if (themeSelect) {
   themeSelect.value = document.documentElement.dataset['theme'] || 'system';
   themeSelect.addEventListener('change', () => {

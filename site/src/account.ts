@@ -46,9 +46,10 @@ const sessionStatus = document.querySelector<HTMLElement>('#session-status');
 const accountLines = Array.from(document.querySelectorAll<HTMLElement>('[data-account-line]'));
 const landingActions = document.querySelector<HTMLElement>('#landing-actions');
 const landingStatus = document.querySelector<HTMLElement>('#landing-session-status');
+const shellAccount = document.querySelector<HTMLElement>('[data-shell-account]');
 
 // Landing and account pages share the existing read-only session check.
-if (sessionStatus || accountLines.length || landingActions) {
+if (sessionStatus || accountLines.length || landingActions || shellAccount) {
   const authResult = document.querySelector<HTMLElement>('#auth-result');
   const authRecovery = document.querySelector<HTMLElement>('#auth-recovery');
   const callbackError = new URLSearchParams(window.location.search).get('error');
@@ -141,6 +142,10 @@ if (sessionStatus || accountLines.length || landingActions) {
   for (const line of accountLines) line.textContent = checking;
 
   void fetchSession().then(result => {
+    if (shellAccount && result.kind === 'signed-in') {
+      renderUser(result.user);
+      shellAccount.hidden = false;
+    }
     for (const line of accountLines) line.textContent = summary(result);
     if (landingActions) {
       const primary = document.querySelector<HTMLAnchorElement>('#landing-primary');

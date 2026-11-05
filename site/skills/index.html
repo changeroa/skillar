@@ -37,23 +37,22 @@
     <a class="skip" href="#main">본문으로 이동</a>
     <header class="shell header app-topbar">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <nav class="app-breadcrumb" aria-label="현재 위치"><details><summary>자산</summary><div><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></div></details><span aria-hidden="true">›</span><a href="/skills/">스킬</a><span id="skill-breadcrumb" class="skill-breadcrumb" hidden><span aria-hidden="true">›</span><span data-skill-name></span><span data-skill-version hidden></span></span></nav>
+      <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command">이동… <kbd>⌘K</kbd></button>
       <label class="theme-label">테마
         <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
       <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
       <aside id="app-navigation" class="app-navigation">
-        <nav aria-label="주요 메뉴"><a href="/dashboard/">대시보드</a><a href="/skills/" aria-current="page">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></nav>
+        <nav aria-label="주요 메뉴"><div class="app-nav-group"><span>관찰</span><a href="/dashboard/">대시보드</a><a href="/dashboard/#/sessions">세션</a></div><div class="app-nav-group"><span>자산</span><a href="/skills/" aria-current="page">스킬</a></div><div class="app-nav-group"><span>설정</span><a href="/connections/">연결</a></div></nav>
+        <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/">계정</a></nav><div id="sidebar-account"></div></div>
       </aside>
       <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
         <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
       </dialog>
     </header>
-    <aside class="preview-notice" aria-label="현재 이용할 수 있는 기능">
-      <div class="shell"><strong>승인한 클라이언트는 MCP로 내 비공개 스킬을 읽을 수 있습니다.</strong> 연결 화면에서 OAuth 연결과 읽기 전용 토큰을 관리하세요. 업로드는 이 화면에서 별도로 동의해야 합니다.</div>
-    </aside>
     <main id="main" class="shell account-main" tabindex="-1">
-      <nav id="skill-breadcrumb" class="skill-breadcrumb" aria-label="현재 위치" hidden><a href="/skills/">스킬</a><span aria-hidden="true">›</span><span data-skill-name></span><span data-skill-version hidden></span></nav>
-      <div class="dashboard-heading"><div><h1 id="skills-page-title">스킬</h1><p class="account-lead">여기서 게시한 스킬은 버전별로 내 skillar 계정에 보관합니다. 직접 선택하고 업로드에 동의한 파일만 전송하며, 컴퓨터의 다른 파일은 검사하지 않습니다.</p></div></div>
+      <div class="dashboard-heading"><div><h1 id="skills-page-title">스킬</h1><p class="account-lead">게시한 비공개 스킬과 버전을 관리합니다.</p></div></div>
       <noscript>
         <p class="note">JavaScript가 꺼져 있습니다. 스킬을 불러오고 선택한 파일로 패키지를 만들려면 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
         <div class="auth-actions">
@@ -62,7 +61,6 @@
         </div>
       </noscript>
       <div id="skills-app"></div>
-      <aside class="local-alternative" aria-labelledby="local-title"><h2 id="local-title">에이전트에서 이 스킬 읽기</h2><p>MCP 연결을 승인하면 여기서 게시한 비공개 스킬을 검색하고 읽을 수 있습니다. 로컬 CLI는 업로드 없이 로컬 파일을 계속 제공합니다.</p><a class="text-link" href="/connections/">MCP 연결 관리 ↗</a></aside>
     </main>
     <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/dashboard/">활동 대시보드</a></div></footer>
     <script type="module" src="/src/skills.ts"></script>

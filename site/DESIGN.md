@@ -1,5 +1,70 @@
 # skillar.sh
 
+## P-A approved app shell and shared UI
+
+The owner-approved wireframes v2 (`hosted/app-shell.html` and
+`hosted/component-sheet.html`) define component presence and order, not new
+brand tokens. The Langfuse mapping C01/C03–05/C08–17/C22–24/C29–30 supplies
+component anatomy. Keep the Evidence Console V2 palette, system typography,
+2px radius, 14px minimum metadata and 44px minimum interactive targets.
+
+The signed-in shell is a bounded `100dvh` fixed-sidenav-shell: the 256px rail
+and 64px-minimum top bar stay visible while `main` owns content scrolling.
+This supersedes document scrolling for these four hosted app routes only.
+The rail orders wordmark, 관찰 (대시보드, 세션), 자산 (스킬), 설정 (연결),
+then theme and the bottom account name/email, 계정 link and unchanged POST
+`/auth/logout` form. Selected navigation uses a neutral surface wash, bold
+ink and a check glyph; no accent stripe. Sessions uses the existing dashboard
+hash, never a new data endpoint. No widget destination is invented before P-C.
+Below 1024px the same navigation and account nodes move into the native modal
+drawer. The drawer owns its overflow and Escape restores its menu opener.
+
+The top bar orders breadcrumb then the visible 이동… ⌘K button. Breadcrumb
+dropdowns contain real navigation destinations, with skill name and revision
+derived from already-rendered detail; `#skills-page-title` remains mounted.
+The native command dialog is navigation-only: local label filtering, five
+destinations, wrapping Up/Down selection, Enter navigation and Escape focus
+return. It is instant, including reduced motion. Page headings have at most
+one short subtitle (80 characters); introductory banners and repeated account
+boxes do not occupy the content workspace. Public landing/login/404 keep
+their public layout.
+
+Shared primitives live in `src/ui/` and accept caller-supplied data:
+- DataTable: semantic caption/header/body, client-range sorting with
+  `aria-sort`, column checkboxes (at least one stays visible), density choices
+  조밀/보통/여유 at 44/48/64px minimum rows.
+- FacetPanel: labelled groups of checkboxes with caller-supplied counts and
+  an explicit count scope; zero remains selectable.
+- Pill: a noninteractive 26px-minimum metadata label, never a fake button.
+- KeyValueGrid: semantic `dl`, zero-minimum columns and wrapping opaque values.
+- SegmentedTabs: named tablist, linked tabpanels, roving focus, arrow/Home/End
+  activation. IDs are caller supplied and unique per instance.
+- PeekPanel: nonmodal desktop dialog beside the preserved list, full-screen
+  modal sheet below 1024px; selected ID in a named URL query parameter,
+  Back/Forward restoration, Escape/close restores the triggering row.
+- NumberTile: label/value/note, null rendered as 미측정 rather than zero.
+- Toast: persistent polite live feedback, explicit dismissal, no timer;
+  important errors remain in the caller's inline recovery surface.
+- Skeleton: static layout-preserving blocks with a single loading status,
+  decorative blocks hidden from assistive technology; no shimmer.
+- BarChart/LineChart: labelled SVG with text alternatives and a shared
+  nonnegative y-scale across series. Every bar ends on one common zero
+  baseline, including the 1px zero tick. Equal-width grouped bars use equal
+  intra-group gaps; values are above bars, group labels below. Null is a
+  visible 미측정 gap, never zero; absent measurements render no invented chart.
+  SVG geometry uses a 640×280 reference grid, 48px horizontal inset, 32px top
+  inset and baseline y=232. Bar coordinates round to integer CSS pixels so
+  float32 SVG storage cannot move their bottoms off the baseline. Percentage
+  x positions keep all text at the 14px type role on phones; only the line
+  paths use a nested, horizontally scaling viewBox.
+
+Accessibility constraints: all controls keep the existing 2px accent
+focus-visible ring and 2px offset; native dialogs trap focus only when modal.
+Long account values wrap without horizontal overflow. Shared data components
+do not fetch, infer consent, persist private data or make API calls.
+Accepted debt: P-B/P-C/P-D adopt these primitives into their data surfaces;
+P-A does not replace their data logic or fabricate widget metrics.
+
 ## Skill evidence and dashboard recovery (PR3)
 
 Authored skills-page copy is plain Korean throughout: navigation, account

@@ -28,13 +28,21 @@ const desktop = window.matchMedia('(min-width: 1024px)');
 
 if (navigation && drawer && menu && closeButton) {
   const header = navigation.parentElement;
-  const links = Array.from(navigation.querySelectorAll<HTMLAnchorElement>('nav a'));
+  const links = Array.from(navigation.querySelectorAll<HTMLAnchorElement>('a[href]'));
   const path = window.location.pathname.startsWith('/connect/') ? '/connections/' : window.location.pathname;
-  const current = links.find(link => path.startsWith(link.pathname));
-  for (const link of links) {
-    if (link === current) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
-  }
+  const syncCurrent = () => {
+    const session = path.startsWith('/dashboard/') && window.location.hash.startsWith('#/sessions');
+    const current = links.find(link => path.startsWith(link.pathname) &&
+      (session ? link.hash === '#/sessions' : link.hash === ''));
+    for (const link of links) {
+      if (link === current) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+    const item = document.querySelector('[data-breadcrumb-item]');
+    if (item) item.textContent = session ? '세션' : '대시보드';
+  };
+  syncCurrent();
+  window.addEventListener('hashchange', syncCurrent);
 
   const closeDrawer = () => {
     drawer.close();
@@ -44,8 +52,14 @@ if (navigation && drawer && menu && closeButton) {
   const syncLayout = () => {
     drawer.close();
     menu.setAttribute('aria-expanded', 'false');
-    if (desktop.matches || !document.body.classList.contains('app-shell')) header?.append(navigation);
-    else drawer.append(navigation);
+    const theme = document.querySelector<HTMLElement>('.theme-label');
+    if (desktop.matches || !document.body.classList.contains('app-shell')) {
+      header?.append(navigation);
+      if (theme) header?.insertBefore(theme, menu);
+    } else {
+      drawer.append(navigation);
+      if (theme) navigation.insertBefore(theme, navigation.querySelector('.app-account'));
+    }
   };
   menu.addEventListener('click', () => {
     drawer.close();
@@ -82,6 +96,89 @@ if (navigation && drawer && menu && closeButton) {
   } else {
     syncLayout();
   }
+}
+
+export function bindCommandPalette(
+  opener: HTMLButtonElement, dialog: HTMLDialogElement,
+  input: HTMLInputElement, options: readonly HTMLAnchorElement[], close: HTMLButtonElement,
+): () => void {
+  let active = 0;
+  let visible = [...options];
+  const select = (index: number) => {
+    active = visible.length ? (index + visible.length) % visible.length : 0;
+    for (const option of options) option.setAttribute('aria-selected', String(option === visible[active]));
+    const selected = visible[active];
+    if (selected) input.setAttribute('aria-activedescendant', selected.id);
+    else input.removeAttribute('aria-activedescendant');
+  };
+  const filter = () => {
+    const query = input.value.trim().toLocaleLowerCase('ko');
+    visible = options.filter(option => {
+      option.hidden = !option.textContent?.toLocaleLowerCase('ko').includes(query);
+      return !option.hidden;
+    });
+    select(0);
+    const empty = dialog.querySelector<HTMLElement>('[data-command-empty]');
+    if (empty) empty.hidden = visible.length !== 0;
+  };
+  const dismiss = () => { dialog.close(); opener.focus(); };
+  const open = () => {
+    if (!document.body.classList.contains('app-shell')) return;
+    if (drawer?.open) {
+      drawer.close();
+      menu?.setAttribute('aria-expanded', 'false');
+    }
+    input.value = '';
+    filter();
+    if (!dialog.open) dialog.showModal();
+    input.focus();
+  };
+  const shortcut = (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' &&
+        document.body.classList.contains('app-shell')) {
+      event.preventDefault();
+      if (dialog.open) dismiss();
+      else open();
+    }
+  };
+  opener.addEventListener('click', open);
+  close.addEventListener('click', dismiss);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+  input.addEventListener('input', filter);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      select(active + (event.key === 'ArrowDown' ? 1 : -1));
+    } else if (event.key === 'Enter' && visible[active]) {
+      event.preventDefault();
+      visible[active]?.click();
+    }
+  });
+  for (const option of options) option.addEventListener('click', dismiss);
+  window.addEventListener('keydown', shortcut);
+  return () => window.removeEventListener('keydown', shortcut);
+}
+
+const jump = document.querySelector<HTMLButtonElement>('#app-jump');
+if (jump) {
+  const command = document.createElement('dialog');
+  command.id = 'app-command';
+  command.className = 'app-command';
+  command.setAttribute('aria-labelledby', 'app-command-title');
+  command.innerHTML = `<div class="app-command-head"><h2 id="app-command-title">화면 이동</h2><button class="button secondary" type="button" data-command-close>닫기 · Esc</button></div>
+    <label class="app-command-input">이동할 화면<input type="search" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-controls="app-command-options" autocomplete="off" placeholder="화면 이름 검색"></label>
+    <div id="app-command-options" role="listbox" aria-label="이동할 화면">
+      <a id="jump-dashboard" href="/dashboard/" role="option" tabindex="-1">대시보드</a>
+      <a id="jump-sessions" href="/dashboard/#/sessions" role="option" tabindex="-1">세션</a>
+      <a id="jump-skills" href="/skills/" role="option" tabindex="-1">스킬</a>
+      <a id="jump-connections" href="/connections/" role="option" tabindex="-1">연결</a>
+      <a id="jump-account" href="/login/" role="option" tabindex="-1">계정</a>
+    </div><p data-command-empty hidden>일치하는 화면이 없습니다.</p>
+    <p class="note app-command-help">화면 이동 전용 · ↑ ↓ 선택 · Enter 이동 · Esc 닫기</p>`;
+  document.body.append(command);
+  const input = command.querySelector('input');
+  const close = command.querySelector<HTMLButtonElement>('[data-command-close]');
+  if (input && close) bindCommandPalette(jump, command, input, Array.from(command.querySelectorAll('a')), close);
 }
 
 const breadcrumb = document.querySelector<HTMLElement>('#skill-breadcrumb');

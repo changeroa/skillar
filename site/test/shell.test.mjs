@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { installFakeDom } from "./helpers/fake-dom.mjs";
+import { installFakeDom, FakeEvent } from "./helpers/fake-dom.mjs";
 
 // The module also initializes page chrome. These absent mounts model a page without that chrome.
 globalThis.document = { querySelector: () => null };
 globalThis.window = { matchMedia: () => ({ matches: true }) };
-const { syncDashboardTabs } = await import("../src/shell.ts");
+const { syncDashboardTabs, bindCommandPalette } = await import("../src/shell.ts");
 delete globalThis.window;
 delete globalThis.document;
 
@@ -80,3 +80,53 @@ test("tab semantics also apply while the embedded view panel is not mounted", ()
   assert.equal(tabs[3].getAttribute("aria-selected"), "true");
   assert.ok(tabs.every(tab => !tab.hasAttribute("aria-current")));
 });
+
+for (const modifier of ["metaKey", "ctrlKey"]) {
+  test(`command jump opens with ${modifier}, arrows select, Enter activates, and Escape restores focus`, t => {
+    // Given
+    const document = installFakeDom();
+    document.body.classList = { contains: value => value === "app-shell" };
+    const window = new EventTarget();
+    globalThis.window = window;
+    const opener = document.createElement("button"), dialog = document.createElement("dialog");
+    const field = document.createElement("input"), close = document.createElement("button");
+    const options = ["dashboard", "sessions", "skills", "connections", "account"].map(id => {
+      const option = document.createElement("a");
+      option.id = id;
+      option.appendChild(document.createTextNode(id));
+      dialog.appendChild(option);
+      return option;
+    });
+    let activated = null;
+    for (const option of options) option.addEventListener("click", () => { activated = option.id; });
+    dialog.querySelector = () => null;
+    dialog.showModal = () => { dialog.open = true; };
+    dialog.close = () => { dialog.open = false; };
+    document.body.appendChild(opener);
+    document.body.appendChild(dialog);
+    dialog.appendChild(field);
+    dialog.appendChild(close);
+    const cleanup = bindCommandPalette(opener, dialog, field, options, close);
+    t.after(() => { cleanup(); delete globalThis.window; });
+    // When
+    const shortcut = new Event("keydown", { cancelable: true });
+    Object.assign(shortcut, { key: "k", [modifier]: true });
+    window.dispatchEvent(shortcut);
+    // Then
+    assert.equal(dialog.open, true);
+    assert.equal(document.activeElement, field);
+    assert.equal(field.getAttribute("aria-activedescendant"), "dashboard");
+    field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
+    assert.equal(field.getAttribute("aria-activedescendant"), "sessions");
+    field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowUp" }));
+    assert.equal(field.getAttribute("aria-activedescendant"), "dashboard");
+    field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
+    assert.equal(activated, "dashboard");
+    assert.equal(document.activeElement, opener);
+    opener.click();
+    dialog.dispatchEvent(new FakeEvent("cancel"));
+    assert.equal(dialog.open, false);
+    assert.equal(document.activeElement, opener);
+    assert.equal(options.length, 5);
+  });
+}
