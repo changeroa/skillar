@@ -7,9 +7,9 @@ export type TimelineItem =
   | { kind: "span"; span: SkillSpan; turnId: string; finding?: FindingLabel };
 
 /**
- * The trace DTO omits some source event IDs. Assign those records an ID once per open session,
- * independently of the optional report. Captured fields match later responses to that same ID;
- * equal captured records get separate IDs in their stable source order.
+ * Use recorded IDs independently of attribution and optional reports. Legacy records without
+ * IDs retain their assigned IDs by immutable timestamp/kind and same-timestamp source sequence
+ * (the store orders by ts, rowid), never by their mutable display or attribution payload.
  */
 export function createTimelineKeys() {
   const eventIds = new Map<string, string[]>();
@@ -21,7 +21,11 @@ export function createTimelineKeys() {
         case "step": {
           const step = item.step;
           if (typeof step.detail.eventId === "string") return { item, key: `event:${step.detail.eventId}` };
-          const record = JSON.stringify([step.kind, step.ts, Object.entries(step.detail).sort(([a], [b]) => a.localeCompare(b))]);
+          const idField = ["loadId", "callId", "toolUseId", "traceId", "requestId"]
+            .find(field => typeof step.detail[field] === "string" && step.detail[field] !== "");
+          const record = idField === undefined
+            ? JSON.stringify([step.kind, step.ts])
+            : JSON.stringify([step.kind, idField, step.detail[idField]]);
           const occurrence = occurrences.get(record) ?? 0;
           occurrences.set(record, occurrence + 1);
           const ids = eventIds.get(record) ?? [];

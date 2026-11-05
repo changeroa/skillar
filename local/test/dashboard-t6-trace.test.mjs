@@ -83,6 +83,21 @@ test("identical captured events retain separate assigned IDs across refreshes", 
   assert.deepEqual(refreshed, original);
 });
 
+test("recorded event IDs ignore mutable display and attribution fields", () => {
+  for (const field of ["eventId", "traceId", "loadId", "callId", "toolUseId", "requestId"]) {
+    // Given
+    const identify = views.createTimelineKeys();
+    const item = { kind: "step", step: { ts: 10, kind: "search", summary: "before",
+      detail: { [field]: "recorded-id", chosen: [], candidates: [{ uri: "skill://one", chosen: false }] } } };
+    const original = identify([item])[0].key;
+    // When
+    const refreshed = identify([{ ...item, step: { ...item.step, ts: 11, summary: "after",
+      detail: { [field]: "recorded-id", chosen: ["skill://one"], candidates: [{ uri: "skill://one", chosen: true }] } } }]);
+    // Then
+    assert.equal(refreshed[0].key, original, `${field} must identify the same event independently of its payload`);
+  }
+});
+
 test("compact desktop session selection preserves the complete URL filter", async t => {
   // Given
   const rows = [{ id: "test", runtime: "claude", startedAt: 1, firstPrompt: "request" }];

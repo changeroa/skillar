@@ -131,3 +131,42 @@ test("grouped calls preserve captured data arguments when event text is absent",
   // Then
   assert.equal(all(container, n => n.localName === "pre")[0]?.textContent, args);
 });
+
+test("a later load preserves the same search candidate disclosure", async t => {
+  const uri = "skill://local/gate/example/SKILL.md";
+  const candidate = {
+    uri, name: "예시 스킬", description: "후보 설명", digest: "digest",
+    rank: 1, score: 0.9, matched: ["example"], invocation: "automatic", chosen: false,
+  };
+  const search = {
+    ts: 100, kind: "search", summary: "search example",
+    detail: {
+      kind: "search", traceId: "recorded-search", query: "example", mode: "automatic",
+      chosen: [], candidates: [candidate], elapsedMs: 12, total: 1,
+    },
+  };
+  let steps = [search];
+  ui.configureApi({
+    ...ui.api, trace: async () => structuredClone(steps),
+    sessions: async () => [{ id: "gate-session", startedAt: 100 }],
+    skillReport: async () => { throw Error("report unavailable"); },
+  });
+  const props = {
+    route: { view: "trace", sessionId: "gate-session", filter: {} },
+    live: { state: "paused", seq: 0 }, navigate() {},
+  };
+  const { dom, container, show } = await mount(t, ui.TraceView, props);
+  const findDisclosure = () => all(container, n => n.localName === "details" && n.getAttribute("class") === "cand__desc")[0];
+  await waitFor(dom, findDisclosure, "initial candidate disclosure");
+  const original = findDisclosure();
+  await act(() => { original.open = true; });
+  // The real store recomputes chosen and candidate.chosen from later loads carrying this traceId.
+  steps = [
+    { ...search, detail: { ...search.detail, chosen: [uri], candidates: [{ ...candidate, chosen: true }] } },
+    { ts: 200, kind: "load", summary: "load example", detail: { kind: "load", traceId: "recorded-search", loadId: "load-one", uri, manifestDigest: "digest" } },
+  ];
+  await show({ ...props, live: { state: "paused", seq: 1 } });
+  await waitFor(dom, () => all(container, n => n.getAttribute("data-chosen") === "true")[0], "updated read attribution");
+  assert.ok(findDisclosure() === original, "the same search must preserve its disclosure DOM when chosen attribution changes");
+  assert.equal(findDisclosure().open, true, "the candidate disclosure must remain expanded");
+});
