@@ -105,7 +105,8 @@ export function SkillView({ detailState, draftState, detail, name, head, heading
               });
               if (newNotes.length > 0) setNotes(newNotes);
             } }),
-          problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
+          problems.length > 0 && h("div", { role: "alert" },
+            h("ul", { class: "problems" }, problems.map(problem => h("li", { key: problem }, problem)))),
           h("div", { class: "cluster publish__actions" },
             h("button", { class: "button primary", type: "submit", disabled: busy }, "새 버전 게시"),
             conflict && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: review }, "현재 버전 확인"),
