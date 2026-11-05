@@ -115,14 +115,21 @@ function LlmBody({ step, detail }: { step: TraceStep; detail: LlmDetail }) {
   );
 }
 
-function ToolBody({ step, detail }: { step: TraceStep; detail: ToolDetail }) {
+export function ToolArguments({ detail, name }: { readonly detail: ToolDetail; readonly name?: string }) {
   const args = toolArgsPreview(detail);
+  if (args === undefined) return null;
+  switch (args.captured) {
+    case true: return <details class="tl__args"><summary>{name && <span class="tl__name--mono">{name} </span>}도구 인자 전체 보기</summary><pre>{detail.args}</pre></details>;
+    case false: return <span class="tl__name tl__name--mono">{args.length}자 기록 생략</span>;
+    default: { const exhaustive: never = args; return exhaustive; }
+  }
+}
+
+function ToolBody({ step, detail }: { step: TraceStep; detail: ToolDetail }) {
   return (
     <div class="tl__line">
       <span class="tl__name">{step.summary}</span>
-      {args !== undefined && (args.captured && args.truncated
-        ? <details class="tl__args"><summary>도구 인자 전체 보기</summary><pre>{detail.args}</pre></details>
-        : <span class="tl__name tl__name--mono">{args.captured ? args.text : `${args.length}자 기록 생략`}</span>)}
+      <ToolArguments detail={detail} />
       {detail.resultBytes !== undefined && <span class="tl__meta">결과 {formatBytes(detail.resultBytes)}</span>}
     </div>
   );

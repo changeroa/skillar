@@ -1,10 +1,10 @@
 import { isSkillarMcpData } from "../../../src/ingest/identity.js";
 import type { TraceStep } from "../../../src/types.js";
-import { CallList, callRows } from "../../components/calls";
+import { CallList, callRow, callRows } from "../../components/calls";
 import { Facts } from "../../components/facts";
 import { KIND_LABEL, SPAN_KIND_LABEL, NEVER_CONSULTED, formatOffset, searchDetail, sessionBounds, type ToolDetail, type TraceCounts } from "./model";
 import { spanFacts, type TimelineItem } from "./plan";
-import { StepBody } from "./bodies";
+import { StepBody, ToolArguments } from "./bodies";
 const timeFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
 function StepTime({ ts, startedAt }: { ts: number; startedAt?: number }) {
@@ -53,6 +53,13 @@ export function SpanGroup({ item, bounds }: { item: Extract<TimelineItem, { kind
       <div class="tl__body">
         <Facts facts={spanFacts(item.span, rows.length, item.finding)} />
         <CallList rows={rows} />
+        {item.span.events.filter(event => event.kind === "tool_call").map(event => (
+          <ToolArguments key={event.id} name={callRow(event).name} detail={{
+            kind: "tool_call",
+            args: event.text ?? (typeof event.data.args === "string" ? event.data.args : undefined),
+            argsLength: event.textLength ?? (typeof event.data.argsLength === "number" ? event.data.argsLength : undefined),
+          }} />
+        ))}
       </div>
     </li>
   );

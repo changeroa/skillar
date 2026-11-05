@@ -4,7 +4,7 @@ import { act, all, loadViews, mount, waitFor } from "../../site/test/helpers/t10
 
 const views = await loadViews(`
   export { api, configureApi } from "./local/dashboard/api.ts";
-  export { TraceView, timelineKey } from "./local/dashboard/views/trace.tsx";
+  export { TraceView, createTimelineKeys } from "./local/dashboard/views/trace.tsx";
   export { Candidates } from "./local/dashboard/components/candidates.tsx";
   export { SessionsView } from "./local/dashboard/views/sessions.tsx";
 `);
@@ -55,26 +55,32 @@ test("candidate disclosure retains long names descriptions and all matched terms
   for (const value of [candidate.name, candidate.description, ...candidate.matched]) assert.ok(disclosure.textContent.includes(value));
 });
 
-test("timeline identity uses canonical report events and stable content for legacy traces", () => {
+test("assigned event IDs survive refreshed DTOs and prepended events", () => {
   // Given
   const step = { ts: 10, kind: "prompt", summary: "request", detail: { text: "request" } };
   const item = { kind: "step", step };
-  const report = { tree: { turns: [{ events: [{ id: "event-one", ts: 10, kind: "prompt", text: "request" }] }], unassignedEvents: [] } };
-  // When / Then
-  assert.equal(views.timelineKey(item, report), "event:event-one");
-  assert.equal(views.timelineKey(item), views.timelineKey({ kind: "step", step: structuredClone(step) }));
-  assert.notEqual(views.timelineKey(item), views.timelineKey({ kind: "step", step: { ...step, ts: 11 } }));
+  const identify = views.createTimelineKeys();
+  const original = identify([item])[0].key;
+  // When
+  const refreshed = identify([
+    { kind: "step", step: { ...step, ts: 9 } },
+    { kind: "step", step: structuredClone(step) },
+  ]);
+  // Then
+  assert.equal(refreshed[1].key, original);
+  assert.notEqual(refreshed[0].key, original);
 });
 
-test("equal timestamps claim different canonical events instead of duplicate row keys", () => {
+test("identical captured events retain separate assigned IDs across refreshes", () => {
   // Given
   const item = { kind: "step", step: { ts: 10, kind: "tool_call", summary: "tool", detail: {} } };
-  const report = { tree: { turns: [{ events: [{ id: "one", ts: 10, kind: "tool_call" }, { id: "two", ts: 10, kind: "tool_call" }] }], unassignedEvents: [] } };
-  const claimed = new Set();
+  const identify = views.createTimelineKeys();
+  const original = identify([item, structuredClone(item)]).map(entry => entry.key);
   // When
-  const keys = [views.timelineKey(item, report, claimed), views.timelineKey(item, report, claimed)];
+  const refreshed = identify([structuredClone(item), structuredClone(item)]).map(entry => entry.key);
   // Then
-  assert.deepEqual(keys, ["event:one", "event:two"]);
+  assert.notEqual(original[0], original[1]);
+  assert.deepEqual(refreshed, original);
 });
 
 test("compact desktop session selection preserves the complete URL filter", async t => {

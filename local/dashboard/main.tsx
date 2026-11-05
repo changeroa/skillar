@@ -144,6 +144,7 @@ export function App({ embedded = false }: AppOptions = {}) {
     if (content === null) return;
     const header = content.previousElementSibling;
     if (header === null) return;
+    if (header.querySelector('[role="tablist"]')?.contains(document.activeElement)) return;
     content.style.scrollMarginTop = `${header.getBoundingClientRect().height}px`;
     content.scrollIntoView({ block: "start" });
     content.focus({ preventScroll: true });
@@ -250,11 +251,13 @@ export function App({ embedded = false }: AppOptions = {}) {
               default: return;
             }
             event.preventDefault();
+            event.stopPropagation();
+            for (const [tabIndex, tab] of tabs.entries()) tab.tabIndex = tabIndex === next ? 0 : -1;
             tabs[next]?.focus();
             tabs[next]?.click();
           }}>
             {TABS.map((tab) => (
-              <a key={tab.view} id={`view-tab-${tab.view}`} role="tab" aria-controls="local-view"
+              <a key={tab.view} id={`skillar-local-tab-${tab.view}`} role="tab" aria-controls="skillar-local-panel"
                 aria-selected={activeTab === tab.view} tabIndex={activeTab === tab.view || activeTab === "not-found" ? 0 : -1}
                 class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
                 {tab.label}
@@ -277,11 +280,12 @@ export function App({ embedded = false }: AppOptions = {}) {
         </p></div>
       </Header>
       <Content class="page wrap"
+        id={embedded ? "skillar-local-panel" : undefined}
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
-        tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
+        tabIndex={embedded ? -1 : undefined} role={embedded ? "tabpanel" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
-        <div id="local-view" role={route.view === "not-found" ? undefined : "tabpanel"}
-          aria-labelledby={route.view === "not-found" ? undefined : `view-tab-${activeTab}`}>
+        <div id={embedded ? undefined : "skillar-local-panel"} role={embedded || route.view === "not-found" ? undefined : "tabpanel"}
+          aria-labelledby={embedded || route.view === "not-found" ? undefined : `skillar-local-tab-${activeTab}`}>
         {(route.view === "sessions" || route.view === "trace") && (
           <div class={route.view === "trace" ? "sessions-detail" : undefined}>
             <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>

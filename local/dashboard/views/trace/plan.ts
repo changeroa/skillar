@@ -1,4 +1,4 @@
-import type { FindingLabel, SessionSkillReportDto, SkillSpan, TraceStep, TreeEvent } from "../../../src/types.js";
+import type { FindingLabel, SessionSkillReportDto, SkillSpan, TraceStep } from "../../../src/types.js";
 import { isCall } from "../../components/calls";
 import type { Fact } from "../../components/facts";
 
@@ -6,28 +6,34 @@ export type TimelineItem =
   | { kind: "step"; step: TraceStep }
   | { kind: "span"; span: SkillSpan; turnId: string; finding?: FindingLabel };
 
-/** The report supplies canonical event IDs without changing the legacy trace response. */
-export function timelineKey(item: TimelineItem, report?: Pick<SessionSkillReportDto, "tree">, claimed = new Set<string>()): string {
-  switch (item.kind) {
-    case "span": return `span:${item.span.id}`;
-    case "step": {
-      const step = item.step;
-      const id = step.detail.eventId;
-      if (typeof id === "string" && id) return `event:${id}`;
-      const events: readonly TreeEvent[] = report
-        ? [...report.tree.turns.flatMap(turn => turn.events ?? []), ...(report.tree.unassignedEvents ?? [])] : [];
-      const event = events.find(event => !claimed.has(event.id) && event.ts === step.ts && event.kind === step.kind &&
-        (step.kind !== "prompt" || event.text === (step.detail.text ?? null)));
-      if (event) { claimed.add(event.id); return `event:${event.id}`; }
-      for (const field of ["traceId", "loadId", "callId", "toolUseId"]) {
-        const value = step.detail[field];
-        if (typeof value === "string" && value) return `${step.kind}:${value}`;
+/**
+ * The trace DTO omits some source event IDs. Assign those records an ID once per open session,
+ * independently of the optional report. Captured fields match later responses to that same ID;
+ * equal captured records get separate IDs in their stable source order.
+ */
+export function createTimelineKeys() {
+  const eventIds = new Map<string, string[]>();
+  return (items: readonly TimelineItem[]) => {
+    const occurrences = new Map<string, number>();
+    return items.map(item => {
+      switch (item.kind) {
+        case "span": return { item, key: `span:${item.span.id}` };
+        case "step": {
+          const step = item.step;
+          if (typeof step.detail.eventId === "string") return { item, key: `event:${step.detail.eventId}` };
+          const record = JSON.stringify([step.kind, step.ts, Object.entries(step.detail).sort(([a], [b]) => a.localeCompare(b))]);
+          const occurrence = occurrences.get(record) ?? 0;
+          occurrences.set(record, occurrence + 1);
+          const ids = eventIds.get(record) ?? [];
+          const id = ids[occurrence] ?? crypto.randomUUID();
+          ids[occurrence] = id;
+          eventIds.set(record, ids);
+          return { item, key: `event:${id}` };
+        }
+        default: { const exhaustive: never = item; return exhaustive; }
       }
-      // Older reports may omit event IDs; recorded content, never array position, identifies those rows.
-      return JSON.stringify([step.kind, step.ts, step.summary, Object.entries(step.detail).sort(([a], [b]) => a.localeCompare(b))]);
-    }
-    default: { const exhaustive: never = item; return exhaustive; }
-  }
+    });
+  };
 }
 
 /**

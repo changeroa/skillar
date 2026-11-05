@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { TraceStep, SessionSkillReportDto } from "../../src/types.js";
 import { api, ApiError, type SessionListRow } from "../api";
 import { RequestDetails } from "../components/requests";
 import { UnresolvedLoadNotice } from "../components/skill-evidence";
 import { buildHash, type ViewProps } from "../state";
 import { sessionBounds, traceCounts } from "./trace/model";
-import { planTimeline, timelineKey } from "./trace/plan";
+import { createTimelineKeys, planTimeline } from "./trace/plan";
 import { Header, Inspector } from "./trace/header";
 import { Step, SpanGroup, NeverConsulted } from "./trace/timeline";
 import { TRACE_CSS } from "./trace/styles";
@@ -38,6 +38,7 @@ function ensureStyles() {
 export function TraceView({ route, live, embedded = false }: ViewProps) {
   ensureStyles();
   const sessionId = route.sessionId ?? "";
+  const timelineKeys = useMemo(createTimelineKeys, [sessionId]);
   const backHref = buildHash({ view: "sessions", filter: route.filter });
   const [steps, setSteps] = useState<TraceStep[]>();
   const [row, setRow] = useState<SessionListRow>();
@@ -103,8 +104,7 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
 
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
-  const items = planTimeline(steps, report);
-  const claimed = new Set<string>();
+  const items = timelineKeys(planTimeline(steps, report));
   const Heading = embedded ? "h3" : "h2";
   return (
     <section class="trace" aria-busy={busy}>
@@ -121,9 +121,9 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
             <>
               <Heading class="trace__subtitle">이벤트 순서</Heading>
               <ol class="tl" aria-label="세션 이벤트 순서">
-                {items.map((item) => (item.kind === "step"
-                  ? <Step key={timelineKey(item, report, claimed)} step={item.step} bounds={bounds} />
-                  : <SpanGroup key={timelineKey(item, report, claimed)} item={item} bounds={bounds} />))}
+                {items.map(({ item, key }) => (item.kind === "step"
+                  ? <Step key={key} step={item.step} bounds={bounds} />
+                  : <SpanGroup key={key} item={item} bounds={bounds} />))}
               </ol>
             </>
           )}
