@@ -64,7 +64,7 @@ function SearchBox({ signal, onOpen, onUnauthorized }: Pick<LibraryProps, "signa
         below_threshold: "충분히 관련 있는 스킬을 찾지 못했습니다. 할 일을 짧게 다시 쓰거나 스킬 없이 계속하세요.",
         explicit_only: "직접 지정해야 하는 스킬만 일치합니다. 사용할 스킬을 직접 선택하세요.",
       }[outcome.abstained.reason] :
-        outcome.candidates.length === 0 ? "일치하는 스킬이 없습니다." : `${outcome.candidates.length}개 스킬을 찾았습니다.`);
+        outcome.candidates.length === 0 ? "일치하는 스킬이 없습니다." : `${outcome.candidates.length}개 검색 후보가 있습니다.`);
     } catch (error) {
       if (isUnauthorized(error)) {
         onUnauthorized();
@@ -78,23 +78,31 @@ function SearchBox({ signal, onOpen, onUnauthorized }: Pick<LibraryProps, "signa
   };
   return h("form", { class: "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
     h("h3", { id: "search-title", class: "panel__subtitle" }, "내 스킬 검색"),
+    h("p", { class: "note" }, "하려는 일을 짧은 문장으로 입력하세요. 검색 후보와 실제로 필요한 스킬을 찾았는지는 다른 정보입니다."),
     h("div", { class: "search__row" },
       h("label", { class: "field-label", for: "skill-search" }, "이름·설명·문서에서 찾을 말",
         h("input", { id: "skill-search", class: "text-field", type: "search", autocomplete: "off", value: query, disabled: busy,
           onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setQuery(event.currentTarget.value) })),
       h("button", { class: "button secondary", type: "submit", disabled: busy }, "검색")),
     h("p", { class: "note", role: "status", "aria-live": "polite" }, message),
+    result !== null && h("p", { class: "search__query" }, "검색한 문장: ", h("q", null, result.query)),
     result !== null && result.candidates.length > 0 && h("ul", { class: "search-results" },
       result.candidates.map(candidate => {
         const skillId = skillIdOf(candidate);
         return h("li", { key: candidate.uri, class: "search-result" },
           h("div", { class: "search-result__text" },
+            h("span", { class: "note" }, `순위 ${candidate.rank} · ${{ automatic: "자동 추천 가능", explicit: "직접 지정 전용" }[candidate.invocation]}`),
             h("strong", null, candidate.name),
             h("span", null, candidate.description),
-            candidate.matched.length > 0 && h("span", { class: "note" }, "일치 항목: ", candidate.matched.join(", "))),
+            candidate.matched.length > 0 && h("span", { class: "note" }, "일치 항목: ", candidate.matched.join(", ")),
+            h("dl", { class: "account-status search-result__facts" },
+              h("div", null, h("dt", null, "검색 당시 digest"), h("dd", null, h("code", null, candidate.digest))))),
           skillId === null ? h("code", null, candidate.uri)
-            : h("button", { class: "button secondary", type: "button", onClick: () => onOpen(skillId) }, "열기"));
-      })));
+            : h("button", { class: "button secondary", type: "button", onClick: () => onOpen(skillId) }, "현재 버전 열기"));
+      })),
+    result !== null && h("p", { class: "note search__scope" },
+      "후보가 없거나 읽은 기록이 있어도 필요한 스킬을 찾았는지는 알 수 없습니다. 이 화면은 찾았는지에 대한 답변을 기록하지 않습니다.",
+      result.candidates.length > 0 && " ‘현재 버전 열기’는 보관함의 현재 버전을 엽니다. 검색 당시 버전과 다를 수 있습니다."));
 }
 
 export function LibraryPanel(props: LibraryProps) {
@@ -109,7 +117,7 @@ export function LibraryPanel(props: LibraryProps) {
     status === "failed" && h("button", { class: "button secondary", type: "button", onClick: onReload }, "다시 시도"),
     status === "ready" && skills.length === 0 && h("p", { class: "library-empty" },
       "아직 게시한 비공개 스킬이 없습니다. 아래의 ‘새 스킬 게시’에서 SKILL.md가 있는 폴더를 선택하고 업로드에 동의하세요."),
+    skills.length > 0 && h(SearchBox, { signal: props.signal, onOpen, onUnauthorized: props.onUnauthorized }),
     skills.length > 0 && h("ul", { class: "source-list skill-list" },
-      skills.map(skill => h(SkillCard, { key: skill.skillId, skill, current: skill.skillId === selectedId, onOpen }))),
-    skills.length > 0 && h(SearchBox, { signal: props.signal, onOpen, onUnauthorized: props.onUnauthorized }));
+      skills.map(skill => h(SkillCard, { key: skill.skillId, skill, current: skill.skillId === selectedId, onOpen }))));
 }

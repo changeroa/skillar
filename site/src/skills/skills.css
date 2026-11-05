@@ -8,6 +8,7 @@ body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep
 .skill-card { background: var(--surface); padding: var(--s4); display: grid; gap: var(--s3); align-content: start; min-width: 0; }
 .skill-card[aria-current="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
 .skill-card, .search-result__text, .skill .account-lead, .skill__facts dd, .document-field { word-break: keep-all; }
+.skill-card, .search-result__text { overflow-wrap: anywhere; }
 .skill-card__description { max-width: 70ch; }
 .skill-card__facts, .will-publish, .resource-list { margin: 0; }
 .skill-card__facts div, .will-publish div, .resource-list div, .skill__facts div { grid-template-columns: 1fr 1.6fr; padding-block: var(--s2); }
@@ -16,14 +17,21 @@ body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep
 .skill-card .button.secondary, .version .button.secondary, .search-result .button.secondary, .editor__files .button.secondary { background: var(--bg); }
 .skill__facts code, .resource-list code, .search-result code { font-size: var(--small); }
 .library-empty { margin-top: var(--s4); max-width: 70ch; }
-.search { margin-top: var(--s6); border-top: 1px solid var(--muted); padding-top: var(--s4); display: grid; gap: var(--s3); }
+.search { margin-block: var(--s4) var(--s5); border-block: 1px solid var(--rule); padding-block: var(--s4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); min-width: 0; }
+.search .panel__subtitle { font-size: 22px; }
 .search__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: end; }
 .search__row .text-field { min-height: 48px; }
 .search .note:empty { display: none; }
-.search-results { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
-.search-result { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s3); background: var(--surface); padding: var(--s3) var(--s4); }
+.search__query { font-size: var(--small); }
+.search__scope { max-width: 70ch; }
+.search-results { list-style: none; margin: 0; padding: 0; display: grid; }
+.search-result { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: var(--s3); border-top: 1px solid var(--rule); padding-block: var(--s4); }
 .search-result__text { display: grid; gap: var(--s1); min-width: 0; flex: 1 1 280px; font-size: var(--small); }
-.search-result__text strong { font-size: var(--body); }
+.search-result__text strong { font-size: 18px; }
+.search-result__facts { margin: var(--s2) 0 0; }
+.search-result__facts > div { grid-template-columns: minmax(0, 1fr); gap: var(--s1); border: 0; padding: 0; }
+.search-result__facts dd { color: var(--ink); }
+.search-result__facts code { overflow-wrap: anywhere; }
 .publish { margin-top: var(--s4); display: grid; gap: var(--s4); }
 .publish__actions .note { flex-basis: 100%; }
 .publish__actions .note:empty { display: none; }
@@ -62,6 +70,9 @@ body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep
 .skill__evidence .account-status { margin-top: var(--s3); }
 .skill__evidence .account-status > div { grid-template-columns: minmax(0, 1fr); gap: var(--s1); border-color: var(--rule); }
 .skill__evidence .button { margin-top: var(--s3); }
+.skill__export-scope { margin-top: var(--s3); font-size: var(--small); }
+.skill__export-scope summary { min-height: 44px; padding-block: var(--s2); }
+.skill__export-scope p { margin-top: var(--s2); }
 .skill .button.danger-quiet:not(:disabled) { color: var(--error); border-color: var(--error); }
 .skill .button.danger:not(:disabled) { background: var(--error); color: var(--bg); border-color: var(--error); }
 .skill__section { margin-top: var(--s6); }

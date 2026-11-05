@@ -1,5 +1,44 @@
 # skillar.sh
 
+## Search candidates and version export (PR4)
+
+Use the existing authenticated search and selected-version JSON export; this
+increment adds no feedback, sharing, receiving, evaluation or public-link API.
+Search results are candidates, not proof that a person found what they needed.
+An empty or abstained search is not a needed-but-missed answer. Keep that
+distinction visible without adding nonworking feedback controls or metrics.
+
+The search form comes before the library list so a large catalog does not
+bury the query. Keep its existing conditional availability, request body,
+submission, busy/error handling and current-version open callback. Results
+retain the submitted query and expose the returned rank, match terms and full
+digest as recorded facts. Opening a result still opens its current version;
+name that action explicitly because the search-time digest may differ.
+Use a flat result list with rule separators, a shrinkable text column and a
+44px action. At the existing phone breakpoint the action fills its own row.
+Keep the page as the only vertical scroll owner and the established Korean
+word wrapping, 16px UI, 14px metadata, 22px section and semantic colors.
+
+The existing version rail keeps every JSON export action. A native disclosure
+beside those actions explains that the selected digest and file contents leave
+the browser in the downloaded package, and that the person must inspect
+private content before passing it on. Session/search evidence and evaluation
+results are not part of that export. Do not present it as a public share link,
+an anonymized evidence bundle or a receiving workflow.
+
+Accessibility: the query label, status live region, keyboard order and result
+actions stay native. Full digests wrap without truncation, all controls retain
+44px targets and the existing accent keyboard ring. The export explanation is
+available through a named native disclosure. No new motion, dependency, color,
+font, API token, persisted state or telemetry is introduced.
+
+Contract evidence: site/src/skills/api.ts searchOutcomeSchema/searchSkills and
+readExport; shared/private-skills.ts privateSkillExportSchema/privateSkillUri;
+site/src/skills/skill.ts exportVersion. Missing feedback/evidence-aware sharing
+contracts are a known product boundary, not a visual failure to conceal.
+The owner-approved flat Evidence Console contract overrides generic skill
+advice to add gradients, glow, shadows or decorative motion.
+
 ## Skill evidence and dashboard recovery (PR3)
 
 Authored skills-page copy is plain Korean throughout: navigation, account
