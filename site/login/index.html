@@ -37,12 +37,15 @@
     <a class="skip" href="#main">본문으로 건너뛰기</a>
     <header class="shell header app-topbar">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <nav class="app-breadcrumb" aria-label="현재 위치"><details><summary>설정</summary><div><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></div></details><span aria-hidden="true">›</span><span>계정</span></nav>
+      <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command">이동… <kbd>⌘K</kbd></button>
       <label class="theme-label">테마
         <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
       <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
       <aside id="app-navigation" class="app-navigation">
-        <nav aria-label="주요 메뉴"><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/" aria-current="page">계정</a></nav>
+        <nav aria-label="주요 메뉴"><div class="app-nav-group"><span>관찰</span><a href="/dashboard/">대시보드</a><a href="/dashboard/#/sessions">세션</a></div><div class="app-nav-group"><span>자산</span><a href="/skills/">스킬</a></div><div class="app-nav-group"><span>설정</span><a href="/connections/">연결</a></div></nav>
+        <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/" aria-current="page">계정</a></nav><div id="sidebar-account"></div></div>
       </aside>
       <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
         <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
@@ -85,7 +88,6 @@
             </dl>
             <a class="button primary" href="/dashboard/">활동 대시보드 열기 <span aria-hidden="true">→</span></a>
             <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
-            <p class="note">로그아웃하면 이 브라우저의 세션이 종료됩니다. 저장된 Google ID, 이메일, 이름, 사진과 로그인 시각은 삭제되지 않습니다.</p>
           </div>
         </section>
         <aside class="account-aside" aria-labelledby="next-title">
