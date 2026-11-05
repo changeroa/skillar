@@ -51,6 +51,11 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [notice, setNotice] = useState("");
   const openedByUser = useRef(false);
+  const dirty = useRef(false);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const approvedHash = useRef<string | null>(null);
+  const onDirtyChange = useCallback((next: boolean) => { dirty.current = next; }, []);
 
   const expire = useCallback(() => {
     setPhase({ kind: "expired" });
@@ -67,6 +72,12 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   useEffect(() => {
     const onHash = () => {
       const skillId = skillIdFromHash(location.hash);
+      if (skillId !== selectedRef.current && approvedHash.current !== location.hash && dirty.current &&
+          !confirm("저장하지 않은 수정 내용이 사라집니다. 다른 화면으로 이동할까요?")) {
+        history.replaceState(null, "", selectedRef.current === null ? location.pathname : skillHash(selectedRef.current));
+        return;
+      }
+      approvedHash.current = null;
       setSelected(skillId);
       if (openedByUser.current && skillId !== null) setFocusTarget(current => ({ skillId, n: (current?.n ?? 0) + 1 }));
       else setFocusTarget(null);
@@ -95,15 +106,18 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   }, [phase.kind, tick, signal]);
 
   const open = (skillId: PrivateSkillId) => {
+    if (skillId !== selected && dirty.current && !confirm("저장하지 않은 수정 내용이 사라집니다. 다른 스킬을 열까요?")) return;
     setNotice("");
     if (location.hash === skillHash(skillId)) {
       setFocusTarget(current => ({ skillId, n: (current?.n ?? 0) + 1 }));
       return;
     }
     openedByUser.current = true;
+    approvedHash.current = skillHash(skillId);
     location.hash = skillHash(skillId);
   };
   const back = () => {
+    approvedHash.current = "";
     location.hash = "";
     document.getElementById("library-title")?.focus();
   };
@@ -130,6 +144,6 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
       onReload: reload, onOpen: open, onUnauthorized: expire }),
     selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
       focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
-      onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire }),
+      onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange }),
     h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire }));
 }

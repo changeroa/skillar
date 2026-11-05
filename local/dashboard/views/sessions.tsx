@@ -264,6 +264,7 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
   const [stats, setStats] = useState<Stats>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     if (live.seq === 0) return;
@@ -273,6 +274,7 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
 
   useEffect(() => {
     let cancelled = false;
+    setBusy(true);
     Promise.all([api.sessions(route.filter), api.stats(route.filter)])
       .then(([nextRows, nextStats]) => {
         if (cancelled) return;
@@ -282,7 +284,7 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
+      }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [filterKey, refresh]);
 
@@ -328,13 +330,14 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
   }
 
   return (
-    <section aria-busy={rows === undefined}>
+    <section aria-busy={busy}>
       <div class="page-title">
         <Title>세션 사용 기록</Title>
         <p>검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다.</p>
       </div>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
-      {error && <p class="notice" role="alert">세션을 불러오지 못했습니다: {error}</p>}
+      {error && <p class="notice" role="alert">세션을 불러오지 못했습니다: {error} <button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       {body}
       {rows !== undefined && stats && <UsageNote stats={stats} />}
     </section>

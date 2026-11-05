@@ -27,9 +27,19 @@ export class ConnectionsRequestError extends Error {
   }
 }
 
-export type Failure = "signed-out" | "disabled" | "rejected" | "rate-limited" | "unavailable" | "unreachable" | "unexpected" | "other";
+export class UnconfirmedMutation extends Error {
+  readonly name = "UnconfirmedMutation";
+  readonly method: "POST" | "DELETE";
+  constructor(method: "POST" | "DELETE") {
+    super("mutation_response_unconfirmed");
+    this.method = method;
+  }
+}
+
+export type Failure = "signed-out" | "disabled" | "rejected" | "rate-limited" | "unavailable" | "unreachable" | "unexpected" | "unconfirmed" | "other";
 
 export function classifyFailure(error: unknown): Failure {
+  if (error instanceof UnconfirmedMutation) return "unconfirmed";
   if (error instanceof TypeError) return "unreachable";
   if (!(error instanceof ConnectionsRequestError)) return error instanceof Error && /ZodError$/.test(error.name) ? "unexpected" : "other";
   if (error.status === 401) return "signed-out";
@@ -56,7 +66,14 @@ async function call<S extends z.ZodType>(path: string, schema: S, init: { readon
     ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
   });
   if (!response.ok) throw new ConnectionsRequestError(response.status, await errorCode(response));
-  return schema.parse(await response.json());
+  try {
+    return schema.parse(await response.json());
+  } catch (error) {
+    if (init.method !== "GET" && (error instanceof z.ZodError || error instanceof SyntaxError || error instanceof TypeError)) {
+      throw new UnconfirmedMutation(init.method);
+    }
+    throw error;
+  }
 }
 
 export const readConnections = (): Promise<McpConnections> => call(routes.connections, mcpConnectionsSchema, { method: "GET" });
@@ -110,8 +127,8 @@ export function update(model: Model, event: Event): Model {
     case "loaded": return { ...model, phase: "ready", resource: event.list.resource, connections: sortConnections(event.list.connections) };
     case "load-failed": return event.failure === "signed-out" ? { ...initialModel, phase: "signed-out", draft: model.draft }
       : { ...model, phase: event.failure, confirming: null };
-    case "draft": return { ...model, draft: event.draft };
-    case "create": return { ...model, creating: true };
+    case "draft": return model.creating ? model : { ...model, draft: event.draft };
+    case "create": return model.creating || model.token !== null ? model : { ...model, creating: true };
     case "created": return { ...model, creating: false, draft: emptyDraft(), token: event.result.token, tokenVisible: false,
       connections: sortConnections([event.result.connection, ...model.connections]) };
     case "create-failed": return { ...model, creating: false };
@@ -133,7 +150,8 @@ const FAILURE_TEXT: Record<Failure, string> = {
   "rate-limited": "Too many requests. Wait a minute and try again.",
   unavailable: "MCP connections are unavailable right now. Try again later.",
   unreachable: "Couldn't reach skillar. Check your connection and try again.",
-  unexpected: "skillar answered in a way this page doesn't recognise. Nothing was changed.",
+  unexpected: "응답 형식을 확인하지 못했습니다. 연결 목록을 다시 불러오세요.",
+  unconfirmed: "요청은 전송됐지만 결과를 확인하지 못했습니다. 목록을 다시 불러와 실제 상태를 확인하세요",
   other: "The request failed.",
 };
 const SCOPE_TEXT: Record<McpConnectionSummary["scopes"][number], string> = {
@@ -191,7 +209,9 @@ function mount(): void {
     if (name.value !== model.draft.name) name.value = model.draft.name;
     if (days.value !== model.draft.expiresInDays) days.value = model.draft.expiresInDays;
     record.checked = model.draft.recordActivity;
-    create.disabled = model.creating;
+    name.disabled = days.disabled = record.disabled = model.creating;
+    create.disabled = model.creating || model.token !== null;
+    if (model.token !== null) patStatus.textContent = "표시된 일회성 토큰을 보관하고 닫은 뒤 새 토큰을 만들 수 있습니다.";
     tokenPanel.hidden = model.token === null;
     Object.assign(token, { value: model.token ?? "", type: model.tokenVisible ? "text" : "password" });
     Object.assign(toggle, { textContent: model.tokenVisible ? "Hide token" : "Show token", ariaPressed: String(model.tokenVisible) });
@@ -204,7 +224,17 @@ function mount(): void {
   const fail = (error: unknown, target: HTMLElement) => {
     const failure = classifyFailure(error);
     if (failure === "signed-out") dispatch({ type: "load-failed", failure });
-    else target.textContent = failure === "other" && error instanceof ConnectionsRequestError ? `The request failed (${error.code}).` : FAILURE_TEXT[failure];
+    else {
+      target.textContent = failure === "other" && error instanceof ConnectionsRequestError ? `The request failed (${error.code}).` : FAILURE_TEXT[failure];
+      if (failure === "unconfirmed") {
+        const reload = document.createElement("button");
+        reload.type = "button";
+        reload.className = "button secondary";
+        reload.textContent = "목록 다시 불러오기";
+        reload.addEventListener("click", () => void load());
+        target.append(reload);
+      }
+    }
   };
   const load = async () => {
     dispatch({ type: "load" });
@@ -228,6 +258,7 @@ function mount(): void {
   form.addEventListener("input", () => dispatch({ type: "draft", draft: { name: name.value, expiresInDays: days.value, recordActivity: record.checked } }));
   form.addEventListener("submit", async event => {
     event.preventDefault();
+    if (model.creating || model.token !== null) return;
     const check = checkDraft(model.draft);
     problems.replaceChildren(...(check.ok ? [] : check.problems).map(text => Object.assign(document.createElement("li"), { textContent: text })));
     if (!check.ok) return;
@@ -235,7 +266,7 @@ function mount(): void {
     patStatus.textContent = "Creating the token\u2026";
     try {
       dispatch({ type: "created", result: await createPat(check.body) });
-      patStatus.textContent = tokenStatus.textContent = "";
+      tokenStatus.textContent = "";
       tokenTitle.focus();
     } catch (error) {
       dispatch({ type: "create-failed" });
@@ -256,7 +287,7 @@ function mount(): void {
       tokenStatus.textContent = "Couldn't copy. The token is shown and selected; copy it manually.";
     }
   });
-  dismiss.addEventListener("click", () => { dispatch({ type: "token-dismissed" }); tokenStatus.textContent = ""; name.focus(); });
+  dismiss.addEventListener("click", () => { dispatch({ type: "token-dismissed" }); patStatus.textContent = tokenStatus.textContent = ""; name.focus(); });
   list.addEventListener("click", event => {
     const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button[data-action]") : null;
     const connectionId = button?.closest<HTMLElement>("[data-id]")?.dataset["id"];

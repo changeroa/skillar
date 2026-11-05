@@ -68,7 +68,9 @@ function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Common & {
       <p>지금 연결 승인 파일을 내려받으세요. 이 파일은 한 번만 제공되고 한 번만 쓸 수 있으며 {formatSeconds(grant.expiresAt)}에 만료됩니다. 이 브라우저에는 사본이 남지 않습니다.</p>
       <div class="cluster">
         <button class="button primary" type="button" onClick={() => downloadTextFile(fileName, grantFileText(grant.grant))}>{fileName} 내려받기</button>
-        <button class="button secondary" type="button" onClick={() => setGrant(null)}>완료</button>
+        <button class="button secondary" type="button" onClick={() => {
+          if (confirm("닫으면 이 일회성 연결 승인 파일을 다시 내려받을 수 없습니다. 필요한 파일을 보관했나요?")) setGrant(null);
+        }}>완료</button>
       </div>
       <ol class="steps-list">
         {connectSteps(fileName, origin).map(step => (

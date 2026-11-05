@@ -1,8 +1,8 @@
 import { h } from "preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { PrivateSkillId } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, publishVersion, technicalDetail } from "./api.ts";
-import { DraftEditor } from "./editor.ts";
+import { DraftEditor, useDraftGuard } from "./editor.ts";
 import { buildPackage, emptyDraft } from "./model.ts";
 import type { Draft } from "./model.ts";
 
@@ -26,26 +26,30 @@ export function PublishPanel({ signal, onPublished, onOpen, onUnauthorized }: Pu
   const [detail, setDetail] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>({ kind: "none" });
+  const submitting = useRef(false);
+  useDraftGuard(draft.document !== "" || draft.files.length > 0);
 
-  const change = (next: Draft, newNotes: readonly string[]) => {
+  const change = (next: Draft | ((current: Draft) => Draft), newNotes: readonly string[]) => {
     setDraft(next);
     if (newNotes.length > 0) setNotes(newNotes);
   };
 
   const submit = async (event: Event) => {
     event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
     setOutcome({ kind: "none" });
     setDetail(null);
-    const built = await buildPackage(draft);
-    if (!built.ok) {
-      setProblems(built.problems);
-      setMessage("");
-      return;
-    }
-    setProblems([]);
-    setBusy(true);
-    setMessage("게시 중\u2026");
     try {
+      const built = await buildPackage(draft);
+      if (!built.ok) {
+        setProblems(built.problems);
+        setMessage("");
+        return;
+      }
+      setProblems([]);
+      setMessage("게시 중\u2026");
       const published = await publishVersion(draft.skillId, null, built.package, signal);
       setOutcome({ kind: "published", skillId: published.skill.skillId, name: published.skill.name, revision: published.skill.head.revision });
       setMessage(`${published.skill.name}을 리비전 ${published.skill.head.revision}으로 게시했습니다.`);
@@ -61,6 +65,7 @@ export function PublishPanel({ signal, onPublished, onOpen, onUnauthorized }: Pu
       setMessage(describeFailure(error, "게시"));
       setDetail(technicalDetail(error));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };

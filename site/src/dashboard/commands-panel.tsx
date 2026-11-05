@@ -20,35 +20,35 @@ type Props = {
 
 type Patch = (next: Partial<CommandDraft>) => void;
 
-function TextField({ label, value, numeric = false, onInput }: {
-  readonly label: string; readonly value: string; readonly numeric?: boolean; readonly onInput: (next: string) => void;
+function TextField({ label, value, numeric = false, busy, onInput }: {
+  readonly label: string; readonly value: string; readonly numeric?: boolean; readonly busy: boolean; readonly onInput: (next: string) => void;
 }) {
   return (
     <label class="field-label">{label}
-      <input class="text-field" type="text" autocomplete="off" spellcheck={false} {...(numeric ? { inputMode: "numeric" as const } : {})}
+      <input class="text-field" type="text" disabled={busy} autocomplete="off" spellcheck={false} {...(numeric ? { inputMode: "numeric" as const } : {})}
         value={value} onInput={event => onInput(event.currentTarget.value)} />
     </label>
   );
 }
 
-function TextArea({ label, value, onInput }: { readonly label: string; readonly value: string; readonly onInput: (next: string) => void }) {
+function TextArea({ label, value, busy, onInput }: { readonly label: string; readonly value: string; readonly busy: boolean; readonly onInput: (next: string) => void }) {
   return (
     <label class="field-label">{label}
-      <textarea class="document-field document-field--short" spellcheck={false} value={value}
+      <textarea class="document-field document-field--short" disabled={busy} spellcheck={false} value={value}
         onInput={event => onInput(event.currentTarget.value)} />
     </label>
   );
 }
 
-function KindFields({ draft, patch }: { readonly draft: CommandDraft; readonly patch: Patch }) {
+function KindFields({ draft, patch, busy }: { readonly draft: CommandDraft; readonly patch: Patch; readonly busy: boolean }) {
   switch (draft.kind) {
     case "workflow.put":
       return (
         <>
           <div class="command-form__fields">
-            <TextField label={FIELD_LABELS.workflowName} value={draft.workflowName} onInput={workflowName => patch({ workflowName })} />
+            <TextField busy={busy} label={FIELD_LABELS.workflowName} value={draft.workflowName} onInput={workflowName => patch({ workflowName })} />
           </div>
-          <TextArea label={FIELD_LABELS.workflowSteps} value={draft.workflowSteps} onInput={workflowSteps => patch({ workflowSteps })} />
+          <TextArea busy={busy} label={FIELD_LABELS.workflowSteps} value={draft.workflowSteps} onInput={workflowSteps => patch({ workflowSteps })} />
           <p class="note">
             각 단계에는 <code>id</code>와 <code>skills</code> 목록이 필요하고 <code>together</code>, <code>expectTools</code>, <code>doneWhen</code>은 선택입니다.
             서로 다른 id를 가진 단계를 최대 50개까지 넣을 수 있습니다. 예: <code>{"[{\"id\":\"plan\",\"skills\":[\"skillar/plan\"]}]"}</code>
@@ -58,34 +58,34 @@ function KindFields({ draft, patch }: { readonly draft: CommandDraft; readonly p
     case "flow.create":
       return (
         <div class="command-form__fields">
-          <TextField label={FIELD_LABELS.workspaceId} value={draft.workspaceId} onInput={workspaceId => patch({ workspaceId })} />
-          <TextField label={FIELD_LABELS.tabId} value={draft.tabId} onInput={tabId => patch({ tabId })} />
-          <TextField label={FIELD_LABELS.flowName} value={draft.flowName} onInput={flowName => patch({ flowName })} />
-          <TextField label={FIELD_LABELS.flowVersion} value={draft.flowVersion} numeric onInput={flowVersion => patch({ flowVersion })} />
-          <TextField label={FIELD_LABELS.label} value={draft.label} onInput={label => patch({ label })} />
+          <TextField busy={busy} label={FIELD_LABELS.workspaceId} value={draft.workspaceId} onInput={workspaceId => patch({ workspaceId })} />
+          <TextField busy={busy} label={FIELD_LABELS.tabId} value={draft.tabId} onInput={tabId => patch({ tabId })} />
+          <TextField busy={busy} label={FIELD_LABELS.flowName} value={draft.flowName} onInput={flowName => patch({ flowName })} />
+          <TextField busy={busy} label={FIELD_LABELS.flowVersion} value={draft.flowVersion} numeric onInput={flowVersion => patch({ flowVersion })} />
+          <TextField busy={busy} label={FIELD_LABELS.label} value={draft.label} onInput={label => patch({ label })} />
         </div>
       );
     case "flow.map-step":
       return (
         <div class="command-form__fields">
-          <TextField label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
-          <TextField label={FIELD_LABELS.paneId} value={draft.paneId} onInput={paneId => patch({ paneId })} />
-          <TextField label={FIELD_LABELS.stepId} value={draft.stepId} onInput={stepId => patch({ stepId })} />
+          <TextField busy={busy} label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
+          <TextField busy={busy} label={FIELD_LABELS.paneId} value={draft.paneId} onInput={paneId => patch({ paneId })} />
+          <TextField busy={busy} label={FIELD_LABELS.stepId} value={draft.stepId} onInput={stepId => patch({ stepId })} />
         </div>
       );
     case "flow.end":
       return (
         <div class="command-form__fields">
-          <TextField label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
+          <TextField busy={busy} label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
         </div>
       );
     case "eval.add":
       return (
         <>
-          <TextArea label={FIELD_LABELS.query} value={draft.query} onInput={query => patch({ query })} />
+          <TextArea busy={busy} label={FIELD_LABELS.query} value={draft.query} onInput={query => patch({ query })} />
           <div class="command-form__fields">
-            <TextField label={FIELD_LABELS.expectedUri} value={draft.expectedUri} onInput={expectedUri => patch({ expectedUri })} />
-            <TextField label={FIELD_LABELS.fromTraceId} value={draft.fromTraceId} onInput={fromTraceId => patch({ fromTraceId })} />
+            <TextField busy={busy} label={FIELD_LABELS.expectedUri} value={draft.expectedUri} onInput={expectedUri => patch({ expectedUri })} />
+            <TextField busy={busy} label={FIELD_LABELS.fromTraceId} value={draft.fromTraceId} onInput={fromTraceId => patch({ fromTraceId })} />
           </div>
         </>
       );
@@ -162,6 +162,8 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
   const [lookupMessage, setLookupMessage] = useState("");
   const own = useRef<AbortController | null>(null);
   const form = useRef<HTMLFormElement | null>(null);
+  const sendingDraft = useRef(false);
+  const activeRequests = useRef(new Set<string>());
   useEffect(() => {
     const controller = new AbortController();
     own.current = controller;
@@ -188,11 +190,13 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
   });
   const run = async (commandId: string, task: (signal: AbortSignal) => Promise<void>) => {
     const controller = own.current;
-    if (controller === null) return;
+    if (controller === null || activeRequests.current.has(commandId)) return;
+    activeRequests.current.add(commandId);
     mark(commandId, true);
     try {
       await task(controller.signal);
     } finally {
+      activeRequests.current.delete(commandId);
       if (!controller.signal.aborted) mark(commandId, false);
     }
   };
@@ -227,6 +231,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
   });
   const submit = (event: Event) => {
     event.preventDefault();
+    if (sendingDraft.current || busy.size > 0) return;
     const built = buildOperation(draft);
     if (!built.ok) {
       setProblems(built.problems);
@@ -237,7 +242,8 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
     const submission = newSubmission(source, profile.journalThrough, built.operation, sourcesLoad);
     setSubmissions(current => [submission, ...current]);
     setMessage(`명령 ${shortId(submission.commandId)}의 상태가 아래 목록에 표시됩니다.`);
-    void send(submission);
+    sendingDraft.current = true;
+    void send(submission).finally(() => { sendingDraft.current = false; });
   };
   const resubmit = (previous: Submission) => {
     if (previous.operation === null) return;
@@ -294,7 +300,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
       </p>
       <form class="command-form" ref={form} onSubmit={submit} aria-describedby={id("base")}>
         <label class="field-label">명령
-          <select class="text-field" value={draft.kind} onChange={event => {
+          <select class="text-field" disabled={busy.size > 0} value={draft.kind} onChange={event => {
             const kind = COMMAND_KINDS.find(candidate => candidate === event.currentTarget.value);
             if (kind !== undefined) patch({ kind });
           }}>
@@ -302,7 +308,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
           </select>
         </label>
         <p class="note">{COMMAND_KIND_COPY[draft.kind].detail}</p>
-        <KindFields draft={draft} patch={patch} />
+        <KindFields draft={draft} patch={patch} busy={busy.size > 0} />
         <p class="note" id={id("base")}>
           기준 리비전: 저널 {profile.journalThrough} (마지막 출처 읽기 기준). 기기는 데이터가 아직 이 리비전에 있을 때만 명령을 적용합니다.
           갱신하려면 출처를 새로 고치세요.
@@ -311,7 +317,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
           <ul class="problems" role="alert">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>
         )}
         <div class="cluster">
-          <button class="button primary" type="submit">명령 대기열에 넣기</button>
+          <button class="button primary" type="submit" disabled={busy.size > 0}>명령 대기열에 넣기</button>
           <button class="button secondary" type="button" onClick={onRefreshSources} disabled={sourcesBusy}>출처 새로 고침</button>
           <span class="note" role="status" aria-live="polite">{message}</span>
         </div>

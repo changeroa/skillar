@@ -30,7 +30,7 @@ export const mutations = {
   eventIdentity: ["event.callId ?? event.id", "event.callId"],
   matchingMode: ['specStep.together ? "together" : "alternatives"', 'specStep.together ? "alternatives" : "together"'],
   window: ['data-session-window="outside"', 'data-session-window="inside"'],
-  lifecycle: ['? "end_not_observed" : "in_progress"', '? "in_progress" : "in_progress"'],
+  lifecycle: ['? "end_not_observed" : "unknown"', '? "in_progress" : "in_progress"'],
   unresolvedCount: ["data-unattributed-count={loads.count}", "data-unattributed-count={0}"],
   unresolvedUris: ["loads.uris.map", "[].map"],
   uncertainStep: ["uncertain && step.panes.length > 0", "false"],
@@ -293,5 +293,5 @@ test("pane history and missing ends stay distinct from the registered execution"
   attr(ended, "data-session-status", "end_not_observed");
   attr(render(ui.Session, { ...props, newerSession: true }), "data-session-status", "end_not_observed");
   attr(render(ui.Session, { ...props, paneClosed: true }), "data-session-status", "end_not_observed");
-  attr(render(ui.Session, props), "data-session-status", "in_progress");
+  attr(render(ui.Session, props), "data-session-status", "unknown");
 });

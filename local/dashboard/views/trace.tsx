@@ -19,7 +19,7 @@ import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK,
 
 export type SearchDetail = {
   kind: "search"; traceId: string; chosen: SkillUri[]; query: string; mode: SearchMode; candidates: CandidateLike[];
-  abstained?: { reason: AbstainReason; hint: string }; elapsedMs: number; total: number;
+  abstained?: { reason: AbstainReason; hint: string }; elapsedMs: number | undefined; total: number;
 };
 type PromptDetail = { kind: "prompt"; text?: string; textLength?: number };
 type LoadDetail = { kind: "load"; uri: SkillUri; loadId: string; manifestDigest: string };
@@ -204,7 +204,7 @@ export function searchDetail(step: TraceStep): SearchDetail {
     mode: detail.mode ?? "automatic",
     candidates: Array.isArray(detail.candidates) ? detail.candidates : [],
     abstained: detail.abstained,
-    elapsedMs: Number(detail.elapsedMs ?? 0),
+    elapsedMs: typeof detail.elapsedMs === "number" && Number.isFinite(detail.elapsedMs) ? detail.elapsedMs : undefined,
     total: Number(detail.total ?? (Array.isArray(detail.candidates) ? detail.candidates.length : 0)),
   };
 }
@@ -376,7 +376,7 @@ function SearchBody({ detail }: { detail: SearchDetail }) {
     <div>
       <p class="tl__meta tl__meta--row">
         <span class="tl__mode" title={`검색 모드: ${detail.mode}`}>{MODE_LABEL[detail.mode] ?? detail.mode}</span>
-        <span>{formatMs(detail.elapsedMs)}</span>
+      <span>{detail.elapsedMs === undefined ? "측정 안 됨" : formatMs(detail.elapsedMs)}</span>
         <span>{countText}</span>
         {detail.traceId && <span class="tl__id" title="추적 ID">{detail.traceId}</span>}
       </p>
@@ -572,27 +572,43 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
   const [report, setReport] = useState<SessionSkillReportDto>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(true);
+  const lastReport = useRef<SessionSkillReportDto | undefined>(undefined);
 
   useEffect(() => {
     setSteps(undefined);
     setRow(undefined);
     setReport(undefined);
+    lastReport.current = undefined;
     setError(undefined);
   }, [sessionId]);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.trace(sessionId), api.sessions({}), skillReportOf(sessionId)])
+    setBusy(true);
+    Promise.all([api.trace(sessionId), api.sessions({}),
+      Promise.allSettled([api.skillReport(sessionId, { automated: "include" })])])
       .then(([trace, rows, skillReport]) => {
         if (cancelled) return;
         setSteps(trace);
         setRow(rows.find((r) => r.id === sessionId));
-        setReport(skillReport);
-        setError(undefined);
+        const result = skillReport[0];
+        switch (result.status) {
+          case "fulfilled":
+            lastReport.current = result.value;
+            setReport(result.value);
+            setError(undefined);
+            break;
+          case "rejected":
+            if (lastReport.current !== undefined) setError("보고서를 새로 고치지 못했습니다. 마지막으로 확인한 보고서를 표시합니다.");
+            else setError(undefined);
+            break;
+          default: { const exhaustive: never = result; return exhaustive; }
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
+      }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [sessionId, refresh]);
 
@@ -603,8 +619,9 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
 
   if (steps === undefined) {
     return (
-      <section class="trace" aria-busy="true">
-        {error && <p class="notice" role="alert">추적 기록을 불러오지 못했습니다: {error}</p>}
+      <section class="trace" aria-busy={busy}>
+        {error && <p class="notice" role="alert">추적 기록을 불러오지 못했습니다: {error} <button type="button" class="btn"
+          onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       </section>
     );
   }
@@ -615,8 +632,9 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
   const items = planTimeline(steps, report);
   const Heading = embedded ? "h3" : "h2";
   return (
-    <section class="trace" aria-busy="false">
-      {error && <p class="notice" role="alert">실시간 갱신 실패: {error}</p>}
+    <section class="trace" aria-busy={busy}>
+      {error && <p class="notice" role="alert">실시간 갱신 실패: {error} <button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
       <Header row={row} steps={steps} backHref={backHref} embedded={embedded} />
       <div class="trace__console">
         <Inspector sessionId={sessionId} row={row} steps={steps} liveState={live.state} unresolvedLoads={(report?.unattributedLoads.count ?? 0) > 0} embedded={embedded} />
@@ -638,11 +656,6 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
       </div>
     </section>
   );
-}
-
-/** The skill report is an enhancement: a daemon that cannot answer leaves the timeline exactly as recorded. */
-function skillReportOf(sessionId: string): Promise<SessionSkillReportDto | undefined> {
-  return api.skillReport(sessionId, { automated: "include" }).catch(() => undefined);
 }
 
 const TRACE_CSS = `
