@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Publish, version and export the private skills stored in your skillar account. Files are uploaded only when you choose them.">
+    <meta name="description" content="skillar 계정의 비공개 스킬을 게시하고 버전을 관리하거나 내보내세요. 직접 선택한 파일만 업로드합니다.">
     <meta name="theme-color" content="#171916">
-    <meta property="og:title" content="Private skills — skillar">
-    <meta property="og:description" content="A home for your agent skills.">
+    <meta property="og:title" content="비공개 스킬 — skillar">
+    <meta property="og:description" content="에이전트 스킬을 보관하는 곳.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skillar.sh/skills/">
     <meta property="og:image" content="https://skillar.sh/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="skillar — A home for your agent skills.">
+    <meta property="og:image:alt" content="skillar — 에이전트 스킬을 보관하는 곳.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://skillar.sh/og.png">
     <link rel="canonical" href="https://skillar.sh/skills/">
-    <title>Private skills — skillar</title>
+    <title>비공개 스킬 — skillar</title>
     <script>
       try {
         document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
@@ -33,30 +33,30 @@
     <link rel="stylesheet" href="/src/dashboard/dashboard.css">
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
+    <a class="skip" href="#main">본문으로 이동</a>
     <header class="shell header account-header">
-      <a class="wordmark" href="/" aria-label="skillar home"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
-      <label class="theme-label">Theme
-        <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <label class="theme-label">테마
+        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
-      <nav aria-label="Account"><a href="/login/">Account</a><a href="/connections/">Connections</a><a href="/dashboard/">Dashboard</a><a href="/skills/" aria-current="page">Skills</a></nav>
+      <nav aria-label="계정 메뉴"><a href="/login/">계정</a><a href="/connections/">연결</a><a href="/dashboard/">대시보드</a><a href="/skills/" aria-current="page">스킬</a></nav>
     </header>
-    <aside class="preview-notice" aria-label="What works today">
-      <div class="shell"><strong>Your private skills are available to clients you approve over MCP.</strong> Manage OAuth connections and read-only tokens on the Connections page. Uploads still require your explicit confirmation here. <a href="/">Back to skillar ↗</a></div>
+    <aside class="preview-notice" aria-label="현재 이용할 수 있는 기능">
+      <div class="shell"><strong>승인한 클라이언트는 MCP로 내 비공개 스킬을 읽을 수 있습니다.</strong> 연결 화면에서 OAuth 연결과 읽기 전용 토큰을 관리하세요. 업로드는 이 화면에서 별도로 동의해야 합니다. <a href="/">skillar로 돌아가기 ↗</a></div>
     </aside>
     <main id="main" class="shell account-main" tabindex="-1">
-      <div class="dashboard-heading"><div><h1>Your private skills.</h1><p class="account-lead">Skills you publish here are stored in your skillar account with every version kept. Only files you choose are uploaded, after you confirm the upload; nothing on your computer is scanned.</p></div></div>
+      <div class="dashboard-heading"><div><h1>내 비공개 스킬</h1><p class="account-lead">여기서 게시한 스킬은 버전별로 내 skillar 계정에 보관합니다. 직접 선택하고 업로드에 동의한 파일만 전송하며, 컴퓨터의 다른 파일은 검사하지 않습니다.</p></div></div>
       <noscript>
-        <p class="note">JavaScript is off. The library needs it to read your skills and to build a package from the files you choose. Signing in and out still work.</p>
+        <p class="note">JavaScript가 꺼져 있습니다. 스킬을 불러오고 선택한 파일로 패키지를 만들려면 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
         <div class="auth-actions">
-          <a class="button primary" href="/auth/google">Continue with Google <span aria-hidden="true">→</span></a>
-          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">Sign out of this browser</button></form>
+          <a class="button primary" href="/auth/google">Google로 계속 <span aria-hidden="true">→</span></a>
+          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">이 브라우저에서 로그아웃</button></form>
         </div>
       </noscript>
       <div id="skills-app"></div>
-      <aside class="local-alternative" aria-labelledby="local-title"><h2 id="local-title">Read these skills from your agent.</h2><p>Approve an MCP connection to search and read the private skills you publish here. Your local CLI continues to serve local files without uploading them.</p><a class="text-link" href="/connections/">Manage MCP connections ↗</a></aside>
+      <aside class="local-alternative" aria-labelledby="local-title"><h2 id="local-title">에이전트에서 이 스킬 읽기</h2><p>MCP 연결을 승인하면 여기서 게시한 비공개 스킬을 검색하고 읽을 수 있습니다. 로컬 CLI는 업로드 없이 로컬 파일을 계속 제공합니다.</p><a class="text-link" href="/connections/">MCP 연결 관리 ↗</a></aside>
     </main>
-    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">Back to skillar</a><a class="text-link" href="/dashboard/">Activity dashboard</a></div></footer>
+    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/dashboard/">활동 대시보드</a></div></footer>
     <script type="module" src="/src/skills.ts"></script>
   </body>
 </html>

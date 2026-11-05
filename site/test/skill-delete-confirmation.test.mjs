@@ -52,7 +52,7 @@ async function mountPanel(t, onDelete) {
     onChanged: () => changed.resolve(), onDeleted: name => { events.deleted.push(name); deleted.resolve(name); }, onBack: () => {}, onUnauthorized: () => {},
   };
   await act(() => { render(h(SkillPanel, props), container); });
-  await waitFor(dom, () => buttonNamed(container, "Publish new version")[0], "the skill panel to finish loading");
+  await waitFor(dom, () => buttonNamed(container, "새 버전 게시")[0], "the skill panel to finish loading");
   t.after(() => render(null, container));
   return { dom, api, container, events, deleted: deleted.promise, changed: changed.promise };
 }
@@ -75,7 +75,7 @@ test("a delete trigger opens a typed confirmation whose Confirm delete stays dis
   assert.ok(field);
   assert.equal(dom.activeElement, field);
   assert.equal(all(section, node => node.localName === "button" || node.localName === "input")[0], field);
-  assert.equal(buttonNamed(section, "Confirm delete")[0].disabled, true);
+  assert.equal(buttonNamed(section, "삭제 확인")[0].disabled, true);
   // When: a pointer mashes every button in the section, round after round, without typing anything
   for (let round = 0; round < 6; round += 1) {
     for (const button of byTag(section, "button")) await act(() => button.click());
@@ -92,7 +92,7 @@ test("typing the skill name arms Confirm delete; one DELETE names this skill at 
   const section = classed(container, "skill__danger")[0];
   await act(() => dom.getElementById("skill-delete").click());
   const field = dom.getElementById(skillField);
-  const confirm = () => buttonNamed(section, "Confirm delete")[0];
+  const confirm = () => buttonNamed(section, "삭제 확인")[0];
   // When: a near miss, then the exact name with surrounding whitespace
   await type(field, "synthetic!");
   assert.equal(confirm().disabled, true);
@@ -129,7 +129,7 @@ test("Keep and Escape cancel the confirmation, return focus to the trigger and f
   await act(() => trigger().click());
   assert.equal(dom.getElementById(skillField).value, "");
   assert.equal(dom.activeElement, dom.getElementById(skillField));
-  await act(() => buttonNamed(section, "Keep skill")[0].click());
+  await act(() => buttonNamed(section, "스킬 유지")[0].click());
   assert.equal(dom.getElementById(skillField), null);
   assert.equal(dom.activeElement, trigger());
   assert.deepEqual(api.deletes(), []);
@@ -142,7 +142,7 @@ test("Enter inside the confirmation field never deletes, and the field sits outs
   await act(() => dom.getElementById("skill-delete").click());
   const field = dom.getElementById(skillField);
   await type(field, "synthetic");
-  assert.equal(buttonNamed(section, "Confirm delete")[0].disabled, false);
+  assert.equal(buttonNamed(section, "삭제 확인")[0].disabled, false);
   // When
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
   // Then
@@ -161,7 +161,7 @@ test("a version confirmation arms only for that version's digest prefix and dele
   // When
   await act(() => dom.getElementById(olderTrigger).click());
   const field = dom.getElementById(olderField);
-  const confirm = () => buttonNamed(old, "Confirm delete")[0];
+  const confirm = () => buttonNamed(old, "삭제 확인")[0];
   // Then: focus is in the field; the current version's prefix does not arm this row, its own prefix does in any case
   assert.equal(dom.activeElement, field);
   await type(field, head.digest.slice(0, 8));

@@ -43,7 +43,7 @@ export type DeleteTarget = { readonly kind: "skill"; readonly name: string } | {
 
 const silent: Note = { text: "", technical: null };
 
-/** The text a person must type before "Confirm delete" is enabled. A pointer alone can never produce it, so repeated clicks cannot delete. */
+/** The text a person must type before "삭제 확인" is enabled. A pointer alone can never produce it, so repeated clicks cannot delete. */
 export function confirmationText(target: DeleteTarget): string {
   return target.kind === "skill" ? target.name : target.digest.slice(0, 8);
 }
@@ -76,16 +76,16 @@ function failureNote(error: unknown, action: string): Note {
 function describeDraftFailure(error: unknown): string {
   if (error instanceof SkillDraftError) {
     return error.code === "document_not_text"
-      ? "This version's SKILL.md isn't UTF-8 text, so it can't be edited here. Older versions may still be exported."
-      : "This version has no SKILL.md, so it can't be edited here.";
+      ? "이 버전의 SKILL.md는 UTF-8 텍스트가 아니어서 여기서 편집할 수 없습니다. 이전 버전은 내보낼 수 있습니다."
+      : "이 버전에는 SKILL.md가 없어 여기서 편집할 수 없습니다.";
   }
-  return describeFailure(error, "Loading the current version");
+  return describeFailure(error, "현재 버전 불러오기");
 }
 
 function NoteLine({ note }: { readonly note: Note }) {
   return [
     h("span", { key: "text", class: "note", role: "status", "aria-live": "polite" }, note.text),
-    note.technical !== null && h("details", { key: "technical", class: "technical" }, h("summary", null, "Technical details"), h("code", null, note.technical)),
+    note.technical !== null && h("details", { key: "technical", class: "technical" }, h("summary", null, "기술 정보"), h("code", null, note.technical)),
   ];
 }
 
@@ -141,7 +141,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     const draft = { ...current.draft, base: target };
     setDraftState({ ...current, draft, baseline: { ...current.baseline, base: target } });
     if (moved || reviewed) {
-      setNotes([`The current version is now revision ${target.revision}. Your edits are kept and will be published on top of it.`]);
+      setNotes([`현재 버전은 리비전 ${target.revision}입니다. 수정 내용은 유지했습니다. 게시하면 이 버전 뒤에 새 버전을 만듭니다.`]);
     }
   };
 
@@ -170,8 +170,8 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
         onUnauthorized();
         return;
       }
-      if (classifyFailure(error) === "gone") setDetailState({ status: "gone", message: describeFailure(error, "Opening the skill") });
-      else setDetailState(current => ({ status: "failed", detail: current.status === "gone" ? null : current.detail, message: describeFailure(error, "Opening the skill") }));
+      if (classifyFailure(error) === "gone") setDetailState({ status: "gone", message: describeFailure(error, "스킬 열기") });
+      else setDetailState(current => ({ status: "failed", detail: current.status === "gone" ? null : current.detail, message: describeFailure(error, "스킬 열기") }));
     });
     return () => { active = false; };
   }, [skillId, signal]);
@@ -195,12 +195,12 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
 
   const run = async (action: string, task: () => Promise<PrivateSkillDetail>) => {
     setBusy(true);
-    setVersionsNote({ text: `${action}\u2026`, technical: null });
+    setVersionsNote({ text: `${action} 중\u2026`, technical: null });
     try {
       const next = await task();
       setDetailState({ status: "ready", detail: next });
       adoptHead(next, false);
-      setVersionsNote({ text: `${action} done. The skill is at revision ${next.skill.head.revision}.`, technical: null });
+      setVersionsNote({ text: `${action} 작업을 마쳤습니다. 현재 리비전은 ${next.skill.head.revision}입니다.`, technical: null });
       onChanged();
     } catch (error) {
       if (isAbort(error)) return;
@@ -218,21 +218,21 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
 
   const review = async () => {
     setBusy(true);
-    setPublishNote({ text: "Reading the current version\u2026", technical: null });
+    setPublishNote({ text: "현재 버전 읽는 중\u2026", technical: null });
     try {
       const next = await readSkill(skillId, signal);
       setDetailState({ status: "ready", detail: next });
       setConflict(false);
       adoptHead(next, true);
-      setPublishNote({ text: `Reviewed. The current version is revision ${next.skill.head.revision}; publish again to put your draft on top of it.`, technical: null });
+      setPublishNote({ text: `확인했습니다. 현재 버전은 리비전 ${next.skill.head.revision}입니다. 다시 게시하면 수정 내용을 다음 버전으로 저장합니다.`, technical: null });
     } catch (error) {
       if (isAbort(error)) return;
       if (isUnauthorized(error)) {
         onUnauthorized();
         return;
       }
-      gone(error, "Reviewing the skill");
-      setPublishNote(failureNote(error, "Reviewing the skill"));
+      gone(error, "스킬 확인");
+      setPublishNote(failureNote(error, "스킬 확인"));
     } finally {
       setBusy(false);
     }
@@ -257,11 +257,11 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     }
     setProblems([]);
     setBusy(true);
-    setPublishNote({ text: "Publishing\u2026", technical: null });
+    setPublishNote({ text: "게시 중\u2026", technical: null });
     try {
       const next = await publishVersion(skillId, draft.base, built.package, signal);
       afterPublish(next, draft, built.package);
-      setPublishNote({ text: `Published revision ${next.skill.head.revision}.`, technical: null });
+      setPublishNote({ text: `리비전 ${next.skill.head.revision}을 게시했습니다.`, technical: null });
       onChanged();
     } catch (error) {
       if (isAbort(error)) return;
@@ -270,8 +270,8 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
         return;
       }
       if (classifyFailure(error) === "conflict") setConflict(true);
-      gone(error, "Publishing");
-      setPublishNote(failureNote(error, "Publishing"));
+      gone(error, "게시");
+      setPublishNote(failureNote(error, "게시"));
     } finally {
       setBusy(false);
     }
@@ -279,19 +279,19 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
 
   const exportVersion = async (digest: PrivateSkillDigest) => {
     setBusy(true);
-    setVersionsNote({ text: "Preparing the export\u2026", technical: null });
+    setVersionsNote({ text: "내보내기 준비 중\u2026", technical: null });
     try {
       const exported = await readExport(skillId, digest, signal);
       const fileName = exportFileName(name, digest);
       downloadTextFile(fileName, JSON.stringify(exported, null, 2));
-      setVersionsNote({ text: `Export ready: ${fileName}.`, technical: null });
+      setVersionsNote({ text: `내보낼 파일을 준비했습니다: ${fileName}.`, technical: null });
     } catch (error) {
       if (isAbort(error)) return;
       if (isUnauthorized(error)) {
         onUnauthorized();
         return;
       }
-      setVersionsNote(failureNote(error, "Exporting"));
+      setVersionsNote(failureNote(error, "내보내기"));
     } finally {
       setBusy(false);
     }
@@ -300,7 +300,7 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
   const removeSkill = async () => {
     if (head === null) return;
     setBusy(true);
-    setDeleteNote({ text: "Deleting the skill\u2026", technical: null });
+    setDeleteNote({ text: "스킬 삭제 중\u2026", technical: null });
     try {
       await deleteSkill(skillId, head, signal);
       onDeleted(name);
@@ -310,8 +310,8 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
         onUnauthorized();
         return;
       }
-      gone(error, "Deleting the skill");
-      setDeleteNote(failureNote(error, "Deleting the skill"));
+      gone(error, "스킬 삭제");
+      setDeleteNote(failureNote(error, "스킬 삭제"));
     } finally {
       setBusy(false);
       setPending(null);
@@ -329,56 +329,56 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
       } },
       h("p", { id: `${id}-consequence`, class: "note" }, consequence),
       h("label", { class: "field-label", for: id },
-        h("span", null, target.kind === "skill" ? "To confirm, type the skill name " : "To confirm, type the first 8 characters of this version's digest ",
+        h("span", null, target.kind === "skill" ? "삭제하려면 스킬 이름을 정확히 입력하세요: " : "삭제하려면 이 버전의 digest 앞 8자를 입력하세요: ",
           h("code", { class: "version__digest" }, confirmationText(target))),
         h("input", { id, ref: confirmField, class: "text-field", type: "text", autocomplete: "off", autocapitalize: "off", spellcheck: false,
           value: typed, disabled: busy, "aria-describedby": `${id}-consequence`,
           onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setTyped(event.currentTarget.value) })),
       h("div", { class: "cluster" },
         h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => setPending(null) }, keepLabel),
-        h("button", { class: "button primary", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "Confirm delete")));
+        h("button", { class: "button danger", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "삭제 확인")));
   };
 
-  const title = name === "" ? "Skill" : `Skill: ${name}`;
+  const title = name === "" ? "스킬" : `스킬: ${name}`;
   const panelHead = h("div", { class: "panel__head" },
     h("h2", { id: "skill-title", ref: heading, tabIndex: -1 }, title),
-    h("button", { class: "button secondary", type: "button", onClick: onBack }, "Back to library"));
+    h("button", { class: "button secondary", type: "button", onClick: onBack }, "보관함으로 돌아가기"));
 
   if (detailState.status === "gone") {
     return h("section", { class: "panel skill", "aria-labelledby": "skill-title" },
       panelHead,
       h("p", { class: "note", role: "status", "aria-live": "polite" }, detailState.message),
-      draftState.status === "ready" && h("p", null, "Your unsaved draft is still shown below so you can copy it. It can't be published to this skill any more."),
-      draftState.status === "ready" && h("textarea", { class: "document-field", rows: 12, readOnly: true, "aria-label": "Draft SKILL.md text", value: draftState.draft.document }));
+      draftState.status === "ready" && h("p", null, "저장하지 않은 수정 내용을 복사할 수 있도록 아래에 남겨 두었습니다. 이 스킬에는 더 이상 게시할 수 없습니다."),
+      draftState.status === "ready" && h("textarea", { class: "document-field", rows: 12, readOnly: true, "aria-label": "SKILL.md 수정 내용", value: draftState.draft.document }));
   }
 
   const versionRow = (version: Version) => {
     const current = head !== null && version.digest === head.digest;
-    const protectedReason = current ? "This is the current version; make another version current before deleting it."
-      : version.pinned ? "This version is pinned; unpin it before deleting it." : null;
+    const protectedReason = current ? "현재 버전입니다. 삭제하려면 먼저 다른 버전을 현재 버전으로 선택하세요."
+      : version.pinned ? "고정한 버전입니다. 삭제하려면 먼저 고정을 해제하세요." : null;
     const confirming = pending?.kind === "version" && pending.digest === version.digest;
     const rowId = `version-${version.digest.slice(0, 16)}`;
-    return h("li", { key: version.digest, class: "version", "aria-labelledby": rowId },
+    return h("li", { key: version.digest, class: "version", "aria-labelledby": rowId, "data-current": current ? "true" : undefined },
       h("div", { class: "version__meta" },
         h("p", { id: rowId, class: "version__flags" },
-          current && h("strong", null, "Current"),
+          current && h("strong", null, "현재 버전"),
           current && version.pinned && " \u00b7 ",
-          version.pinned && h("strong", null, "Pinned"),
-          !current && !version.pinned && h("span", { class: "note" }, "Older version")),
-        h("p", { class: "note" }, "Created ", when(version.createdAt)),
+          version.pinned && h("strong", null, "고정됨"),
+          !current && !version.pinned && h("span", { class: "note" }, "이전 버전")),
+        h("p", { class: "note" }, "생성 ", when(version.createdAt)),
         h("code", { class: "version__digest" }, version.digest)),
       h("div", { class: "cluster version__actions" },
         !current && head !== null && h("button", { class: "button secondary", type: "button", disabled: busy,
-          onClick: () => run("Making this version current", () => setHead(skillId, head, version.digest, signal)) }, "Make current"),
+          onClick: () => run("현재 버전 변경", () => setHead(skillId, head, version.digest, signal)) }, "현재 버전으로 선택"),
         head !== null && h("button", { class: "button secondary", type: "button", disabled: busy, "aria-pressed": version.pinned,
-          onClick: () => run(version.pinned ? "Unpinning" : "Pinning", () => setPinned(skillId, head, version.digest, !version.pinned, signal)) },
-          version.pinned ? "Unpin" : "Pin"),
-        h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => exportVersion(version.digest) }, "Export JSON"),
+          onClick: () => run(version.pinned ? "버전 고정 해제" : "버전 고정", () => setPinned(skillId, head, version.digest, !version.pinned, signal)) },
+          version.pinned ? "고정 해제" : "고정"),
+        h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => exportVersion(version.digest) }, "JSON 내보내기"),
         protectedReason === null && head !== null && (confirming
-          ? confirmation({ kind: "version", digest: version.digest }, "Deleting removes this version's files from your account. It cannot be undone.", "Keep version",
-            () => run("Deleting the version", () => deleteVersion(skillId, head, version.digest, signal)))
-          : h("button", { id: triggerId({ kind: "version", digest: version.digest }), class: "button secondary", type: "button", disabled: busy,
-            onClick: () => openConfirmation({ kind: "version", digest: version.digest }) }, "Delete version\u2026")),
+          ? confirmation({ kind: "version", digest: version.digest }, "내 계정에서 이 버전의 파일을 삭제합니다. 되돌릴 수 없습니다.", "버전 유지",
+            () => run("버전 삭제", () => deleteVersion(skillId, head, version.digest, signal)))
+          : h("button", { id: triggerId({ kind: "version", digest: version.digest }), class: "button secondary danger-quiet", type: "button", disabled: busy,
+            onClick: () => openConfirmation({ kind: "version", digest: version.digest }) }, "버전 삭제\u2026")),
         protectedReason !== null && h("span", { class: "note version__protected" }, protectedReason)));
   };
 
@@ -386,46 +386,56 @@ export function SkillPanel({ skillId, summary, signal, focusHeading, onChanged, 
     panelHead,
     (detail?.skill.description ?? summary?.description) !== undefined && h("p", { class: "account-lead" }, detail?.skill.description ?? summary?.description),
     h("p", { class: "note skill__status", role: "status", "aria-live": "polite" },
-      detailState.status === "loading" ? "Loading the skill\u2026" : detailState.status === "failed" ? detailState.message : ""),
+      detailState.status === "loading" ? "스킬 불러오는 중\u2026" : detailState.status === "failed" ? detailState.message : ""),
     detail !== null && h("dl", { class: "account-status skill__facts" },
-      h("div", null, h("dt", null, "Skill ID"), h("dd", null, h("code", null, detail.skill.skillId))),
-      h("div", null, h("dt", null, "Current revision"), h("dd", null, String(detail.skill.head.revision))),
-      h("div", null, h("dt", null, "Current digest"), h("dd", null, h("code", null, detail.skill.head.digest))),
-      h("div", null, h("dt", null, "Updated"), h("dd", null, when(detail.skill.updatedAt))),
-      h("div", null, h("dt", null, "Versions kept"), h("dd", null, String(detail.versions.length)))),
-    detail !== null && h("section", { class: "skill__section", "aria-labelledby": "resources-title" },
-      h("h3", { id: "resources-title", class: "panel__subtitle" }, "Files in the current version"),
-      draftState.status === "ready"
-        ? h("dl", { class: "account-status resource-list" }, draftState.resources.map(resource =>
-          h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)), h("dd", null, `${formatBytes(resource.bytes)} \u00b7 ${resource.mediaType}`))))
-        : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "Loading the current version\u2026" : draftState.message)),
-    detail !== null && draftState.status === "ready" && h("form", { class: "skill__section publish", onSubmit: publish, "aria-labelledby": "edit-title" },
-      h("h3", { id: "edit-title", class: "panel__subtitle" }, "Edit and publish a new version"),
-      h("p", { class: "note" }, `Edits stay in this page until you publish. Publishing creates revision ${detail.skill.head.revision + 1} on top of revision ${draftState.draft.base?.revision ?? detail.skill.head.revision}; earlier versions are kept.`),
-      h(DraftEditor, { draft: draftState.draft, idPrefix: "edit-skill", busy, notes,
-        onChange: (next, newNotes) => {
-          setDraftState({ ...draftState, draft: next });
-          if (newNotes.length > 0) setNotes(newNotes);
-        } }),
-      problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
-      h("div", { class: "cluster publish__actions" },
-        h("button", { class: "button primary", type: "submit", disabled: busy }, "Publish new version"),
-        conflict && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: review }, "Review current version"),
-        isDirty(draftState) && head !== null && h("button", { class: "button secondary", type: "button", disabled: busy,
-          onClick: () => loadDraft(head) }, "Discard edits and load the current version"),
-        h(NoteLine, { note: publishNote }))),
-    detail !== null && h("section", { class: "skill__section", "aria-labelledby": "versions-title" },
-      h("h3", { id: "versions-title", class: "panel__subtitle", tabIndex: -1 }, "Versions"),
-      h("p", { class: "note" }, "Make current restores an older version as the one agents will get; pinning keeps a version from being deleted. Each version can be exported as JSON."),
-      h("div", { class: "cluster versions__note" }, h(NoteLine, { note: versionsNote })),
-      h("ul", { class: "version-list" }, detail.versions.map(versionRow))),
-    detail !== null && h("section", { class: "skill__section skill__danger", "aria-labelledby": "delete-title" },
-      h("h3", { id: "delete-title", class: "panel__subtitle" }, "Delete this skill"),
-      h("p", { class: "note" }, "Deleting removes every version of this skill from your account. Export anything you want to keep first."),
-      h("div", { class: "cluster" }, pending?.kind === "skill"
-        ? confirmation({ kind: "skill", name }, `This deletes ${detail.versions.length} ${detail.versions.length === 1 ? "version" : "versions"}. It cannot be undone.`,
-          "Keep skill", removeSkill)
-        : h("button", { id: triggerId({ kind: "skill" }), class: "button secondary", type: "button", disabled: busy, onClick: () => openConfirmation({ kind: "skill" }) },
-          "Delete skill\u2026"),
-        h(NoteLine, { note: deleteNote }))));
+      h("div", null, h("dt", null, "현재 리비전"), h("dd", null, String(detail.skill.head.revision))),
+      h("div", null, h("dt", null, "보관 버전 수"), h("dd", null, String(detail.versions.length))),
+      h("div", { class: "skill__digest" }, h("dt", null, "현재 digest"), h("dd", null, h("code", null, detail.skill.head.digest))),
+      h("div", null, h("dt", null, "스킬 ID"), h("dd", null, h("code", null, detail.skill.skillId))),
+      h("div", null, h("dt", null, "마지막 변경"), h("dd", null, when(detail.skill.updatedAt)))),
+    detail !== null && h("div", { class: "skill__layout" },
+      h("div", { class: "skill__support" },
+        h("section", { class: "skill__section", "aria-labelledby": "versions-title" },
+          h("h3", { id: "versions-title", class: "panel__subtitle", tabIndex: -1 }, "버전"),
+          h("p", { class: "note" }, "‘현재 버전으로 선택’을 누르면 에이전트가 받을 버전을 해당 버전으로 바꿉니다. 고정한 버전은 삭제할 수 없습니다. 각 버전은 JSON으로 내보낼 수 있습니다."),
+          h("div", { class: "cluster versions__note" }, h(NoteLine, { note: versionsNote })),
+          h("ul", { class: "version-list" }, detail.versions.map(versionRow))),
+        h("section", { class: "skill__section skill__evidence", "aria-labelledby": "evidence-title" },
+          h("h3", { id: "evidence-title", class: "panel__subtitle" }, "읽기 기록과 평가"),
+          h("dl", { class: "account-status" },
+            h("div", null, h("dt", null, "버전별 읽기 기록"), h("dd", null, "이 화면에 연결되지 않음")),
+            h("div", null, h("dt", null, "평가 결과"), h("dd", null, "이 화면에 연결되지 않음"))),
+          h("p", { class: "note" }, "게시 기록은 읽기 기록이 아니며, 읽었다고 작업 성공이 입증되지는 않습니다. 이 화면에는 버전별 읽기·평가 결과가 연결되어 있지 않습니다."),
+          h("a", { class: "button secondary", href: "/dashboard/" }, "대시보드 열기"))),
+      h("div", { class: "skill__document" },
+        h("section", { class: "skill__section", "aria-labelledby": "resources-title" },
+          h("h3", { id: "resources-title", class: "panel__subtitle" }, "현재 버전의 파일"),
+          draftState.status === "ready"
+            ? h("dl", { class: "account-status resource-list" }, draftState.resources.map(resource =>
+              h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)), h("dd", null, `${formatBytes(resource.bytes)} \u00b7 ${resource.mediaType}`))))
+            : h("p", { class: "note", role: "status" }, draftState.status === "loading" ? "현재 버전 불러오는 중\u2026" : draftState.message)),
+        draftState.status === "ready" && h("form", { class: "skill__section publish", onSubmit: publish, "aria-labelledby": "edit-title" },
+          h("h3", { id: "edit-title", class: "panel__subtitle" }, "새 버전 편집·게시"),
+          h("p", { class: "note" }, `게시하기 전까지 수정 내용은 이 화면에만 있습니다. 게시하면 리비전 ${draftState.draft.base?.revision ?? detail.skill.head.revision}을 기준으로 리비전 ${detail.skill.head.revision + 1}을 만들며, 이전 버전은 보관합니다.`),
+          h(DraftEditor, { draft: draftState.draft, idPrefix: "edit-skill", busy, notes,
+            onChange: (next, newNotes) => {
+              setDraftState({ ...draftState, draft: next });
+              if (newNotes.length > 0) setNotes(newNotes);
+            } }),
+          problems.length > 0 && h("ul", { class: "problems", role: "alert" }, problems.map(problem => h("li", { key: problem }, problem))),
+          h("div", { class: "cluster publish__actions" },
+            h("button", { class: "button primary", type: "submit", disabled: busy }, "새 버전 게시"),
+            conflict && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: review }, "현재 버전 확인"),
+            isDirty(draftState) && head !== null && h("button", { class: "button secondary", type: "button", disabled: busy,
+              onClick: () => loadDraft(head) }, "수정 내용 버리고 현재 버전 불러오기"),
+            h(NoteLine, { note: publishNote }))),
+        h("section", { class: "skill__section skill__danger", "aria-labelledby": "delete-title" },
+          h("h3", { id: "delete-title", class: "panel__subtitle" }, "스킬 삭제"),
+          h("p", { class: "note" }, "내 계정에서 이 스킬의 모든 버전을 삭제합니다. 보관할 내용은 먼저 내보내세요."),
+          h("div", { class: "cluster" }, pending?.kind === "skill"
+            ? confirmation({ kind: "skill", name }, `버전 ${detail.versions.length}개를 모두 삭제합니다. 되돌릴 수 없습니다.`,
+              "스킬 유지", removeSkill)
+            : h("button", { id: triggerId({ kind: "skill" }), class: "button secondary danger-quiet", type: "button", disabled: busy, onClick: () => openConfirmation({ kind: "skill" }) },
+              "스킬 삭제\u2026"),
+            h(NoteLine, { note: deleteNote }))))));
 }
