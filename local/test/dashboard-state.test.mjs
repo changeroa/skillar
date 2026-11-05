@@ -101,13 +101,20 @@ test("invalid or unknown values are dropped instead of poisoning the filter", ()
 });
 
 test("hash routes carry the view, the session id, and the filter", () => {
-  for (const hash of ["", "#", "#/", "#/sessions", "#/unknown-view"]) {
+  for (const hash of ["", "#", "#/", "#/sessions"]) {
     assert.deepEqual(parseHash(hash), { view: "sessions", filter: {} }, `hash "${hash}"`);
   }
   assert.deepEqual(parseHash("#/flow?runtime=codex"), { view: "flow", filter: { runtime: ["codex"] } });
   assert.deepEqual(parseHash("#/heatmap?dow=3&hour=14&hourSpan=4"), { view: "heatmap", filter: { dow: 3, hour: 14, hourSpan: 4 } });
   assert.deepEqual(parseHash("#/sessions/ses_01?q=review"), { view: "trace", sessionId: "ses_01", filter: { q: "review" } });
   assert.deepEqual(parseHash("#/sessions/a%2Fb"), { view: "trace", sessionId: "a/b", filter: {} });
+});
+
+test("unknown and extra hash segments resolve to not-found while preserving filters", () => {
+  // Given
+  const hashes = ["#/unknown-view", "#/sessions/a/extra", "#/flow/extra", "#/heatmap/extra"];
+  // When / Then
+  for (const hash of hashes) assert.deepEqual(parseHash(`${hash}?q=review`), { view: "not-found", filter: { q: "review" } });
 });
 
 test("buildHash -> parseHash round-trips every view and keeps the filter query shareable", () => {

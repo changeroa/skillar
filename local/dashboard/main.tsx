@@ -113,18 +113,18 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
 }
 
 const VIEW_LABEL: Record<View, string> = {
-  sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "사용 흐름", heatmap: "활동 분포",
+  sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
 };
 const TABS: { view: View; label: string }[] = [
   { view: "sessions", label: VIEW_LABEL.sessions },
-  { view: "workspaces", label: VIEW_LABEL.workspaces },
   { view: "flow", label: VIEW_LABEL.flow },
+  { view: "workspaces", label: VIEW_LABEL.workspaces },
   { view: "heatmap", label: VIEW_LABEL.heatmap },
 ];
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap",
+  sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
 };
 
 export type AppOptions = { embedded?: boolean };
@@ -216,7 +216,7 @@ export function App({ embedded = false }: AppOptions = {}) {
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
     <>
-      <Header class="top">
+      <Header class="top local-top">
         <div class="wrap top__row">
           {!embedded && (
             <a class="brand" href={buildHash({ view: "sessions", filter: route.filter })}>
@@ -237,9 +237,26 @@ export function App({ embedded = false }: AppOptions = {}) {
               </svg>
             </a>
           )}
-          <nav class="tabs" aria-label="화면 선택">
+          {!embedded && <a class="btn" href="https://skillar.sh">skillar.sh 열기</a>}
+          <nav class="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
+            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="tab"]'));
+            const index = tabs.findIndex(tab => tab === event.target);
+            let next: number;
+            switch (event.key) {
+              case "ArrowRight": next = (index + 1) % tabs.length; break;
+              case "ArrowLeft": next = (index + tabs.length - 1) % tabs.length; break;
+              case "Home": next = 0; break;
+              case "End": next = tabs.length - 1; break;
+              default: return;
+            }
+            event.preventDefault();
+            tabs[next]?.focus();
+            tabs[next]?.click();
+          }}>
             {TABS.map((tab) => (
-              <a key={tab.view} class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
+              <a key={tab.view} id={`view-tab-${tab.view}`} role="tab" aria-controls="local-view"
+                aria-selected={activeTab === tab.view} tabIndex={activeTab === tab.view || activeTab === "not-found" ? 0 : -1}
+                class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
                 {tab.label}
               </a>
             ))}
@@ -253,17 +270,36 @@ export function App({ embedded = false }: AppOptions = {}) {
             <AutomatedToggle route={route} navigate={navigate} live={live} />
           </div>
         </div>
+        <div class="wrap"><p class="local-location" aria-label="현재 위치">
+          <span>출처: {embedded ? "선택한 출처" : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
+          {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
+          {route.view === "workspace" && <> › <code>{route.flowId}</code></>}
+        </p></div>
       </Header>
       <Content class="page wrap"
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
         tabIndex={embedded ? -1 : undefined} role={embedded ? "region" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
-        {route.view === "sessions" && <SessionsView {...props} />}
-        {route.view === "trace" && <TraceView {...props} />}
+        <div id="local-view" role={route.view === "not-found" ? undefined : "tabpanel"}
+          aria-labelledby={route.view === "not-found" ? undefined : `view-tab-${activeTab}`}>
+        {(route.view === "sessions" || route.view === "trace") && (
+          <div class={route.view === "trace" ? "sessions-detail" : undefined}>
+            <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
+              <SessionsView {...props} detail={route.view === "trace"} />
+            </div>
+            {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
+          </div>
+        )}
         {route.view === "workspaces" && <WorkspacesView {...props} />}
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
+        {route.view === "not-found" && <section class="empty">
+          {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
+          <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>
+          <a class="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
+        </section>}
+        </div>
       </Content>
     </>
   );

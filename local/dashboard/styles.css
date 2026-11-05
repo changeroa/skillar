@@ -95,6 +95,25 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .brand svg { display: block; width: 100%; height: auto; }
+.local-location { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0 0 var(--s-6); color: var(--ink-2); font-size: var(--fs-cap); }
+.local-tabs .tab { min-width: 44px; justify-content: center; }
+.local-top { position: static; }
+.local-top .tabs, .local-top .top__status { order: 0; }
+.session-picker { max-height: 70dvh; overflow-y: auto; min-width: 0; }
+.session-picker__row { display: grid; gap: var(--s-2); min-height: 44px; padding: var(--s-4); border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.session-picker__row:hover, .session-picker__row[data-active=true] { background: var(--wash); }
+.session-picker__row[aria-selected=true] { font-weight: 600; }
+.sessions-detail { min-width: 0; }
+.sessions-detail__list { display: none; }
+@media (min-width: 1024px) {
+  .sessions-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--s-8); align-items: start; }
+  .sessions-detail__list { display: block; min-width: 0; }
+  .sessions-detail > .trace { min-width: 0; }
+  .sessions-detail .trace__console { grid-template-columns: minmax(0, 1fr); }
+  .sessions-detail .trace__inspector, .sessions-detail .trace__events { grid-column: 1; grid-row: auto; }
+  .sessions-detail .trace__inspector { padding-inline-start: 0; border-inline-start: 0; }
+  .sessions-detail .trace__meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .brand__ink { fill: var(--brand-ink); }
 .brand__prompt { fill: var(--brand-prompt); }
 

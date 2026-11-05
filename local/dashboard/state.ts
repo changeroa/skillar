@@ -18,7 +18,7 @@ export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_onl
 export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
-export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap";
+export type View = "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "not-found";
 export type Route = { view: View; sessionId?: string; flowId?: string; filter: Filter };
 /** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
@@ -217,6 +217,9 @@ export function parseHash(hash: string): Route {
   const path = (qi >= 0 ? h.slice(0, qi) : h).replace(/^\/+|\/+$/g, "");
   const filter = parseFilter(qi >= 0 ? h.slice(qi + 1) : "");
   const segments = path ? path.split("/").map(decode) : [];
+  if (segments.length > 2 || (segments.length > 1 && segments[0] !== "sessions" && segments[0] !== "workspaces")) {
+    return { view: "not-found", filter };
+  }
   switch (segments[0]) {
     case "flow": return { view: "flow", filter };
     case "heatmap": return { view: "heatmap", filter };
@@ -224,8 +227,8 @@ export function parseHash(hash: string): Route {
       return segments[1] ? { view: "workspace", flowId: segments[1], filter } : { view: "workspaces", filter };
     case "sessions":
       return segments[1] ? { view: "trace", sessionId: segments[1], filter } : { view: "sessions", filter };
-    default:
-      return { view: "sessions", filter };
+    case undefined: return { view: "sessions", filter };
+    default: return { view: "not-found", filter };
   }
 }
 

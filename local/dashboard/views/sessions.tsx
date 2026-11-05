@@ -2,7 +2,7 @@ import { REQUEST_STATUSES, type RequestStatus, type SearchResult } from "../../s
 import { OperationCounts } from "../components/requests";
 import { useEffect, useState } from "preact/hooks";
 import type { Filter, RuntimeId } from "../../src/types.js";
-import { api, type SessionListRow, type Stats } from "../api";
+import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
 import {
   ATTRIBUTION_LABEL, RUNTIME_IDS, RUNTIME_LABEL, RUNTIME_MARK, STATE_LABEL,
@@ -137,11 +137,11 @@ function isInteractive(target: EventTarget | null): boolean {
 function Row({ row, route, navigate }: { row: SessionListRow; route: Route; navigate: ViewProps["navigate"] }) {
   const target: Route = { view: "trace", sessionId: row.id, filter: route.filter };
   return (
-    <tr onClick={(event) => { if (!isInteractive(event.target)) navigate(target); }}>
+    <tr aria-selected={route.sessionId === row.id} onClick={(event) => { if (!isInteractive(event.target)) navigate(target); }}>
       <td class="c-runtime" data-label="실행 환경"><Runtime runtime={row.runtime} /></td>
       <td class="c-started" data-label="시작"><When row={row} /></td>
       <td class="c-prompt" data-label="첫 요청문">
-        <a class={row.firstPrompt ? "rowlink" : "rowlink rowlink--dim"} href={buildHash(target)}>
+        <a class={row.firstPrompt ? "rowlink" : "rowlink rowlink--dim"} href={buildHash(target)} aria-current={route.sessionId === row.id ? "true" : undefined}>
           {row.firstPrompt ?? "(요청문 기록 없음)"}
         </a>
       </td>
@@ -220,7 +220,7 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
   const update = (patch: Filter) => {
     const next: Filter = { ...filter, ...patch };
     for (const key of Object.keys(next) as (keyof Filter)[]) if (next[key] === undefined) delete next[key];
-    navigate({ ...route, filter: next });
+    navigate({ view: "sessions", filter: next });
   };
   return (
     <form
@@ -257,14 +257,16 @@ function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps
 
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 
-export function SessionsView({ route, navigate, live, embedded = false }: ViewProps) {
-  const Title = embedded ? "h2" : "h1";
+export function SessionsView({ route, navigate, live, embedded = false, detail = false }: ViewProps & { readonly detail?: boolean }) {
+  const Title = embedded || detail ? "h2" : "h1";
   const filterKey = serializeFilter(route.filter);
   const [rows, setRows] = useState<SessionListRow[]>();
   const [stats, setStats] = useState<Stats>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(true);
+  const [active, setActive] = useState(route.sessionId);
+  useEffect(() => setActive(route.sessionId), [route.sessionId]);
 
   useEffect(() => {
     if (live.seq === 0) return;
@@ -283,10 +285,60 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
         setError(undefined);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled) setError(err instanceof ApiError && err.status === 403 ? "permission" : "failed");
       }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [filterKey, refresh]);
+
+  const failure = error && <div class="notice" role="alert">
+    <p>{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+    <button type="button" class="btn" onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+  </div>;
+  if (detail && error) return <section class="session-picker" role="group" aria-label="세션 목록 다시 시도" tabIndex={0} aria-busy={busy}
+    onKeyDown={event => {
+      if (event.key !== "Enter") return;
+      event.preventDefault(); setError(undefined); setRefresh(n => n + 1);
+    }}>
+    <p role="alert">{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+    <p>엔터 키로 목록을 다시 불러올 수 있습니다.</p>
+    <button type="button" class="btn" tabIndex={-1} onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+  </section>;
+  if (detail) return <section aria-busy={busy}>
+    {failure}
+    {busy && <p role="status">세션 불러오는 중…</p>}
+    {rows && <div class="session-picker" role="listbox" aria-label="세션 목록" tabIndex={0}
+      aria-activedescendant={rows.some(row => row.id === active) ? `session-option-${encodeURIComponent(active ?? "")}` : undefined}
+      onKeyDown={event => {
+        const index = rows.findIndex(row => row.id === active);
+        let next: number;
+        switch (event.key) {
+          case "ArrowDown": next = Math.min(rows.length - 1, index + 1); break;
+          case "ArrowUp": next = Math.max(0, index - 1); break;
+          case "Home": next = 0; break;
+          case "End": next = rows.length - 1; break;
+          case "Enter": {
+            const row = rows[index];
+            if (row) navigate({ view: "trace", sessionId: row.id, filter: route.filter });
+            event.preventDefault(); return;
+          }
+          default: return;
+        }
+        event.preventDefault();
+        const row = rows[next];
+        if (row) {
+          setActive(row.id);
+          document.getElementById(`session-option-${encodeURIComponent(row.id)}`)?.scrollIntoView({ block: "nearest" });
+        }
+      }}>
+      {rows.map(row => <a key={row.id} id={`session-option-${encodeURIComponent(row.id)}`} role="option" tabIndex={-1}
+        aria-selected={row.id === route.sessionId} class="session-picker__row" data-active={row.id === active}
+        href={buildHash({ view: "trace", sessionId: row.id, filter: route.filter })}>
+        <span>{row.id === route.sessionId ? "✓ " : ""}<code>{row.id}</code></span>
+        <When row={row} /><span class="rowlink">{row.firstPrompt ?? "(요청문 기록 없음)"}</span>
+      </a>)}
+      {rows.length === 0 && <p>조건에 맞는 세션이 없습니다. 세션 목록에서 필터를 조정하세요.</p>}
+    </div>}
+  </section>;
 
   let body;
   if (rows === undefined) {
@@ -332,12 +384,13 @@ export function SessionsView({ route, navigate, live, embedded = false }: ViewPr
   return (
     <section aria-busy={busy}>
       <div class="page-title">
-        <Title>세션 사용 기록</Title>
-        <p>검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다.</p>
+        <Title>세션</Title>
+        <p>세션 사용 기록</p>
+        {!detail && <p>검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다.</p>}
       </div>
       <Toolbar route={route} navigate={navigate} count={rows?.length} />
-      {error && <p class="notice" role="alert">세션을 불러오지 못했습니다: {error} <button type="button" class="btn"
-        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
+      {failure}
+      {busy && <p role="status">세션 불러오는 중…</p>}
       {body}
       {rows !== undefined && stats && <UsageNote stats={stats} />}
     </section>

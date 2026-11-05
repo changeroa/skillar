@@ -93,7 +93,7 @@ test("traceCounts tallies each kind and abstained searches", () => {
   assert.deepEqual(trace.traceCounts([]), { steps: 0, searches: 0, abstained: 0, loads: 0, reads: 0, natives: 0, errors: 0 });
 });
 
-test("candidates render in rank order and the loaded ones are marked from either source", () => {
+test("candidates sort by descending score then rank and preserve recorded choices", () => {
   const search = fixtures.traces[ALL_KINDS_SESSION].find((step) => step.kind === "search").detail;
   const ordered = candidates.orderCandidates(search.candidates);
   assert.deepEqual(ordered.map((c) => c.rank), [1, 2, 3, 4]);
@@ -112,7 +112,7 @@ test("candidates render in rank order and the loaded ones are marked from either
   ];
   assert.deepEqual(candidates.orderCandidates(shuffled).map((c) => c.uri), ["b", "c", "a"]);
   const lowTop = [{ ...shuffled[0], rank: 1 }, { ...shuffled[1], rank: 2 }];
-  assert.deepEqual(candidates.orderCandidates(lowTop).map((c) => c.uri), ["a", "b"], "a weaker match score never reorders ranks");
+  assert.deepEqual(candidates.orderCandidates(lowTop).map((c) => c.uri), ["b", "a"], "score leads while recorded ranks remain unchanged");
 });
 
 test("coverage label counts query terms the candidate matched with the router's term rules", () => {
