@@ -26,7 +26,6 @@
 .docs-links .text-link { margin: 0; }
 @media (max-width: 760px) {
   .trace-hero { padding-top: var(--s5); }
-  .trace-hero__actions { grid-row: 3; }
   .trace-events, .value-list li { grid-template-columns: 1fr; }
   .trace-events li + li { border-left: 0; border-top: 1px solid var(--rule); }
   .trace-hero__actions .cluster { display: grid; }
