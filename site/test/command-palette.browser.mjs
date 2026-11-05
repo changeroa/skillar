@@ -21,18 +21,22 @@ async function ready(page) {
   }));
 }
 
-async function navigate(page, expected, activate) {
+export async function navigate(page, expected, activate) {
   assert.notEqual(await page.evaluate(() => location.href), expected, "Navigation must change the URL");
   await page._sendToTarget("Page.enable");
-  let unsubscribe, timer;
+  let unsubscribe, timer, rejectArrival;
   const arrived = new Promise((resolve, reject) => {
+    rejectArrival = reject;
     unsubscribe = page.cdp.on("Page.frameNavigated", ({ frame }) => {
       if (!frame.parentId && frame.url === expected) resolve();
     });
-    timer = setTimeout(() => reject(Error(`Palette did not navigate to ${expected}`)), 15000);
   });
   try {
-    await Promise.all([arrived, activate()]);
+    // Prove key delivery first. Otherwise the navigation timeout can race the
+    // receipt timeout and misreport undelivered Enter as a site defect.
+    await activate();
+    timer = setTimeout(() => rejectArrival(Error(`Palette did not navigate to ${expected}`)), 15000);
+    await arrived;
     assert.equal(await page.evaluate(() => location.href), expected);
   } finally { unsubscribe(); clearTimeout(timer); }
 }

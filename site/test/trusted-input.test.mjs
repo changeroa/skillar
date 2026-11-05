@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createTrustedInput } from "./helpers/trusted-input.mjs";
+import { createTrustedInput, HarnessError } from "./helpers/trusted-input.mjs";
+import { navigate } from "./command-palette.browser.mjs";
 
 function fixture({ focused = true, grows = true, trusted = true } = {}) {
   let binding, receive, count = 0;
@@ -64,3 +65,21 @@ for (const options of [{ grows: false }, { trusted: false }]) {
     } finally { await input.dispose(); }
   });
 }
+
+test("undelivered Enter cannot race into a site navigation timeout", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let subscribed, rejectActivation, unsubscribed = false;
+  const subscription = new Promise(resolve => { subscribed = resolve; });
+  const activation = new Promise((_resolve, reject) => { rejectActivation = reject; });
+  const page = {
+    evaluate: async () => "https://skillar.sh/dashboard/",
+    _sendToTarget: async () => {},
+    cdp: { on() { subscribed(); return () => { unsubscribed = true; }; } },
+  };
+  const result = navigate(page, "https://skillar.sh/skills/", () => activation);
+  await subscription;
+  t.mock.timers.tick(15000);
+  rejectActivation(new HarnessError("window keydown counter did not increase after Enter"));
+  await assert.rejects(result, { name: "HarnessError" });
+  assert.equal(unsubscribed, true);
+});
