@@ -8,6 +8,7 @@ import { formatWhen } from "../dashboard/status.ts";
 import { SearchBox } from "./search.ts";
 import { readSkillsView } from "./view-state.ts";
 import type { SkillsView, SkillSort } from "./view-state.ts";
+import { kstDay, shortKstDate } from "../time.ts";
 
 export type LibraryProps = {
   readonly skills: readonly PrivateSkillSummary[];
@@ -36,7 +37,7 @@ export function sortSkills(skills: readonly PrivateSkillSummary[], sort: SkillSo
   });
 }
 
-export const skillDay = (skill: PrivateSkillSummary): string => new Date(skill.updatedAt).toISOString().slice(0, 10);
+export const skillDay = (skill: PrivateSkillSummary): string => kstDay(skill.updatedAt);
 export function visibleSkills(skills: readonly PrivateSkillSummary[], view: SkillsView) {
   return sortSkills(skills.filter(skill =>
     `${skill.name} ${skill.description}`.toLocaleLowerCase("ko").includes(view.q.toLocaleLowerCase("ko")) &&
@@ -50,8 +51,8 @@ export function updatedHistogram(skills: readonly PrivateSkillSummary[], catalog
   const start = end - 6 * 86400000;
   const days = Array.from({ length: Math.round((end - start) / 86400000) + 1 },
     (_, index) => new Date(start + index * 86400000).toISOString().slice(0, 10));
-  return { labels: days.map(day => day.slice(5).replace("-", "/")),
-    series: [{ label: "스킬 수 · 최근 7개 UTC 날짜", values: days.map(day => skills.filter(skill => skillDay(skill) === day).length) }] };
+  return { labels: days.map(day => `${Number(day.slice(5, 7))}/${Number(day.slice(8, 10))}\nKST`),
+    series: [{ label: "스킬 수 · 최근 7개 KST 날짜", values: days.map(day => skills.filter(skill => skillDay(skill) === day).length) }] };
 }
 
 export function LibraryPanel(props: LibraryProps) {
@@ -72,19 +73,19 @@ export function LibraryPanel(props: LibraryProps) {
   const days = [...new Set(skills.map(skillDay))].sort().reverse();
   const groups = [
     { id: "revision", label: "리비전 수", values: revisions.map(id => ({ id, label: `현재 r${id}`, count: skills.filter(skill => String(skill.head.revision) === id).length })) },
-    { id: "day", label: "최근 변경 기간 · UTC", values: days.map(id => ({ id, label: id.slice(5).replace("-", ". "), count: skills.filter(skill => skillDay(skill) === id).length })) },
+    { id: "day", label: "최근 변경 기간 · KST", values: days.map(id => ({ id, label: id.slice(5).replace("-", ". "), count: skills.filter(skill => skillDay(skill) === id).length })) },
   ];
   const columns: readonly TableColumn<PrivateSkillSummary>[] = [
     { id: "name", label: "이름", hideable: false, value: skill => skill.name, render: skill => h("div", { class: "skill-table-name", title: `${skill.name}\n${skill.description}` },
       h("strong", null, skill.name), h("span", { class: "skill-table-description" }, skill.description),
       h("span", { class: "skill-table-mobile" },
         !view.hidden.includes("updated") && h("time", { dateTime: new Date(skill.updatedAt).toISOString(), title: formatWhen(skill.updatedAt) },
-          new Date(skill.updatedAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })),
+          `${shortKstDate(skill.updatedAt)} KST`),
         !view.hidden.includes("updated") && !view.hidden.includes("digest") && " · ",
-        !view.hidden.includes("digest") && h(Pill, null, h("code", { title: skill.head.digest }, skill.head.digest.slice(0, 8))))) },
+        !view.hidden.includes("digest") && h(Pill, null, h("code", null, skill.head.digest.slice(0, 8))))) },
     { id: "revision", label: "현재 리비전", value: skill => skill.head.revision, render: skill => h(Pill, null, `r${skill.head.revision}`) },
     { id: "updated", label: "최근 변경", value: skill => skill.updatedAt, render: skill => when(skill.updatedAt) },
-    { id: "digest", label: "digest", value: skill => skill.head.digest, render: skill => h(Pill, null, h("code", { title: skill.head.digest }, skill.head.digest.slice(0, 8))) },
+    { id: "digest", label: "digest", value: skill => skill.head.digest, render: skill => h(Pill, null, h("code", null, skill.head.digest.slice(0, 8))) },
   ];
   return h("section", { class: "library", "aria-labelledby": "library-title" },
     h("div", { class: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
@@ -101,7 +102,7 @@ export function LibraryPanel(props: LibraryProps) {
           selected: { revision: view.revisions, day: view.days },
           onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
       h("div", { class: "skills-table-main" },
-        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · UTC", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 }),
+        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 }),
         h(DataTable<PrivateSkillSummary>, { caption: `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`,
           rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },

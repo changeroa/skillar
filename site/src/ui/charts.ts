@@ -50,7 +50,8 @@ function Chart({ title, data, kind, height }: { readonly title: string; readonly
               h("circle", { cx: x(layout.left + (index + .5) * layout.groupWidth), cy: layout.y(value), r: 3 }),
               h("text", { x: x(layout.left + (index + .5) * layout.groupWidth), y: layout.y(value) - 8, "text-anchor": "middle" }, value))))),
         data.labels.map((label, index) => h("text", { key: index, x: x(layout.left + (index + .5) * layout.groupWidth),
-          y: layout.baseline + 28, "text-anchor": "middle" }, label))),
+          y: layout.baseline + 28, "text-anchor": "middle" }, label.split("\n").map((line, row) =>
+            h("tspan", { key: row, x: x(layout.left + (index + .5) * layout.groupWidth), dy: row === 0 ? 0 : 16 }, line))))),
     h("ul", { class: "ui-chart-legend" }, data.series.map((series, index) => h("li", { key: series.label, class: `ui-series-${index % 2}` },
       series.label, series.values.some(value => value === null) ? series.values.every(value => value === null) ? " · 미측정" : " · 일부 미측정" : ""))));
 }

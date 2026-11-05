@@ -2,6 +2,7 @@ import './main';
 import ky, { HTTPError, TimeoutError } from 'ky';
 import { sessionResponseSchema } from '../lib/account';
 import type { SessionUser } from '../lib/account';
+import { KST_TIME_ZONE } from './time.ts';
 
 const emptyViews = Array.from(document.querySelectorAll<HTMLElement>('.empty-state'));
 const viewLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.view-nav a'));
@@ -98,7 +99,7 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
     const date = new Date(value * 1000);
     return {
       iso: date.toISOString(),
-      text: new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date),
+      text: `${new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: KST_TIME_ZONE }).format(date)} KST`,
     };
   };
 

@@ -8,6 +8,7 @@ import type { DeviceState } from "./dashboard/devices";
 import { describeConsent } from "./dashboard/consent";
 import { DataTable, FacetPanel, KeyValueGrid, PeekPanel, Pill, Skeleton, usePeekSelection } from "./ui";
 import type { TableColumn, TableSort } from "./ui";
+import { KST_TIME_ZONE } from "./time.ts";
 
 type Row = {
   readonly id: string; readonly name: string; readonly kind: string;
@@ -17,7 +18,7 @@ type Row = {
 };
 const kinds = ["기기", "OAuth", "개인 토큰"];
 const states = ["활성", "만료", "해제됨"];
-const date = (seconds: number) => new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(seconds * 1000);
+const date = (seconds: number) => `${new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: KST_TIME_ZONE }).format(seconds * 1000)} KST`;
 const statusText = { active: "활성", expired: "만료", revoked: "해제됨" } as const;
 
 export function connectionRows(model: Model, devices: readonly DeviceState[], now: number): readonly Row[] {

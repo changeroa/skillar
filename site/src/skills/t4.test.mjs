@@ -104,8 +104,8 @@ test("search arrows announce candidates and Enter opens the active result instea
   assert.equal(active.getAttribute("aria-selected"), "true");
   assert.deepEqual(opened, [skillId]);
   assert.equal(requests, 1);
-  assert.ok(container.textContent.includes(candidate.digest));
-  assert.ok(container.textContent.includes(candidate.uri));
+  assert.ok(byTag(container, "input").some(field => field.value === candidate.digest && field.getAttribute("data-digest-copy") !== null));
+  assert.equal(/[a-f0-9]{64}/.test(container.textContent), false);
 });
 
 test("failed search retries the same draft and clears technical failure after success", async t => {
@@ -123,7 +123,7 @@ test("failed search retries the same draft and clears technical failure after su
   // Then
   assert.equal(reads, 2);
   assert.equal(byTag(container, "input")[0].value, "합성");
-  assert.equal(byTag(container, "details").length, 0);
+  assert.equal(byTag(container, "details").filter(node => byTag(node, "code").length > 0).length, 0);
 });
 
 for (const abstained of [undefined, { reason: "no_overlap", hint: "fixture" }]) {
@@ -166,7 +166,6 @@ test("comparison reads both retained packages and shows verified changes without
   });
   const { dom, container } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
   // When
-  await act(() => buttonNamed(container, "변경점 보기")[0].click());
   await waitFor(dom, () => byTag(container, "ol")[0], "comparison");
   // Then
   assert.deepEqual(new Set(reads), new Set(versions.map(v => routes.version(skillId, v.digest))));
@@ -181,7 +180,6 @@ test("comparison failure offers retry and same-version comparison shows no added
     Response.json(exported(url.split("/").at(-1))));
   const { dom, container } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
   await input(byTag(container, "select")[0], versions[1].digest, "change");
-  await act(() => buttonNamed(container, "변경점 보기")[0].click());
   await waitFor(dom, () => buttonNamed(container, "다시 시도")[0], "compare retry");
   fail = false;
   // When
@@ -198,7 +196,6 @@ test("comparison expires the account on unauthorized reads", { timeout: 15000 },
   t.mock.method(globalThis, "fetch", async () => Response.json({}, { status: 401 }));
   const { container } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() { expired++; expiration.resolve(); } });
   // When
-  await act(() => buttonNamed(container, "변경점 보기")[0].click());
   await expiration.promise;
   // Then
   assert.equal(expired, 1);
@@ -208,15 +205,82 @@ test("comparison stays usable when a previously selected retained version is del
   // Given
   const reads = [];
   t.mock.method(globalThis, "fetch", async url => { reads.push(url); return Response.json(exported(url.split("/").at(-1))); });
-  const { dom, container, show } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
+  const props = { detail, signal, onUnauthorized() {} };
+  const { dom, container, show } = await mount(t, VersionDiff, props);
+  await waitFor(dom, () => byTag(container, "ol")[0], "initial comparison");
+  reads.length = 0;
   const current = { ...detail, versions: [versions[1]] };
-  await show({ detail: current, signal, onUnauthorized() {} });
   // When
-  await act(() => buttonNamed(container, "변경점 보기")[0].click());
-  await waitFor(dom, () => byTag(container, "ol")[0], "retained selection");
+  await show({ ...props, detail: current });
+  await waitFor(dom, () => reads.length === 2 && byTag(container, "ol")[0] &&
+    all(container, n => n.getAttribute("data-change") === "added").length === 0, "retained selection");
   // Then
   assert.deepEqual(byTag(container, "select").map(n => n.value), [versions[1].digest, versions[1].digest]);
   assert.deepEqual(reads, [routes.version(skillId, versions[1].digest), routes.version(skillId, versions[1].digest)]);
+});
+
+test("changing a comparison selection immediately replaces the displayed diff", async t => {
+  // Given
+  t.mock.method(globalThis, "fetch", async url => Response.json(exported(url.split("/").at(-1))));
+  const { dom, container } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
+  await waitFor(dom, () => all(container, n => n.getAttribute("data-change") === "added").length === 1, "initial diff");
+  // When
+  await input(byTag(container, "select")[0], versions[1].digest, "change");
+  await waitFor(dom, () => byTag(container, "ol")[0] &&
+    all(container, n => ["added", "removed"].includes(n.getAttribute("data-change"))).length === 0, "selected diff");
+  // Then
+  assert.equal(all(container, n => n.getAttribute("data-change") === "same").length, document.split("\n").length + 1);
+  assert.equal(/[a-f0-9]{64}/.test(container.textContent), false);
+});
+
+test("inactive comparison does not add reads until its tab is selected", async t => {
+  // Given
+  const reads = [];
+  t.mock.method(globalThis, "fetch", async url => { reads.push(url); return Response.json(exported(url.split("/").at(-1))); });
+  const props = { detail, signal, onUnauthorized() {}, active: false };
+  const { dom, container, show } = await mount(t, VersionDiff, props);
+  assert.equal(reads.length, 0);
+  // When
+  await show({ ...props, active: true });
+  await waitFor(dom, () => byTag(container, "ol")[0], "selected comparison tab");
+  // Then
+  assert.deepEqual(new Set(reads), new Set(versions.map(v => routes.version(skillId, v.digest))));
+});
+
+test("long comparisons start visible inside a collapsible disclosure", async t => {
+  // Given
+  const packet = await makePackage(`${document}\n${Array.from({ length: 90 }, (_, index) => `line ${index}`).join("\n")}`);
+  const version = { digest: packet.manifestDigest, pinned: false, createdAt: 1800000000001 };
+  const longDetail = { skill: { ...summary, head: { digest: version.digest, revision: 3 } }, versions: [versions[0], version] };
+  t.mock.method(globalThis, "fetch", async url => Response.json(url.endsWith(version.digest)
+    ? { skillId, version, package: packet } : exported(versions[0].digest)));
+  // When
+  const { dom, container } = await mount(t, VersionDiff, { detail: longDetail, signal, onUnauthorized() {} });
+  await waitFor(dom, () => byTag(container, "ol")[0], "long comparison");
+  // Then
+  const disclosure = byTag(container, "details")[0];
+  assert.notEqual(disclosure.getAttribute("open"), null);
+  assert.ok(byTag(disclosure, "li").length > 80);
+  assert.equal(byTag(disclosure, "summary").length, 1);
+});
+
+test("a late result for an old selection cannot replace the latest comparison", async t => {
+  // Given
+  const held = Promise.withResolvers();
+  const started = Promise.withResolvers();
+  let count = 0;
+  t.mock.method(globalThis, "fetch", async url => {
+    if (++count <= 2) { started.resolve(); await held.promise; }
+    return Response.json(exported(url.split("/").at(-1)));
+  });
+  const { dom, container } = await mount(t, VersionDiff, { detail, signal, onUnauthorized() {} });
+  await started.promise;
+  // When
+  await input(byTag(container, "select")[0], versions[1].digest, "change");
+  await waitFor(dom, () => byTag(container, "ol")[0], "latest comparison");
+  await act(async () => { held.resolve(); await held.promise; });
+  // Then
+  assert.equal(all(container, n => ["added", "removed"].includes(n.getAttribute("data-change"))).length, 0);
 });
 
 test("validation associates document and acknowledgement errors and focuses the first invalid field", async t => {

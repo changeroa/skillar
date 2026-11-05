@@ -49,7 +49,7 @@ test("a peek document selection has explicit reproducible URL tab state", () => 
   assert.deepEqual(readSkillsView(url.href), state);
 });
 
-test("search revision and UTC date facets intersect without changing the catalog", () => {
+test("search revision and KST date facets intersect without changing the catalog", () => {
   // Given / When
   const rows = visibleSkills(skills, { ...view, q: "검증", revisions: ["1"], days: ["2026-11-04"] });
   // Then
@@ -58,7 +58,7 @@ test("search revision and UTC date facets intersect without changing the catalog
   assert.deepEqual(skills.map(skill => skill.name), ["가", "나"]);
 });
 
-test("updated histogram retains empty UTC dates and compact bars share one baseline and scale", () => {
+test("updated histogram retains empty KST dates and compact bars share one baseline and scale", () => {
   // Given
   const data = updatedHistogram(skills);
   // When
@@ -78,10 +78,24 @@ test("an empty filter retains the received catalog date domain as seven measured
   const data = updatedHistogram(rows, skills);
   const chart = chartLayout(data, 112);
   // Then
-  assert.deepEqual(data.labels, ["10/30", "10/31", "11/01", "11/02", "11/03", "11/04", "11/05"]);
+  assert.deepEqual(data.labels, ["10/30\nKST", "10/31\nKST", "11/1\nKST", "11/2\nKST", "11/3\nKST", "11/4\nKST", "11/5\nKST"]);
   assert.deepEqual(data.series[0].values, [0, 0, 0, 0, 0, 0, 0]);
   assert.equal(chart.bars.length, 7);
   assert.ok(chart.bars.every(bar => bar.height === 1 && bar.y + bar.height === chart.baseline));
+});
+
+test("facets and histogram split skills exactly at the KST midnight boundary", () => {
+  // Given
+  const catalog = [
+    { ...skills[0], updatedAt: Date.parse("2026-11-04T14:59:59.999Z") },
+    { ...skills[1], updatedAt: Date.parse("2026-11-04T15:00:00.000Z") },
+  ];
+  // When
+  const selected = visibleSkills(catalog, { ...view, days: ["2026-11-05"] });
+  const data = updatedHistogram(catalog);
+  // Then
+  assert.deepEqual(selected.map(skill => skill.skillId), [skills[1].skillId]);
+  assert.deepEqual(data.series[0].values, [0, 0, 0, 0, 0, 1, 1]);
 });
 
 test("shared table keyboard activation supplies the real row for focus restoration", async t => {

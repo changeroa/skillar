@@ -3,6 +3,7 @@ import type { PrivateSkillSummary } from "../../../shared/dist/private-skills.js
 import { readCatalog, SkillsRequestError } from "../skills/api";
 import { ConnectionsRequestError, readConnections } from "../mcp-connections";
 import type { TableSort } from "../ui/table";
+import { kstDay } from "../time.ts";
 export type ReadState<T> = {
   readonly status: "loading" | "ready" | "failed";
   readonly data: T | null;
@@ -36,9 +37,7 @@ export function useHomeRead<T>(
 
 export { readCatalog, readConnections };
 
-export function kstDay(milliseconds: number): string {
-  return new Date(milliseconds + 9 * 3600000).toISOString().slice(0, 10);
-}
+export { kstDay } from "../time.ts";
 
 /** A complete consecutive range, not only dates on which changes occurred. */
 export function recentDays(now: number, count: number): readonly string[] {

@@ -1,4 +1,5 @@
 import type { DashboardProfile, DashboardReportStatus } from "../../../shared/dist/activity-dashboard.js";
+import { KST_TIME_ZONE } from "../time.ts";
 
 export type Availability = DashboardProfile["availability"];
 export type AvailabilityCopy = {
@@ -42,10 +43,10 @@ export function availabilityCopy(availability: Availability): AvailabilityCopy {
   return AVAILABILITY_COPY[availability];
 }
 
-const whenFormat = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" });
+const whenFormat = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: KST_TIME_ZONE });
 
 export function formatWhen(ms: number | null | undefined): string {
-  return ms === null || ms === undefined ? "없음" : whenFormat.format(new Date(ms));
+  return ms === null || ms === undefined ? "없음" : `${whenFormat.format(new Date(ms))} KST`;
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {
