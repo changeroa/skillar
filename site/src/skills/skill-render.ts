@@ -13,6 +13,7 @@ import type { useSkillController } from "./skill.ts";
 import { VersionDiff } from "./diff-panel.ts";
 import { KeyValueGrid, Pill, SegmentedTabs } from "../ui/index.ts";
 import { UnmeasuredReads, VersionDocument, VersionFiles } from "./document.ts";
+import { DigestField, versionLabel } from "./version-label.ts";
 
 function VersionBreadcrumb({ detail, digest, onSelect }: {
   readonly detail: PrivateSkillDetail; readonly digest: PrivateSkillDigest; readonly onSelect: (digest: string) => void;
@@ -26,7 +27,7 @@ function VersionBreadcrumb({ detail, digest, onSelect }: {
       h("select", { "aria-label": "스킬 버전", value: digest,
         onChange: (event: JSX.TargetedEvent<HTMLSelectElement>) => onSelect(event.currentTarget.value) },
       detail.versions.map(version => h("option", { value: version.digest, key: version.digest },
-        `${version.digest === detail.skill.head.digest ? `r${detail.skill.head.revision} · 현재` : "보관"} · ${version.digest.slice(0, 8)}`))))), target);
+        versionLabel(detail, version.digest, true)))))), target);
 }
 
 export function SkillView(controller: ReturnType<typeof useSkillController>) {
@@ -68,7 +69,8 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       h("div", { class: "version__meta" },
         h("p", { class: "version__flags" }, current ? "현재 버전" : "이전 버전", version.pinned && " · 고정됨"),
         h("p", { class: "note" }, "생성 ", when(version.createdAt)),
-        h("code", { class: "version__digest", title: version.digest }, peek ? version.digest.slice(0, 8) : version.digest)),
+        h("code", { class: "version__digest" }, version.digest.slice(0, 8)),
+        h(DigestField, { digest: version.digest })),
       h(peek ? "details" : "div", { class: "cluster version__actions" },
         peek && h("summary", null, "작업"),
         workspace.view && h("button", { class: "button secondary", type: "button", onClick: () => selectVersion(version.digest) }, "문서 선택"),
@@ -118,7 +120,8 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
     orderedVersions.map(version => h("button", { class: "skill-version-choice", type: "button", key: version.digest,
       "aria-pressed": digest === version.digest, onClick: () => selectVersion(version.digest) },
       h(Pill, null, version.digest === head?.digest ? `r${head.revision} · 현재` : "보관"), h("code", null, version.digest.slice(0, 8)))),
-    h("p", { class: "note" }, "현재 head · 불변 digest"), h("code", { class: "version__digest" }, head?.digest));
+    h("p", { class: "note" }, "현재 head · 불변 digest"), h("code", { class: "version__digest" }, head?.digest.slice(0, 8)),
+    head && h(DigestField, { digest: head.digest }));
   const documentContent = h("div", { class: "skill__document" }, h(VersionDocument, { ...versionPreview, digest: digest ?? "" }),
       draftState.status === "failed" && head !== null && h("div", null,
         h("p", { class: "note", role: "status" }, draftState.message),
@@ -136,12 +139,12 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
     detail !== null && h("div", { class: "skill-summary" }, h(KeyValueGrid, { entries: [
       { label: "현재 리비전", value: `r${detail.skill.head.revision}` },
       { label: "보관 버전 수", value: detail.versions.length },
-      { label: "선택 digest", value: h("code", { title: digest ?? "" }, digest?.slice(0, 8)) },
-      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "미측정 · IG-14" },
+      { label: "선택 digest", value: h("code", null, digest?.slice(0, 8)) },
+      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "연결 후 표시 · 버전별 읽기 기록이 아직 연결되지 않았습니다." },
     ] })),
     peek && detail !== null && h(KeyValueGrid, { entries: [
       { label: "스킬 ID", value: h("code", null, skillId) },
-      { label: "head digest", value: h("code", null, head?.digest) },
+      { label: "head digest", value: head && h(DigestField, { digest: head.digest }) },
       { label: "선택 버전과 head", value: digest === head?.digest ? "같은 버전" : "다른 버전" },
     ] }),
     detail !== null && h(SegmentedTabs, { key: peek ? "peek" : "full", id: "skill-detail", label: "스킬 상세",
@@ -149,7 +152,7 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       onChange: tab => { if (workspace.view) workspace.onViewChange?.({ ...workspace.view, tab }); },
       tabs: [
         { id: "document", label: "문서", content: documentTab }, { id: "versions", label: "버전", content: versions },
-        { id: "compare", label: "비교", content: h(VersionDiff, { detail, signal, onUnauthorized }) },
+        { id: "compare", label: "비교", content: h(VersionDiff, { detail, signal, onUnauthorized, active: workspace.view?.tab === "compare" }) },
         { id: "files", label: "파일", content: h(VersionFiles, versionPreview) },
       ] }),
     detail !== null && h("details", { class: "skill__danger" }, h("summary", { id: "delete-title" }, "스킬 삭제"),

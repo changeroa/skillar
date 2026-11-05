@@ -8,6 +8,7 @@ import type { DeviceState } from "./devices";
 import type { ReadState } from "./home-checklist";
 import { homeSort, lastChanges, readCatalog, readConnections, recentDays, saveHomeSort, useHomeRead } from "./home-data";
 import { shortId } from "./status";
+import { KST_TIME_ZONE } from "../time.ts";
 import "../ui/ui.css";
 import "./home-widgets.css";
 
@@ -30,8 +31,8 @@ const skillColumns: readonly TableColumn<PrivateSkillSummary>[] = [
     render: row => <><Pill>r{row.head.revision}</Pill><small><code>{row.head.digest.slice(0, 8)}</code></small></> },
   { id: "updatedAt", label: "최근 변경", value: row => row.updatedAt,
     render: row => <time dateTime={new Date(row.updatedAt).toISOString()}>{new Date(row.updatedAt).toLocaleString("ko-KR", {
-      timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
-    })}</time> },
+      timeZone: KST_TIME_ZONE, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    })} KST</time> },
 ];
 
 function ReadNotice({ state, onRetry }: { readonly state: ReadState<unknown>; readonly onRetry: () => void }) {
@@ -95,7 +96,7 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
     </label>
     <div class="home-widget-grid">
       <section class="home-widget home-changes" aria-label="일별 변경 수">
-        <BarChart title="일별 변경 수" data={{ labels: dates.map(date => date.slice(5).replace("-", ".")), series: [
+        <BarChart title="일별 변경 수 · KST" data={{ labels: dates.map(date => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}\nKST`), series: [
           { label: "스킬 마지막 변경", values: catalog.data === null ? dates.map(() => null) : changes.counts },
           { label: "보관 버전 생성", values: dates.map(() => catalog.data?.skills.length === 0 ? 0 : null) },
         ] }} />
@@ -127,7 +128,7 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
       <div class="home-consent-slots">
         {[
           { title: "일별 읽기 / 검색", reason: "기기 업로드 동의와 출처 선택 후 성공 load·검색 요청을 확인할 수 있습니다." },
-          { title: "읽기 수 상위 스킬", reason: "업로드 동의와 버전별 읽기 연결이 필요합니다. · IG-14" },
+          { title: "읽기 수 상위 스킬", reason: "업로드 동의와 버전별 읽기 기록을 연결한 뒤 표시합니다." },
           { title: "검색 결과 비중", reason: "업로드 동의 후 후보 있음·없음·실패·기타를 같은 범위에서 집계해야 합니다." },
         ].map(slot => <section key={slot.title} class="home-consent-slot">
           <header><h3>{slot.title}</h3><Pill>미측정</Pill></header>

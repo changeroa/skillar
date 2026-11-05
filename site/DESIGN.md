@@ -1,5 +1,25 @@
 # skillar.sh
 
+## Hosted date and version labels
+
+All hosted date labels and calendar buckets use Asia/Seoul, explicitly marked
+KST. The shared `src/time.ts` day key supplies skills facets, the histogram,
+dashboard chart and weekly tile. Chart dates use two lines so KST remains
+visible without crowding the phone axis.
+
+Comparison starts on opening its tab and refreshes on either selection using
+the existing export GETs. Inactive comparison tabs do not fetch. Options and
+summaries use `rN · digest8 · M/D` for the current head, using its actual
+revision number. The API has no historical per-version revision, so other
+versions use `보관 #N` for retained creation order. Current/pinned markers and
+KST dates remain explicit. Breadcrumb options omit the date and put 현재
+first, with a nonshrinking field, so the marker remains visible on phones.
+Full digests appear only in detail-view read-only monospace copy fields
+inside native disclosures, never inside search listbox candidates.
+Long diffs start expanded and can be collapsed. Existing field, disclosure,
+status, spacing and focus primitives apply. Missing read data explains the
+connection needed in Korean, without internal proposal identifiers.
+
 ## P-D connections
 
 Connections keeps the existing shell and orders execution location, MCP setup,
@@ -76,7 +96,7 @@ The table has four columns: name, current revision, updatedAt and an
 eight-character digest pill. No reads column. Facet counts cover the received
 catalog; revision facets use the current revision number, not an invented
 retained-version count. The selected workspace provides the actual retained
-version count. Date buckets use UTC, include zero days, and count skills by
+version count. Date buckets use KST, include zero days, and count skills by
 updatedAt, never reads. Bars share the primitive's scale and zero baseline.
 
 Desktop orders a 160px facet rail and a shrinkable table; the compact
@@ -100,7 +120,7 @@ Query, sorting, facets, columns, density, selected ID, version and detail tab
 are URL state; old `#skill/<id>` links remain full-page links.
 
 The detail summary is a wrapping single metric strip: current revision,
-retained versions, selected digest, update time, and `미측정 · IG-14`.
+retained versions, selected digest, update time, and read-connection guidance.
 The full view has document/version/comparison/file tabs; the document tab
 keeps a version rail, Formatted/Raw views of the same verified bytes and an
 explicitly unmeasured per-version reads frame. Formatted Markdown is built

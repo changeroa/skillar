@@ -121,10 +121,10 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, qu
             h("span", { class: "note" }, `순위 ${candidate.rank} · ${{ automatic: "자동 추천 가능", explicit: "직접 지정 전용" }[candidate.invocation]}`),
             h("strong", null, candidate.name), h("span", null, candidate.description),
             candidate.matched.length > 0 && h("span", { class: "note" }, "일치 항목: ", candidate.matched.join(", ")),
-            h("p", { class: "note" }, "URI: ", h("code", null, candidate.uri)),
-            h("p", { class: "note" }, "검색 당시 digest: ", h("code", null, candidate.digest)),
+            h("p", { class: "note" }, "URI: ", h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))),
+            h("p", { class: "note" }, "검색 당시 digest: ", h("code", null, candidate.digest.slice(0, 8))),
             h("p", { class: "note" }, { current: "현재 버전과 같습니다.", different: "현재 버전과 다릅니다.", unknown: "현재 버전과의 일치 여부를 확인하지 못했습니다." }[relation])),
-          skillId === null ? h("code", null, candidate.uri)
+          skillId === null ? h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))
             : h("button", { id: `search-result-${index}`, class: "button secondary", type: "button", role: "option",
               "aria-selected": active === index, "aria-label": `${candidate.rank}위 ${candidate.name} 현재 버전 열기`,
               onClick: () => onOpen(skillId) }, "현재 버전 열기"));
