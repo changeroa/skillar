@@ -12,6 +12,7 @@ const ui = await loadViews(`
   export { ganttGeometry } from "./local/dashboard/views/trace/geometry.ts";
   export { EventConsole } from "./local/dashboard/views/trace/event-console.tsx";
   export { summaryFacts } from "./local/dashboard/views/trace/summary.tsx";
+  export { RankedCandidates } from "./local/dashboard/components/ranked-candidates.tsx";
 `);
 
 test("local view preferences round-trip without leaking into API filters", () => {
@@ -148,6 +149,24 @@ test("summary reads and selected-load digest come only from captured reads", asy
     source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {}, event: source[0].key }, navigate() {},
   });
   assert.equal(all(container, node => node.hasAttribute("data-read-digest"))[0].textContent, digest);
+});
+
+test("an unavailable event URL never silently selects another captured event", async t => {
+  const source = ui.createTimelineKeys("event-session")([{ kind: "prompt", ts: 100, summary: "captured", detail: { kind: "prompt", text: "captured" } }]);
+  const { container } = await mount(t, ui.EventConsole, {
+    source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {}, event: "unavailable" }, navigate() {},
+  });
+  assert.equal(all(container, node => node.hasAttribute("data-event-kind") && node.getAttribute("aria-pressed") === "true").length, 0);
+  assert.ok(all(container, node => node.getAttribute("role") === "status").length);
+});
+
+test("ranked candidates retain root disambiguation for identical recorded names", async t => {
+  const candidates = ["agents", "claude"].map((root, index) => ({
+    uri: `skill://local/${root}/same/SKILL.md`, name: "same", description: "captured",
+    rank: index + 1, score: 1 - index / 10, invocation: "automatic",
+  }));
+  const { container } = await mount(t, ui.RankedCandidates, { candidates });
+  assert.deepEqual(all(container, node => node.hasAttribute("data-root")).map(node => node.getAttribute("data-root")), ["agents", "claude"]);
 });
 
 test("unrecognised view preference values do not become active controls", () => {

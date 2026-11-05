@@ -44,7 +44,7 @@ export function genericLabel(node: FlowNode): string {
   const value = nodeValue(node);
   if (node.other) return node.label.replace(/^Other(?= \(\d+\)$|$)/, "기타");
   if (node.column === 0 && value === "unclassified") return "분류 없음";
-  if (node.column === 1 && value === "(none)") return "(스킬 없음)";
+  if (node.column === 1 && (value === "(none)" || value === "none")) return "(스킬 없음)";
   return node.label;
 }
 

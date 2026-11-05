@@ -47,6 +47,7 @@ export function traceConsoleStyles() {
 .ranked-candidates th:first-child{width:40px}.ranked-candidates th:nth-child(3){width:48px}.ranked-candidates th:nth-child(4){width:44px}.ranked-candidates th:nth-child(5){width:65px}
 .ranked-candidates .cand__desc{display:block;margin:0}.ranked-candidates .cand__desc summary{font-size:12px;overflow-wrap:anywhere}
 .ranked-candidates .cand__desc code{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.ranked-candidates .cand__root{display:block;font-size:12px;color:var(--ink-2)}
 .event-gantt-axis{display:flex;justify-content:space-between;margin:0;padding:6px 8px;font-size:12px;color:var(--ink-2)}
 .event-gantt-track{position:relative;min-width:70px;width:32%;height:24px;border-bottom:1px solid var(--line-2);margin:0 4px;flex:none}
 .event-gantt-bar,.event-gantt-point{position:absolute;top:7px;height:8px;background:var(--accent);min-width:2px}

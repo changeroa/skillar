@@ -82,8 +82,9 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
   const argumentsBySpan = reportOnlyArguments(source, spans);
   const items: TimelineItem[] = [...source, ...spans].sort((a, b) =>
     (a.kind === "step" ? a.step.ts : a.span.startedAt) - (b.kind === "step" ? b.step.ts : b.span.startedAt));
-  const selected = items.find(item => item.key === route.event)?.key
-    ?? source.find(item => item.step.kind === "prompt")?.key ?? items[0]?.key;
+  const selected = route.event === undefined
+    ? source.find(item => item.step.kind === "prompt")?.key ?? items[0]?.key
+    : items.find(item => item.key === route.event)?.key;
   const graph = ganttGeometry(items, bounds.startedAt, bounds.endedAt);
   const points = new Map(graph?.points.map(point => [point.key, point]));
   const tab = route.traceTab ?? "tree";
@@ -104,6 +105,7 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
       <button role="tab" class="pe-button" disabled aria-selected="false" aria-describedby="event-graph-reason"><Icon name="graph" />그래프</button>
     </div>
     <p id="event-graph-reason" class="pe-muted">인과관계 기록이 없어 그래프를 표시하지 않습니다.</p>
+    {route.event !== undefined && selected === undefined && <p role="status">선택한 이벤트를 찾을 수 없습니다. 목록에서 다시 선택하세요.</p>}
     {tab === "timeline" && graph?.points.some(point => point.outside) && <p class="pe-muted event-range-note" role="status">세션 시간 범위 밖의 보고서 구간은 축에 표시하지 않습니다.</p>}
     <div class="event-console__split">
       <TreeRoot class="event-console__tree" aria-label="세션 이벤트" tabIndex={-1} data-component="event-tree">
