@@ -15,7 +15,7 @@ export { confirmationText, confirmsDeletion } from "./skill-delete.ts";
 export type { SkillProps, DeleteTarget } from "./skill-state.ts";
 const silent: Note = { text: "", technical: null };
 export function useSkillController(props: SkillProps) {
-  const { skillId, summary, signal, focusHeading, onChanged, onDeleted, onBack, onUnauthorized } = props;
+  const { skillId, summary, signal, focusHeading, onChanged, onDeleted, onBack, onUnauthorized, onResolved } = props;
   const { draftState, setDraftState, notes, setNotes, dirty, loadDraft, adoptHead, afterPublish } = useSkillDraft(props);
   const [problems, setProblems] = useState<readonly string[]>([]);
   const [publishNote, setPublishNote] = useState<Note>(silent);
@@ -36,6 +36,9 @@ export function useSkillController(props: SkillProps) {
   const detail = detailState.status === "gone" ? null : detailState.detail;
   const name = detail?.skill.name ?? summary?.name ?? "";
   const head = detail?.skill.head ?? null;
+  useLayoutEffect(() => {
+    if (detail !== null) onResolved?.(detail.skill);
+  }, [detail, onResolved]);
 
   const gone = (error: unknown, action: string) => {
     if (classifyFailure(error) === "gone") setDetailState({ status: "gone", message: describeFailure(error, action) });

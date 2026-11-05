@@ -10,6 +10,7 @@ export type SkillProps = {
   readonly onBack: () => void;
   readonly onUnauthorized: () => void;
   readonly onDirtyChange?: (dirty: boolean) => void;
+  readonly onResolved?: (skill: PrivateSkillSummary) => void;
 };
 
 export type Version = PrivateSkillDetail["versions"][number];

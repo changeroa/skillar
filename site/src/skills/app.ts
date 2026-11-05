@@ -1,6 +1,6 @@
 import { h } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { PrivateSkillCatalog, PrivateSkillId } from "../../../shared/dist/private-skills.js";
+import type { PrivateSkillCatalog, PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import type { SessionUser } from "../../lib/account.ts";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
 import type { SessionState } from "./api.ts";
@@ -49,6 +49,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const [catalog, setCatalog] = useState<CatalogState>({ status: "loading", catalog: null, message: "" });
   const [tick, setTick] = useState(0);
   const [selected, setSelected] = useState<PrivateSkillId | null>(() => skillIdFromHash(location.hash));
+  const [resolved, setResolved] = useState<PrivateSkillSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [notice, setNotice] = useState("");
   const openedByUser = useRef(false);
@@ -57,6 +58,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   selectedRef.current = selected;
   const approvedHash = useRef<string | null>(null);
   const onDirtyChange = useCallback((next: boolean) => { dirty.current = next; }, []);
+  const onResolved = useCallback((skill: PrivateSkillSummary) => setResolved(skill), []);
 
   const expire = useCallback(() => {
     setPhase({ kind: "expired" });
@@ -142,12 +144,13 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const summary = selected === null ? null : skills.find(skill => skill.skillId === selected) ?? null;
   const libraryStatus = catalog.status === "ready" ? "ready" : catalog.status === "failed" ? "failed" : "loading";
   return h("div", null,
-    h(SkillsHeading, { name: summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
+    h(SkillsHeading, { name: resolved !== null && resolved.skillId === selected ? resolved.name
+      : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
     h(AccountLine, { user: phase.user }),
     h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
       onReload: reload, onOpen: open, onUnauthorized: expire,
       detail: selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
         focusHeading: focusTarget !== null && focusTarget.skillId === selected ? focusTarget.n : 0,
-        onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange }) }),
+        onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange, onResolved }) }),
     h(PublishPanel, { signal, onPublished: reload, onOpen: open, onUnauthorized: expire }));
 }
