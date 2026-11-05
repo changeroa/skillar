@@ -3,7 +3,7 @@ import test from "node:test";
 import { createPrivateSkillPackage } from "../../../shared/dist/private-skill-package.js";
 import { SkillsApp } from "./app.ts";
 import { routes } from "./api.ts";
-import { act, buttonNamed, h, mount, waitFor } from "../../test/helpers/t10-dom.mjs";
+import { act, all, buttonNamed, h, mount, waitFor } from "../../test/helpers/t10-dom.mjs";
 
 const skillId = "11223344-1122-4122-8122-112233445566";
 const pkg = await createPrivateSkillPackage([{
@@ -50,10 +50,11 @@ test("successful detail owns the entity h1 when the catalog fails and remains st
   const editor = dom.getElementById("edit-skill-document");
   // When
   await act(() => buttonNamed(container, "다시 시도")[0].click());
-  await waitFor(dom, () => buttonNamed(container, "다시 시도").length === 0 && reads === 2, "catalog recovery");
+  await waitFor(dom, () => all(container, node => node.getAttribute("class") === "skill-card").length === 1, "catalog recovery");
   // Then
   assert.equal(dom.getElementById("skills-page-title").textContent, detail.skill.name);
   assert.equal(dom.getElementById("edit-skill-document") === editor, true);
+  assert.equal(reads, 2);
 });
 
 test("a successful catalog cannot replace the resolved detail name", async t => {
