@@ -1,0 +1,10 @@
+.login-route .account-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s6); max-width: 640px; margin-inline: auto; }
+.login-route .account-main { padding-block: var(--s7); }
+.login-route .auth-actions > .text-link { margin: 0; }
+.login-route .auth-actions > details { width: 100%; }
+.login-route #auth-recovery[hidden] { display: none; }
+.login-route #auth-recovery .text-link { margin-top: var(--s2); }
+@media (max-width: 760px) {
+  .login-route .account-grid { grid-template-columns: 1fr; }
+  .login-route .account-main { padding-block: var(--s5) var(--s7); }
+}

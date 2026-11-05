@@ -3,24 +3,23 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="에이전트 스킬을 로컬에서 제공하거나 저장소를 직접 운영하고, skillar.sh/skills에서 비공개 스킬과 버전을 관리하세요. OAuth로 Codex와 Claude Code를 MCP에 연결할 수 있습니다.">
+    <meta name="description" content="에이전트 세션이 어떤 스킬 버전을 읽었고 그 뒤 무슨 일이 있었는지 기록합니다. 예시 세션으로 트레이스를 살펴보고 기기를 연결하세요.">
     <meta name="theme-color" content="#171916">
-    <meta property="og:title" content="skillar — 에이전트 스킬을 보관하는 곳">
-    <meta property="og:description" content="한 번 작성하고 MCP로 제공하세요. OAuth로 Codex와 Claude Code를 https://skillar.sh/mcp에 연결하세요.">
+    <meta property="og:title" content="skillar — 세션에서 스킬의 근거까지">
+    <meta property="og:description" content="세션, 읽은 스킬 버전, 이후 기록을 하나의 흐름으로 살펴보세요.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skillar.sh/">
     <meta property="og:image" content="https://skillar.sh/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="skillar — 에이전트 스킬을 보관하는 곳.">
+    <meta property="og:image:alt" content="skillar — 세션에서 스킬의 근거까지">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://skillar.sh/og.png">
     <link rel="canonical" href="https://skillar.sh/">
-    <title>skillar — 에이전트 스킬을 보관하는 곳</title>
+    <title>skillar — 세션에서 스킬의 근거까지</title>
     <script>
       try {
-        const theme = localStorage.getItem('skillar-theme') || 'system';
-        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
       } catch (error) {
         if (!(error instanceof DOMException)) throw error;
       }
@@ -30,180 +29,73 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="/src/landing.css">
   </head>
-  <body>
+  <body class="landing-route">
     <a class="skip" href="#main">본문으로 건너뛰기</a>
     <header class="shell header">
-      <a class="wordmark" href="#" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
       <label class="theme-label">테마
-        <select id="theme">
-          <option value="system">시스템</option>
-          <option value="light">라이트</option>
-          <option value="dark">다크</option>
-        </select>
+        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
       </label>
       <nav aria-label="주요 메뉴">
-        <a href="#hosting">운영 방식</a>
-        <a href="#hosted-preview">계정 이용 순서</a>
-        <a href="#local-setup">로컬 설정</a>
-        <a href="https://github.com/changeroa/skillar#documentation">문서&nbsp;<span aria-hidden="true">↗</span></a>
+        <a href="#example">예시 세션</a>
+        <a href="#values">활용 방법</a>
+        <a href="#local-setup">문서와 MCP</a>
       </nav>
     </header>
-
     <main id="main">
-      <section class="shell hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <h1 id="hero-title">에이전트 스킬을<br>보관하는 곳.</h1>
-          <p class="intro">Markdown 지침을 MCP로 에이전트에 제공하세요. 로컬에서 실행하거나 직접 서버를 운영하고, skillar.sh/skills에서 비공개 스킬을 작성하고 버전을 관리할 수 있습니다.</p>
-          <p class="note">https://skillar.sh/mcp에서 MCP를 이용할 수 있습니다. OAuth로 Codex 또는 Claude Code를 연결하세요.</p>
-          <div class="cluster actions">
-            <a class="button primary" href="/login/">Google로 로그인 <span aria-hidden="true">→</span></a>
-            <a class="button secondary" href="#local-setup">로컬에서 실행 <span aria-hidden="true">↓</span></a>
-          </div>
+      <section class="shell trace-hero" aria-labelledby="hero-title">
+        <div class="trace-hero__copy">
+          <p class="trace-category">에이전트 스킬 사용 기록</p>
+          <h1 id="hero-title">에이전트 세션이 어떤 스킬 버전을 읽었고 그 뒤 무슨 일이 있었는지 기록합니다</h1>
+          <p class="intro">스킬을 읽었다는 사실과 작업의 성공은 다릅니다. 세션에서 읽은 지침과 이후 기록을 함께 살펴보세요.</p>
         </div>
-        <figure class="prompt-figure">
-          <div class="prompt-art" role="img" aria-label="로컬 터미널에서 skillar serve를 실행하면 Markdown 지침이 담긴 SKILL.md 파일을 MCP로 제공합니다. 에이전트는 필요할 때 스킬을 읽습니다.">
-            <div class="prompt-terminal" aria-hidden="true">
-              <div class="prompt-bar"><span class="prompt-window-mark">›_</span><span>로컬 / 터미널</span></div>
-              <div class="prompt-body">
-                <div class="prompt-command"><span>›</span>skillar serve</div>
-                <div class="prompt-file">
-                  <div class="prompt-file-title">
-                    <svg viewBox="0 0 32 40" width="32" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2h14l8 8v28H5zM19 2v9h8M10 19h12M10 25h12M10 31h8"/></svg>
-                    <span>SKILL.md<small>Markdown 지침</small></span>
-                  </div>
-                  <div class="prompt-source"><span>---</span><br>name: skillar<br><span>---</span></div>
-                  <div class="prompt-lines"><i></i><i></i><i></i></div>
-                </div>
-                <div class="prompt-handoff"><span>MCP</span><span class="prompt-arrow">→</span><span>내 에이전트</span></div>
-                <div class="prompt-demand">필요할 때 스킬을 읽습니다.</div>
-              </div>
-            </div>
+        <div class="trace-hero__actions">
+          <p id="landing-session-status" class="note" role="status">계정 확인 중…</p>
+          <div id="landing-actions" class="cluster" hidden>
+            <a id="landing-primary" class="button primary" href="/login/">연결 시작하기</a>
+            <a id="landing-secondary" class="button secondary" href="#example">예시 세션 보기</a>
           </div>
-          <figcaption>로컬과 호스팅 MCP를 지금 이용할 수 있습니다.</figcaption>
-        </figure>
-      </section>
-
-      <section class="hosting-section" id="hosting" aria-labelledby="hosting-title">
-        <div class="shell">
-          <div class="split hosting-intro"><h2 id="hosting-title">skillar 운영 방식을<br>선택하세요.</h2><p>오픈 소스 도구를 내 인프라에서 운영하거나 호스팅 계정에 비공개 스킬을 게시하세요. 서버 운영 주체를 선택하는 것이며, 스킬은 어느 쪽이든 Markdown으로 유지됩니다.</p></div>
-          <div class="table-wrap">
-            <table>
-              <caption class="sr-only">로컬, 직접 운영과 호스팅 계정 비교</caption>
-              <thead><tr><th scope="col">구분</th><th scope="col">로컬 / 직접 운영</th><th scope="col">호스팅 계정</th></tr></thead>
-              <tbody>
-                <tr><th scope="row">이용 가능 기능</th><td>저장소에서 이용 가능</td><td>OAuth MCP 연결, 비공개 스킬 작성과 버전 관리</td></tr>
-                <tr><th scope="row">서버 주소</th><td>내 로컬 또는 직접 운영하는 URL</td><td>https://skillar.sh/mcp</td></tr>
-                <tr><th scope="row">운영</th><td>직접 설정·배포·인증 정보 관리</td><td>skillar.sh/skills의 비공개 스킬, OAuth 연결 관리</td></tr>
-                <tr><th scope="row">요금</th><td>오픈 소스 소프트웨어, 인프라 비용 별도</td><td>미발표</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="note">로컬 CLI와 클라이언트 연동: MIT. 저장소 서버와 Cloudflare Worker: AGPL-3.0-only.</p>
-          <p class="note">원격 서버를 직접 운영할 때는 설정과 배포 검증도 직접 해야 합니다. 스킬 읽기는 지침 실행에 대한 허가가 아닙니다.</p>
+          <noscript><div class="cluster"><a class="button primary" href="/login/">연결 시작하기</a><a class="button secondary" href="#example">예시 세션 보기</a></div></noscript>
         </div>
-      </section>
-
-      <section class="preview-section" id="hosted-preview" aria-labelledby="preview-title">
-        <div class="shell split">
-          <div>
-            <h2 id="preview-title">내 계정.<br>내 활동.</h2>
-            <p>Google로 로그인하고 기기를 연결한 뒤 업로드할 항목을 선택하세요. 업로드한 기록은 원격 대시보드에서 확인합니다. 모든 기기는 로컬 전용으로 시작합니다.</p>
-            <p class="note">skillar.sh/skills에서 비공개 스킬과 버전을 관리하고 OAuth로 Codex 또는 Claude Code의 MCP 접근을 승인하세요. 로그인하면 Google ID, 이메일, 이름, 사진과 로그인 시각을 저장합니다. 호스팅 요금은 아직 발표되지 않았습니다.</p>
-            <div class="cluster">
-              <a class="text-link" href="#local-setup">지금 로컬에서 실행&nbsp;<span aria-hidden="true">↓</span></a>
-              <a class="text-link" href="/login/">계정 화면 열기&nbsp;<span aria-hidden="true">↗</span></a>
-            </div>
+        <section id="example" class="trace-example" aria-labelledby="example-title">
+          <div class="trace-example__head">
+            <div><p class="trace-category" data-example-label>예시 데이터</p><h2 id="example-title">배포 전 변경 사항 검토</h2></div>
+            <p class="note">설명을 위한 가상 세션 · 실제 계정 기록이 아닙니다.</p>
           </div>
-          <ol class="workflow">
-            <li><h3>Google로 로그인</h3><p>Google이 인증을 처리합니다. skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키로 유지하며 Google 토큰은 보관하지 않습니다.</p></li>
-            <li><h3>기기 연결</h3><p>대시보드에서 일회성 승인 파일을 내려받아 로컬 CLI를 연결하세요. 이후 해당 기기의 업로드 동의를 별도로 저장하세요. 연결만으로 업로드하지 않습니다.</p></li>
-            <li><h3>활동 확인</h3><p>업로드한 기록을 세션, 작업 공간, 사용 흐름과 활동 분포에서 확인하세요. 동의한 업로드가 바뀌면 화면이 갱신되며, 수집 시각과 보고서 상태로 최신 여부를 확인할 수 있습니다.</p></li>
+          <ol class="trace-events">
+            <li><p class="trace-step">세션 요청</p><p>“배포 전에 변경 사항과 확인할 항목을 정리해 줘.”</p></li>
+            <li><p class="trace-step">검색 → 버전 읽기</p><p><code>deploy-checklist / SKILL.md · v3</code></p><p class="note">배포 점검 지침을 읽은 이벤트</p></li>
+            <li><p class="trace-step">읽은 뒤의 기록</p><p>변경 사항을 요약하고 확인할 항목을 작성했습니다.</p><p class="note">작업 성공 여부: 평가 안 됨</p></li>
           </ol>
-        </div>
+          <p class="trace-example__foot note">이 예시는 흐름을 설명하는 정적 데이터입니다. 버전 연결과 후속 결과의 표시 범위는 수집된 기록에 따라 다릅니다. 읽기는 적용이나 성공의 증거가 아닙니다.</p>
+        </section>
       </section>
-
-      <section class="agents" aria-labelledby="agents-title">
-        <div class="shell">
-          <h2 id="agents-title">내 에이전트. 내 작업 방식.</h2>
-          <ul class="agent-list" aria-label="지원하는 로컬 런타임">
-            <li>Claude Code</li><li>Codex</li><li>Cursor</li><li>OmO</li><li>Gemini CLI</li><li>Gajae Code</li><li>OpenClaw</li>
-          </ul>
-          <p class="note">로컬 설정은 지원하는 런타임을 감지합니다. 기록 범위와 원격 연동은 클라이언트마다 다릅니다.</p>
-        </div>
-      </section>
-
-      <section class="shell section split" id="how-it-works" aria-labelledby="how-title">
-        <div><h2 id="how-title">작성하고 제공하고,<br>작업에 활용하세요.</h2><p>지침은 내가 소유한 파일에 남습니다. 에이전트는 작업에 맞는 스킬을 찾아 필요할 때 읽습니다.</p></div>
-        <ol class="workflow">
-          <li><h3>스킬부터 시작</h3><p>스킬은 <code>SKILL.md</code>가 담긴 폴더입니다. 이름, 설명과 에이전트가 작업에 필요할 때 읽는 지침을 담습니다.</p></li>
-          <li><h3>보관 위치 선택</h3><p>기존 폴더를 로컬에서 색인하거나 원격 저장소를 직접 설정하고, skillar.sh/skills에서 비공개 스킬을 작성하고 버전을 관리하세요.</p></li>
-          <li><h3>에이전트 연결</h3><p><code>search_skills</code>로 검색하고 선택한 스킬을 MCP 리소스로 읽으세요. 전체 보관함이 아니라 필요한 지침만 불러옵니다.</p></li>
+      <section id="values" class="shell landing-section" aria-labelledby="values-title">
+        <p class="trace-category">기록을 읽는 세 가지 관점</p>
+        <h2 id="values-title">스킬 목록에서 끝나지 않는 근거.</h2>
+        <ol class="value-list">
+          <li><h3>트레이스</h3><p>세션에서 어떤 스킬을 읽었는지 살펴보세요. 읽기 이벤트와 이후 기록을 구분하면 무엇을 확인해야 할지 보입니다.</p></li>
+          <li><h3>측정되는 검색</h3><p>검색어, 후보와 읽기 기록을 함께 검토하세요. 검색 결과에 나타난 것과 실제로 읽은 것은 다릅니다.</p></li>
+          <li><h3>근거와 함께 공유</h3><p>판단에 사용한 세션과 버전을 짚어 설명하세요. 공개 증거 링크와 팀 공유 기능은 아직 제공하지 않습니다.</p></li>
         </ol>
       </section>
-
-      <section class="example-section" id="skill-example" aria-labelledby="example-title">
+      <section id="local-setup" class="landing-docs" aria-labelledby="docs-title">
         <div class="shell split">
-          <div><h2 id="example-title">Markdown에 담는<br>실제 작업 지식.</h2><p>새 작성 언어는 없습니다. 스킬은 지침과 이를 뒷받침하는 파일을 함께 묶습니다.</p><p>로컬 목록은 원래 폴더 위치에서 색인합니다. 저장소는 MCP 검색과 리소스 읽기로 스킬을 제공합니다.</p><a class="text-link" href="https://github.com/changeroa/skillar/blob/main/server/README.md">저장소 문서 읽기&nbsp;<span aria-hidden="true">↗</span></a></div>
-          <div class="code-panel" data-ui>
-            <div class="code-top"><span>skillar / SKILL.md</span><span>Markdown</span></div>
-            <pre><code><span class="syntax">---</span>
-<span class="syntax">name:</span> skillar
-<span class="syntax">description:</span> Discover remote skills for a new task by searching its subject and intended outcome, then load only a relevant skill. Also discover native skill packs for requested combined workflows and create or update team skills/packs when requested. Searching does not activate a skill.
-<span class="syntax">---</span>
-
-Use the Skillar MCP tools directly.</code></pre>
-            <p class="code-foot"><a href="https://github.com/changeroa/skillar/blob/main/plugins/skillar/skills/skillar/SKILL.md">저장소의 스킬 검색 지침에서 발췌&nbsp;<span aria-hidden="true">↗</span></a></p>
+          <div><p class="trace-category">문서와 MCP</p><h2 id="docs-title">연결 전에 범위를 확인하세요.</h2><p>로컬 기록은 내 기기에 남습니다. 호스팅 대시보드에 업로드하려면 기기 연결 후 기록 범위에 별도로 동의해야 합니다.</p></div>
+          <div class="docs-links">
+            <a class="text-link" href="https://github.com/changeroa/skillar#documentation">설정과 기록 범위 문서 읽기 ↗</a>
+            <a class="text-link" href="/connections/">MCP 연결 방법 보기 →</a>
+            <p class="note">호스팅 MCP를 이용할 수 있습니다. OAuth 또는 읽기 전용 토큰으로 게시한 비공개 스킬에 접근합니다. 연결만으로 기기 업로드나 MCP 활동 기록에 동의하지 않습니다.</p>
+            <p class="note">로컬에서 시작하려면 <code>npm install -g skillar</code>, <code>skillar init --dry-run</code>으로 변경 내용을 먼저 확인하세요.</p>
           </div>
         </div>
       </section>
-
-      <section class="shell section split" id="local-setup" aria-labelledby="connect-title">
-        <div>
-          <h2 id="connect-title">설정은 줄이고,<br>작업에 집중하세요.</h2>
-          <p>로컬 CLI는 런타임 감지, MCP 설정과 백그라운드 서비스 설치를 지원합니다. 적용하기 전에 변경 내용을 미리 확인하세요.</p>
-          <div class="install" data-ui>
-            <div class="install-top">
-              <p class="install-label"><strong>새로 설치</strong> · macOS 또는 Linux · Node.js&nbsp;24.15+</p>
-              <a class="text-link" href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">gisool에서 업그레이드한다면 먼저 이전하세요&nbsp;<span aria-hidden="true">↗</span></a>
-            </div>
-            <div class="install-line"><code id="install-command">npm install -g skillar</code><button id="copy" type="button" aria-label="설치 명령 복사">복사</button></div>
-            <span id="copy-status" role="status" aria-live="polite"></span>
-            <p>이후 <code>skillar init</code>을 실행하세요. gisool 위에 설치하면 <code>gisool</code> 명령이 충돌하므로 먼저 이전하세요.</p>
-          </div>
-          <label class="example-label" for="setup-example">설정 명령 선택</label>
-          <select id="setup-example"><option value="all">감지한 런타임</option><option value="codex">Codex만</option><option value="claude-code">Claude Code만</option></select>
-        </div>
-        <div class="code-panel" data-ui><div class="code-top"><span>터미널</span><span>로컬 설정</span></div><pre><code><span class="code-muted"># 파일을 바꾸지 않고 미리 확인</span>
-<span id="dry-command">skillar init --dry-run</span>
-
-<span class="code-muted"># 런타임 연결과 백그라운드 서비스 설치</span>
-<span id="init-command">skillar init</span>
-
-<span class="code-muted"># 스킬 활동 확인</span>
-skillar open</code></pre><p class="code-foot">포그라운드 실행을 원하면 위 서비스 설치 대신 <code id="foreground-command">skillar init --no-service</code> 실행 후 <code>skillar serve</code>를 실행하세요.</p></div>
-      </section>
-
-      <section class="shell section split" aria-labelledby="faq-title">
-        <h2 id="faq-title">자주 묻는 질문</h2>
-        <div class="faq">
-          <details><summary>에이전트 스킬이란 무엇인가요?</summary><p><code>SKILL.md</code> 지침과 선택적인 보조 파일을 담은 폴더입니다. 이름과 설명은 에이전트의 검색을 돕고, 본문은 실제 지침을 담습니다.</p></details>
-          <details><summary>지금 skillar를 사용할 수 있나요?</summary><p>네. <code>npm install -g skillar</code>로 로컬 CLI를 설치하고 <code>skillar init --dry-run</code>으로 변경 내용을 미리 확인하세요. macOS 또는 Linux와 Node.js 24.15 이상이 필요합니다. gisool에서 업그레이드한다면 먼저 <a href="https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md">이전 안내</a>를 읽으세요.</p></details>
-          <details><summary>호스팅 서비스를 이용할 수 있나요?</summary><p>네. skillar.sh/skills에서 비공개 스킬과 버전을 관리하고, OAuth로 Codex 또는 Claude Code를 https://skillar.sh/mcp에 연결해 게시한 스킬을 읽을 수 있습니다. 활동 업로드에는 기기 연결과 별도의 명시적 동의가 필요합니다. 호스팅 요금은 아직 발표되지 않았습니다. <a href="#hosted-preview">호스팅 계정 안내</a>에서 이용 순서를 확인하세요.</p></details>
-          <details><summary>모든 MCP 클라이언트에서 작동하나요?</summary><p>MCP 리소스를 검색하고 읽을 수 있는 호스트가 필요합니다. 저장소에 런타임별 연동이 있지만 호환성과 기록 범위는 다릅니다. 클라이언트의 <a href="https://github.com/changeroa/skillar/blob/main/local/README.md">프로토콜·호환성 안내</a>를 확인하세요.</p></details>
-          <details><summary>로컬 데이터는 어디에 저장되나요?</summary><p>로컬 데몬은 루프백에서 수신하고 로컬 인증 토큰을 사용하며 색인한 스킬과 세션 활동을 로컬 SQLite에 저장합니다. 클라우드 업로드는 기본으로 꺼져 있습니다. 기기를 연결하고 대시보드에서 업로드에 명시적으로 동의해야 켜집니다. 연결한 에이전트와 모델 제공자는 데이터를 별도로 처리합니다.</p></details>
-          <details><summary>팀 저장소를 직접 운영할 수 있나요?</summary><p>네. 저장소에는 비공개 R2 배포본을 인증해 제공하는 Node.js 저장소와 Cloudflare Worker가 포함됩니다. 인프라와 인증 정보는 직접 준비해야 합니다. <a href="https://github.com/changeroa/skillar/blob/main/docs/deployment.md">배포 안내</a>.</p></details>
-        </div>
-      </section>
-
     </main>
-
     <footer class="shell footer">
-      <div class="footer-top"><p>이름의 출발점은 <span lang="ko">기술</span> — 지식과 솜씨입니다.</p><div class="cluster"><a href="https://github.com/changeroa/skillar">소스&nbsp;<span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md">MIT / AGPL 라이선스&nbsp;<span aria-hidden="true">↗</span></a><a href="https://github.com/changeroa/skillar#documentation">문서&nbsp;<span aria-hidden="true">↗</span></a></div>
-      </div>
-      <div class="footer-word" aria-hidden="true">skillar.sh</div>
-      <p class="note">오픈 소스. 호스팅 MCP를 이용할 수 있습니다.</p>
+      <div class="footer-top"><p>skillar · 읽은 지침과 남은 기록을 구분합니다.</p><div class="cluster"><a href="https://github.com/changeroa/skillar">소스 ↗</a><a href="https://github.com/changeroa/skillar#documentation">문서 ↗</a><a href="/login/">계정</a></div></div>
     </footer>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/account.ts"></script>
   </body>
 </html>

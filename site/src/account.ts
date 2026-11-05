@@ -44,16 +44,21 @@ type SessionResult =
 
 const sessionStatus = document.querySelector<HTMLElement>('#session-status');
 const accountLines = Array.from(document.querySelectorAll<HTMLElement>('[data-account-line]'));
+const landingActions = document.querySelector<HTMLElement>('#landing-actions');
+const landingStatus = document.querySelector<HTMLElement>('#landing-session-status');
 
-// Only account routes carry these elements, so the landing page never asks for a session.
-if (sessionStatus || accountLines.length) {
+// Landing and account pages share the existing read-only session check.
+if (sessionStatus || accountLines.length || landingActions) {
   const authResult = document.querySelector<HTMLElement>('#auth-result');
+  const authRecovery = document.querySelector<HTMLElement>('#auth-recovery');
   const callbackError = new URLSearchParams(window.location.search).get('error');
   if (authResult && callbackError !== null) {
+    authResult.hidden = false;
     // Fixed copy per callback code; the query value itself is never rendered.
     authResult.textContent = callbackError === 'cancelled'
       ? '로그인이 취소되었습니다. 저장된 내용은 없습니다.'
-      : '로그인을 완료하지 못했습니다. 다시 시도하세요.';
+      : '로그인하지 못했습니다. 다시 시도하세요.';
+    if (authRecovery) authRecovery.hidden = false;
   }
 
   const readSession = (payload: unknown): SessionResult => {
@@ -137,6 +142,20 @@ if (sessionStatus || accountLines.length) {
 
   void fetchSession().then(result => {
     for (const line of accountLines) line.textContent = summary(result);
+    if (landingActions) {
+      const primary = document.querySelector<HTMLAnchorElement>('#landing-primary');
+      const secondary = document.querySelector<HTMLAnchorElement>('#landing-secondary');
+      if (primary && secondary && result.kind === 'signed-in') {
+        primary.href = '/dashboard/';
+        primary.textContent = '대시보드로 가기';
+        secondary.href = '/skills/';
+        secondary.textContent = '내 스킬';
+      }
+      if (landingStatus) landingStatus.textContent = result.kind === 'unreachable' || result.kind === 'unexpected'
+        ? '로그인 상태를 확인하지 못했습니다. 계정 화면에서 다시 확인하세요.'
+        : '';
+      landingActions.hidden = false;
+    }
     if (!sessionStatus) return;
     if (result.kind === 'signed-in') {
       renderUser(result.user);
@@ -144,6 +163,14 @@ if (sessionStatus || accountLines.length) {
       const signedIn = document.querySelector<HTMLElement>('#signed-in');
       if (signedOut) signedOut.hidden = true;
       if (signedIn) signedIn.hidden = false;
+      const title = document.querySelector<HTMLElement>('#account-title');
+      if (title) title.textContent = '계정';
+      document.title = '계정 — skillar';
+      if (authResult) {
+        authResult.textContent = '';
+        authResult.hidden = true;
+      }
+      if (authRecovery) authRecovery.hidden = true;
       sessionStatus.textContent = '';
       return;
     }
