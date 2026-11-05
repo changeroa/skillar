@@ -93,3 +93,91 @@ test("switching devices clears the previous consent draft and revoke confirmatio
   }, { modes: ["local-only"], confirming: 0, revoke: 1, consentOpen: false, contentChoices: 0 });
   assert.deepEqual(calls, [{ path: "/api/dashboard/profiles", method: "GET" }]);
 });
+
+async function workspaceFixture(t, { query = "", response, phase = "ready" } = {}) {
+  const previous = Object.fromEntries(["window", "location", "history"].map(key => [key, globalThis[key]]));
+  const win = new EventTarget();
+  win.location = new URL(`https://skillar.sh/connections/${query}`);
+  const navigate = (_state, _title, href) => { globalThis.location = win.location = new URL(href); };
+  win.history = { replaceState: navigate, pushState: navigate };
+  win.matchMedia = () => Object.assign(new EventTarget(), { matches: false });
+  Object.assign(globalThis, { window: win, location: win.location, history: win.history });
+  const connections = [
+    { ...mcp, connectionId: "active", expiresAt: 4102444800 },
+    { ...mcp, connectionId: "revoked", revokedAt: now, expiresAt: 4102444800 },
+    { ...mcp, connectionId: "expired", expiresAt: 1 },
+  ];
+  t.mock.method(globalThis, "fetch", () => response ?? Promise.resolve(Response.json({
+    schemaVersion: 1, ingestEnabled: true, profiles: [],
+    devices: [{ deviceId: device.deviceId, createdAt: device.createdAt, revokedAt: null,
+      consent: device.consent, consentVersion: 1 }],
+  })));
+  const props = { model: { phase, connections }, operationMessage: "",
+    onUnauthorized: () => assert.fail("unexpected unauthorized response") };
+  const mounted = await mount(t, ConnectionsWorkspace, props);
+  t.after(() => Object.assign(globalThis, previous));
+  return { ...mounted, win, props,
+    rows: () => byTag(mounted.container, "tbody").flatMap(body => byTag(body, "tr")),
+    restore: async url => act(() => {
+      navigate(null, "", url);
+      win.dispatchEvent(new Event("popstate"));
+    }),
+  };
+}
+
+test("connections default to active rows and the revoked toggle round trips through the URL", async t => {
+  // Given
+  const fixture = await workspaceFixture(t);
+  await waitFor(fixture.dom, () => fixture.rows().length === 2, "active rows");
+  assert.deepEqual(fixture.rows().map(row => byTag(row, "button")[0].getAttribute("data-id")), ["active", "device:test"]);
+  // When
+  await act(() => all(fixture.container, node => node.id === "connections-show-revoked")[0].click());
+  const url = fixture.win.location.href;
+  await fixture.restore("https://skillar.sh/connections/");
+  await fixture.restore(url);
+  // Then
+  assert.equal(new URL(url).searchParams.get("revoked"), "1");
+  assert.equal(fixture.rows().length, 4);
+  assert.equal(all(fixture.container, node => node.id === "connections-show-revoked")[0].getAttribute("aria-pressed"), "true");
+});
+
+test("explicit cleared and selected status facets survive URL restoration", async t => {
+  // Given
+  const fixture = await workspaceFixture(t, { query: "?status=all&kind=기기&q=test&sort=name&direction=ascending" });
+  await waitFor(fixture.dom, () => fixture.rows().length === 1, "filtered device");
+  // When
+  await fixture.restore("https://skillar.sh/connections/?revoked=1&status=해제됨&sort=name&direction=ascending");
+  // Then
+  assert.equal(fixture.rows().length, 1);
+  assert.equal(byTag(fixture.rows()[0], "button")[0].getAttribute("data-id"), "revoked");
+  assert.equal(byTag(fixture.container, "th")[0].getAttribute("aria-sort"), "ascending");
+});
+
+test("connection counts wait for a pending device list", async t => {
+  // Given
+  const pending = Promise.withResolvers();
+  const fixture = await workspaceFixture(t, { response: pending.promise });
+  assert.equal(byTag(fixture.container, "caption").length, 0);
+  assert.equal(fixture.rows().length, 0);
+  // When
+  await act(() => pending.resolve(Response.json({
+    schemaVersion: 1, ingestEnabled: true, profiles: [],
+    devices: [{ deviceId: device.deviceId, createdAt: device.createdAt, revokedAt: null,
+      consent: device.consent, consentVersion: 1 }],
+  })));
+  await waitFor(fixture.dom, () => fixture.rows().length === 2, "settled combined rows");
+  // Then
+  assert.equal(byTag(fixture.container, "caption").length, 1);
+  assert.equal(fixture.rows().length, 2);
+});
+
+test("connection counts remain hidden while the MCP list reloads", async t => {
+  // Given
+  const fixture = await workspaceFixture(t, { phase: "loading" });
+  assert.equal(byTag(fixture.container, "caption").length, 0);
+  // When
+  await fixture.show({ ...fixture.props, model: { ...fixture.props.model, phase: "ready" } });
+  await waitFor(fixture.dom, () => fixture.rows().length === 2, "both settled lists");
+  // Then
+  assert.equal(byTag(fixture.container, "caption").length, 1);
+});
