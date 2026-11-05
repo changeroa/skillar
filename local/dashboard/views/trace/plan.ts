@@ -2,40 +2,35 @@ import type { FindingLabel, SessionSkillReportDto, SkillSpan, TraceStep } from "
 import { isCall } from "../../components/calls";
 import type { Fact } from "../../components/facts";
 
+export type KeyedStep = { readonly kind: "step"; readonly step: TraceStep; readonly key: string };
 export type TimelineItem =
-  | { kind: "step"; step: TraceStep }
-  | { kind: "span"; span: SkillSpan; turnId: string; finding?: FindingLabel };
+  | KeyedStep
+  | { readonly kind: "span"; readonly key: string; readonly span: SkillSpan; readonly turnId: string; readonly finding?: FindingLabel };
 
 /**
  * Use recorded IDs independently of attribution and optional reports. Legacy records without
  * IDs retain their assigned IDs by immutable timestamp/kind and same-timestamp source sequence
  * (the store orders by ts, rowid), never by their mutable display or attribution payload.
+ * This boundary receives the complete source trace, before any filtering or grouping.
  */
 export function createTimelineKeys() {
   const eventIds = new Map<string, string[]>();
-  return (items: readonly TimelineItem[]) => {
+  return (steps: readonly TraceStep[]): KeyedStep[] => {
     const occurrences = new Map<string, number>();
-    return items.map(item => {
-      switch (item.kind) {
-        case "span": return { item, key: `span:${item.span.id}` };
-        case "step": {
-          const step = item.step;
-          if (typeof step.detail.eventId === "string") return { item, key: `event:${step.detail.eventId}` };
-          const idField = ["loadId", "callId", "toolUseId", "traceId", "requestId"]
-            .find(field => typeof step.detail[field] === "string" && step.detail[field] !== "");
-          const record = idField === undefined
-            ? JSON.stringify([step.kind, step.ts])
-            : JSON.stringify([step.kind, idField, step.detail[idField]]);
-          const occurrence = occurrences.get(record) ?? 0;
-          occurrences.set(record, occurrence + 1);
-          const ids = eventIds.get(record) ?? [];
-          const id = ids[occurrence] ?? crypto.randomUUID();
-          ids[occurrence] = id;
-          eventIds.set(record, ids);
-          return { item, key: `event:${id}` };
-        }
-        default: { const exhaustive: never = item; return exhaustive; }
-      }
+    return steps.map((step): KeyedStep => {
+      if (typeof step.detail.eventId === "string") return { kind: "step", step, key: `event:${step.detail.eventId}` };
+      const idField = ["loadId", "callId", "toolUseId", "traceId", "requestId"]
+        .find(field => typeof step.detail[field] === "string" && step.detail[field] !== "");
+      const record = idField === undefined
+        ? JSON.stringify([step.kind, step.ts])
+        : JSON.stringify([step.kind, idField, step.detail[idField]]);
+      const occurrence = occurrences.get(record) ?? 0;
+      occurrences.set(record, occurrence + 1);
+      const ids = eventIds.get(record) ?? [];
+      const id = ids[occurrence] ?? crypto.randomUUID();
+      ids[occurrence] = id;
+      eventIds.set(record, ids);
+      return { kind: "step", step, key: `event:${id}` };
     });
   };
 }
@@ -45,9 +40,9 @@ export function createTimelineKeys() {
  * it, and the tool and model steps it owns move inside it, matched one for one by timestamp and kind. Without a
  * skill report (an older daemon, or a session the report cannot be read for) the timeline stays exactly as recorded.
  */
-export function planTimeline(steps: readonly TraceStep[], report?: Pick<SessionSkillReportDto, "tree" | "finding">): TimelineItem[] {
-  steps = steps.filter((step) => step.kind !== "skill_request");
-  if (!report) return steps.map((step) => ({ kind: "step", step }));
+export function planTimeline(steps: readonly KeyedStep[], report?: Pick<SessionSkillReportDto, "tree" | "finding">): TimelineItem[] {
+  steps = steps.filter(({ step }) => step.kind !== "skill_request");
+  if (!report) return [...steps];
   const labels = new Map(report.finding.turns.map((turn) => [turn.turnId, turn.label]));
   const spans = report.tree.turns
     .flatMap((turn) => turn.skillSpans.map((span) => ({ span, turnId: turn.id, finding: labels.get(turn.id) })))
@@ -67,17 +62,19 @@ export function planTimeline(steps: readonly TraceStep[], report?: Pick<SessionS
       const entry = spans[pending];
       if (entry.span.startedAt > ts) return;
       pending += 1;
-      items.push({ kind: "span", span: entry.span, turnId: entry.turnId, ...(entry.finding ? { finding: entry.finding } : {}) });
+      // The assembler uses the activation event's immutable member ID as span.id.
+      items.push({ kind: "span", key: `span:${entry.span.id}`, span: entry.span, turnId: entry.turnId, ...(entry.finding ? { finding: entry.finding } : {}) });
     }
   };
-  for (const step of steps) {
+  for (const item of steps) {
+    const step = item.step;
     const key = `${step.ts}:${step.kind}`;
     const remaining = owned.get(key) ?? 0;
     if (remaining > 0) {
       owned.set(key, remaining - 1);
       continue;
     }
-    items.push({ kind: "step", step });
+    items.push(item);
     placeUpTo(step.ts);
   }
   placeUpTo(Number.POSITIVE_INFINITY);

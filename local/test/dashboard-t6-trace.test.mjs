@@ -58,13 +58,12 @@ test("candidate disclosure retains long names descriptions and all matched terms
 test("assigned event IDs survive refreshed DTOs and prepended events", () => {
   // Given
   const step = { ts: 10, kind: "prompt", summary: "request", detail: { text: "request" } };
-  const item = { kind: "step", step };
   const identify = views.createTimelineKeys();
-  const original = identify([item])[0].key;
+  const original = identify([step])[0].key;
   // When
   const refreshed = identify([
-    { kind: "step", step: { ...step, ts: 9 } },
-    { kind: "step", step: structuredClone(step) },
+    { ...step, ts: 9 },
+    structuredClone(step),
   ]);
   // Then
   assert.equal(refreshed[1].key, original);
@@ -73,11 +72,11 @@ test("assigned event IDs survive refreshed DTOs and prepended events", () => {
 
 test("identical captured events retain separate assigned IDs across refreshes", () => {
   // Given
-  const item = { kind: "step", step: { ts: 10, kind: "tool_call", summary: "tool", detail: {} } };
+  const step = { ts: 10, kind: "tool_call", summary: "tool", detail: {} };
   const identify = views.createTimelineKeys();
-  const original = identify([item, structuredClone(item)]).map(entry => entry.key);
+  const original = identify([step, structuredClone(step)]).map(entry => entry.key);
   // When
-  const refreshed = identify([structuredClone(item), structuredClone(item)]).map(entry => entry.key);
+  const refreshed = identify([structuredClone(step), structuredClone(step)]).map(entry => entry.key);
   // Then
   assert.notEqual(original[0], original[1]);
   assert.deepEqual(refreshed, original);
@@ -87,12 +86,12 @@ test("recorded event IDs ignore mutable display and attribution fields", () => {
   for (const field of ["eventId", "traceId", "loadId", "callId", "toolUseId", "requestId"]) {
     // Given
     const identify = views.createTimelineKeys();
-    const item = { kind: "step", step: { ts: 10, kind: "search", summary: "before",
-      detail: { [field]: "recorded-id", chosen: [], candidates: [{ uri: "skill://one", chosen: false }] } } };
-    const original = identify([item])[0].key;
+    const step = { ts: 10, kind: "search", summary: "before",
+      detail: { [field]: "recorded-id", chosen: [], candidates: [{ uri: "skill://one", chosen: false }] } };
+    const original = identify([step])[0].key;
     // When
-    const refreshed = identify([{ ...item, step: { ...item.step, ts: 11, summary: "after",
-      detail: { [field]: "recorded-id", chosen: ["skill://one"], candidates: [{ uri: "skill://one", chosen: true }] } } }]);
+    const refreshed = identify([{ ...step, ts: 11, summary: "after",
+      detail: { [field]: "recorded-id", chosen: ["skill://one"], candidates: [{ uri: "skill://one", chosen: true }] } }]);
     // Then
     assert.equal(refreshed[0].key, original, `${field} must identify the same event independently of its payload`);
   }

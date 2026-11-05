@@ -104,7 +104,7 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
 
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
-  const items = timelineKeys(planTimeline(steps, report));
+  const items = planTimeline(timelineKeys(steps), report);
   const Heading = embedded ? "h3" : "h2";
   return (
     <section class="trace" aria-busy={busy}>
@@ -121,9 +121,9 @@ export function TraceView({ route, live, embedded = false }: ViewProps) {
             <>
               <Heading class="trace__subtitle">이벤트 순서</Heading>
               <ol class="tl" aria-label="세션 이벤트 순서">
-                {items.map(({ item, key }) => (item.kind === "step"
-                  ? <Step key={key} step={item.step} bounds={bounds} />
-                  : <SpanGroup key={key} item={item} bounds={bounds} />))}
+                {items.map(item => (item.kind === "step"
+                  ? <Step key={item.key} step={item.step} bounds={bounds} />
+                  : <SpanGroup key={item.key} item={item} bounds={bounds} />))}
               </ol>
             </>
           )}
