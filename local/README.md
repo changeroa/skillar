@@ -171,24 +171,29 @@ Example settings:
 ```json
 {
   "port": 8799,
-  "captureLevel": "full",
-  "retentionDays": null,
+  "captureLevel": "metadata",
+  "retentionDays": 90,
   "roots": [{ "id": "agents", "path": "~/.agents/skills" }],
   "runtimes": {}
 }
 ```
 
 - `captureLevel` controls how prompt and search text is stored:
-  - `full` (default): the text as sent.
+  - `metadata` (default): no text at all, only its SHA-256 digest and length. The dashboard shows "prompt not captured".
   - `redacted`: recognized secrets (tokens, keys, passwords) are masked and the text is cut to 2048 characters.
-  - `metadata`: no text at all, only its SHA-256 digest and length. The dashboard shows "prompt not captured".
-- `retentionDays`: `null` keeps history forever; a number deletes sessions older than that many days at startup and
-  once a day.
+  - `full`: the raw text as sent. Choose it explicitly with `skillar init --capture-level full` or confirm it in the dashboard.
+- `retentionDays`: `90` is the fresh default. A number removes captured text from older events at startup and once a day;
+  its non-text metadata remains for local attribution. `null` keeps captured text indefinitely.
+
+`skillar init --capture-level <metadata|redacted|full> --retention-days <n|forever>` previews the exact privacy
+change under `--dry-run` without writing. Existing explicit capture, retention, root, and runtime settings remain unless
+an option changes them. The dashboard's **Privacy** control applies the same choices to the running daemon immediately.
 - `roots`: skill folders to index in place. Defaults cover `~/.agents/skills`, `~/.claude/skills`, `~/.codex/skills`,
   `~/.gemini/skills`, `~/.omo/agent/skills`, `~/.gjc/agent/skills`, `~/.openclaw/skills`, and `~/iyen-skills/skills`.
   skillar never copies or edits skill files.
 
-Restart the daemon after editing the config.
+Changes made through the dashboard apply to the running daemon immediately. Restart the daemon after editing
+`config.json` directly.
 
 ## Files
 
@@ -204,7 +209,13 @@ Restart the daemon after editing the config.
 
 The local daemon stores its index and telemetry locally and does not upload captured telemetry. Connected agents and their model providers handle data separately. It listens on `127.0.0.1` only; MCP, ingest, and API requests require the local bearer token (the dashboard also uses a local authenticated cookie). Prompts, search queries, and skill usage are stored in the selected local SQLite store.
 
-Capture defaults to `full`. Use the [settings](#settings) to select `redacted` or `metadata` and set retention. Redaction masks recognized secret patterns; it does not guarantee every secret is removed. Capture levels do not anonymize session IDs or paths.
+Fresh installs use metadata capture with a 90-day text retention period. Use the [settings](#settings) or dashboard
+**Privacy** control to choose redacted or full capture; full raw capture always needs an explicit choice. Redaction masks
+recognized secret patterns; it does not guarantee every secret is removed. Capture levels do not anonymize session IDs or paths.
+
+The dashboard can also permanently delete collected history. It requires typing `DELETE_HISTORY` and transactionally
+removes sessions, events, loads, retained telemetry, Herdr topology/links, flow records, and load-reconciliation data.
+It preserves the catalog, configuration, aliases, recording lineage, workflow specifications, and separately curated eval cases.
 
 ## Skills over MCP
 

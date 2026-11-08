@@ -4,14 +4,16 @@ import type { FsHealth } from "../fs-watchdog.js";
 import { ingestOtlpTraces } from "../ingest/otlp-traces.js";
 import { ingestHook, ingestOtlp, type IngestDeps } from "../ingest/pipeline.js";
 import { isRuntimeId, RUNTIME_IDS } from "../ingest/runtimes.js";
-import type { AdoptionState, Catalog, Filter, RuntimeId, Store } from "../types.js";
+import type { AdoptionState, Catalog, Filter, HistoryDeletion, PrivacySettings, RuntimeId, Store } from "../types.js";
 import { registerWorkflowRoutes } from "../workflow/routes.js";
 import { registerFlowRoutes } from "./flows.js";
 import { deny } from "./security.js";
 import type { SseHub } from "./sse.js";
 
 const STATES: readonly AdoptionState[] = ["loaded", "exposed_only", "no_match", "aborted", "not_used"];
-const CLIENT_ERROR_CODES = new Set(["invalid_tz", "bad_filter", "bad_request"]);
+const CLIENT_ERROR_CODES = new Set([
+  "invalid_tz", "bad_filter", "bad_request", "history_sync_active", "history_sync_pending", "history_sync_unreadable", "history_remote_history",
+]);
 
 class BadRequest extends Error {
   constructor(readonly code: string, message: string) {
@@ -79,6 +81,12 @@ function defaultTz(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+export type PrivacyControls = {
+  settings(): PrivacySettings;
+  update(next: PrivacySettings): PrivacySettings;
+  deleteHistory(): HistoryDeletion;
+};
+
 export type RouteDeps = {
   store: Store;
   catalog: Catalog;
@@ -87,6 +95,7 @@ export type RouteDeps = {
   version: string;
   log: (msg: string) => void;
   fsHealth?: () => FsHealth;
+  privacy: PrivacyControls;
 };
 
 function handle(log: (msg: string) => void, fn: (req: Request, res: Response) => void) {
@@ -182,6 +191,39 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
 
   app.get("/api/skills", handle(log, (_req, res) => {
     res.json(catalog.list());
+  }));
+
+  app.get("/api/privacy", (_req, res) => {
+    res.json(deps.privacy.settings());
+  });
+
+  app.put("/api/privacy", handle(log, (req, res) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const captureLevel = body.captureLevel;
+    const retentionDays = body.retentionDays;
+    if (captureLevel !== "metadata" && captureLevel !== "redacted" && captureLevel !== "full") {
+      throw new BadRequest("bad_request", "captureLevel must be metadata, redacted, or full");
+    }
+    if (retentionDays !== null && (!Number.isInteger(retentionDays) || (retentionDays as number) <= 0)) {
+      throw new BadRequest("bad_request", "retentionDays must be a positive integer or null");
+    }
+    if (body.confirmFullCapture !== undefined && typeof body.confirmFullCapture !== "boolean") {
+      throw new BadRequest("bad_request", "confirmFullCapture must be a boolean");
+    }
+    if (captureLevel === "full" && deps.privacy.settings().captureLevel !== "full" && body.confirmFullCapture !== true) {
+      throw new BadRequest("bad_request", "confirmFullCapture must be true before enabling full capture");
+    }
+    res.json(deps.privacy.update({ captureLevel, retentionDays: retentionDays as number | null }));
+  }));
+
+  app.delete("/api/history", handle(log, (req, res) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    if (body.confirm !== "DELETE_HISTORY") throw new BadRequest("bad_request", "confirm must equal DELETE_HISTORY");
+    const deleted = deps.privacy.deleteHistory();
+    res.json({
+      deleted,
+      preserved: ["catalog", "config", "eval_cases", "workflow_specs", "aliases", "recording_lineage"],
+    });
   }));
 
   app.post("/api/eval-cases", handle(log, (req, res) => {

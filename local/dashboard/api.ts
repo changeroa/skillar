@@ -1,5 +1,5 @@
 import { requestRecords, summarizeRequests } from "../src/request-status.js";
-import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, SessionRow, SessionSkillReportDto,
+import type { Attribution, AutomatedMode, Filter, FlowDto, FlowListDto, FlowReportDto, HeatmapDto, HistoryDeletion, PrivacySettings, SessionRow, SessionSkillReportDto,
   SkillEntry, SkillWeekDto, Store, TraceStep } from "../src/types.js";
 import { matchesFilter, serializeFilter } from "./state";
 import type { WorkflowSpec } from "../src/workflow/spec.js";
@@ -40,6 +40,17 @@ export type Api = {
   events(handlers: EventHandlers): () => void;
 };
 
+/** Privacy controls exist only for the local daemon; cloud reports do not expose its local configuration. */
+export type LocalApi = Api & {
+  privacy(): Promise<PrivacySettings>;
+  updatePrivacy(input: PrivacySettings & { confirmFullCapture?: boolean }): Promise<PrivacySettings>;
+  deleteHistory(): Promise<{ deleted: HistoryDeletion; preserved: string[] }>;
+};
+
+export function isLocalApi(candidate: Api): candidate is LocalApi {
+  return candidate.mode !== "cloud";
+}
+
 export class ApiError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) {
     super(message);
@@ -75,7 +86,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-const httpApi: Api = {
+const httpApi: LocalApi = {
   mode: "http",
   sessions: (filter) => request(withQuery("/api/sessions", filter)),
   trace: (sessionId) => request(`/api/sessions/${encodeURIComponent(sessionId)}/trace`),
@@ -91,6 +102,9 @@ const httpApi: Api = {
   skillWeek: (filter) => request(withQuery("/api/skill-week", filter)),
   stats: (filter = {}) => request(withQuery("/api/stats", filter)),
   skills: () => request("/api/skills"),
+  privacy: () => request("/api/privacy"),
+  updatePrivacy: (input) => request("/api/privacy", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
+  deleteHistory: () => request("/api/history", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: "DELETE_HISTORY" }) }),
   addEvalCase: (input) => request("/api/eval-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
   health: () => request("/healthz"),
   events({ onSession, onState }) {
@@ -164,7 +178,7 @@ export function fixtureVariant(search: string = typeof location === "undefined" 
   return "full";
 }
 
-function fixtureApi(variant: FixtureVariant): Api {
+function fixtureApi(variant: FixtureVariant): LocalApi {
   // Loaded on first call so the 43 kB fixture JSON stays out of the default bundle (esbuild splits it into its own chunk).
   let loaded: Promise<FixtureData> | undefined;
   const load = (): Promise<FixtureData> => (loaded ??= import("./dev-fixtures.json").then((m) => m.default as unknown as FixtureData));
@@ -175,6 +189,7 @@ function fixtureApi(variant: FixtureVariant): Api {
     const twelve = new Set(data.sessions12);
     return (variant === "empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions).map((row) => ({ ...row, requests: summarizeRequests(fixtureRequests(data.traces[row.id] ?? [])) }));
   };
+  let privacy: PrivacySettings = { captureLevel: "metadata", retentionDays: 90 };
   return {
     mode: "fixtures",
     sessions: (filter) => settle((data) => rowsOf(data).filter((row) => matchesFilter(row, filter))),
@@ -205,6 +220,12 @@ function fixtureApi(variant: FixtureVariant): Api {
       return variant === "empty" ? { ...data.statsEmpty, ...extra.statsEmpty } : { ...data.stats, ...extra.stats };
     },
     skills: () => settle((data) => data.skills),
+    privacy: () => Promise.resolve({ ...privacy }),
+    updatePrivacy: (input) => Promise.resolve((privacy = { captureLevel: input.captureLevel, retentionDays: input.retentionDays })),
+    deleteHistory: () => Promise.resolve({
+      deleted: { sessions: 0, events: 0, loads: 0, spans: 0, links: 0, workspaces: 0, tabs: 0, panes: 0, flows: 0, flowSteps: 0, reconciliationCandidates: 0, ingestTelemetry: 0 },
+      preserved: ["catalog", "config", "eval_cases", "workflow_specs", "aliases", "recording_lineage"],
+    }),
     addEvalCase: () => Promise.resolve(),
     health: () => Promise.resolve({ ok: true, version: "fixtures" }),
     events({ onState }) {

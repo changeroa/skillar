@@ -4,7 +4,13 @@ import type { WorkflowSpec } from "./workflow/spec.js";
 
 export type SkillUri = string;   // "skill://local/<rootId>/<dir>/SKILL.md"
 export type RuntimeId = "claude-code" | "codex" | "gemini" | "cursor" | "omo" | "gajae" | "openclaw" | "unknown";
-export type CaptureLevel = "metadata" | "redacted" | "full";      // default "full"
+export type CaptureLevel = "metadata" | "redacted" | "full";
+export type PrivacySettings = { captureLevel: CaptureLevel; retentionDays: number | null };
+export type HistoryDeletion = {
+  sessions: number; events: number; loads: number; spans: number; links: number;
+  workspaces: number; tabs: number; panes: number; flows: number; flowSteps: number;
+  reconciliationCandidates: number; ingestTelemetry: number;
+};
 export type SkillEntry = { uri: SkillUri; rootId: string; dir: string; name: string; description: string;
   tags: string[]; whenToUse?: string; examples: string[]; aliasesKo: string[]; group?: { id: string; stage?: string };
   invocation: "automatic" | "explicit"; bodyHead: string; digest: string; manifestDigest: string;
@@ -99,7 +105,9 @@ export interface Store {
   countIngest(kind: "accepted" | "rejected" | "dropped", code?: string): void;
   addEvalCase(c: { query: string; expectedUri?: SkillUri; fromTraceId?: string }): void; evalCases(): { query: string; expectedUri?: SkillUri }[];
   exportTo(dir: string, opts: { withHistory: boolean }): void; importFrom(dir: string, opts: { merge: boolean }): { added: number; skipped: number };
-  retention(days: number): number;
+  retention(days: number, opts?: { force?: boolean }): number;
+  /** Deletes recorded activity while retaining catalog, config-backed settings, eval cases, workflow specs, aliases and recording lineage. */
+  deleteHistory(): HistoryDeletion;
   // Stores the spans the traces ingest kept (INSERT OR IGNORE) and records the batch with the ingest counters inside the
   // same transaction: one `accepted` per new row, `dropped` for the spans the join filter rejected. Returns new rows.
   putSpans(spans: OtelSpanRow[], dropped?: number): number;

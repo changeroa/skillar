@@ -1,11 +1,12 @@
-import { render } from "preact";
+import { Fragment, render } from "preact";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { Filter } from "../src/types.js";
-import { api, type LiveState, type SessionListRow } from "./api";
+import { api, isLocalApi, type LiveState, type SessionListRow } from "./api";
 import {
   DOW_LABEL, FILTER_KEYS, RUNTIME_LABEL, STATE_LABEL, buildHash, parseHash, skillName, withoutFilterKey,
   type FilterKey, type LiveInfo, type Route, type View,
 } from "./state";
+import { PrivacyControls } from "./components/privacy";
 import { FlowView } from "./views/flow";
 import { HeatmapView } from "./views/heatmap";
 import { SessionsView } from "./views/sessions";
@@ -134,9 +135,13 @@ export type AppOptions = { embedded?: boolean };
 export function App({ embedded = false }: AppOptions = {}) {
   const [route, navigate] = useRoute();
   const live = useLive();
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [historyRevision, setHistoryRevision] = useState(0);
   const [sessionRows, setSessionRows] = useState<SessionListRow[]>([]);
   const contentRef = useRef<HTMLElement | null>(null);
   const firstRoute = useRef(true);
+  const privacyApi = isLocalApi(api) ? api : undefined;
+  const privacyControl = privacyApi && <button type="button" class="btn privacy-toggle" onClick={() => setPrivacyOpen(true)}>Privacy</button>;
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live, embedded };
   const Header = embedded ? "div" : "header";
@@ -220,7 +225,7 @@ export function App({ embedded = false }: AppOptions = {}) {
   }, [embedded]);
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
-    <LocalShell {...props} automation={<AutomatedToggle route={route} navigate={navigate} live={live} />}>
+    <LocalShell {...props} automation={<><AutomatedToggle route={route} navigate={navigate} live={live} />{privacyControl}</>}>
       {embedded && <Header class="top local-top">
         <div class="wrap top__row">
           <nav class="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
@@ -255,6 +260,7 @@ export function App({ embedded = false }: AppOptions = {}) {
             </span>
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
+            {privacyControl}
           </div>
         </div>
         <div class="wrap"><p class="local-location" aria-label="현재 위치">
@@ -269,25 +275,28 @@ export function App({ embedded = false }: AppOptions = {}) {
         tabIndex={embedded ? -1 : undefined} role={embedded ? "tabpanel" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
         <div id={embedded ? undefined : "skillar-local-panel"}>
-        {(route.view === "sessions" || route.view === "trace") && (
-          <div class={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
-            {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
-              <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
-            </div>}
-            {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
-            {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
-          </div>
-        )}
-        {route.view === "workspaces" && <WorkspacesView {...props} />}
-        {route.view === "dashboard" && <DashboardView {...props} />}
-        {route.view === "workspace" && <WorkspaceView {...props} />}
-        {route.view === "flow" && <FlowView {...props} />}
-        {route.view === "heatmap" && <HeatmapView {...props} />}
-        {route.view === "not-found" && <section class="empty">
-          {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
-          <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>
-          <a class="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
-        </section>}
+        {privacyOpen && privacyApi && <PrivacyControls api={privacyApi} onClose={() => setPrivacyOpen(false)} onHistoryDeleted={() => setHistoryRevision((value) => value + 1)} />}
+        <Fragment key={historyRevision}>
+          {(route.view === "sessions" || route.view === "trace") && (
+            <div class={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
+              {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
+                <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
+              </div>}
+              {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
+              {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
+            </div>
+          )}
+          {route.view === "workspaces" && <WorkspacesView {...props} />}
+          {route.view === "dashboard" && <DashboardView {...props} />}
+          {route.view === "workspace" && <WorkspaceView {...props} />}
+          {route.view === "flow" && <FlowView {...props} />}
+          {route.view === "heatmap" && <HeatmapView {...props} />}
+          {route.view === "not-found" && <section class="empty">
+            {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
+            <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>
+            <a class="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
+          </section>}
+        </Fragment>
         </div>
       </Content>
     </LocalShell>

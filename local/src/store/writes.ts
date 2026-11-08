@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
 import { toolCallReferencesUri, URI_WINDOW_MS } from "../ingest/attribution.js";
-import type { Attribution, CanonicalEvent, SkillarConfig, OtelSpanRow, RuntimeId, SessionRef, SkillEntry, SkillUri, Store } from "../types.js";
+import type { Attribution, CanonicalEvent, HistoryDeletion, SkillarConfig, OtelSpanRow, RuntimeId, SessionRef, SkillEntry, SkillUri, Store } from "../types.js";
 
 /**
  * Optional wiring for createStore. `createStore(db)` alone serves ingest and queries;
  * export/import need `skillarHome` (where config.json lives) and `home` (for "~" rewriting);
- * `config.retentionDays === null` makes retention() a no-op.
+ * `config.retentionDays === null` makes ordinary retention() a no-op; the running daemon can force an immediate pass
+ * when a live privacy setting enables retention.
  */
 export type StoreOptions = {
   config?: SkillarConfig;
@@ -39,6 +40,21 @@ export function storeError(code: string, message = code): Error {
 }
 
 const DAY_MS = 86_400_000;
+const HISTORY_JOURNAL_TABLES = [
+  "sessions", "events", "loads", "otel_spans", "herdr_workspaces", "herdr_tabs", "herdr_panes",
+  "pane_sessions", "flows", "flow_steps", "load_candidates",
+] as const;
+
+/** Reject instead of claiming a local deletion also erased queued or acknowledged cloud copies. */
+export function assertHistoryDeletionSafe(db: Db): void {
+  if (db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined) {
+    throw storeError("history_sync_pending", "History deletion is blocked because a cloud sync batch may still contain captured data. Resolve cloud deletion before retrying.");
+  }
+  if (db.prepare("SELECT 1 FROM meta WHERE key = 'cloud.binding' LIMIT 1").get() !== undefined ||
+      db.prepare("SELECT 1 FROM sync_streams WHERE ack_sequence > 0 OR ack_cut > 0 LIMIT 1").get() !== undefined) {
+    throw storeError("history_remote_history", "History deletion is blocked because this source is bound to cloud history. Delete the remote account history before retrying.");
+  }
+}
 
 type SessionDbRow = {
   id: string; runtime: string; runtime_session_id: string | null; conversation_id: string | null;
@@ -78,7 +94,7 @@ export function writeAliasesOverrides(db: Db, value: Record<string, string[]>): 
 }
 
 type Writes = Pick<Store, "append" | "hasSourceKey" | "openSessions" | "reattribute" | "findEventByToolUseId" | "upsertSession" | "putLoad" | "getLoad"
-  | "latestLoad" | "traceSession" | "upsertSkills" | "markRemoved" | "countIngest" | "addEvalCase" | "evalCases" | "retention" | "putSpans" | "reconcileLoads">;
+  | "latestLoad" | "traceSession" | "upsertSkills" | "markRemoved" | "countIngest" | "addEvalCase" | "evalCases" | "retention" | "deleteHistory" | "putSpans" | "reconcileLoads">;
 
 export function createWrites(ctx: StoreCtx): Writes {
   const { db } = ctx;
@@ -372,12 +388,52 @@ export function createWrites(ctx: StoreCtx): Writes {
       return inserted;
     },
 
-    retention(days: number): number {
-      if (ctx.opts.config && ctx.opts.config.retentionDays === null) return 0;
+    retention(days: number, opts = {}): number {
+      if (!opts.force && ctx.opts.config && ctx.opts.config.retentionDays === null) return 0;
       const cutoff = ctx.now() - days * DAY_MS;
-      const result = db.prepare("UPDATE events SET text = NULL WHERE ts < ? AND text IS NOT NULL").run(cutoff);
-      db.prepare("UPDATE sessions SET first_prompt = NULL WHERE started_at < ? AND first_prompt IS NOT NULL").run(cutoff);
-      return Number(result.changes);
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        // Search text is also copied into data_json for traces; both copies share the same retention policy.
+        const result = db.prepare(`UPDATE events SET text = NULL, data_json = CASE
+          WHEN kind = 'search' AND json_type(data_json, '$.query') = 'text' THEN json_set(data_json, '$.query', '')
+          ELSE data_json END
+          WHERE ts < ? AND (text IS NOT NULL OR
+            (kind = 'search' AND json_type(data_json, '$.query') = 'text' AND json_extract(data_json, '$.query') <> ''))`).run(cutoff);
+        db.prepare("UPDATE sessions SET first_prompt = NULL WHERE started_at < ? AND first_prompt IS NOT NULL").run(cutoff);
+        db.exec("COMMIT");
+        return Number(result.changes);
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+    },
+
+    deleteHistory(): HistoryDeletion {
+      const remove = (sql: string): number => Number(db.prepare(sql).run().changes);
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        assertHistoryDeletionSafe(db);
+        // Delete the dependent and link tables first; catalog, curated cases/specs, aliases and recording lineage remain.
+        const flowSteps = remove("DELETE FROM flow_steps");
+        const flows = remove("DELETE FROM flows");
+        const links = remove("DELETE FROM pane_sessions");
+        const reconciliationCandidates = remove("DELETE FROM load_candidates");
+        const events = remove("DELETE FROM events");
+        const loads = remove("DELETE FROM loads");
+        const spans = remove("DELETE FROM otel_spans");
+        const sessions = remove("DELETE FROM sessions");
+        const panes = remove("DELETE FROM herdr_panes");
+        const tabs = remove("DELETE FROM herdr_tabs");
+        const workspaces = remove("DELETE FROM herdr_workspaces");
+        const ingestTelemetry = remove("DELETE FROM meta WHERE key LIKE 'ingest.%'");
+        // The delete triggers recorded old row images, including captured text. Purge every activity image in this transaction.
+        db.prepare(`DELETE FROM sync_journal WHERE table_name IN (${HISTORY_JOURNAL_TABLES.map(() => "?").join(",")})`).run(...HISTORY_JOURNAL_TABLES);
+        db.exec("COMMIT");
+        return { sessions, events, loads, spans, links, workspaces, tabs, panes, flows, flowSteps, reconciliationCandidates, ingestTelemetry };
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
     },
   };
 }

@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import {
   closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync,
-  renameSync, unlinkSync, writeFileSync,
+  renameSync, rmSync, unlinkSync, writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { CloudSyncError } from "./cloud-blobs.js";
 import { CloudHttp, cloudOriginSchema } from "./cloud-http.js";
@@ -53,6 +54,39 @@ export function disconnectCloud(home: string): void {
   const path = join(cloudHome(home), "connection.json");
   if (existsSync(path)) unlinkSync(path);
   // Source journal, immutable pending requests, blobs and local backups survive.
+}
+
+/** Client-visible refusal used when local state cannot prove cloud copies are absent. */
+function historySyncError(code: "history_sync_pending" | "history_sync_unreadable", message: string): Error {
+  return Object.assign(new Error(message), { code });
+}
+
+/** A disconnected spool can still contain an ACK-lost batch or an acknowledged remote cursor. */
+export function assertCloudHistoryCacheSafe(home: string): void {
+  const path = join(cloudHome(home), "spool.sqlite");
+  if (!existsSync(path)) return;
+  let spool: DatabaseSync | undefined;
+  try {
+    spool = new DatabaseSync(path, { readOnly: true });
+    if (spool.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined ||
+        spool.prepare("SELECT 1 FROM sync_streams WHERE ack_sequence > 0 OR ack_cut > 0 LIMIT 1").get() !== undefined) {
+      throw historySyncError("history_sync_pending", "History deletion is blocked because disconnected cloud spool data may still contain or represent captured history. Resolve cloud deletion before retrying.");
+    }
+  } catch (error) {
+    if ((error as { code?: unknown }).code === "history_sync_pending") throw error;
+    throw historySyncError("history_sync_unreadable", "History deletion is blocked because local cloud spool state cannot be verified.");
+  } finally {
+    spool?.close();
+  }
+}
+
+/** Delete disconnected local copies only after the source store and spool proved no cloud batch or remote history exists. */
+export function purgeCloudHistoryCache(home: string): void {
+  const directory = cloudHome(home);
+  for (const name of ["spool.sqlite", "spool.sqlite-shm", "spool.sqlite-wal", "prepared.json", "runtime-state.json"]) {
+    rmSync(join(directory, name), { force: true });
+  }
+  rmSync(join(directory, "prepared"), { recursive: true, force: true });
 }
 
 /** Connection exchanges a browser-issued grant; it never grants upload consent. */
