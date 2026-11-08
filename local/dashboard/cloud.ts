@@ -184,6 +184,8 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
       return z.object({ ok: z.boolean(), version: z.string(), transport: z.enum(["snapshot", "live"]) })
         .parse(await post(dashboardPaths.status));
     }),
+    captureHealth: () => Promise.reject(new ApiError(404, "capture_diagnostics_unavailable", "캡처 진단은 로컬 데몬에서만 사용할 수 있습니다.")),
+    testCapture: () => Promise.reject(new ApiError(404, "capture_diagnostics_unavailable", "캡처 진단은 로컬 데몬에서만 사용할 수 있습니다.")),
     events(listener) {
       if (lifetime.signal.aborted) { listener.onInvalidate?.(); return () => undefined; }
       handlers.add(listener);

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import type { RuntimeId } from "../../src/types.js";
 import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
+import { CaptureHealthPanel } from "../components/capture-health";
 import {
   RUNTIME_IDS, RUNTIME_LABEL,
   buildHash, isEmptyFilter, matchesFilter, serializeFilter, type Route, type ViewProps,
@@ -299,6 +300,7 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
         </Results>
       </div>
       {rows !== undefined && stats && <UsageNote stats={stats} />}
+      {api.mode !== "cloud" && <CaptureHealthPanel revision={refresh} />}
       {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
     </section>
   );

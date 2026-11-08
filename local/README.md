@@ -116,6 +116,25 @@ skillar doctor                        # service, daemon, token mode, FTS5, roots
 skillar doctor --json
 ```
 
+Test the daemon's capture pipeline for detected runtimes, or select specific runtime payloads:
+
+```sh
+skillar doctor --capture-test
+skillar doctor --capture-test --runtime codex,claude-code --json
+```
+
+The opt-in test sends a synthetic hook event over the daemon's authenticated HTTP ingest route. It subscribes before
+sending and reports transport, authentication, committed storage, and session attribution separately; a 202
+acknowledgement alone is not a pass. The temporary sessions and events are removed and do not count as usage.
+This tests daemon ingest, not an agent process or its exporter; ordinary doctor checks still inspect installed packs.
+Use actual incoming events to confirm that an agent is emitting telemetry.
+
+The Sessions dashboard's **Capture health** panel shows each runtime's last event, MCP attribution rate,
+unattributed reasons (`no_session`, `ambiguous`, `stale`, or `unreported`), and its latest daemon test.
+No MCP data is distinct from 0% attribution. This is an all-history diagnostic, independent of the session filters.
+Both `GET /api/diagnostics/capture` and `POST /api/diagnostics/capture` require dashboard or bearer authentication;
+POST accepts only `{ "runtime": "<runtime-id>" }` for a supported runtime.
+
 Measure search quality against recorded or hand-written cases:
 
 ```sh
