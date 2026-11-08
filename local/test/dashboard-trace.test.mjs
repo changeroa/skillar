@@ -48,9 +48,9 @@ test("fixtures cover every step kind, one abstained search, and one session with
 });
 
 test("every kind has a label and the never-consulted copy is the shipped sentence", () => {
-  assert.deepEqual(Object.keys(trace.KIND_LABEL).sort(), [...EVENT_KINDS].sort());
+  assert.deepEqual(Object.keys(trace.KIND_LABEL).sort(), [...EVENT_KINDS, "skill_request"].sort());
   for (const kind of EVENT_KINDS) assert.ok(trace.KIND_LABEL[kind].length > 0, kind);
-  assert.equal(trace.NEVER_CONSULTED, "This session never consulted skillar");
+  assert.equal(trace.NEVER_CONSULTED, "이 세션에는 skillar 검색 기록이 없습니다");
   assert.deepEqual(Object.keys(trace.ABSTAIN_LABEL).sort(), ["below_threshold", "empty_query", "explicit_only", "no_overlap"]);
   assert.deepEqual(Object.keys(trace.MODE_LABEL).sort(), ["automatic", "discovery", "explicit"]);
 });
@@ -93,7 +93,7 @@ test("traceCounts tallies each kind and abstained searches", () => {
   assert.deepEqual(trace.traceCounts([]), { steps: 0, searches: 0, abstained: 0, loads: 0, reads: 0, natives: 0, errors: 0 });
 });
 
-test("candidates render in rank order and the loaded ones are marked from either source", () => {
+test("candidates sort by descending score then rank and preserve recorded choices", () => {
   const search = fixtures.traces[ALL_KINDS_SESSION].find((step) => step.kind === "search").detail;
   const ordered = candidates.orderCandidates(search.candidates);
   assert.deepEqual(ordered.map((c) => c.rank), [1, 2, 3, 4]);
@@ -112,14 +112,14 @@ test("candidates render in rank order and the loaded ones are marked from either
   ];
   assert.deepEqual(candidates.orderCandidates(shuffled).map((c) => c.uri), ["b", "c", "a"]);
   const lowTop = [{ ...shuffled[0], rank: 1 }, { ...shuffled[1], rank: 2 }];
-  assert.deepEqual(candidates.orderCandidates(lowTop).map((c) => c.uri), ["a", "b"], "a weaker match score never reorders ranks");
+  assert.deepEqual(candidates.orderCandidates(lowTop).map((c) => c.uri), ["b", "a"], "score leads while recorded ranks remain unchanged");
 });
 
 test("coverage label counts query terms the candidate matched with the router's term rules", () => {
   const search = fixtures.traces[ALL_KINDS_SESSION].find((step) => step.kind === "search").detail;
-  assert.equal(candidates.coverageLabel(search.query, search.candidates[0].matched), "6/8 terms");
-  assert.equal(candidates.coverageLabel("review this PR", ["review", "PR"]), "2/2 terms");
-  assert.equal(candidates.coverageLabel("deploy", []), "0/1 term");
+  assert.equal(candidates.coverageLabel(search.query, search.candidates[0].matched), "단어 6/8 일치");
+  assert.equal(candidates.coverageLabel("review this PR", ["review", "PR"]), "단어 2/2 일치");
+  assert.equal(candidates.coverageLabel("deploy", []), "단어 0/1 일치");
   assert.equal(candidates.coverageLabel("", ["x"]), undefined);
   assert.equal(candidates.coverageLabel("how to", ["x"]), undefined, "stopword-only query has no terms to cover");
 });
@@ -144,7 +144,7 @@ test("score formatting is two decimals and bar widths are clamped percentages", 
   assert.equal(candidates.scoreWidth(1.7), "100%");
   assert.equal(candidates.scoreWidth(-1), "0%");
   assert.equal(candidates.scoreWidth(Number.NaN), "0%");
-  assert.deepEqual(candidates.INVOCATION_LABEL, { automatic: "auto", explicit: "explicit" });
+  assert.deepEqual(candidates.INVOCATION_LABEL, { automatic: "자동", explicit: "명시" });
 });
 
 test("searchDetail normalizes a sparse detail and evalCasePayload posts query plus fromTraceId", () => {
@@ -160,7 +160,7 @@ test("searchDetail normalizes a sparse detail and evalCasePayload posts query pl
   assert.deepEqual(trace.evalCasePayload(detail), { query: "Terraform으로 R2 버킷 만들어줘", fromTraceId: "tr_c03785ef" });
 
   const sparse = trace.searchDetail({ ts: 1, kind: "search", summary: "", detail: { kind: "search", candidates: [{ uri: "x", score: 0.5, rank: 1 }] } });
-  assert.deepEqual(sparse, { kind: "search", traceId: "", chosen: [], query: "", mode: "automatic", candidates: [{ uri: "x", score: 0.5, rank: 1 }], abstained: undefined, elapsedMs: 0, total: 1 });
+  assert.deepEqual(sparse, { kind: "search", traceId: "", chosen: [], query: "", mode: "automatic", candidates: [{ uri: "x", score: 0.5, rank: 1 }], abstained: undefined, elapsedMs: undefined, total: 1 });
   assert.deepEqual(trace.evalCasePayload(sparse), { query: "" }, "no trace id -> fromTraceId omitted");
   assert.equal(trace.isSearchStep(step), true);
   assert.equal(trace.isSearchStep(fixtures.traces[ABSTAINED_SESSION][0]), false);
@@ -193,16 +193,16 @@ test("load, read and time formatters produce the compact labels the timeline sho
   assert.equal(trace.formatBytes(512), "512 B");
   assert.equal(trace.formatBytes(3 * 1024 * 1024), "3.0 MB");
   assert.equal(trace.formatBytes(-1), "-");
-  assert.equal(trace.formatOffset(0), "+0.0s");
-  assert.equal(trace.formatOffset(2400), "+2.4s");
-  assert.equal(trace.formatOffset(48_000), "+48s");
-  assert.equal(trace.formatOffset(61_000), "+1m 01s");
-  assert.equal(trace.formatOffset(3_720_000), "+1h 02m");
+  assert.equal(trace.formatOffset(0), "+0.0초");
+  assert.equal(trace.formatOffset(2400), "+2.4초");
+  assert.equal(trace.formatOffset(48_000), "+48초");
+  assert.equal(trace.formatOffset(61_000), "+1분 01초");
+  assert.equal(trace.formatOffset(3_720_000), "+1시간 02분");
   assert.equal(trace.formatOffset(-5), "");
-  assert.equal(trace.formatDuration(20_000), "<1m");
-  assert.equal(trace.formatDuration(42 * 60e3), "42m");
-  assert.equal(trace.formatDuration(62 * 60e3), "1h 2m");
-  assert.equal(trace.formatDuration(120 * 60e3), "2h");
+  assert.equal(trace.formatDuration(20_000), "1분 미만");
+  assert.equal(trace.formatDuration(42 * 60e3), "42분");
+  assert.equal(trace.formatDuration(62 * 60e3), "1시간 2분");
+  assert.equal(trace.formatDuration(120 * 60e3), "2시간");
 });
 
 test("session bounds prefer the session row and fall back to the steps", () => {

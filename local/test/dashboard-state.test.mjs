@@ -52,10 +52,11 @@ const FULL_FILTER = {
   hourSpan: 2,
   q: "주문 테이블 & status=pending",
   automated: "include",
+  searchStatus: ["succeeded", "failed"], loadStatus: ["unknown"], searchResult: ["no_candidates"],
 };
 
 test("FILTER_KEYS covers every Filter field exactly once", () => {
-  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "q", "runtime", "skill", "state", "to"]);
+  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "loadStatus", "q", "runtime", "searchResult", "searchStatus", "skill", "state", "to"]);
 });
 
 test("every Filter field round-trips through serialize -> parse", () => {
@@ -100,13 +101,20 @@ test("invalid or unknown values are dropped instead of poisoning the filter", ()
 });
 
 test("hash routes carry the view, the session id, and the filter", () => {
-  for (const hash of ["", "#", "#/", "#/sessions", "#/unknown-view"]) {
+  for (const hash of ["", "#", "#/", "#/sessions"]) {
     assert.deepEqual(parseHash(hash), { view: "sessions", filter: {} }, `hash "${hash}"`);
   }
   assert.deepEqual(parseHash("#/flow?runtime=codex"), { view: "flow", filter: { runtime: ["codex"] } });
   assert.deepEqual(parseHash("#/heatmap?dow=3&hour=14&hourSpan=4"), { view: "heatmap", filter: { dow: 3, hour: 14, hourSpan: 4 } });
   assert.deepEqual(parseHash("#/sessions/ses_01?q=review"), { view: "trace", sessionId: "ses_01", filter: { q: "review" } });
   assert.deepEqual(parseHash("#/sessions/a%2Fb"), { view: "trace", sessionId: "a/b", filter: {} });
+});
+
+test("unknown and extra hash segments resolve to not-found while preserving filters", () => {
+  // Given
+  const hashes = ["#/unknown-view", "#/sessions/a/extra", "#/flow/extra", "#/heatmap/extra"];
+  // When / Then
+  for (const hash of hashes) assert.deepEqual(parseHash(`${hash}?q=review`), { view: "not-found", filter: { q: "review" } });
 });
 
 test("buildHash -> parseHash round-trips every view and keeps the filter query shareable", () => {
@@ -175,8 +183,8 @@ test("sessions usage line: unattributed counts and per-runtime attribution with 
   assert.equal(formatRate(0.954), "95%");
   assert.equal(unattributedText(undefined), undefined);
   assert.equal(unattributedText({ searches: 0, loads: 0 }), undefined);
-  assert.equal(unattributedText({ searches: 3, loads: 1 }), "3 unattributed searches, 1 load (no session could be matched)");
-  assert.equal(unattributedText({ searches: 1, loads: 0 }), "1 unattributed search, 0 loads (no session could be matched)");
+  assert.equal(unattributedText({ searches: 3, loads: 1 }), "세션 미연결: 검색 3건, 읽기 1건");
+  assert.equal(unattributedText({ searches: 1, loads: 0 }), "세션 미연결: 검색 1건, 읽기 0건");
   const rates = attributionRates({
     attributionRate: { "claude-code": 1, codex: 0, gemini: null, cursor: null, omo: null, gajae: null, openclaw: 0.5, unknown: null },
     lastEventByRuntime: { gemini: 1, codex: 2 },

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="에이전트 세션이 어떤 스킬 버전을 읽었고 그 뒤 무슨 일이 있었는지 기록합니다. 예시 세션으로 트레이스를 살펴보고 기기를 연결하세요.">
+    <meta name="theme-color" content="#171916">
+    <meta property="og:title" content="skillar — 세션에서 스킬의 근거까지">
+    <meta property="og:description" content="세션, 읽은 스킬 버전, 이후 기록을 하나의 흐름으로 살펴보세요.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://skillar.sh/">
+    <meta property="og:image" content="https://skillar.sh/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="skillar — 세션에서 스킬의 근거까지">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://skillar.sh/og.png">
+    <link rel="canonical" href="https://skillar.sh/">
+    <title>skillar — 세션에서 스킬의 근거까지</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
+      } catch (error) {
+        if (!(error instanceof DOMException)) throw error;
+      }
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="/src/landing.css">
+  </head>
+  <body class="landing-route">
+    <a class="skip" href="#main">본문으로 건너뛰기</a>
+    <header class="shell header">
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <label class="theme-label">테마
+        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
+      </label>
+      <nav aria-label="주요 메뉴">
+        <a href="#example">예시 세션</a>
+        <a href="#values">활용 방법</a>
+        <a href="#local-setup">문서와 MCP</a>
+      </nav>
+    </header>
+    <main id="main">
+      <section class="shell trace-hero" aria-labelledby="hero-title">
+        <div class="trace-hero__copy">
+          <p class="trace-category">에이전트 스킬 사용 기록</p>
+          <h1 id="hero-title">에이전트 세션이 어떤 스킬 버전을 읽었고 그 뒤 무슨 일이 있었는지 기록합니다</h1>
+          <p class="intro">스킬을 읽었다는 사실과 작업의 성공은 다릅니다. 세션에서 읽은 지침과 이후 기록을 함께 살펴보세요.</p>
+        </div>
+        <div class="trace-hero__actions">
+          <p id="landing-session-status" class="note" role="status">계정 확인 중…</p>
+          <div id="landing-actions" class="cluster" hidden>
+            <a id="landing-primary" class="button primary" href="/login/">연결 시작하기</a>
+            <a id="landing-secondary" class="button secondary" href="#example">예시 세션 보기</a>
+          </div>
+          <noscript><div class="cluster"><a class="button primary" href="/login/">연결 시작하기</a><a class="button secondary" href="#example">예시 세션 보기</a></div></noscript>
+        </div>
+        <section id="example" class="trace-example" aria-labelledby="example-title">
+          <div class="trace-example__head">
+            <div><p class="trace-category" data-example-label>예시 데이터</p><h2 id="example-title">배포 전 변경 사항 검토</h2></div>
+            <p class="note">설명을 위한 가상 세션 · 실제 계정 기록이 아닙니다.</p>
+          </div>
+          <ol class="trace-events">
+            <li><p class="trace-step">세션 요청</p><p>“배포 전에 변경 사항과 확인할 항목을 정리해 줘.”</p></li>
+            <li><p class="trace-step">검색 → 버전 읽기</p><p><code>deploy-checklist / SKILL.md · v3</code></p><p class="note">배포 점검 지침을 읽은 이벤트</p></li>
+            <li><p class="trace-step">읽은 뒤의 기록</p><p>변경 사항을 요약하고 확인할 항목을 작성했습니다.</p><p class="note">작업 성공 여부: 평가 안 됨</p></li>
+          </ol>
+          <p class="trace-example__foot note">이 예시는 흐름을 설명하는 정적 데이터입니다. 버전 연결과 후속 결과의 표시 범위는 수집된 기록에 따라 다릅니다. 읽기는 적용이나 성공의 증거가 아닙니다.</p>
+        </section>
+      </section>
+      <section id="values" class="shell landing-section" aria-labelledby="values-title">
+        <p class="trace-category">기록을 읽는 세 가지 관점</p>
+        <h2 id="values-title">스킬 목록에서 끝나지 않는 근거.</h2>
+        <ol class="value-list">
+          <li><h3>트레이스</h3><p>세션에서 어떤 스킬을 읽었는지 살펴보세요. 읽기 이벤트와 이후 기록을 구분하면 무엇을 확인해야 할지 보입니다.</p></li>
+          <li><h3>측정되는 검색</h3><p>검색어, 후보와 읽기 기록을 함께 검토하세요. 검색 결과에 나타난 것과 실제로 읽은 것은 다릅니다.</p></li>
+          <li><h3>근거와 함께 공유</h3><p>판단에 사용한 세션과 버전을 짚어 설명하세요. 공개 증거 링크와 팀 공유 기능은 아직 제공하지 않습니다.</p></li>
+        </ol>
+      </section>
+      <section id="local-setup" class="landing-docs" aria-labelledby="docs-title">
+        <div class="shell split">
+          <div><p class="trace-category">문서와 MCP</p><h2 id="docs-title">연결 전에 범위를 확인하세요.</h2><p>로컬 기록은 내 기기에 남습니다. 호스팅 대시보드에 업로드하려면 기기 연결 후 기록 범위에 별도로 동의해야 합니다.</p></div>
+          <div class="docs-links">
+            <a class="text-link" href="https://github.com/changeroa/skillar#documentation">설정과 기록 범위 문서 읽기 ↗</a>
+            <a class="text-link" href="/connections/">MCP 연결 방법 보기 →</a>
+            <p class="note">호스팅 MCP를 이용할 수 있습니다. OAuth 또는 읽기 전용 토큰으로 게시한 비공개 스킬에 접근합니다. 연결만으로 기기 업로드나 MCP 활동 기록에 동의하지 않습니다.</p>
+            <p class="note">로컬에서 시작하려면 <code>npm install -g skillar</code>, <code>skillar init --dry-run</code>으로 변경 내용을 먼저 확인하세요.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="shell footer">
+      <div class="footer-top"><p>skillar · 읽은 지침과 남은 기록을 구분합니다.</p><div class="cluster"><a href="https://github.com/changeroa/skillar">소스 ↗</a><a href="https://github.com/changeroa/skillar#documentation">문서 ↗</a><a href="/login/">계정</a></div></div>
+    </footer>
+    <script type="module" src="/src/account.ts"></script>
+  </body>
+</html>

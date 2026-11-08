@@ -1,0 +1,76 @@
+/* Evidence Console token bridge. Palette roles inherit the site theme; no parallel dark palette. */
+.dash-embed {
+  --surface-2: var(--bg); --ink-2: var(--muted); --ink-3: var(--muted);
+  --line: var(--rule); --line-2: var(--border); --wash: var(--surface); --wash-2: var(--surface);
+  --accent-2: var(--accent); --accent-wash: var(--surface);
+  --ok: var(--success); --bad: var(--error); --neutral: var(--muted); --shadow-pop: none;
+  --font-sans: "Helvetica Neue", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-title: 28px; --fs-section: 22px; --fs-subhead: 18px;
+  --fs-body: 16px; --fs-sm: 16px; --fs-cap: 14px; --fs-micro: 14px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-12: 48px;
+  --max-w: none; --gutter: 0px;
+  --r-sm: 2px; --r-md: 2px; --r-full: 2px; --t-micro: 120ms ease-out;
+}
+
+/* Site element rules that would otherwise reach into the embedded views. */
+.dash-embed h1, .dash-embed h2, .dash-embed h3 { letter-spacing: 0; line-height: 1.4; font-weight: 600; }
+.dash-embed h1 { font-size: var(--fs-title); }
+.dash-embed h2 { font-size: var(--fs-section); }
+.dash-embed h3 { font-size: var(--fs-subhead); }
+.dash-embed .top__row { min-height: 44px; }
+.dash-embed .tabs { gap: 8px; }
+.dash-embed .tab { padding-inline: 8px; }
+.dash-embed .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.dash-embed .button { font-size: var(--ui); font-weight: 600; }
+.dash-embed .button.primary:not(:disabled) { color: var(--on-accent); }
+.dash-embed .text-field { font-size: var(--ui); font-weight: 400; }
+:where(.dash-embed) p { max-width: none; }
+:where(.dash-embed) p + p { margin-top: 0; }
+:where(.dash-embed) thead th { background: transparent; font-size: var(--fs-cap); letter-spacing: 0; line-height: 1.4; }
+:where(.dash-embed) th:first-child { width: auto; padding-left: var(--s-3); }
+:where(.dash-embed) tbody tr { border-bottom: 0; }
+:where(.dash-embed) pre { padding: 0; line-height: 1.5; }
+:where(.dash-embed) details { background: transparent; padding: 0; }
+:where(.dash-embed) summary { font-weight: 500; padding-block: var(--s-2); min-height: 44px; }
+:where(.dash-embed) select { border-radius: var(--r-sm); }
+
+/* Targets and focus follow the site's accessibility constraints: 44px controls, accent focus ring. */
+.dash-embed .btn, .dash-embed .field, .dash-embed .seg__btn, .dash-embed .seg__b { min-height: 44px; height: auto; }
+.dash-embed .tab { min-height: 44px; }
+.dash-embed .trace__back, .dash-embed .ws__back, .dash-embed .rowlink { min-height: 44px; }
+.dash-embed .chip__x, .dash-embed .foldbtn, .dash-embed .usage__why, .dash-embed .attr--none { position: relative; }
+.dash-embed .chip__x::before, .dash-embed .foldbtn::before, .dash-embed .usage__why::before, .dash-embed .attr--none::before {
+  content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; min-width: 100%; transform: translate(-50%, -50%);
+}
+.dash-embed :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dash-embed .live--live .live__dot { animation: none; }
+.dash-embed .live--offline .live__dot { background: var(--bad); }
+.dash-embed .top { border-bottom-color: var(--rule); }
+.dash-embed .card, .dash-embed .callout, .dash-embed .chip, .dash-embed .tag, .dash-embed .skill, .dash-embed .rt__mark { border-color: var(--line-2); }
+.dash-embed .card { overflow-x: auto; }
+.dash-embed .hm-stack { --hm-cell: 44px; }
+.dash-embed .hmc { min-width: 0; }
+.dash-embed .hm { grid-template-columns: max-content repeat(var(--hm-cols), minmax(44px, 1fr)) max-content; overflow-x: auto; padding-block: var(--s-2); }
+.dash-embed .hm .hm__skill { min-height: 44px; }
+.dash-embed .page :is(a, button, input, select, summary, [tabindex]) { scroll-margin-top: calc(var(--embedded-toolbar-height) + var(--s-2)); }
+.dash-embed :is(.top, .page) [data-tip]::after {
+  display: none; position: fixed; top: var(--tip-top); left: var(--tip-left); right: auto; bottom: auto;
+  z-index: 11; white-space: normal; width: max-content; max-width: min(40ch, calc(100vw - 2 * var(--s-6)));
+  transition: opacity var(--t-micro), transform var(--t-micro), display var(--t-micro) allow-discrete;
+}
+.dash-embed :is(.top, .page) [data-tip][data-tip-active]:hover::after, .dash-embed :is(.top, .page) [data-tip][data-tip-active]:focus-visible::after { display: block; }
+.dash-embed :is(.top, .page) [data-tip]:not([data-tip-active])::after { display: none; opacity: 0; transition: none; }
+.dash-embed :is(.top, .page) [data-tip][data-tip-active][data-tip-offscreen]::after { display: none; opacity: 0; }
+@starting-style {
+  .dash-embed :is(.top, .page) [data-tip]:is(:hover, :focus-visible)::after { opacity: 0; transform: translateY(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-embed :is(.top, .page) [data-tip]::after {
+    transform: none; transition: opacity var(--t-micro), display var(--t-micro) allow-discrete !important;
+  }
+}
+@media (max-width: 639.98px) {
+  .dash-embed .hm--skills { grid-template-columns: repeat(var(--hm-cols), minmax(44px, 1fr)) max-content; }
+}

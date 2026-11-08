@@ -7,6 +7,42 @@ import test from "node:test";
 import { makeSandbox } from "./_helpers.mjs";
 import { metadata, TOKEN, uriOf, withDaemon } from "./helpers/mcp.mjs";
 
+test("stdio forwards explicit cancellation even without a runtime session ID", { timeout: 10000 }, () => withDaemon(async (daemon) => {
+  const sandbox = makeSandbox();
+  const module = fileURLToPath(new URL("../dist/mcp/stdio-proxy.js", import.meta.url));
+  const child = spawn(process.execPath, ["--input-type=module", "-e",
+    `const m = await import(${JSON.stringify(module)}); await m.runStdioProxy({ port: ${daemon.port}, token: ${JSON.stringify(TOKEN)} });`],
+  { env: sandbox.env, stdio: ["pipe", "pipe", "pipe"] });
+  const exited = once(child, "exit");
+  let release, entered, didCancel;
+  const started = new Promise((resolve) => { entered = resolve; });
+  const gate = new Promise((resolve) => { release = resolve; });
+  const cancelled = new Promise((resolve) => { didCancel = resolve; });
+  const read = daemon.catalog.readResource.bind(daemon.catalog);
+  daemon.catalog.readResource = async (uri) => { entered(); await gate; return read(uri); };
+  const append = daemon.store.append.bind(daemon.store);
+  daemon.store.append = (event, attribution) => {
+    const result = append(event, attribution);
+    if (event.kind === "skill_request" && event.data.status === "cancelled") didCancel();
+    return result;
+  };
+  try {
+    child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "resources/read", params: { uri: uriOf("pr-review"), _meta: metadata() } }) + "\n");
+    await started;
+    child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: 1 } }) + "\n");
+    await cancelled;
+    release();
+    const outcomes = daemon.rows().filter((row) => row.kind === "skill_request").map((row) => row.data.status);
+    assert.deepEqual(outcomes, ["in_progress", "cancelled"]);
+    assert.equal(daemon.rows().filter((row) => row.kind === "load").length, 0);
+  } finally {
+    release();
+    child.kill("SIGTERM");
+    await exited;
+    sandbox.cleanup();
+  }
+}));
+
 test("stdio modern flow forwards per-request identity metadata caching and protocol errors", () => withDaemon(async (daemon) => {
   const sandbox = makeSandbox();
   const module = fileURLToPath(new URL("../dist/mcp/stdio-proxy.js", import.meta.url));
@@ -51,7 +87,7 @@ test("stdio modern flow forwards per-request identity metadata caching and proto
     assert.equal(unknown.error.code, -32602);
     assert.equal((await rpc("no/method")).error.code, -32601);
     assert.equal((await rpc("tools/list", { _meta: metadata("old", { "io.modelcontextprotocol/protocolVersion": "2025-11-25" }) })).error.code, -32022);
-    const rows = daemon.rows();
+    const rows = daemon.rows().filter((r) => r.kind !== "skill_request");
     assert.deepEqual(rows.map((r) => r.kind), ["search", "load", "read_file"]);
     assert.deepEqual(rows.map((r) => r.runtime), ["openclaw", "openclaw", "omo"]);
     const legacy = (method, params) => rpc(method, { _meta: undefined, ...params });

@@ -8,3 +8,7 @@ dist/
 .omo/
 .senpi/
 worker/wrangler.team.generated.json
+**/wrangler*.production.jsonc
+**/.dev.vars
+**/.dev.vars.*
+site/wrangler.jsonc

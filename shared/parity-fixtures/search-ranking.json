@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "query": "quartz",
+  "derivation": "Each of six documents has 8 trigram tokens: 4 from aaaaaa and 4 from quartz. One quartz phrase per document. BM25 k1=1.2, b=.75, equal lengths: -IDF*w*2.2/(w+1.2). Local N=n=6 clamps IDF to 1e-6; expanded N=13,n=6 gives ln(7.5/6.5). Column weights uri/name/description/when/examples/aliases/body = 0/8/2/3/5/6/1. No expected value was recorded from search output.",
+  "entries": [
+    {"uri":"skill://parity/name","name":"quartz","description":"aaaaaa"},
+    {"uri":"skill://parity/description","name":"aaaaaa","description":"quartz"},
+    {"uri":"skill://parity/when","name":"aaaaaa","description":"","whenToUse":"quartz"},
+    {"uri":"skill://parity/examples","name":"aaaaaa","description":"","examples":["quartz"]},
+    {"uri":"skill://parity/aliases","name":"aaaaaa","description":"","aliasesKo":["quartz"]},
+    {"uri":"skill://parity/body","name":"aaaaaa","description":"","bodyHead":"quartz"}
+  ],
+  "background": {"count":7,"entry":{"name":"bbbbbb","description":"cccccc"}},
+  "ftsExpected": [
+    {"uri":"skill://parity/name","rank":1,"bm25":-0.00000191304347826087,"expandedBm25":-0.2737581356604184,"matched":["quartz"]},
+    {"uri":"skill://parity/aliases","rank":2,"bm25":-0.0000018333333333333333,"expandedBm25":-0.2623515466745676,"matched":["quartz"]},
+    {"uri":"skill://parity/examples","rank":3,"bm25":-0.0000017741935483870968,"expandedBm25":-0.25388859355603316,"matched":["quartz"]},
+    {"uri":"skill://parity/when","rank":4,"bm25":-0.0000015714285714285714,"expandedBm25":-0.22487275429248654,"matched":["quartz"]},
+    {"uri":"skill://parity/description","rank":5,"bm25":-0.000001375,"expandedBm25":-0.1967636600059257,"matched":["quartz"]},
+    {"uri":"skill://parity/body","rank":6,"bm25":-0.000001,"expandedBm25":-0.14310084364067324,"matched":["quartz"]}
+  ],
+  "searchExpected": [
+    {"uri":"skill://parity/name","rank":1,"score":1},
+    {"uri":"skill://parity/aliases","rank":2,"score":1},
+    {"uri":"skill://parity/examples","rank":3,"score":1},
+    {"uri":"skill://parity/when","rank":4,"score":1},
+    {"uri":"skill://parity/description","rank":5,"score":0.9385},
+    {"uri":"skill://parity/body","rank":6,"score":0.4621}
+  ],
+  "tokenCases": [
+    {"q":"메","expected":[]},
+    {"q":"메시","expected":[]},
+    {"q":"메시지","expected":["메시지"]},
+    {"q":"😀😀","expected":[]},
+    {"q":"😀😀😀","expected":["😀😀😀"]},
+    {"q":"ＱＵＡＲＴＺ","expected":["quartz"]},
+    {"q":"\"quartz\"","expected":["quartz","\"quartz\""]}
+  ],
+  "recall": {
+    "entries":[
+      {"uri":"skill://parity/korean","name":"notes","description":"","aliasesKo":["커밋 메시지"]},
+      {"uri":"skill://parity/emoji","name":"emoji","description":"","bodyHead":"😀😀😀"},
+      {"uri":"skill://parity/split","name":"메시","description":"지"}
+    ],
+    "cases":[
+      {"q":"메시지","expected":["skill://parity/korean"]},
+      {"q":"메시","expected":[]},
+      {"q":"😀😀","expected":[]},
+      {"q":"😀😀😀","expected":["skill://parity/emoji"]},
+      {"q":"메시 지","expected":[]}
+    ]
+  }
+}
