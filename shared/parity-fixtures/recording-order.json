@@ -1,0 +1,33 @@
+{
+  "version":1,
+  "sourceDomain":"11111111111111111111111111111111",
+  "destinationDomain":"22222222222222222222222222222222",
+  "start":1000,
+  "end":1100,
+  "events":[
+    {"id":"z-prior","ts":1000,"phase":"prior"},
+    {"id":"z-start","ts":1000,"phase":"inside"},
+    {"id":"z-end","ts":1100,"phase":"inside"},
+    {"id":"a-end","ts":1100,"phase":"inside"},
+    {"id":"a-late","ts":1100,"phase":"late"},
+    {"id":"late-interior","ts":1050,"phase":"late"}
+  ],
+  "sourceScope":{"eventIds":["z-start","late-interior","z-end","a-end"],"priorEventIds":["z-prior"],"boundary":"recorded"},
+  "sourceOrders":[
+    {"id":"z-prior","orders":{"11111111111111111111111111111111":1}},
+    {"id":"z-start","orders":{"11111111111111111111111111111111":2}},
+    {"id":"z-end","orders":{"11111111111111111111111111111111":3}},
+    {"id":"a-end","orders":{"11111111111111111111111111111111":4}},
+    {"id":"a-late","orders":{"11111111111111111111111111111111":6}},
+    {"id":"late-interior","orders":{"11111111111111111111111111111111":7}}
+  ],
+  "spanOrders":{"11111111111111111111111111111111":5},
+  "spanKeys":["[\"trace\",\"endpoint\"]"],
+  "duplicateResult":false,
+  "rollbackPosition":7,
+  "afterDeletePosition":8,
+  "foreignScope":{"eventIds":["z-start","late-interior","z-end","a-end"],"priorEventIds":["z-prior"],"boundary":"recorded"},
+  "collisionScope":{"eventIds":["z-start","late-interior","a-end"],"priorEventIds":["z-prior"],"boundary":"order_unavailable"},
+  "nullStats":{"absent":null,"unattributed":0,"attributed":1},
+  "spanTimes":[{"spanId":"unknown"},{"spanId":"zero","startMs":0,"endMs":0}]
+}

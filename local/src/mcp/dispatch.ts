@@ -11,9 +11,9 @@ const toolParams = z.object({ name: z.string(), arguments: z.record(z.string(), 
 export function createDispatcher(deps: ToolDeps) {
   const search = createSearchTool(deps);
   const serverInfo = { name: "skillar", version: packageVersion() };
-  return async (request: Message, params: RequestParams) => {
+  return async (request: Message, params: RequestParams, signal?: AbortSignal) => {
     const clientInfo = params._meta[CLIENT_INFO_KEY];
-    const ctx = { ...(clientInfo ? { clientName: clientInfo.name } : {}), meta: params._meta };
+    const ctx = { signal, ...(clientInfo ? { clientName: clientInfo.name } : {}), meta: params._meta };
     let result: Record<string, unknown>;
     switch (request.method) {
       case "server/discover":

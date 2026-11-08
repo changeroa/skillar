@@ -1,6 +1,7 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { DEFAULT_ROOTS, expandHome } from "../config.js";
 import { parseJson, readAliasesOverrides, storeError, writeAliasesOverrides, type StoreCtx } from "./writes.js";
 import type { EvalLabel, EvalMetrics, Store } from "../types.js";
@@ -26,7 +27,9 @@ const HISTORY_TABLES: Record<string, string[]> = {
 };
 // recording_clock is deliberately local. Row provenance and flow cuts travel
 // through shared columns; insert triggers add destination arrival provenance.
-const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6, 7];
+// v7 adds local CDC/outbox state, v8 adds connector command receipts, and v9 adds search evaluations.
+// None add portable history tables. Never import receipts, spool, source identity, or local evaluations through history.
+const HISTORY_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 type ExportedEvalCase = { id?: string; query: string; label?: EvalLabel; expectedUri?: string; fromTraceId?: string };
 type ExportedEvalRun = { id: string; catalogFingerprint: string; catalogSize: number; createdAt: number; baseline: boolean; metrics: EvalMetrics;
@@ -199,8 +202,23 @@ export function createPortable(ctx: StoreCtx): Portable {
       const history = join(dir, HISTORY_FILE);
       rmSync(history, { force: true });
       if (opts.withHistory) {
-        db.prepare("VACUUM INTO ?").run(resolve(history));
-        chmodSync(history, 0o600);
+        const temporary = mkdtempSync(join(dir, ".history-"));
+        try {
+          const snapshot = join(temporary, HISTORY_FILE);
+          db.prepare("VACUUM INTO ?").run(resolve(snapshot));
+          const portable = new DatabaseSync(snapshot);
+          try {
+            // Source-local replay results must not enter the portable artifact,
+            // including free pages. Keep the live source receipts intact.
+            portable.exec("PRAGMA secure_delete=ON; DELETE FROM connector_command_receipts; VACUUM;");
+          } finally {
+            portable.close();
+          }
+          chmodSync(snapshot, 0o600);
+          renameSync(snapshot, history);
+        } finally {
+          rmSync(temporary, { recursive: true, force: true });
+        }
       }
     },
 

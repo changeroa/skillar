@@ -19,6 +19,11 @@ import { packageVersion } from "./mcp/tools.js";
 import { createSearchIndex } from "./search/index.js";
 import { openDb, selfCheck } from "./store/db.js";
 import { createStore } from "./store/index.js";
+import { startCloudSync } from "./sync/cloud-runner.js";
+import { captureDaemonRuntime } from "./sync/cloud-runtime.js";
+import { applySourceCommand } from "./sync/command-apply.js";
+import { sourceCommandsEnabled } from "./sync/command-control.js";
+import { readConnection } from "./sync/cloud-connection.js";
 import type { SkillarConfig, SessionRow, Store } from "./types.js";
 import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
@@ -203,6 +208,13 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
 
     const server = createServer(app);
     boundPort = await listen(server, config.port);
+    const cloudSync = startCloudSync(skillarHome, dbPath(skillarHome), log, () => captureDaemonRuntime(db),
+      deps.openStore === undefined ? (command, instanceId) => {
+        const connection = readConnection(skillarHome);
+        if (!sourceCommandsEnabled(skillarHome) || connection?.instanceId !== instanceId) return null;
+        return applySourceCommand(db, ownStore, connection, command);
+      } : undefined);
+    cleanup.push(() => cloudSync.close());
 
     let retentionTimer: NodeJS.Timeout | undefined;
     cleanup.push(() => watchdog.stop());

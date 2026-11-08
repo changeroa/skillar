@@ -2,10 +2,11 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SkillarStartupError } from "../version.js";
+import { installJournalTriggers } from "../sync/triggers.js";
 
 export type Db = DatabaseSync;
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 9;
 
 /** migrations[i] upgrades user_version i -> i + 1. */
 function migrations(): string[] {
@@ -16,7 +17,9 @@ function migrations(): string[] {
     readFileSync(new URL("./migrations/004_load_reconciliation.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/005_execution_boundaries.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/006_recording_order.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/007_search_evaluation.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/007_sync.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/008_connector_commands.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/009_search_evaluation.sql", import.meta.url), "utf8"),
   ];
 }
 
@@ -31,6 +34,7 @@ export function openDb(path: string): DatabaseSync {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
+  db.exec("PRAGMA recursive_triggers = ON");
   migrate(db);
   mergeSplitSessions(db);
   return db;
@@ -90,11 +94,19 @@ export function mergeSplitSessions(db: DatabaseSync): number {
 export function migrate(db: DatabaseSync): void {
   const steps = migrations();
   let version = userVersion(db);
+  // Version 7 was released on two branches: search evaluation owns eval_runs, while sync owns sync_journal.
+  // The table identifies the historical lineage before its first forward migration; user_version alone cannot.
+  const legacySearchEvaluation = version === 7 && db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'eval_runs'").get() !== undefined;
   while (version < steps.length) {
-    const sql = steps[version]!;
+    // A search-evaluation v7 never received sync. Run that omitted migration in its next empty version slot,
+    // then advance through connector receipts; its evaluation schema already occupies the final v9 shape.
+    const sql = legacySearchEvaluation && version === 7 ? steps[6]!
+      : legacySearchEvaluation && version === 8 ? steps[7]!
+      : steps[version]!;
     db.exec("BEGIN IMMEDIATE");
     try {
       db.exec(sql);
+      if (version === 6 || (legacySearchEvaluation && version === 7)) installJournalTriggers(db);
       db.exec(`PRAGMA user_version = ${version + 1}`);
       db.exec("COMMIT");
     } catch (error) {

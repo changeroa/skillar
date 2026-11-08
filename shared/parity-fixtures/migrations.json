@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "files": ["schema.sql","migrations/002_tracing.sql","migrations/003_tracing_indexes.sql","migrations/004_load_reconciliation.sql","migrations/005_execution_boundaries.sql","migrations/006_recording_order.sql"],
+  "seed": [
+    {"after":1,"sql":"INSERT INTO sessions(id,runtime,started_at,first_prompt) VALUES ('a','codex',900,'retained'),('b','codex',900,NULL); INSERT INTO events(id,ts,kind,source,session_id,attribution_method,runtime,text,text_length) VALUES ('old-end',1100,'prompt','hook','a','runtime_id','codex',NULL,NULL),('empty',1050,'prompt','hook','b','runtime_id','codex','',0); INSERT INTO events(id,ts,kind,source,session_id,attribution_method,runtime,skill_uri,data_json) VALUES ('resolved',1050,'load','mcp','a','trace_handle','codex','skill://parity/retained','{\"attributionCandidates\":[\"a\",\"b\"],\"attributionBasis\":\"tool_call_uri\"}'); INSERT INTO loads(load_id,uri,manifest_digest,created_at) VALUES ('load','skill://parity/retained','sha256:manifest',1050); INSERT INTO eval_cases(id,query,created_at) VALUES ('case','메시지',1050);"},
+    {"after":2,"sql":"INSERT INTO herdr_panes(id,workspace_id,created_ms,closed_ms) VALUES ('closed','w',10,20),('open','w',30,NULL),('unknown','w',NULL,NULL); INSERT INTO pane_sessions(pane_id,agent_session_value,session_id) VALUES ('open','a','a'); INSERT INTO flows(id,workspace_id,registered_ms,ended_ms) VALUES ('legacy','w',1000,1100); INSERT INTO otel_spans(trace_id,span_id,name,runtime,conversation_id,received_at) VALUES ('t','unknown','tool','codex','a',0);"}
+  ],
+  "checks": [
+    {"id":"001-null-versus-empty-zero","sql":"SELECT id,text,text_length FROM events WHERE id IN ('old-end','empty') ORDER BY id","expected":[{"id":"empty","text":"","text_length":0},{"id":"old-end","text":null,"text_length":null}]},
+    {"id":"001-retained-load","sql":"SELECT load_id,uri,manifest_digest,created_at FROM loads","expected":[{"load_id":"load","uri":"skill://parity/retained","manifest_digest":"sha256:manifest","created_at":1050}]},
+    {"id":"001-retained-evaluation","sql":"SELECT id,query,expected_uri,from_trace_id FROM eval_cases","expected":[{"id":"case","query":"메시지","expected_uri":null,"from_trace_id":null}]},
+    {"id":"002-unknown-keys","sql":"SELECT source_key,turn_key,call_id,span_id FROM events WHERE id='old-end'","expected":[{"source_key":null,"turn_key":null,"call_id":null,"span_id":null}]},
+    {"id":"003-pane-lifetime-backfill","sql":"SELECT id,last_seen_ms FROM herdr_panes ORDER BY id","expected":[{"id":"closed","last_seen_ms":20},{"id":"open","last_seen_ms":30},{"id":"unknown","last_seen_ms":null}]},
+    {"id":"004-proof-backfill","sql":"SELECT json_extract(data_json,'$.attributionMatches') AS matches FROM events WHERE id='resolved'","expected":[{"matches":"[\"a\"]"}]},
+    {"id":"004-candidate-membership","sql":"SELECT load_id,session_id,ts FROM load_candidates ORDER BY load_id,session_id","expected":[{"load_id":"resolved","session_id":"a","ts":1050},{"load_id":"resolved","session_id":"b","ts":1050}]},
+    {"id":"005-no-invented-cuts","sql":"SELECT start_event_ids_json,end_event_ids_json,end_sessions_json,end_spans_json FROM flows WHERE id='legacy'","expected":[{"start_event_ids_json":null,"end_event_ids_json":null,"end_sessions_json":null,"end_spans_json":null}]},
+    {"id":"006-no-invented-order","sql":"SELECT start_order_domain,start_order,end_order_domain,end_order FROM flows WHERE id='legacy'","expected":[{"start_order_domain":null,"start_order":null,"end_order_domain":null,"end_order":null}]},
+    {"id":"006-legacy-marks-not-relative-order","sql":"SELECT e.id,json_extract(e.recording_orders_json,'$.\"' || c.domain || '\"') AS position FROM events e CROSS JOIN recording_clock c ORDER BY e.id","expected":[{"id":"empty","position":0},{"id":"old-end","position":0},{"id":"resolved","position":0}]},
+    {"id":"006-span-mark","sql":"SELECT json_extract(o.recording_orders_json,'$.\"' || c.domain || '\"') AS position FROM otel_spans o CROSS JOIN recording_clock c","expected":[{"position":0}]}
+  ],
+  "indexes":["events_source_key","events_turn","events_call","pane_sessions_session","pane_sessions_pending","herdr_panes_cwd","herdr_panes_closed","herdr_panes_seen","sessions_cwd_started","otel_spans_conversation","events_pending_load_ts","events_reconcile_load_uri","events_uri_tools","sessions_runtime_started","load_candidates_session_ts"],
+  "legacyScope":{"eventIds":["resolved"],"priorEventIds":[],"boundary":"order_unavailable"},
+  "futureScope":{"eventIds":[],"priorEventIds":["old-end"],"boundary":"recorded"},
+  "candidateUpdate":[{"load_id":"resolved","session_id":"b","ts":1050}]
+}

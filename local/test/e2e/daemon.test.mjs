@@ -263,7 +263,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
   assert.ok(searchStep.detail.candidates.length >= 1);
   for (const c of searchStep.detail.candidates) assert.equal(typeof c.score, "number");
   assert.deepEqual(searchStep.detail.chosen, [top.uri]);
-  assert.deepEqual(traces.codex.map((st) => st.kind).filter((k) => k !== "native_skill"), ["search", "load", "read_file"]);
+  assert.deepEqual(traces.codex.map((st) => st.kind).filter((k) => k !== "native_skill" && k !== "skill_request"), ["search", "load", "read_file"]);
   const native = Object.values(traces).flat().filter((st) => st.kind === "native_skill");
   assert.equal(native.length, 2, JSON.stringify(native));
   assert.deepEqual(native.map((st) => st.detail.via).sort(), ["file_read", "otel"]);
@@ -288,7 +288,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
   assert.equal(await portIsFree(port), true);
   const db = new DatabaseSync(join(tokenEnv.SKILLAR_HOME, "skillar.db"), { readOnly: true });
   try {
-    assert.deepEqual(db.prepare("SELECT kind FROM events WHERE source = 'mcp' ORDER BY ts, rowid").all().map((r) => r.kind), ["search", "load", "read_file", "read_file"]);
+    assert.deepEqual(db.prepare("SELECT kind FROM events WHERE source = 'mcp' ORDER BY ts, rowid").all().map((r) => r.kind), ["skill_request", "search", "skill_request", "skill_request", "load", "skill_request", "read_file", "read_file"]);
   } finally { db.close(); }
 
   const after = hashRealConfigs();

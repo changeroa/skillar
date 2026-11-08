@@ -7,7 +7,7 @@ import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs
 
 const { openDb } = await distImport("store/db.js");
 
-test("migration 007 distinguishes old unlabeled cases from old skill expectations", () => {
+test("migration 009 distinguishes old unlabeled cases from old skill expectations", () => {
   const dir = makeTempDir();
   try {
     const path = join(dir, "v6.db");
@@ -24,7 +24,7 @@ test("migration 007 distinguishes old unlabeled cases from old skill expectation
 
     const db = openDb(path);
     try {
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 7);
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 9);
       assert.deepEqual(db.prepare("SELECT id, label FROM eval_cases ORDER BY created_at").all().map((row) => [row.id, row.label]), [
         ["old-unlabeled", "unlabeled"], ["old-skill", "skill"],
       ]);

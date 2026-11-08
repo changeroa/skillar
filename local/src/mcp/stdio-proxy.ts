@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { randomUUID } from "node:crypto";
 import { initializeResult, initializeSchema, isLegacyRequest, legacyLocalResult, negotiateVersion, toLegacyResult, toModernMessage, type ClientInfo } from "./legacy.js";
 import { checkVersion, errorResponse, idSchema, messageId, messageSchema, parseParams, requestHeaders, responseSchema, RpcError, rpcFailure, type Message } from "./protocol.js";
 
@@ -10,12 +11,16 @@ export async function runStdioProxy(opts: { port: number; token: string }): Prom
   let legacyClient: ClientInfo | undefined;
   const lines = createInterface({ input: process.stdin, crlfDelay: Infinity });
   const pending = new Map<string | number, AbortController>();
+  const forwarded = new Map<string | number, Message>();
+  // Transport identity scopes cancellation without inventing a runtime session for attribution.
+  const transportId = randomUUID();
   const send = (value: unknown) => { process.stdout.write(JSON.stringify(value) + "\n"); };
   let closing = false;
   const shutdown = () => {
     closing = true;
     for (const controller of pending.values()) controller.abort();
     pending.clear();
+    forwarded.clear();
     lines.close();
     process.stdin.pause();
   };
@@ -31,7 +36,20 @@ export async function runStdioProxy(opts: { port: number; token: string }): Prom
     if (message.id === undefined) {
       if (message.method === "notifications/cancelled" && typeof message.params === "object" && message.params !== null && "requestId" in message.params) {
         const id = idSchema.safeParse(message.params.requestId);
-        if (id.success) pending.get(id.data)?.abort();
+        if (id.success) {
+          const request = forwarded.get(id.data);
+          pending.get(id.data)?.abort();
+          if (request) {
+            const notification: Message = { ...message, params: { ...message.params, _meta: parseParams(request)._meta } };
+            try {
+              await fetch(`http://127.0.0.1:${opts.port}/mcp`, {
+                method: "POST",
+                headers: { ...requestHeaders(notification, parseParams(notification)), Authorization: `Bearer ${opts.token}`, "X-Skillar-Stdio-Session": transportId },
+                body: JSON.stringify(notification), signal: AbortSignal.timeout(5000),
+              });
+            } catch { /* An unreachable daemon provides no evidence of a cancelled request. */ }
+          }
+        }
       }
       return;
     }
@@ -39,9 +57,10 @@ export async function runStdioProxy(opts: { port: number; token: string }): Prom
     const forward = async (request: Message, signal: AbortSignal) => {
       const params = parseParams(request);
       checkVersion(params._meta);
+      forwarded.set(request.id!, request);
       const response = await fetch(`http://127.0.0.1:${opts.port}/mcp`, {
         method: "POST",
-        headers: { ...requestHeaders(request, params), Authorization: `Bearer ${opts.token}` },
+        headers: { ...requestHeaders(request, params), Authorization: `Bearer ${opts.token}`, "X-Skillar-Stdio-Session": transportId },
         body: JSON.stringify(request),
         signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
       });
@@ -74,7 +93,10 @@ export async function runStdioProxy(opts: { port: number; token: string }): Prom
     } catch (error) {
       if (!closing && !controller?.signal.aborted) send(errorResponse(message.id, rpcFailure(error)));
     } finally {
-      if (controller && pending.get(message.id) === controller) pending.delete(message.id);
+      if (controller && pending.get(message.id) === controller) {
+        pending.delete(message.id);
+        forwarded.delete(message.id);
+      }
     }
   };
   process.once("SIGTERM", shutdown);

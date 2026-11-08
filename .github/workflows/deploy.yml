@@ -1,0 +1,72 @@
+name: Production deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Existing deployment to update
+        type: choice
+        required: true
+        options: [pages, activity, oauth, team, mcp-auth, mcp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Restore private deployment configuration
+        env:
+          SKILLAR_PRODUCTION_CONFIGS: ${{ secrets.SKILLAR_PRODUCTION_CONFIGS }}
+        run: |
+          node --input-type=module <<'JS'
+          import { writeFileSync } from 'node:fs';
+          const configs = JSON.parse(process.env.SKILLAR_PRODUCTION_CONFIGS);
+          for (const path of [
+            'site/wrangler.jsonc',
+            'worker/wrangler.production.jsonc',
+            'worker/wrangler.activity.production.jsonc',
+            'worker/wrangler.oauth.production.jsonc',
+            'worker/wrangler.parity-probes.production.jsonc',
+            'worker/wrangler.team.production.jsonc',
+            'worker/wrangler.mcp-auth.production.jsonc',
+            'worker/wrangler.mcp.production.jsonc',
+          ]) writeFileSync(path, configs[path], { mode: 0o600 });
+          JS
+      - run: npm ci && npm run build
+        working-directory: shared
+      - if: inputs.target == 'pages'
+        run: npm ci && npm test && npm run build
+        working-directory: site
+      - if: inputs.target != 'pages'
+        run: npm ci && npm run typecheck && npm test
+        working-directory: worker
+      - name: Deploy Pages
+        if: inputs.target == 'pages'
+        working-directory: site
+        run: |
+          npx --no-install wrangler pages deploy dist --branch main > "$RUNNER_TEMP/pages-deploy.log" 2>&1
+          echo "Pages deployment completed; private Wrangler output is not published."
+      - name: Deploy Worker
+        if: inputs.target != 'pages'
+        working-directory: worker
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          npx --no-install wrangler deploy --config "wrangler.$TARGET.production.jsonc" --keep-vars > "$RUNNER_TEMP/worker-deploy.log" 2>&1
+          echo "Worker deployment completed; private Wrangler output is not published."

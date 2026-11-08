@@ -13,15 +13,21 @@ test("runtime verification runs the full CI sequence from the selected checkout"
     return { status: 0 };
   } });
   assert.deepEqual(calls, [
+    ["npm", ["ci"], resolve(root, "shared")],
+    ["npm", ["run", "build"], resolve(root, "shared")],
+    ["npm", ["test"], resolve(root, "shared")],
     ["npm", ["ci"], resolve(root, "server")],
     ["npm", ["ci"], resolve(root, "worker")],
     ["npm", ["ci"], resolve(root, "local")],
+    ["npm", ["ci"], resolve(root, "site")],
     ["npm", ["run", "build"], resolve(root, "server")],
     ["npm", ["test"], resolve(root, "server")],
     [process.execPath, ["server/bench/search.mjs", "--check"], root],
     ["npm", ["run", "build:codex-plugin"], resolve(root, "server")],
     ["npm", ["run", "typecheck"], resolve(root, "worker")],
     ["npm", ["test"], resolve(root, "worker")],
+    ["npm", ["test"], resolve(root, "site")],
+    ["npm", ["run", "build"], resolve(root, "site")],
     [process.execPath, ["scripts/check-team-plugin.mjs"], root],
     ["npm", ["run", "build"], resolve(root, "local")],
     ["npm", ["run", "typecheck"], resolve(root, "local")],
@@ -30,6 +36,9 @@ test("runtime verification runs the full CI sequence from the selected checkout"
     ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.team.jsonc", "--dry-run"], resolve(root, "worker")],
     ["npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"], resolve(root, "worker")],
     ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"], resolve(root, "worker")],
+    ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.activity.jsonc", "--dry-run"], resolve(root, "worker")],
+    ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp-auth.jsonc", "--dry-run"], resolve(root, "worker")],
+    ["npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp.jsonc", "--dry-run"], resolve(root, "worker")],
   ]);
 });
 

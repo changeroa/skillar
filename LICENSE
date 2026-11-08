@@ -1,3 +1,10 @@
+Licensing scope
+---------------
+Starting with the commit introducing LICENSING.md, this MIT license applies to
+project files outside server/ and worker/. Those directories are licensed under
+AGPL-3.0-only; see server/LICENSE and worker/LICENSE. local/ and clients/ remain
+MIT. Earlier released versions remain MIT. See LICENSING.md for the full map.
+
 MIT License
 
 Copyright (c) 2026 changeroa
