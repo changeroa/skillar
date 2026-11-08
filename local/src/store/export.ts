@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -76,9 +77,12 @@ export function createPortable(ctx: StoreCtx): Portable {
   }
 
   function existingEvalRows(): { id: string; query: string; label: EvalLabel; expectedUri?: string }[] {
-    const rows = db.prepare("SELECT id, query, label, expected_uri FROM eval_cases").all() as
+    const rows = db.prepare(`SELECT c.id, c.query,
+      COALESCE(l.label, CASE WHEN c.expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END) AS label, c.expected_uri
+      FROM eval_cases c LEFT JOIN eval_case_labels l ON l.eval_case_id = c.id`).all() as
       { id: string; query: string; label: EvalLabel; expected_uri: string | null }[];
-    return rows.map((row) => ({ id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}) }));
+    return rows.map((row) => ({ id: row.id, query: row.query, label: row.label,
+      ...(row.label === "skill" && row.expected_uri ? { expectedUri: row.expected_uri } : {}) }));
   }
 
   function columnsOf(schema: "main" | "hist", table: string): string[] {
@@ -165,9 +169,13 @@ export function createPortable(ctx: StoreCtx): Portable {
       void _token;
       const roots = (Array.isArray(rawRoots) ? (rawRoots as { id: string; path: string }[]) : [])
         .map((r) => ({ id: r.id, path: tildify(r.path, home()) }));
-      const evalRows = db.prepare("SELECT id, query, label, expected_uri, from_trace_id FROM eval_cases ORDER BY created_at, rowid").all() as
+      const evalRows = db.prepare(`SELECT c.id, c.query,
+          COALESCE(l.label, CASE WHEN c.expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END) AS label,
+          c.expected_uri, c.from_trace_id
+        FROM eval_cases c LEFT JOIN eval_case_labels l ON l.eval_case_id = c.id ORDER BY c.created_at, c.rowid`).all() as
         { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null }[];
-      const evalCases = evalRows.map((r) => ({ id: r.id, query: r.query, label: r.label, ...(r.expected_uri !== null ? { expectedUri: r.expected_uri } : {}),
+      const evalCases = evalRows.map((r) => ({ id: r.id, query: r.query, label: r.label,
+        ...(r.label === "skill" && r.expected_uri !== null ? { expectedUri: r.expected_uri } : {}),
         ...(r.from_trace_id !== null ? { fromTraceId: r.from_trace_id } : {}) }));
       const outcomeRows = db.prepare(`SELECT r.id AS run_id, r.catalog_fingerprint, r.catalog_size, r.created_at, r.baseline, r.metrics_json,
           x.eval_case_id, c.query, x.label, x.expected_uri, x.language, x.rank, x.abstained
@@ -316,10 +324,15 @@ export function createPortable(ctx: StoreCtx): Portable {
       }
 
       if (apply) {
-        const insert = db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at, label) VALUES (COALESCE(?, lower(hex(randomblob(16)))), ?, ?, ?, ?, ?)");
+        const insert = db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at) VALUES (?, ?, ?, ?, ?)");
+        const insertLabel = db.prepare("INSERT INTO eval_case_labels (eval_case_id, label) VALUES (?, ?)");
         db.exec("BEGIN IMMEDIATE");
         try {
-          for (const c of evalToAdd) insert.run(c.id ?? null, c.query, c.expectedUri ?? null, c.fromTraceId ?? null, ctx.now(), c.label);
+          for (const c of evalToAdd) {
+            const id = c.id ?? randomUUID();
+            insert.run(id, c.query, c.expectedUri ?? null, c.fromTraceId ?? null, ctx.now());
+            insertLabel.run(id, c.label);
+          }
           const restoredCases = new Map(existingEvalRows().map((row) => [row.id, row]));
           const insertRun = db.prepare(`INSERT INTO eval_runs (id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json)
             VALUES (?, ?, ?, ?, ?, ?)`);

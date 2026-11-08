@@ -149,7 +149,7 @@ type EvalCaseRow = { id: string; query: string; label: EvalLabel; expected_uri: 
 type EvalRunCaseRow = { eval_case_id: string; label: Exclude<EvalLabel, "unlabeled">; expected_uri: string | null; rank: number | null; abstained: number };
 
 function evalCaseFromRow(row: EvalCaseRow): EvalCase {
-  return { id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}),
+  return { id: row.id, query: row.query, label: row.label, ...(row.label === "skill" && row.expected_uri ? { expectedUri: row.expected_uri } : {}),
     ...(row.from_trace_id ? { fromTraceId: row.from_trace_id } : {}), createdAt: row.created_at };
 }
 
@@ -200,8 +200,11 @@ function compareRuns(baseline: EvalRun, current: EvalRun, before: EvalRunCaseRow
 export function createQueries(ctx: StoreCtx): Queries {
   const { db } = ctx;
   const defaultTz = () => ctx.opts.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const listEvalCases = () => (db.prepare("SELECT id, query, label, expected_uri, from_trace_id, created_at FROM eval_cases ORDER BY created_at, rowid").all() as EvalCaseRow[])
-    .map(evalCaseFromRow);
+  const listEvalCases = () => (db.prepare(`SELECT c.id, c.query,
+      COALESCE(l.label, CASE WHEN c.expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END) AS label,
+      c.expected_uri, c.from_trace_id, c.created_at
+    FROM eval_cases c LEFT JOIN eval_case_labels l ON l.eval_case_id = c.id
+    ORDER BY c.created_at, c.rowid`).all() as EvalCaseRow[]).map(evalCaseFromRow);
 
   function skillMeta(): Map<SkillUri, SkillMeta> {
     const rows = db.prepare("SELECT uri, name, tags_json, group_id FROM skills").all() as { uri: string; name: string; tags_json: string; group_id: string | null }[];

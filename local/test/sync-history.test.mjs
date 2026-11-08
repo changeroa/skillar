@@ -36,7 +36,7 @@ test("v8 portable history preserves existing import semantics without adopting s
   assert.deepEqual(journalHead(destination), before);
   const result = destinationStore.importFrom(join(dir, "export"), { merge: true });
   assert.ok(result.added > 0);
-  assert.equal(destination.prepare("PRAGMA user_version").get().user_version, 8);
+  assert.equal(destination.prepare("PRAGMA user_version").get().user_version, 9);
   assert.equal(destination.prepare("SELECT first_prompt FROM sessions WHERE id='s'").get().first_prompt, "SENTINEL");
   assert.equal(destination.prepare("SELECT query FROM eval_cases").get().query, "SENTINEL");
   assert.equal(destination.prepare("SELECT text FROM events WHERE id='e'").get().text, "SENTINEL");

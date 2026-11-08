@@ -57,7 +57,9 @@ test("fresh database migrates to user_version 9 with every table", () => {
     assert.equal(SCHEMA_VERSION, 9);
     assert.equal(db.prepare("PRAGMA user_version").get().user_version, 9);
     const names = db.prepare("SELECT name FROM sqlite_master WHERE type IN ('table') ORDER BY name").all().map((r) => r.name);
-    for (const t of ["meta", "skills", "skills_fts", "sessions", "events", "loads", "eval_cases", "eval_runs", "eval_run_cases"]) assert.ok(names.includes(t), t);
+    for (const t of ["meta", "skills", "skills_fts", "sessions", "events", "loads", "eval_cases", "eval_case_labels", "eval_runs", "eval_run_cases"]) assert.ok(names.includes(t), t);
+    assert.deepEqual(db.prepare("PRAGMA table_info(eval_cases)").all().map((r) => r.name),
+      ["id", "query", "expected_uri", "from_trace_id", "created_at"]);
     const cols = db.prepare("PRAGMA table_info(events)").all().map((r) => r.name);
     assert.ok(cols.includes("tool_use_id"));
     const idx = db.prepare("PRAGMA index_list(events)").all().map((r) => r.name);

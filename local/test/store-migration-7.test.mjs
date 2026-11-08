@@ -7,7 +7,7 @@ import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs
 
 const { openDb } = await distImport("store/db.js");
 
-test("migration 009 distinguishes old unlabeled cases from old skill expectations", () => {
+test("migration 009 preserves the five-column eval_cases sync shape and records labels locally", () => {
   const dir = makeTempDir();
   try {
     const path = join(dir, "v6.db");
@@ -25,7 +25,10 @@ test("migration 009 distinguishes old unlabeled cases from old skill expectation
     const db = openDb(path);
     try {
       assert.equal(db.prepare("PRAGMA user_version").get().user_version, 9);
-      assert.deepEqual(db.prepare("SELECT id, label FROM eval_cases ORDER BY created_at").all().map((row) => [row.id, row.label]), [
+      assert.deepEqual(db.prepare("PRAGMA table_info(eval_cases)").all().map((row) => row.name),
+        ["id", "query", "expected_uri", "from_trace_id", "created_at"]);
+      assert.deepEqual(db.prepare(`SELECT c.id, l.label FROM eval_cases c
+        JOIN eval_case_labels l ON l.eval_case_id = c.id ORDER BY c.created_at`).all().map((row) => [row.id, row.label]), [
         ["old-unlabeled", "unlabeled"], ["old-skill", "skill"],
       ]);
     } finally {

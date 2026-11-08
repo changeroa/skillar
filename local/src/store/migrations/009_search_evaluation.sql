@@ -1,8 +1,11 @@
--- Explicit labels make a captured query useful without treating an unlabeled observation as a negative judgement.
-ALTER TABLE eval_cases ADD COLUMN label TEXT NOT NULL DEFAULT 'unlabeled'
-  CHECK (label IN ('unlabeled', 'skill', 'no_match'));
-UPDATE eval_cases SET label = CASE WHEN expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END;
-CREATE INDEX eval_cases_label_created ON eval_cases(label, created_at);
+-- Judgements stay local: eval_cases is part of the portable/sync projection and remains five columns.
+CREATE TABLE eval_case_labels (
+  eval_case_id TEXT PRIMARY KEY REFERENCES eval_cases(id) ON DELETE CASCADE,
+  label TEXT NOT NULL CHECK (label IN ('unlabeled', 'skill', 'no_match'))
+) WITHOUT ROWID;
+INSERT INTO eval_case_labels (eval_case_id, label)
+  SELECT id, CASE WHEN expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END FROM eval_cases;
+CREATE INDEX eval_case_labels_label ON eval_case_labels(label);
 
 -- Runs retain the exact aggregate and per-label outcomes that were observed against a catalog fingerprint.
 CREATE TABLE eval_runs (

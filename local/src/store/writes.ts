@@ -348,21 +348,44 @@ export function createWrites(ctx: StoreCtx): Writes {
       if (label !== "skill" && c.expectedUri !== undefined) throw storeError("invalid_eval_label", `${label} labels cannot have expectedUri`);
       const row: EvalCase = { id: randomUUID(), query: c.query, label, ...(label === "skill" ? { expectedUri: c.expectedUri! } : {}),
         ...(c.fromTraceId ? { fromTraceId: c.fromTraceId } : {}), createdAt: ctx.now() };
-      db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at, label) VALUES (?, ?, ?, ?, ?, ?)")
-        .run(row.id, row.query, row.expectedUri ?? null, row.fromTraceId ?? null, row.createdAt, row.label);
+      const ownTransaction = !db.isTransaction;
+      if (ownTransaction) db.exec("BEGIN IMMEDIATE");
+      try {
+        db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at) VALUES (?, ?, ?, ?, ?)")
+          .run(row.id, row.query, row.expectedUri ?? null, row.fromTraceId ?? null, row.createdAt);
+        db.prepare("INSERT INTO eval_case_labels (eval_case_id, label) VALUES (?, ?)").run(row.id, row.label);
+        if (ownTransaction) db.exec("COMMIT");
+      } catch (error) {
+        if (ownTransaction) db.exec("ROLLBACK");
+        throw error;
+      }
       return row;
     },
 
     updateEvalCase(id, c) {
       if (c.label === "skill" && !c.expectedUri) throw storeError("invalid_eval_label", "a skill label needs expectedUri");
       if (c.label !== "skill" && c.expectedUri !== undefined) throw storeError("invalid_eval_label", `${c.label} labels cannot have expectedUri`);
-      const result = db.prepare("UPDATE eval_cases SET label = ?, expected_uri = ? WHERE id = ?")
-        .run(c.label, c.label === "skill" ? c.expectedUri! : null, id);
-      if (Number(result.changes) === 0) return undefined;
-      const row = db.prepare("SELECT id, query, label, expected_uri, from_trace_id, created_at FROM eval_cases WHERE id = ?").get(id) as
-        { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null; created_at: number };
-      return { id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}),
-        ...(row.from_trace_id ? { fromTraceId: row.from_trace_id } : {}), createdAt: row.created_at };
+      const ownTransaction = !db.isTransaction;
+      if (ownTransaction) db.exec("BEGIN IMMEDIATE");
+      try {
+        const result = db.prepare("UPDATE eval_cases SET expected_uri = ? WHERE id = ?")
+          .run(c.label === "skill" ? c.expectedUri! : null, id);
+        if (Number(result.changes) === 0) {
+          if (ownTransaction) db.exec("COMMIT");
+          return undefined;
+        }
+        db.prepare(`INSERT INTO eval_case_labels (eval_case_id, label) VALUES (?, ?)
+          ON CONFLICT(eval_case_id) DO UPDATE SET label = excluded.label`).run(id, c.label);
+        const row = db.prepare(`SELECT c.id, c.query, l.label, c.expected_uri, c.from_trace_id, c.created_at
+          FROM eval_cases c JOIN eval_case_labels l ON l.eval_case_id = c.id WHERE c.id = ?`).get(id) as
+          { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null; created_at: number };
+        if (ownTransaction) db.exec("COMMIT");
+        return { id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}),
+          ...(row.from_trace_id ? { fromTraceId: row.from_trace_id } : {}), createdAt: row.created_at };
+      } catch (error) {
+        if (ownTransaction) db.exec("ROLLBACK");
+        throw error;
+      }
     },
 
     saveEvalRun(run) {

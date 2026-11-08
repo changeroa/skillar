@@ -18,13 +18,41 @@ function apply(db, files) {
   for (const file of files) db.exec(sql(file));
 }
 
+const legacySearchEvaluation = `
+  ALTER TABLE eval_cases ADD COLUMN label TEXT NOT NULL DEFAULT 'unlabeled'
+    CHECK (label IN ('unlabeled', 'skill', 'no_match'));
+  UPDATE eval_cases SET label = CASE WHEN expected_uri IS NULL THEN 'unlabeled' ELSE 'skill' END;
+  CREATE INDEX eval_cases_label_created ON eval_cases(label, created_at);
+  CREATE TABLE eval_runs (
+    id TEXT PRIMARY KEY,
+    catalog_fingerprint TEXT NOT NULL,
+    catalog_size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    baseline INTEGER NOT NULL DEFAULT 0 CHECK (baseline IN (0, 1)),
+    metrics_json TEXT NOT NULL
+  );
+  CREATE INDEX eval_runs_created ON eval_runs(created_at);
+  CREATE INDEX eval_runs_baseline ON eval_runs(baseline, created_at) WHERE baseline = 1;
+  CREATE TABLE eval_run_cases (
+    run_id TEXT NOT NULL REFERENCES eval_runs(id) ON DELETE CASCADE,
+    eval_case_id TEXT NOT NULL REFERENCES eval_cases(id),
+    label TEXT NOT NULL CHECK (label IN ('skill', 'no_match')),
+    expected_uri TEXT,
+    language TEXT NOT NULL CHECK (language IN ('ko', 'en', 'other')),
+    rank INTEGER,
+    abstained INTEGER NOT NULL CHECK (abstained IN (0, 1)),
+    PRIMARY KEY (run_id, eval_case_id)
+  ) WITHOUT ROWID;
+  CREATE INDEX eval_run_cases_case ON eval_run_cases(eval_case_id, run_id);`;
+
 test("the v7 search-evaluation and v8 sync lineages both migrate forward without losing their data", () => {
   const dir = makeTempDir();
   try {
     const evaluationPath = join(dir, "search-evaluation-v7.db");
     const evaluation = new DatabaseSync(evaluationPath);
-    apply(evaluation, [...baseMigrations, "migrations/009_search_evaluation.sql"]);
-    evaluation.exec(`PRAGMA user_version = 7;
+    apply(evaluation, baseMigrations);
+    evaluation.exec(`${legacySearchEvaluation}
+      PRAGMA user_version = 7;
       INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at, label)
         VALUES ('case-1', 'review this change', 'skill://local/agents/review/SKILL.md', 'trace-1', 100, 'skill');
       INSERT INTO eval_runs (id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json)
@@ -37,13 +65,21 @@ test("the v7 search-evaluation and v8 sync lineages both migrate forward without
     try {
       assert.equal(SCHEMA_VERSION, 9);
       assert.equal(upgradedEvaluation.prepare("PRAGMA user_version").get().user_version, 9);
-      assert.deepEqual({ ...upgradedEvaluation.prepare("SELECT query, label, expected_uri, from_trace_id FROM eval_cases").get() }, {
+      assert.deepEqual({ ...upgradedEvaluation.prepare(`SELECT c.query, l.label, c.expected_uri, c.from_trace_id
+        FROM eval_cases c JOIN eval_case_labels l ON l.eval_case_id = c.id`).get() }, {
         query: "review this change", label: "skill", expected_uri: "skill://local/agents/review/SKILL.md", from_trace_id: "trace-1",
       });
+      assert.deepEqual(upgradedEvaluation.prepare("PRAGMA table_info(eval_cases)").all().map((row) => row.name),
+        ["id", "query", "expected_uri", "from_trace_id", "created_at"]);
       assert.deepEqual({ ...upgradedEvaluation.prepare("SELECT catalog_fingerprint, baseline FROM eval_runs").get() }, {
         catalog_fingerprint: "catalog-before", baseline: 1,
       });
       assert.deepEqual({ ...upgradedEvaluation.prepare("SELECT rank, abstained FROM eval_run_cases").get() }, { rank: 2, abstained: 0 });
+      upgradedEvaluation.prepare("UPDATE eval_cases SET query = ? WHERE id = ?").run("repaired query", "case-1");
+      assert.deepEqual(JSON.parse(upgradedEvaluation.prepare(`SELECT row_json FROM sync_journal
+        WHERE table_name = 'eval_cases' ORDER BY seq DESC LIMIT 1`).get().row_json), {
+        id: "case-1", query: "repaired query", expected_uri: "skill://local/agents/review/SKILL.md", from_trace_id: "trace-1", created_at: 100,
+      });
       assert.ok(upgradedEvaluation.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'connector_command_receipts'").get());
     } finally {
       upgradedEvaluation.close();
@@ -61,7 +97,9 @@ test("the v7 search-evaluation and v8 sync lineages both migrate forward without
     try {
       assert.equal(upgradedSync.prepare("PRAGMA user_version").get().user_version, 9);
       assert.deepEqual({ ...upgradedSync.prepare("SELECT command_id, result_json FROM connector_command_receipts").get() }, { command_id: "command", result_json: "{}" });
-      assert.deepEqual(upgradedSync.prepare("SELECT label FROM eval_cases").all(), []);
+      assert.deepEqual(upgradedSync.prepare("PRAGMA table_info(eval_cases)").all().map((row) => row.name),
+        ["id", "query", "expected_uri", "from_trace_id", "created_at"]);
+      assert.deepEqual(upgradedSync.prepare("SELECT * FROM eval_case_labels").all(), []);
     } finally {
       upgradedSync.close();
     }
@@ -77,8 +115,9 @@ test("version 8 history import retains portable evaluation cases and persisted r
     mkdirSync(out);
     const sourcePath = join(dir, "evaluation-v7.db");
     const sourceLegacy = new DatabaseSync(sourcePath);
-    apply(sourceLegacy, [...baseMigrations, "migrations/009_search_evaluation.sql"]);
-    sourceLegacy.exec(`PRAGMA user_version = 7;
+    apply(sourceLegacy, baseMigrations);
+    sourceLegacy.exec(`${legacySearchEvaluation}
+      PRAGMA user_version = 7;
       INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at, label)
         VALUES ('case-1', 'portable evaluation', 'skill://local/agents/review/SKILL.md', 'trace-1', 100, 'skill');
       INSERT INTO eval_runs (id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json)
