@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
 <p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
 
@@ -13,6 +13,8 @@ Connect the `SKILL.md` folders already on your machine to your coding agents. sk
 **Index in place · Read on demand · Keep history local**
 
 [Quick start](#quick-start) · [Supported runtimes](#supported-runtimes) · [Privacy](#privacy-and-storage) · [CLI & configuration](local/README.md)
+
+Hosting the site or Workers yourself? Use the [deployment templates and private configuration setup](docs/self-hosting.md).
 
 ## Quick start
 
@@ -134,4 +136,8 @@ With Node.js 24 and npm, run `node scripts/verify.mjs` from the checkout to perf
 
 ## License
 
-[MIT](LICENSE). The name comes from **기술** — Korean for skill, craft, or technique.
+Skillar is open source: [`server/`](server/LICENSE) and [`worker/`](worker/LICENSE) use **AGPL-3.0-only**; the local CLI ([`local/`](local/LICENSE)), client integrations ([`clients/`](clients/LICENSE)), and other project files remain **MIT** under the [root license](LICENSE).
+
+`server/` and `worker/` are AGPL-3.0-only from the commit introducing [LICENSING.md](LICENSING.md) forward. Copies obtained earlier, including earlier released versions, keep their MIT terms; existing MIT permissions cannot be revoked. See the [licensing map](LICENSING.md) for scope and details.
+
+The name comes from **기술** — Korean for skill, craft, or technique.

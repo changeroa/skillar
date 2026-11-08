@@ -1,0 +1,86 @@
+// Portable read DTOs mirror local/src/types.ts; no local runtime dependency.
+import type { ExecutionEventScope, TreeSessionData, TreeFlowData } from "../activity-analysis.js";
+export type WorkflowSpec = { name: string; steps: { id: string; skills: string[]; together: boolean; expectTools: string[]; doneWhen?: string }[] };
+export type SkillUri = string;
+export type RuntimeId = "claude-code" | "codex" | "gemini" | "cursor" | "omo" | "gajae" | "openclaw" | "unknown";
+export type SkillEntry = { uri: SkillUri; rootId: string; dir: string; name: string; description: string;
+  tags: string[]; whenToUse?: string; examples: string[]; aliasesKo: string[]; group?: { id: string; stage?: string };
+  invocation: "automatic" | "explicit"; bodyHead: string; digest: string; manifestDigest: string;
+  resources: { uri: SkillUri; digest: string; size: number }[]; mtimeMs: number;
+  // SKILL.md YAML frontmatter as JSON, verbatim (SEP-2640 skills/list and skills/get carry it unchanged)
+  frontmatter?: Record<string, unknown> };
+export type Candidate = { uri: SkillUri; name: string; description: string; score: number; rank: number;
+  invocation: "automatic" | "explicit"; digest: string; matched: string[] };
+export type EventKind = "session_start" | "prompt" | "search" | "load" | "read_file" | "native_skill" | "llm_call" | "tool_call" | "session_end" | "error" | "skill_request";
+export type SessionRef = { runtime: RuntimeId; runtimeSessionId?: string; conversationId?: string; clientName?: string; cwd?: string };
+export type Attribution = { sessionId: string | "unattributed"; method: "runtime_id" | "vendor_meta" | "trace_handle" | "window" | "none";
+  reason?: "no_session" | "ambiguous" | "stale" };
+export type AdoptionState = "loaded" | "exposed_only" | "no_match" | "aborted" | "not_used";
+export type Filter = { from?: number; to?: number; runtime?: RuntimeId[]; skill?: SkillUri[]; state?: AdoptionState[]; dow?: number; hour?: number; hourSpan?: number; q?: string; tz?: string;
+  searchStatus?: import("./request-status.js").RequestStatus[]; loadStatus?: import("./request-status.js").RequestStatus[];
+  searchResult?: import("./request-status.js").SearchResult[];
+  // automated sessions (first prompt sent by a harness or the runtime, see store/automation.ts) are excluded unless "include" or "only"
+  automated?: "include" | "only" };
+export type SessionRow = { id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; skills: SkillUri[]; state: AdoptionState; attribution: Attribution["method"];
+  /** Request-level counts; state is retained only for old API clients. */
+  requests?: import("./request-status.js").RequestSummary;
+  automated?: string };
+export type TraceStep = { ts: number; kind: EventKind; summary: string; detail: Record<string, unknown> };
+export type FlowState = AdoptionState | import("./request-status.js").RequestStatus;
+export type FlowDto = { unit: "first_load" | "all_loads" | "search_requests" | "load_requests"; requestCount?: number; columns: ["task_type", "skill", "state"];
+  nodes: { id: string; column: 0 | 1 | 2; label: string; count: number; other?: boolean }[];
+  links: { source: string; target: string; count: number; state: FlowState }[]; sessionCount: number };
+export type HeatmapDto = { tz: string; weekStart: 0 | 1; bucketHours: 1 | 2 | 4; cells: { dow: number; hour: number; count: number }[]; rowTotals: number[]; colTotals: number[] };
+export type SkillWeekDto = { weeks: string[]; rows: { uri: SkillUri; name: string; counts: number[] }[] };
+export interface FactStore {
+skills(): SkillEntry[];
+hasSourceKey(sourceKey: string): boolean;
+openSessions(runtime: RuntimeId, since: number): { id: string; startedAt: number; lastActivityAt: number; ref: SessionRef }[];
+findEventByToolUseId(toolUseId: string): string | undefined;
+getLoad(loadId: string): { uri: SkillUri; manifestDigest: string; resources: SkillEntry["resources"] } | undefined;
+latestLoad(uri: SkillUri): string | undefined;
+traceSession(traceId: string): string | undefined;
+sessions(f: Filter): SessionRow[];
+trace(sessionId: string): TraceStep[];
+flow(f: Filter, unit: FlowDto["unit"], top?: number): FlowDto;
+heatmap(f: Filter, tz: string, weekStart: 0 | 1, bucketHours: 1 | 2 | 4): HeatmapDto;
+skillWeek(f: Filter): SkillWeekDto;
+stats(f?: Filter): { attributionRate: Record<RuntimeId, number | null>; abstainRate: number; unusedSkills: SkillUri[]; lastEventTs?: number;
+    lastEventByRuntime: Partial<Record<RuntimeId, number>>; ingest: { accepted: number; rejected: number; dropped: number; lastError?: { ts: number; code: string } };
+    unattributed?: { searches: number; loads: number }; automatedSessions?: number };
+evalCases(): { query: string; expectedUri?: SkillUri }[];
+workflowSpecs(): WorkflowSpecRow[];
+workflowSpecVersions(name: string): WorkflowSpecRow[];
+workflowSpec(name: string, version?: number): WorkflowSpecRow | undefined;
+getFlow(id: string): FlowRow | undefined;
+flowSteps(flowId: string): FlowStepRow[];
+flowPaneUsage(flowId: string, opts?: { excludeSessions?: readonly string[]; scope?: ExecutionEventScope }): PaneUsageRow[];
+flowSessionIds(flowId: string, scope?: ExecutionEventScope): string[];
+flowEventScope(flowId: string): ExecutionEventScope | undefined;
+flowUnattributedLoads(flowId: string, sessionIds: readonly string[], scope?: ExecutionEventScope): UnattributedLoads;
+listFlows(q: FlowListQuery): FlowListRow[];
+outsideHerdrSessions(opts: { from: number; to: number; limit: number; automated: AutomatedMode }): { id: string; activityMs: number }[];
+sessionAutomation(ids: readonly string[]): Record<string, string>;
+treeSessionData(sessionId: string, scope?: ExecutionEventScope): TreeSessionData | undefined;
+treeFlowData(flowOrWorkspaceId: string, scope?: ExecutionEventScope): TreeFlowData | undefined;
+outsideHerdrSessionIds(opts: { from: number; to: number; limit: number }): string[];
+reconcileLoads(opts?: { from?: number; to?: number; sessionIds?: readonly string[]; eventId?: string; readOnly?: boolean;
+    limit?: number; after?: string }): UnattributedLoads & { examined?: number; repaired?: number; next?: string | null }
+}
+export type OtelSpanRow = { traceId: string; spanId: string; parentSpanId?: string; name: string; runtime: RuntimeId;
+  conversationId?: string; turnKey?: string; callId?: string; startMs?: number; endMs?: number; receivedAt: number };
+export type WorkflowSpecRow = { id: string; name: string; version: number; digest: string; createdMs: number; spec: WorkflowSpec };
+export type FlowRow = { id: string; workspaceId: string; tabId?: string; label?: string; registeredMs: number; endedMs?: number; spec?: WorkflowSpecRow };
+export type FlowStepRow = { paneId: string; stepId: string; registeredMs: number };
+export type PaneUsageRow = { paneId: string; skills: string[]; tools: string[] };
+export type AutomatedMode = "exclude" | "include" | "only";
+export type FlowSpecRef = { readonly id: string; readonly name: string; readonly version: number };
+export type FlowListRow = { readonly id: string; readonly kind: "flow" | "workspace" | "outside_herdr"; readonly workspaceId: string;
+  readonly tabId: string | null; readonly label: string | null; readonly orderMs: number;
+  readonly startedMs: number | null; readonly endedMs: number | null; readonly spec: FlowSpecRef | null;
+  readonly paneIds: readonly string[];
+  readonly links: readonly { readonly paneId: string; readonly sessionId: string | null; readonly source: string | null }[] };
+export type FlowListQuery = { readonly from?: number; readonly to?: number; readonly limit: number;
+  readonly automated?: AutomatedMode;
+  readonly cursor?: { readonly orderMs: number; readonly id: string } };
+export type UnattributedLoads = { readonly count: number; readonly uris: readonly string[] };

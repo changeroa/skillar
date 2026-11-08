@@ -1,15 +1,25 @@
-import { useEffect, useState } from "preact/hooks";
-import type { AdoptionState, Filter, RuntimeId } from "../../src/types.js";
-import { api, type SessionListRow, type Stats } from "../api";
+import { kstDay } from "../time";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import type { RuntimeId } from "../../src/types.js";
+import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
 import {
-  ADOPTION_STATES, ATTRIBUTION_LABEL, RUNTIME_IDS, RUNTIME_LABEL, RUNTIME_MARK, STATE_LABEL, STATE_TITLE,
-  buildHash, isEmptyFilter, serializeFilter, skillName, type Route, type ViewProps,
+  RUNTIME_IDS, RUNTIME_LABEL,
+  buildHash, isEmptyFilter, matchesFilter, serializeFilter, type Route, type ViewProps,
 } from "../state";
+import { SessionFacets } from "./sessions/facets";
+import { SessionHistogram } from "./sessions/histogram";
+import { SessionTable } from "./sessions/table";
+import { SessionToolbar } from "./sessions/toolbar";
+import { readSkills, sortSessions } from "./sessions/model";
+import { sessionsStyles } from "./sessions/styles";
+import { useNarrow } from "../components/use-narrow";
+import { SessionFilterSheet } from "./sessions/filter-sheet";
 
 const USAGE_CSS = `
-.usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0 0 var(--s-3); color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
+.usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0; color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
 .usage__item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
+.usage__item[data-usage="unattributed"] { flex-direction: column; align-items: flex-start; }
 .usage__key { color: var(--ink-3); }
 .usage__why { color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 .usage__why[data-tip]::after { width: min(44ch, calc(100vw - 2 * var(--s-4))); white-space: normal; }
@@ -20,9 +30,7 @@ const USAGE_CSS = `
 installStyles("sessions-usage", USAGE_CSS);
 
 export const ATTRIBUTION_EXPLAINER =
-  "skillar links each MCP search and load to a runtime session by the runtime's session id, vendor metadata, the search trace handle, or a recent-activity window. These matched no session, so they are stored but appear in no session row.";
-
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+  "skillar는 실행 환경의 세션 ID, 제공자 메타데이터, 검색 추적 ID 또는 최근 활동 시간으로 MCP 검색·읽기 요청을 세션과 연결합니다. 이 요청들은 연결할 세션을 찾지 못해 저장만 되었으며, 세션 목록에는 포함되지 않습니다.";
 
 /** "-" when the runtime sent no MCP events (no data), otherwise a whole percent (0% means events arrived and none were attributed). */
 export function formatRate(rate: number | null | undefined): string {
@@ -31,7 +39,7 @@ export function formatRate(rate: number | null | undefined): string {
 
 export function unattributedText(counts: Stats["unattributed"]): string | undefined {
   if (!counts || counts.searches + counts.loads === 0) return undefined;
-  return `${counts.searches} unattributed ${plural(counts.searches, "search", "searches")}, ${counts.loads} ${plural(counts.loads, "load", "loads")} (no session could be matched)`;
+  return `세션 미연결: 검색 ${counts.searches}건, 읽기 ${counts.loads}건`;
 }
 
 /** Runtimes that sent anything or have MCP data, in the canonical runtime order. */
@@ -46,47 +54,49 @@ function UsageNote({ stats }: { stats: Stats }) {
   const rates = attributionRates(stats);
   if (!orphan && rates.length === 0) return null;
   return (
-    <p class="usage">
-      {orphan && (
-        <span class="usage__item" data-usage="unattributed">
-          <span>{orphan}</span>
-          <span class="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>How attribution works</span>
-        </span>
-      )}
-      {rates.length > 0 && (
-        <span class="usage__item" data-usage="rates" title="Share of each runtime's MCP events matched to a session; - means the runtime sent no MCP events">
-          <span class="usage__key">MCP attribution</span>
-          {rates.map((r) => (
-            <span key={r.runtime} class={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
-          ))}
-        </span>
-      )}
-    </p>
+    <footer class="sessions__foot">
+      <p class="usage">
+        {orphan && (
+          <span class="usage__item" data-usage="unattributed">
+            <span>{orphan}</span>
+            <span class="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>세션 연결 방식</span>
+          </span>
+        )}
+        {rates.length > 0 && (
+          <span class="usage__item" data-usage="rates" title="실행 환경별 MCP 이벤트 중 세션과 연결된 비율입니다. -는 보낸 MCP 이벤트가 없다는 뜻입니다.">
+            <span class="usage__key">MCP 세션 연결률</span>
+            {rates.map((r) => (
+              <span key={r.runtime} class={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
+            ))}
+          </span>
+        )}
+      </p>
+    </footer>
   );
 }
 
-const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
-const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-const dateTimeFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric" });
+const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
 function isSameLocalDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return kstDay(a.getTime()) === kstDay(b.getTime());
 }
 
 function formatDuration(ms: number): string {
   const minutes = Math.round(ms / 60e3);
-  if (minutes < 1) return "<1m";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return "1분 미만";
+  if (minutes < 60) return `${minutes}분`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+  return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
 }
 
 function When({ row }: { row: SessionListRow }) {
   const started = new Date(row.startedAt);
-  const dateLabel = isSameLocalDay(started, new Date()) ? "Today" : dateFmt.format(started);
+  const dateLabel = isSameLocalDay(started, new Date()) ? "오늘" : dateFmt.format(started);
   return (
-    <time class="when" dateTime={started.toISOString()} title={started.toLocaleString()}>
+    <time class="when" dateTime={started.toISOString()} title={started.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>
       <span class="when__date">{dateLabel}</span>
       <span class="when__time">{timeFmt.format(started)}</span>
       {row.endedAt !== undefined && <span class="when__dur">{formatDuration(row.endedAt - row.startedAt)}</span>}
@@ -94,72 +104,20 @@ function When({ row }: { row: SessionListRow }) {
   );
 }
 
-function Runtime({ runtime }: { runtime: RuntimeId }) {
-  const label = RUNTIME_LABEL[runtime] ?? RUNTIME_LABEL.unknown;
-  return (
-    <span class="rt">
-      <span class="rt__mark" aria-hidden="true">{RUNTIME_MARK[runtime] ?? RUNTIME_MARK.unknown}</span>
-      <span>{label}</span>
-    </span>
-  );
-}
-
-const MAX_SKILL_CHIPS = 3;
-
-function Skills({ skills }: { skills: string[] }) {
-  if (!skills.length) return <span class="skills__none">none</span>;
-  const shown = skills.slice(0, MAX_SKILL_CHIPS);
-  const more = skills.length - shown.length;
-  return (
-    <span class="skills">
-      {shown.map((uri) => <span class="skill" key={uri} title={uri}>{skillName(uri)}</span>)}
-      {more > 0 && <span class="skill skill--more" title={skills.slice(MAX_SKILL_CHIPS).map(skillName).join(", ")}>+{more}</span>}
-    </span>
-  );
-}
-
-function StateBadge({ state }: { state: AdoptionState }) {
-  return <span class={`badge badge--${state}`} title={STATE_TITLE[state] ?? state}>{STATE_LABEL[state] ?? state}</span>;
-}
-
-function AttributionCell({ row }: { row: SessionListRow }) {
-  if (row.attribution !== "none") return <span class="attr">{ATTRIBUTION_LABEL[row.attribution] ?? row.attribution}</span>;
-  const tip = `unattributed: ${row.attributionReason ?? "reason not reported"}`;
-  return (
-    <span class="attr attr--none" tabIndex={0} data-tip={tip} aria-label={tip}>unattributed</span>
-  );
-}
-
-function isInteractive(target: EventTarget | null): boolean {
-  return target instanceof Element && target.closest("a, button, input, select, [data-tip]") !== null;
-}
-
-function Row({ row, route, navigate }: { row: SessionListRow; route: Route; navigate: ViewProps["navigate"] }) {
-  const target: Route = { view: "trace", sessionId: row.id, filter: route.filter };
-  return (
-    <tr onClick={(event) => { if (!isInteractive(event.target)) navigate(target); }}>
-      <td class="c-runtime" data-label="Runtime"><Runtime runtime={row.runtime} /></td>
-      <td class="c-started" data-label="Started"><When row={row} /></td>
-      <td class="c-prompt" data-label="First prompt">
-        <a class={row.firstPrompt ? "rowlink" : "rowlink rowlink--dim"} href={buildHash(target)}>
-          {row.firstPrompt ?? "(no prompt captured)"}
-        </a>
-      </td>
-      <td class="c-skills" data-label="Skills"><Skills skills={row.skills} /></td>
-      <td class="c-state" data-label="State"><StateBadge state={row.state} /></td>
-      <td class="c-attr" data-label="Attribution"><AttributionCell row={row} /></td>
-    </tr>
-  );
-}
-
 function WaitingEmpty({ stats }: { stats: Stats }) {
+  if (api.mode === "cloud") return (
+    <section class="empty" aria-live="polite">
+      <h2>이 기록에는 활동이 없습니다</h2>
+      <p>출처 기기에서 세션을 시작한 뒤 최신 기록을 올리고 출처를 다시 불러오세요.</p>
+    </section>
+  );
   const { ingest } = stats;
   return (
     <section class="empty" aria-live="polite">
-      <h2>Waiting for the first event</h2>
+      <h2>첫 이벤트를 기다리고 있습니다</h2>
       <p>
-        No runtime has sent an event yet. Start a session in a connected runtime, or run
-        {" "}<code class="cmd">skillar doctor</code> to check each connection.
+        아직 이벤트를 보낸 실행 환경이 없습니다. 연결된 실행 환경에서 세션을 시작하거나
+        {" "}<code class="cmd">skillar doctor</code>로 연결 상태를 확인하세요.
       </p>
       <dl class="checklist">
         {RUNTIME_IDS.filter((id) => id !== "unknown").map((id) => {
@@ -167,18 +125,22 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
           return (
             <>
               <dt key={`${id}-k`}>{RUNTIME_LABEL[id]}</dt>
-              <dd key={`${id}-v`} class={ts !== undefined ? "is-ok" : undefined}>{ts !== undefined ? `last event ${dateTimeFmt.format(ts)}` : "no events yet"}</dd>
+              <dd key={`${id}-v`} class={ts !== undefined ? "is-ok" : undefined}>{ts !== undefined ? `마지막 이벤트 ${dateTimeFmt.format(ts)}` : "이벤트 없음"}</dd>
             </>
           );
         })}
-        <dt>Ingest</dt>
+        <dt>수집</dt>
         <dd class={ingest.rejected || ingest.dropped ? "is-bad" : undefined}>
-          {ingest.accepted} accepted, {ingest.rejected} rejected, {ingest.dropped} dropped
+          수락 {ingest.accepted}건, 거부 {ingest.rejected}건, 누락 {ingest.dropped}건
         </dd>
         {ingest.lastError && (
           <>
-            <dt>Last error</dt>
-            <dd class="is-bad">{ingest.lastError.code} at {dateTimeFmt.format(ingest.lastError.ts)}</dd>
+            <dt>마지막 오류</dt>
+            <dd class="is-bad">
+              {ingest.lastError.code === "unauthorized" ? "이벤트 수집 인증에 실패했습니다. 연결 상태를 확인하세요." : "이벤트를 수집하지 못했습니다. 연결 상태를 확인하세요."}
+              {" · "}{dateTimeFmt.format(ingest.lastError.ts)}
+              <details><summary>기술 세부 정보</summary><code>{ingest.lastError.code}</code></details>
+            </dd>
           </>
         )}
       </dl>
@@ -189,9 +151,9 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
 function FilteredEmpty({ route, navigate }: { route: Route; navigate: ViewProps["navigate"] }) {
   return (
     <section class="empty">
-      <h2>No sessions match these filters</h2>
-      <p>Widen the time range or remove a filter to see more sessions.</p>
-      <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>Clear filters</button>
+      <h2>조건에 맞는 세션이 없습니다</h2>
+      <p>기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다.</p>
+      <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 해제</button>
     </section>
   );
 }
@@ -199,52 +161,34 @@ function FilteredEmpty({ route, navigate }: { route: Route; navigate: ViewProps[
 function NoSessionsEmpty() {
   return (
     <section class="empty">
-      <h2>No sessions recorded yet</h2>
-      <p>Events arrived but none opened a session. Start a prompt in a connected runtime, or run <code class="cmd">skillar doctor</code>.</p>
+      <h2>아직 기록된 세션이 없습니다</h2>
+      {api.mode === "cloud" ? <p>올린 기록에 이벤트는 있지만 세션은 없습니다. 출처 기기에서 최신 기록을 올리고 출처를 다시 불러오세요.</p> :
+        <p>이벤트는 도착했지만 세션을 시작한 이벤트가 없습니다. 연결된 실행 환경에 요청문을 입력하거나 <code class="cmd">skillar doctor</code>를 실행하세요.</p>}
     </section>
-  );
-}
-
-function Toolbar({ route, navigate, count }: { route: Route; navigate: ViewProps["navigate"]; count: number | undefined }) {
-  const { filter } = route;
-  const update = (patch: Filter) => {
-    const next: Filter = { ...filter, ...patch };
-    for (const key of Object.keys(next) as (keyof Filter)[]) if (next[key] === undefined) delete next[key];
-    navigate({ ...route, filter: next });
-  };
-  return (
-    <form
-      class="toolbar"
-      role="search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const input = (event.currentTarget as HTMLFormElement).elements.namedItem("q") as HTMLInputElement | null;
-        const q = input?.value.trim() ?? "";
-        update({ q: q || undefined });
-      }}
-    >
-      <input class="field field--search" type="search" name="q" placeholder="Search prompts and skills" aria-label="Search prompts and skills" value={filter.q ?? ""} />
-      <select class="field field--select" aria-label="Runtime" value={filter.runtime?.length === 1 ? filter.runtime[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as RuntimeId | ""; update({ runtime: v ? [v] : undefined }); }}>
-        <option value="">All runtimes</option>
-        {RUNTIME_IDS.map((id) => <option key={id} value={id}>{RUNTIME_LABEL[id]}</option>)}
-      </select>
-      <select class="field field--select" aria-label="Adoption state" value={filter.state?.length === 1 ? filter.state[0] : ""} onChange={(event) => { const v = (event.currentTarget as HTMLSelectElement).value as AdoptionState | ""; update({ state: v ? [v] : undefined }); }}>
-        <option value="">All states</option>
-        {ADOPTION_STATES.map((state) => <option key={state} value={state}>{STATE_LABEL[state]}</option>)}
-      </select>
-      {count !== undefined && <span class="toolbar__count">{count} {count === 1 ? "session" : "sessions"}</span>}
-    </form>
   );
 }
 
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 
-export function SessionsView({ route, navigate, live }: ViewProps) {
+export function SessionsView({ route, navigate, live, embedded = false, detail = false, onRows }: ViewProps & {
+  readonly detail?: boolean; readonly onRows?: (rows: SessionListRow[]) => void;
+}) {
+  sessionsStyles();
+  const Title = embedded || detail ? "h2" : "h1";
+  const Results = embedded ? "div" : "main";
   const filterKey = serializeFilter(route.filter);
   const [rows, setRows] = useState<SessionListRow[]>();
+  const [facetRows, setFacetRows] = useState<SessionListRow[]>();
+  const [facetsOpen, setFacetsOpen] = useState(false);
+  const narrow = useNarrow();
   const [stats, setStats] = useState<Stats>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(true);
+  const [active, setActive] = useState(route.sessionId);
+  useEffect(() => setActive(route.sessionId), [route.sessionId]);
+  const ordered = useMemo(() => sortSessions(rows ?? [], route.sort), [rows, route.sort]);
+  useEffect(() => { if (rows !== undefined && !detail) onRows?.(ordered); }, [ordered, detail, onRows]);
 
   useEffect(() => {
     if (live.seq === 0) return;
@@ -254,18 +198,75 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.sessions(route.filter), api.stats(route.filter)])
+    setBusy(true);
+    const scope = { from: route.filter.from, to: route.filter.to, automated: route.filter.automated };
+    Promise.all([api.sessions(detail ? route.filter : scope), api.stats(route.filter)])
       .then(([nextRows, nextStats]) => {
         if (cancelled) return;
-        setRows(nextRows);
+        setFacetRows(nextRows);
+        setRows(detail ? nextRows : nextRows.filter(row => matchesFilter(row, route.filter)
+          && (!route.filter.skill || readSkills(row).some(uri => route.filter.skill?.includes(uri)))));
         setStats(nextStats);
         setError(undefined);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
+        if (!cancelled) {
+          setError(err instanceof ApiError && err.status === 403 ? "permission" : "failed");
+          if (err instanceof ApiError && err.status === 403) { setRows(undefined); setFacetRows(undefined); setStats(undefined); }
+        }
+      }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [filterKey, refresh]);
+
+  const failure = error && <div class="notice" role="alert">
+    <p>{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+    <button type="button" class="btn" onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+  </div>;
+  if (detail && error) return <section class="session-picker" role="group" aria-label="세션 목록 다시 시도" tabIndex={0} aria-busy={busy}
+    onKeyDown={event => {
+      if (event.key !== "Enter") return;
+      event.preventDefault(); setError(undefined); setRefresh(n => n + 1);
+    }}>
+    <p role="alert">{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+    <p>엔터 키로 목록을 다시 불러올 수 있습니다.</p>
+    <button type="button" class="btn" tabIndex={-1} onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+  </section>;
+  if (detail) return <section aria-busy={busy}>
+    {failure}
+    {busy && <p role="status">세션 불러오는 중…</p>}
+    {rows && <div class="session-picker" role="listbox" aria-label="세션 목록" tabIndex={0}
+      aria-activedescendant={rows.some(row => row.id === active) ? `session-option-${encodeURIComponent(active ?? "")}` : undefined}
+      onKeyDown={event => {
+        const index = rows.findIndex(row => row.id === active);
+        let next: number;
+        switch (event.key) {
+          case "ArrowDown": next = Math.min(rows.length - 1, index + 1); break;
+          case "ArrowUp": next = Math.max(0, index - 1); break;
+          case "Home": next = 0; break;
+          case "End": next = rows.length - 1; break;
+          case "Enter": {
+            const row = rows[index];
+            if (row) navigate({ view: "trace", sessionId: row.id, filter: route.filter });
+            event.preventDefault(); return;
+          }
+          default: return;
+        }
+        event.preventDefault();
+        const row = rows[next];
+        if (row) {
+          setActive(row.id);
+          document.getElementById(`session-option-${encodeURIComponent(row.id)}`)?.scrollIntoView({ block: "nearest" });
+        }
+      }}>
+      {rows.map(row => <a key={row.id} id={`session-option-${encodeURIComponent(row.id)}`} role="option" tabIndex={-1}
+        aria-selected={row.id === route.sessionId} class="session-picker__row" data-active={row.id === active}
+        href={buildHash({ view: "trace", sessionId: row.id, filter: route.filter })}>
+        <span>{row.id === route.sessionId ? "✓ " : ""}<code>{row.id}</code></span>
+        <When row={row} /><span class="rowlink">{row.firstPrompt ?? "(요청문 기록 없음)"}</span>
+      </a>)}
+      {rows.length === 0 && <p>조건에 맞는 세션이 없습니다. 세션 목록에서 필터를 조정하세요.</p>}
+    </div>}
+  </section>;
 
   let body;
   if (rows === undefined) {
@@ -277,41 +278,28 @@ export function SessionsView({ route, navigate, live }: ViewProps) {
   } else if (rows.length === 0) {
     body = <NoSessionsEmpty />;
   } else {
-    body = (
-      <div class="card">
-        <table class="sessions">
-          <colgroup>
-            <col style="width:15%" />
-            <col style="width:10%" />
-            <col />
-            <col style="width:20%" />
-            <col style="width:13%" />
-            <col style="width:12%" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th scope="col">Runtime</th>
-              <th scope="col">Started</th>
-              <th scope="col">First prompt</th>
-              <th scope="col">Skills</th>
-              <th scope="col">State</th>
-              <th scope="col">Attribution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => <Row key={row.id} row={row} route={route} navigate={navigate} />)}
-          </tbody>
-        </table>
-      </div>
-    );
+    body = <SessionTable rows={ordered} route={route} navigate={navigate} />;
   }
 
   return (
-    <section aria-busy={rows === undefined}>
-      <Toolbar route={route} navigate={navigate} count={rows?.length} />
-      {error && <p class="notice" role="alert">Could not load sessions: {error}</p>}
+    <section class="sessions-console pe-console" data-pe-screen="sessions-table" data-peek={Boolean(route.peek)} aria-busy={busy}>
+      <div class="page-title">
+        <Title>세션</Title>
+        <p>세션 사용 기록</p>
+      </div>
+      <SessionToolbar route={route} navigate={navigate} count={rows?.length} facetsOpen={facetsOpen} sheet={narrow}
+        toggleFacets={() => setFacetsOpen(value => !value)} />
+      {failure}
+      {busy && <p role="status">세션 불러오는 중…</p>}
+      <div class="sessions-body" data-facets-open={facetsOpen}>
+        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
+        <Results class="session-results" aria-label="세션 기록" tabIndex={-1}>
+          {rows && <SessionHistogram rows={rows} filter={route.filter} />}
+          {body}
+        </Results>
+      </div>
       {rows !== undefined && stats && <UsageNote stats={stats} />}
-      {body}
+      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
     </section>
   );
 }

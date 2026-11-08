@@ -28,9 +28,9 @@
     "node": ">=24.15"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node build-dashboard.mjs",
+    "build": "tsc -p tsconfig.json && node build-cloud.mjs && node build-dashboard.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p dashboard/tsconfig.json",
-    "test": "node --test \"test/**/*.test.mjs\"",
+    "test": "node --test \"test/**/*.test.mjs\" && node --test test/sync-performance.mjs",
     "start": "node dist/cli/main.js serve"
   },
   "dependencies": {

@@ -7,12 +7,12 @@ import { installStyles } from "../charts/sankey";
 // The tool and model calls of one skill span, as the Workspaces view and the session trace both render them.
 // Every figure here is a reported measurement: what the runtime did not report reads as "unknown", never as 0.
 
-export const UNKNOWN = "unknown";
+export const UNKNOWN = "알 수 없음";
 export const MAX_CALL_ROWS = 12;
 
 export const TOKEN_LABEL: Record<UsageTokenKey, string> = {
-  inputTokens: "in", outputTokens: "out", cacheReadTokens: "cache read", cacheCreationTokens: "cache created",
-  cacheWriteTokens: "cache written", reasoningTokens: "reasoning", totalTokens: "total",
+  inputTokens: "입력", outputTokens: "출력", cacheReadTokens: "캐시 읽기", cacheCreationTokens: "캐시 생성",
+  cacheWriteTokens: "캐시 쓰기", reasoningTokens: "추론", totalTokens: "합계",
 };
 const TOKEN_FIELDS = Object.entries(TOKEN_LABEL) as [UsageTokenKey, string][];
 
@@ -29,10 +29,10 @@ export function formatLapse(ms: number | null | undefined): string {
   const value = numberOf(ms);
   if (value === undefined || value < 0) return UNKNOWN;
   if (value < 1000) return `${Math.round(value)} ms`;
-  if (value < 60_000) return `${(value / 1000).toFixed(1)} s`;
+  if (value < 60_000) return `${(value / 1000).toFixed(1)}초`;
   const minutes = Math.floor(value / 60_000);
   const seconds = Math.round((value % 60_000) / 1000);
-  return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  return seconds ? `${minutes}분 ${seconds}초` : `${minutes}분`;
 }
 
 /** A runtime that reports no cost (Codex) says unknown, never $0.0000. */
@@ -85,7 +85,7 @@ export function callRow(event: Pick<AssignedTreeEvent, "id" | "kind" | "data">):
   return {
     id: event.id,
     kind: tool ? "tool_call" : "llm_call",
-    name: (tool ? stringOf(data.toolName) ?? stringOf(data.name) : stringOf(data.model)) ?? (tool ? "unnamed tool" : "unnamed model"),
+    name: (tool ? stringOf(data.toolName) ?? stringOf(data.name) : stringOf(data.model)) ?? (tool ? "이름 없는 도구" : "이름 없는 모델"),
     duration: formatLapse(numberOf(data.durationMs)),
     success: tool && typeof data.success === "boolean" ? data.success : null,
     tokens: tool ? [] : callTokenParts(data),
@@ -99,7 +99,7 @@ export function callRows(events: readonly Pick<AssignedTreeEvent, "id" | "kind" 
 }
 
 export function Tokens({ parts }: { parts: TokenPart[] }) {
-  if (parts.length === 0) return <span class="tok tok--none">tokens {UNKNOWN}</span>;
+  if (parts.length === 0) return <span class="tok tok--none">토큰 {UNKNOWN}</span>;
   return (
     <>
       {parts.map((part) => (
@@ -114,7 +114,7 @@ export function Tokens({ parts }: { parts: TokenPart[] }) {
 
 export function CallList({ rows }: { rows: CallRow[] }) {
   const [open, setOpen] = useState(false);
-  if (rows.length === 0) return <p class="calls__none">no tool or model call recorded</p>;
+  if (rows.length === 0) return <p class="calls__none">기록된 도구 호출이나 모델 호출이 없습니다</p>;
   const shown = open ? rows : rows.slice(0, MAX_CALL_ROWS);
   return (
     <>
@@ -122,21 +122,21 @@ export function CallList({ rows }: { rows: CallRow[] }) {
         {shown.map((row) => (
           <li key={row.id} class="call" data-kind={row.kind}>
             <span class="call__name">{row.name}</span>
-            {row.skillarMcp && <span class="tag" title="a call to skillar's own MCP server">skillar</span>}
+            {row.skillarMcp && <span class="tag" title="skillar 자체 MCP 서버 호출">skillar</span>}
             {row.kind === "tool_call" && (
               row.success === null
-                ? <span class="tag tag--dim">outcome {UNKNOWN}</span>
-                : <span class={row.success ? "tag tag--ok" : "tag tag--bad"}>{row.success ? "ok" : "failed"}</span>
+                ? <span class="tag tag--dim">결과 {UNKNOWN}</span>
+                : <span class={row.success ? "tag tag--ok" : "tag tag--bad"}>{row.success ? "성공" : "실패"}</span>
             )}
             <span class="call__meta">{row.duration}</span>
-            {row.kind === "llm_call" && <span class="call__meta">cost {row.cost}</span>}
+            {row.kind === "llm_call" && <span class="call__meta">비용 {row.cost}</span>}
             {row.kind === "llm_call" && <Tokens parts={row.tokens} />}
           </li>
         ))}
       </ul>
       {rows.length > MAX_CALL_ROWS && (
         <button type="button" class="foldbtn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-          {open ? "Show fewer calls" : `Show all ${rows.length} calls`}
+          {open ? "호출 접기" : `호출 ${rows.length}건 모두 보기`}
         </button>
       )}
     </>

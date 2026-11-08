@@ -27,8 +27,8 @@ for (const version of [3, 4, 5]) test(`v${version} execution boundaries migrate 
     const db = openDb(path);
     const store = createStore(db);
     try {
-      // Then schema 6 preserves history without inventing an order or an end observation.
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 6);
+      // Then schema 8 preserves history without inventing an order or an end observation.
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 8);
       const scope = store.flowEventScope("old");
       assert.equal(scope.boundary, "order_unavailable");
       assert.equal(scope.sessionEnds, null);

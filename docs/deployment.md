@@ -1,5 +1,9 @@
 # Deployment
 
+For current deployment templates, private configuration, and self-hosted setup,
+see [deployment configuration](self-hosting.md). Historical identifiers below
+are sanitized examples, not usable production endpoints.
+
 > The former personal Cloudflare deployment was retired on 2026-10-29. Addresses and resource names below describe that historical installation, not an active endpoint. The current personal installation uses the local `skillar` npm package. Do not recreate the old Worker as part of the rename; configure your own deployment explicitly if you need the hosted runtime.
 
 For a self-hosted team OAuth Worker, see [team plugin setup](team-plugin.md). `worker/src/team.ts` serves native MCP tools and OAuth directly from Cloudflare. The Mac mini instructions below cover the personal deployment.

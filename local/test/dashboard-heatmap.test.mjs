@@ -125,15 +125,15 @@ test("localeWeekStart maps Intl firstDay 7 to Sunday and everything else to Mond
 test("labels and tooltips: hour ranges wrap at midnight, shares are percentages, no NaN anywhere", () => {
   assert.equal(hourRangeLabel(9, 1), "09:00-10:00");
   assert.equal(hourRangeLabel(22, 2), "22:00-00:00");
-  assert.equal(cellLabel({ dow: 1, hour: 9 }, 2), "Mon 09:00-11:00");
+  assert.equal(cellLabel({ dow: 1, hour: 9 }, 2), "월요일 09:00-11:00");
   assert.equal(formatShare(3, 40), "7.5%");
   assert.equal(formatShare(10, 40), "25%");
   assert.equal(formatShare(1, 3), "33%");
   assert.equal(formatShare(0, 0), "0%");
   assert.equal(formatShare(2, 0), "0%");
-  assert.equal(cellTip({ dow: 1, hour: 9, count: 3 }, 1, 40), "Mon 09:00-10:00 \u00b7 3 sessions \u00b7 7.5%");
-  assert.equal(cellTip({ dow: 1, hour: 9, count: 1 }, 1, 40), "Mon 09:00-10:00 \u00b7 1 session \u00b7 2.5%");
-  assert.equal(cellTip({ dow: 0, hour: 0, count: 0 }, 4, 0), "Sun 00:00-04:00 \u00b7 no sessions");
+  assert.equal(cellTip({ dow: 1, hour: 9, count: 3 }, 1, 40), "월요일 09:00-10:00 \u00b7 세션 3개 \u00b7 7.5%");
+  assert.equal(cellTip({ dow: 1, hour: 9, count: 1 }, 1, 40), "월요일 09:00-10:00 \u00b7 세션 1개 \u00b7 2.5%");
+  assert.equal(cellTip({ dow: 0, hour: 0, count: 0 }, 4, 0), "일요일 00:00-04:00 \u00b7 세션 없음");
   assert.deepEqual(hourLabels(1).filter(Boolean), ["0", "3", "6", "9", "12", "15", "18", "21"]);
   assert.deepEqual(hourLabels(2).filter(Boolean), ["0", "4", "8", "12", "16", "20"]);
   assert.deepEqual(hourLabels(4), ["0", "4", "8", "12", "16", "20"]);

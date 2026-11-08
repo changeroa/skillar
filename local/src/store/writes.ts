@@ -272,9 +272,13 @@ export function createWrites(ctx: StoreCtx): Writes {
         const existing = db.prepare(`SELECT * FROM sessions WHERE runtime = ? AND (runtime_session_id IN (${marks}) OR conversation_id IN (${marks}))
           ORDER BY started_at LIMIT 1`).get(ref.runtime, ...keys, ...keys) as SessionDbRow | undefined;
         if (existing) {
+          const values = [startedAt, ref.conversationId ?? null, ref.runtimeSessionId ?? null, ref.clientName ?? null, ref.cwd ?? null];
           db.prepare(`UPDATE sessions SET started_at = MIN(started_at, ?), conversation_id = COALESCE(conversation_id, ?),
-            runtime_session_id = COALESCE(runtime_session_id, ?), client_name = COALESCE(client_name, ?), cwd = COALESCE(cwd, ?) WHERE id = ?`)
-            .run(startedAt, ref.conversationId ?? null, ref.runtimeSessionId ?? null, ref.clientName ?? null, ref.cwd ?? null, existing.id);
+            runtime_session_id = COALESCE(runtime_session_id, ?), client_name = COALESCE(client_name, ?), cwd = COALESCE(cwd, ?)
+            WHERE id = ? AND (started_at IS NOT MIN(started_at, ?) OR conversation_id IS NOT COALESCE(conversation_id, ?)
+              OR runtime_session_id IS NOT COALESCE(runtime_session_id, ?) OR client_name IS NOT COALESCE(client_name, ?)
+              OR cwd IS NOT COALESCE(cwd, ?))`)
+            .run(...values, existing.id, ...values);
           return existing.id;
         }
       }

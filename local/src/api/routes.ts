@@ -1,3 +1,4 @@
+import { REQUEST_STATUSES, type RequestStatus, type SearchResult } from "../request-status.js";
 import type { Express, Request, Response } from "express";
 import type { FsHealth } from "../fs-watchdog.js";
 import { ingestOtlpTraces } from "../ingest/otlp-traces.js";
@@ -46,6 +47,9 @@ export function parseFilter(q: Request["query"]): Filter & { tz?: string } {
   const to = intParam(q, "to");
   const runtime = listParam<RuntimeId>(q, "runtime", RUNTIME_IDS);
   const skill = listParam<string>(q, "skill");
+  const searchStatus = listParam<RequestStatus>(q, "searchStatus", REQUEST_STATUSES);
+  const loadStatus = listParam<RequestStatus>(q, "loadStatus", REQUEST_STATUSES);
+  const searchResult = listParam<SearchResult>(q, "searchResult", ["candidates_found", "no_candidates"]);
   const state = listParam<AdoptionState>(q, "state", STATES);
   const dow = intParam(q, "dow", [0, 6]);
   const hour = intParam(q, "hour", [0, 23]);
@@ -59,6 +63,9 @@ export function parseFilter(q: Request["query"]): Filter & { tz?: string } {
   if (runtime) f.runtime = runtime;
   if (skill) f.skill = skill;
   if (state) f.state = state;
+  if (searchStatus) f.searchStatus = searchStatus;
+  if (loadStatus) f.loadStatus = loadStatus;
+  if (searchResult) f.searchResult = searchResult;
   if (dow !== undefined) f.dow = dow;
   if (hour !== undefined) f.hour = hour;
   if (hourSpan !== undefined) f.hourSpan = hourSpan;
@@ -158,7 +165,7 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
 
   app.get("/api/flow", handle(log, (req, res) => {
     const unit = one(req.query.unit) ?? "first_load";
-    if (unit !== "first_load" && unit !== "all_loads") throw new BadRequest("bad_request", "unit must be first_load or all_loads");
+    if (unit !== "first_load" && unit !== "all_loads" && unit !== "search_requests" && unit !== "load_requests") throw new BadRequest("bad_request", "unit must be first_load, all_loads, search_requests or load_requests");
     const top = Math.min(15, intParam(req.query, "top", [1, 1000]) ?? 7);
     res.json(store.flow(parseFilter(req.query), unit, top));
   }));

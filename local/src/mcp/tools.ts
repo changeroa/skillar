@@ -1,3 +1,4 @@
+import { beginRequest } from "../ingest/request-recorder.js";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { errorEvent, searchEvent, type McpCallContext } from "../ingest/mcp-recorder.js";
@@ -43,27 +44,39 @@ export function createSearchTool(deps: ToolDeps) {
   let windowStart = 0;
   let calls = 0;
   return (args: Record<string, unknown> | undefined, ctx: McpCallContext) => {
-    const now = deps.ingest.now?.() ?? Date.now();
-    const parsed = searchSchema.safeParse(args ?? {});
-    if (now - windowStart >= 60_000) { windowStart = now; calls = 0; }
-    const failure = !parsed.success ? { code: "invalid_arguments", message: parsed.error.message }
-      : ++calls > 120 ? { code: "rate_limited", message: "Search limit reached; retry after the current minute" } : undefined;
-    if (failure) {
-      ingest(errorEvent(ctx, { ...failure, tool: "search_skills" }, now), deps.ingest);
-      return { content: [{ type: "text", text: JSON.stringify({ error: failure }) }], isError: true };
+    const attempt = beginRequest(deps.ingest, ctx, "search");
+    try {
+      const now = deps.ingest.now?.() ?? Date.now();
+      const parsed = searchSchema.safeParse(args ?? {});
+      if (now - windowStart >= 60_000) { windowStart = now; calls = 0; }
+      const failure = !parsed.success ? { code: "invalid_arguments", message: parsed.error.message }
+        : ++calls > 120 ? { code: "rate_limited", message: "Search limit reached; retry after the current minute" } : undefined;
+      if (failure) {
+        const error = errorEvent(ctx, { ...failure, tool: "search_skills" }, now);
+        error.data.requestId = attempt.requestId;
+        ingest(error, deps.ingest);
+        attempt.finish("failed", { errorCode: failure.code });
+        return { content: [{ type: "text", text: JSON.stringify({ error: failure }) }], isError: true };
+      }
+      if (!parsed.success) throw parsed.error;
+      const { query, mode, limit, offset } = parsed.data;
+      const all = deps.search.search(query ?? "", { mode, limit: Math.max(1, deps.catalog.list().length) });
+      const page = all.candidates.slice(offset, offset + limit);
+      const event = searchEvent(ctx, { ...all, candidates: page }, { total: all.candidates.length }, now);
+      event.data.requestId = attempt.requestId;
+      ingest(event, deps.ingest);
+      attempt.finish("succeeded", { total: all.candidates.length, firstCandidateUri: all.candidates[0]?.uri, ...(all.abstained ? { abstained: all.abstained } : {}) });
+      const body = {
+        trace_id: all.traceId,
+        candidates: page.map(({ uri, name, description, score, rank, invocation, digest }) => ({ uri, name, description, score, rank, invocation, digest })),
+        ...(all.abstained ? { abstained: all.abstained } : {}),
+        total: all.candidates.length,
+        note: "Search does not activate skills. Read a chosen SKILL.md URI using the host's resource reader on this server.",
+      };
+      return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
+    } catch (error) {
+      attempt.finish("failed", { errorCode: "internal_error" });
+      throw error;
     }
-    if (!parsed.success) throw parsed.error;
-    const { query, mode, limit, offset } = parsed.data;
-    const all = deps.search.search(query ?? "", { mode, limit: Math.max(1, deps.catalog.list().length) });
-    const page = all.candidates.slice(offset, offset + limit);
-    ingest(searchEvent(ctx, { ...all, candidates: page }, { total: all.candidates.length }, now), deps.ingest);
-    const body = {
-      trace_id: all.traceId,
-      candidates: page.map(({ uri, name, description, score, rank, invocation, digest }) => ({ uri, name, description, score, rank, invocation, digest })),
-      ...(all.abstained ? { abstained: all.abstained } : {}),
-      total: all.candidates.length,
-      note: "Search does not activate skills. Read a chosen SKILL.md URI using the host's resource reader on this server.",
-    };
-    return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
   };
 }

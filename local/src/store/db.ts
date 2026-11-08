@@ -2,10 +2,11 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SkillarStartupError } from "../version.js";
+import { installJournalTriggers } from "../sync/triggers.js";
 
 export type Db = DatabaseSync;
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 8;
 
 /** migrations[i] upgrades user_version i -> i + 1. */
 function migrations(): string[] {
@@ -16,6 +17,8 @@ function migrations(): string[] {
     readFileSync(new URL("./migrations/004_load_reconciliation.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/005_execution_boundaries.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/006_recording_order.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/007_sync.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/008_connector_commands.sql", import.meta.url), "utf8"),
   ];
 }
 
@@ -30,6 +33,7 @@ export function openDb(path: string): DatabaseSync {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
+  db.exec("PRAGMA recursive_triggers = ON");
   migrate(db);
   mergeSplitSessions(db);
   return db;
@@ -94,6 +98,7 @@ export function migrate(db: DatabaseSync): void {
     db.exec("BEGIN IMMEDIATE");
     try {
       db.exec(sql);
+      if (version === 6) installJournalTriggers(db);
       db.exec(`PRAGMA user_version = ${version + 1}`);
       db.exec("COMMIT");
     } catch (error) {

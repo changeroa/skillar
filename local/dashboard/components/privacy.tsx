@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CaptureLevel, PrivacySettings } from "../../src/types.js";
-import { api } from "../api";
+import type { LocalApi } from "../api";
 
 const RETENTION_OPTIONS: { value: string; label: string }[] = [
   { value: "30", label: "30 days" },
@@ -13,7 +13,7 @@ function retentionValue(days: number | null): string {
   return days === null ? "forever" : String(days);
 }
 
-export function PrivacyControls({ onClose, onHistoryDeleted }: { onClose(): void; onHistoryDeleted(): void }) {
+export function PrivacyControls({ api, onClose, onHistoryDeleted }: { api: LocalApi; onClose(): void; onHistoryDeleted(): void }) {
   const [current, setCurrent] = useState<PrivacySettings>();
   const [draft, setDraft] = useState<PrivacySettings>();
   const [confirmFull, setConfirmFull] = useState(false);

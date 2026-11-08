@@ -3,9 +3,9 @@ name: Runtime validation
 on:
   push:
     branches: [main, dev, feat/dev-tools-mvp]
-    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
+    paths: ['server/**', 'worker/**', 'local/**', 'shared/**', 'site/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
   pull_request:
-    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
+    paths: ['server/**', 'worker/**', 'local/**', 'shared/**', 'site/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**']
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,9 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: |
+            shared/package-lock.json
             server/package-lock.json
             worker/package-lock.json
             local/package-lock.json
+            site/package-lock.json
       - run: node scripts/verify.mjs
