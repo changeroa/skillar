@@ -3,7 +3,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import { bearerOf, safeEqual } from "../api/security.js";
 import { createDispatcher } from "./dispatch.js";
 import { initializeResult, initializeSchema, isLegacyRequest, legacyLocalResult, negotiateVersion, toLegacyResult, toModernMessage, type ClientInfo } from "./legacy.js";
-import { checkHeaders, checkVersion, errorResponse, messageId, messageSchema, parseParams, RpcError, rpcFailure, type Message } from "./protocol.js";
+import { checkHeaders, checkVersion, errorResponse, messageId, messageSchema, parseParams, RpcError, rpcFailure, type Message, type RequestParams } from "./protocol.js";
 import type { ToolDeps } from "./tools.js";
 
 export type McpHttpDeps = ToolDeps & { token: string };
@@ -18,6 +18,28 @@ const MAX_LEGACY_SESSIONS = 1024;
 export function registerMcp(app: Express, deps: McpHttpDeps): void {
   const dispatch = createDispatcher(deps);
   const sessions = new Map<string, ClientInfo>();
+  const running = new Map<string, AbortController>();
+  // A JSON-RPC ID is only unique within a caller. Anonymous HTTP requests cannot cancel
+  // each other; a runtime identity or established legacy transport session is required.
+  const requestKey = (message: Message, params: RequestParams, req: Request, id = message.id) => {
+    const legacyId = req.header("Mcp-Session-Id");
+    const stdioId = req.header("X-Skillar-Stdio-Session");
+    const meta = params._meta;
+    const runtimeId = meta.sessionId ?? meta.threadId ?? meta["ai.opencode/sessionID"];
+    const scope = stdioId ? ["stdio", stdioId] : legacyId && sessions.has(legacyId) ? ["legacy", legacyId]
+      : typeof runtimeId === "string" && runtimeId ? ["runtime", meta["io.modelcontextprotocol/clientInfo"]?.name ?? "unknown", runtimeId] : undefined;
+    return scope && id !== undefined ? JSON.stringify([scope, id]) : undefined;
+  };
+  const trackedDispatch = async (message: Message, params: RequestParams, req: Request) => {
+    const key = requestKey(message, params, req);
+    if (!key) return dispatch(message, params);
+    if (running.has(key)) throw new RpcError(-32600, "Request ID is already in flight");
+    const controller = new AbortController();
+    running.set(key, controller);
+    try { return await dispatch(message, params, controller.signal); }
+    finally { running.delete(key); }
+  };
+
   const legacy = async (message: Message & { id: string | number }, req: Request, res: Response) => {
     try {
       let result: Record<string, unknown>;
@@ -35,7 +57,7 @@ export function registerMcp(app: Express, deps: McpHttpDeps): void {
         const local = legacyLocalResult(message.method);
         const sessionId = req.header("Mcp-Session-Id");
         const modern = toModernMessage(message, sessionId ? sessions.get(sessionId) : undefined);
-        result = local ?? toLegacyResult(await dispatch(modern, parseParams(modern)));
+        result = local ?? toLegacyResult(await trackedDispatch(modern, parseParams(modern), req));
       }
       if (!res.destroyed) res.json({ jsonrpc: "2.0", id: message.id, result });
     } catch (error) {
@@ -58,7 +80,18 @@ export function registerMcp(app: Express, deps: McpHttpDeps): void {
     }
     const message = parsed.data;
     if (message.id === undefined) {
-      // No client notification is acted upon over HTTP in this revision.
+      if (message.method === "notifications/cancelled") {
+        try {
+          const legacyId = req.header("Mcp-Session-Id");
+          const modern = toModernMessage(message, legacyId ? sessions.get(legacyId) : undefined);
+          const params = parseParams(modern);
+          const id = params.requestId;
+          if (typeof id === "string" || typeof id === "number") {
+            const key = requestKey(modern, params, req, id);
+            if (key) running.get(key)?.abort(new DOMException("Explicit client cancellation", "AbortError"));
+          }
+        } catch { /* Invalid notifications have no response body and cannot cancel a request. */ }
+      }
       res.status(202).end();
       return;
     }
@@ -79,7 +112,7 @@ export function registerMcp(app: Express, deps: McpHttpDeps): void {
         res.status(406).json(errorResponse(message.id, new RpcError(-32600, "Accept must include application/json and text/event-stream")));
         return;
       }
-      const result = await dispatch(message, params);
+      const result = await trackedDispatch(message, params, req);
       if (!res.destroyed) res.json({ jsonrpc: "2.0", id: message.id, result });
     } catch (error) {
       const failure = rpcFailure(error);

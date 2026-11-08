@@ -4,15 +4,21 @@ import { fileURLToPath } from "node:url";
 
 export function verify({ root = fileURLToPath(new URL("../", import.meta.url)), run = spawnSync } = {}) {
   const checks = [
+    ["shared", "npm", ["ci"]],
+    ["shared", "npm", ["run", "build"]],
+    ["shared", "npm", ["test"]],
     ["server", "npm", ["ci"]],
     ["worker", "npm", ["ci"]],
     ["local", "npm", ["ci"]],
+    ["site", "npm", ["ci"]],
     ["server", "npm", ["run", "build"]],
     ["server", "npm", ["test"]],
     [".", process.execPath, ["server/bench/search.mjs", "--check"]],
     ["server", "npm", ["run", "build:codex-plugin"]],
     ["worker", "npm", ["run", "typecheck"]],
     ["worker", "npm", ["test"]],
+    ["site", "npm", ["test"]],
+    ["site", "npm", ["run", "build"]],
     [".", process.execPath, ["scripts/check-team-plugin.mjs"]],
     ["local", "npm", ["run", "build"]],
     ["local", "npm", ["run", "typecheck"]],
@@ -21,6 +27,9 @@ export function verify({ root = fileURLToPath(new URL("../", import.meta.url)), 
     ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.team.jsonc", "--dry-run"]],
     ["worker", "npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"]],
     ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"]],
+    ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.activity.jsonc", "--dry-run"]],
+    ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp-auth.jsonc", "--dry-run"]],
+    ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.mcp.jsonc", "--dry-run"]],
   ];
   for (const [directory, command, args] of checks) {
     console.log(`Running ${command} ${args.join(" ")} (${directory})`);

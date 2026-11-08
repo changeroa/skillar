@@ -1,5 +1,184 @@
 # skillar Dashboard Design System
 
+## Approved local analysis P-F (2026-11-05)
+
+The analysis screens reuse the P-E shell, controls, sheet and typography.
+The document owns vertical scrolling; charts and dense tables own labelled
+horizontal scroll regions. Workspace peek is a 560px right pane on desktop
+and a full-screen sheet below 1024px; its body alone scrolls.
+Number tiles use a four-column grid, two columns on phones. Dashboard
+widgets use a three-column grid, with the request chart spanning two columns;
+phones stack widgets in the wireframe order. Tiles are bordered data regions,
+not navigation cards. All text uses existing ink roles and controls are 44px.
+
+AnalysisToolbar preserves period, runtime and automation in the hash URL.
+Workspace queries support only period and automation; unsupported session
+filters are not displayed as applied. Tables preserve sort and selection in
+the URL, expose aria-sort, and sort only the received range. Facet counts
+describe that same received range, not a server-wide count.
+Reports retain their fetched conditions while pending selections are shown
+separately; failed refreshes keep their old labelled result with retry.
+Standalone reports refresh manually; embedded reports invalidate on live.seq.
+
+Dashboard order follows local/analysis.html: number tiles, request series,
+Top-N reads, search-result distribution, session-length histogram, read
+latency, activity heatmap and flow preview. Every aggregate names its source and sample
+coverage. Requests are normalized by requestRecords, not raw event count.
+Actual successful reads and search candidates remain separate. Read latency,
+skill-span and outcome quality remain 미측정 with reasons, never fake zeroes.
+All bar groups use a shared baseline and scale, equal bar widths, above-bar
+values and below-group labels; zero is a labelled 1px tick. No first-read flow.
+Local date labels, daily buckets, ISO weeks and period presets use Asia/Seoul
+even when the browser timezone is UTC. Weekly reads are rebuilt from timestamped
+successful requests because the server's weekly aggregate has UTC boundaries.
+Coverage stays visible, and failed trace retrieval is 미측정 rather than zero.
+Planning and review tracking codes never appear in user-facing copy.
+
+Flow charts retain the baseline pixels-per-value scale and fit all three
+columns at phone widths. Grow vertical spacing, never compress the bands or
+force a wider horizontal scroll canvas, to accommodate accessible targets.
+Each route handle and actionable node owns a real 44px square. Route targets
+are transparent and avoid measured label boxes, node bars and other targets;
+their count markers never cover a node label or count. Focus rings have clearance.
+Keyboard order follows source-column routes, then node columns. Non-actions
+are not Tab stops. Back from a session drill-down restores the chart opener.
+Visible names and counts, including truncation, remain in accessible names;
+full recorded labels remain available. Ingest diagnostics explain failures in
+Korean and retain exact codes only inside native technical disclosures.
+
+## Approved local shell and sessions P-E (2026-11-05)
+
+Gate revision: overlays use a bounded `100dvh` scroll-body shell. The peek
+action bar stays outside `.session-peek__body`, which alone owns vertical
+scroll; short sessions still fill the mobile viewport. Mobile navigation
+exposes a drawer containing current-source status and the hosted-site link.
+The mobile histogram stays visible above the rows with the same R7 geometry.
+Mobile filters are a full-screen sheet with fixed header/actions, a scrolling
+facet body, Escape dismissal, focus containment and trigger focus restoration.
+Target-size safeguards apply to `.page` and `.pe-content`, including 44px-wide
+back links and 44px heatmap cells. Peek includes Tree/Timeline/disabled Graph.
+Gantt zoom and overview share the actual session axis: zoom changes its visible
+window, the overview locates that window, and reset restores the full range.
+Read-only JSON uses native nested disclosures, line numbers and full-value copy;
+folding never changes the underlying captured event or its immutable key.
+
+This section supersedes the older shell, sessions and trace compositions below.
+The owner-approved v2 references are
+`research/wireframes/local/{sessions-table,sessions-peek,session-detail}.html`
+and their desktop/phone PNGs in the `skillar-ux-overhaul` lane evidence.
+`research/langfuse/components.md` and `structure-rules.md` R1-R7 define semantics.
+The local app is independent of the hosted shell: no `site/`, daemon or API changes.
+
+Use the existing Evidence Console light/dark palette and system font stacks.
+New layout tokens: sidebar 220px, facet rail 232px, peek 560px, top bar 48px,
+desktop gutter 16px, phone gutter 12px, split gap 16px. UI/body metadata is
+14px, small auxiliary labels 12px, title 22px, type icons 16px. The spacing
+scale remains 4/8/12/16/20/24/32/48/64. Controls retain 44px targets and visible
+keyboard focus; compact/normal/comfortable rows are 44/52/64px, with compact
+two-line rows at phone widths. Data pills have a 10px radius and 22px height.
+This approved component set replaces the older "no pills" rule for these views.
+
+Shell: a persistent grouped sidebar (관찰: 세션; 분석: 대시보드, 흐름, 작업 공간,
+활동), bottom current-source/live status and `skillar.sh 열기`. The top bar
+contains source/location/item breadcrumb and a visible navigation-only `이동… ⌘K`
+button. The palette is a labelled dialog: arrow selection, Enter navigation,
+Escape dismissal and return to the trigger. At widths below 1024px use a compact
+source/header and horizontally scrollable navigation, never primary-content overflow.
+The existing embedded tablist remains a host-owned compatibility surface, with its
+roving focus and resolved panel labels preserved.
+
+Sessions structure, in order: title with one short subtitle; search/range/count/
+column-density toolbar; applied filter pills; facet rail beside sessions/day histogram
+and semantic dense table; attribution/count footer. Select/Text facets expose counts
+in the loaded time/automation scope. Sorting is explicitly within the received range.
+URL state retains search, filters, sort, columns/density and peek selection.
+There is no 결과 table column. `읽은 스킬` is actual reads only; exposed
+candidates are separate, never substituted for reads. Missing measurements stay
+unknown and failures stay failures.
+
+Histogram R7: derive counts from session `startedAt` and state the timezone/range.
+All bars use the same numeric y-scale and baseline, equal widths and group spacing.
+Zero counts are 1px ticks labelled `0`; value labels sit above and dates below.
+The exported geometry must satisfy `y + height === baseline` for every bar.
+
+Peek: keep the table visible at desktop widths, with action bar (full page,
+previous, next, copy ID, close), summary pills, KV grid and typed event tree.
+Below 1024px it becomes a full-screen sheet with a visible return action. Escape
+closes it, preserves list URL state and restores focus to its row.
+
+Detail: back link, session ID/copy and first-request disclosure, one wrapping
+summary line, then tree/timeline beside selected-event inspector. Graph is disabled
+with the missing-relationship-data reason. Gantt points use actual event offsets;
+only explicitly bounded intervals become bars. No invented durations or causal edges.
+Inspector supports preview/attributes and Formatted/Raw for the same event, full
+captured content and ranked candidates. At phone widths an event inspector is a
+sheet. Candidate relevance and later reads are observations, not a quality outcome.
+
+CV-022 invariants remain mandatory: assign keys to the entire raw source trace
+before filtering/grouping, carry those keyed records through every representation,
+and use immutable activation-event member IDs for groups. Event inspector bodies
+are the actual persistent keyed bodies, not disposable copies or hidden test-only
+evidence. Selecting another event or receiving a report must not reset the surviving
+event's native disclosures. Preserve all existing T6/T10 behavior tests.
+
+Verification: R1-R7 and wireframe component-presence/order assertions, desktop and
+phone in both color schemes, each local VQA manifest independently with unchanged
+expectations, and no new failures relative to the recorded baseline. Public evidence
+is one Langfuse demo / approved wireframe / before / after row for each of the three
+screens, without annotations copied into product UI.
+
+## Evidence Console V2 foundations (PR1)
+
+Owner chose04 (Ev0CEN1JB875); lead authorized Phase C on2026-11-04. This visual contract supersedes earlier workshop/Linear color, typography, radius and target-size drawings below. Existing routing, auth, consent, command recovery, request outcomes, unknown values and all other behavior contracts remain unchanged. Approved source: /Users/iyen/.dori/state/lane-results/skillar-redesign/v2/sheets/04-evidence/DESIGN.md.
+
+|Role|Light|Dark|
+|---|---|---|
+|bg|#FFFFFF|#171916|
+|surface|#F3F5F2|#22261F|
+|ink|#20231E|#F0F1E9|
+|muted|#565C51|#B3BAAA|
+|accent|#B4321C|#FF8F70|
+|onAccent|#FFFFFF|#23110C|
+|border|#7D8279|#7A8273|
+|rule|#D9DDD6|#3C4336|
+|success|#23603B|#8BD2A0|
+|warn|#805000|#EAC477|
+|error|#AC2045|#FF9CB4|
+
+The exact07 Prompt SVG retains its own #1F201D/#F0F1E9 wordmark ink and vermilion exports. No artwork geometry changes. Code uses surface/ink/muted roles. UI edges use border; decorative separators use rule. No gradient, glow or elevated shadow. A static live dot retains its connection-state meaning; no pulse.
+
+Typography: Helvetica Neue / Apple SD Gothic Neo / system-ui / sans-serif; mono ui-monospace / SF Mono / Menlo / Consolas. No fetched font. App title28, section22, subheading18, body/UI16, all metadata/code at least14px. Site long-form body18, landing display36–64 and section28–36 during incremental rollout; no decorative negative tracking. Korean body leading1.65, UI1.5, headings1.2–1.4.
+
+Primitive geometry: 0px flat data boundaries, 2px controls/cards/tags; no pills. Buttons, inputs, selects, tabs and filter removal controls at least44px, including fold actions. Data-only badges/tags at least26px,14px text; do not imply a button target. Neutral row selection, accent underline for current navigation, 2px accent keyboard focus with2px offset. Hover and pressed states remain visible without fading text or moving the control. Tooltip is a flat bounded inverse surface, not a diffuse shadow.
+
+Spacing follows existing4/8/12/16/20/24/32/48/64/96 scale. Native local dashboard content max1600px with20px phone/32px desktop gutters. Preserve document scroll owner, responsive table-to-card behavior, wrapping navigation and filter behavior. The hosted embed inherits the site's palette but keeps its own scoped styles and zero extra inner gutter. Segmented controls, back links, disclosures and heatmap cells retain44px targets in both renderers. Dense heatmaps scroll inside their grid, not the document. Native heatmap tooltips use scoped CSS anchors and fixed positioning to escape the grid scrollport, try the opposite side at viewport edges and hide when their anchor is offscreen. Hosted tooltips retain their existing viewport-position controller.
+
+PR1 is foundations only: no session/search/skill/auth/landing behavior change. Existing page compositions are restyled in the subsequent approved PRs. site/src/skills/* is locked until lead confirms P14 merge; inherit base tokens there but do not edit its controls yet.
+
+## Evidence Console V2 Sessions and Trace layout (PR2)
+
+Approved reference: v2/sheets/04-evidence/home-light.html (the console: session list / event sequence / inspector) with its DESIGN.md. Touches `main.tsx`, `views/sessions.tsx`, `views/trace.tsx`, `components/requests.tsx` and `styles.css`. Where the AppShell, TabBar, SessionsToolbar, SessionsTable, TraceHeader, Timeline and AbstainBlock drawings further down differ from this block, this block wins; every route, hash, filter, live, eval and unknown-value contract stays as it is.
+
+Tokens added: `--brand-ink` #1F201D / #F0F1E9 and `--brand-prompt` #B4321C / #FF8F70 (the exact light / dark wordmark export colors). They color the inline wordmark paths and nothing else.
+
+Shell: `header.top > div.wrap.top__row` = `a.brand` (the canonical wordmark SVG inlined from site/public/wordmark-*.svg with its geometry verbatim, 120px wide, fills through `.brand__prompt` / `.brand__ink`), then `nav.tabs[aria-label=Views]`, then `div.top__status` (live indicator, filter chips, automated toggle) pushed to the end. One wrapping row at 640px and up; under 640px the tab row takes its own full-width line after brand and status. Tabs are 44px text links in muted ink with no box: hover is ink, current is ink at 600 with a 2px accent underline at 8px offset; `aria-current` and `TAB_OF` unchanged. The embed renders the same row without the brand.
+
+Page title: `div.page-title` holds the view title (`h1`, `h2` when embedded) at 28px / 600 / 1.3 and a 16px muted lead, 32px above the content. Sessions: title "세션 사용 기록", lead "검색과 읽기 횟수는 요청 단위로 셉니다. 요청이 없었던 것과 결과를 알 수 없는 것은 다릅니다." (the former English dim sentence, same meaning). Trace: the back link, the first prompt (or the muted "(no prompt captured)", no italic) and the step counts as the lead.
+
+Sessions: title, toolbar (controls, ids, names and aria names unchanged; 16px label on its own line, search field up to 25rem, selects at least 10rem, 24px below), then the table flat on the page in `div.sessions__frame` (horizontal scroll owner at tablet widths, no card): th 14px / 500 muted, cells 12px x 16px, first column flush left and last flush right, hairline rules under every row, hover wash. Under 640px the rows stay the named-area cards with 16px vertical padding and no inline padding. The attribution explanation (`p.usage`: unattributed counts, the "How attribution works" tooltip and the MCP attribution rates, text unchanged) moves below the table into `footer.sessions__foot`, 32px down behind a top rule.
+
+Trace: `header.trace__head.page-title` then `div.trace__console` = `aside.trace__inspector` (260px right column at 960px and up, left rule, content at the top) beside `div.trace__events` (fluid, 24px stack). Inspector: h2 "세션 정보" (h3 embedded), the existing `dl.trace__meta` as one column (dt 14px muted, dd 16px ink, 16px apart; Runtime / Started / Duration / Attribution / Requests / Session unchanged, Duration states unchanged), then under a rule the h3 "확인 범위" with "검색과 읽기 기록은 요청 단위로 확인됩니다. 실제 적용과 작업 성공은 이 기록으로 확인되지 않습니다." Events: the existing callouts (unresolved loads, never consulted), h2 "이벤트 순서" with `ol.tl`, then the Search and load requests section flat behind a top rule (22px heading, 14px lead, reference table cells). Under 960px the console is one column: inspector first, then events; the inspector swaps its left rule for a top rule and its facts wrap as a cluster.
+
+Timeline rows: `li.tl__step` is a grid `82px | minmax(0, 1fr) | 116px` (time | content | state) with 16px vertical padding and a bottom rule; `tl__head` is `display: contents` so its children sit in the grid. Time is HH:MM:SS over the +offset in 14px mono; the kind label is 18px / 600 ink; a skill span's name sits under its label. State words (`tl__tag`: native, skillar, failed, abstained) are plain 14px / 500 text in the state column, `--bad` for failed and abstained, muted otherwise; no box, no uppercase. Bodies: prompt text 16px ink, metadata lines 14px muted, the query and the abstain block (badge, hint, Save as eval case) on a surface block with no border; candidate rows unchanged except the invocation tag (14px mono, 26px, 0 radius, no uppercase). The rail and dots are retired: `tl__dot` is hidden, and a step's kind is read from its label, never from a color. Under 640px rows are `72px | minmax(0, 1fr)` and state words drop under the kind label.
+
+Copy: all authored dashboard labels, accessible names, explanations, empty/error states and controls are plain Korean, per the owner's correction on PR74. Product/runtime names, recorded user content, code IDs, protocol tokens and machine status values stay exact. Existing shipped-copy test expectations follow the translated UI without weakening their behavior assertions. This supersedes the earlier English-label preservation rule.
+
+Embedded trace navigation moves focus to its mounted heading. The trace panel is not the final focus target; heading and source-title outlines appear only for keyboard-visible focus. Capture navigation uses actual pointer events rather than synthetic DOM clicks that can retain keyboard modality.
+
+At phone widths the request table becomes labeled rows with a 96px label column and a flexible value column. Column headers remain in the accessibility tree; operation, status, result/reason and skill values keep their original table semantics and wrap without squeezing individual letters into a vertical column. The same rule applies in the hosted embed.
+
+
+
 Scope: `local/dashboard/**` (the Preact app served by the skillar daemon at `http://127.0.0.1:8799`).
 Every color, size, and spacing value used by dashboard code must trace to a token here; the tokens
 live as CSS custom properties in `styles.css` under the same names.
@@ -45,10 +224,10 @@ Light and dark values swap under `prefers-color-scheme: dark`. Washes are derive
 | Accent | `--accent` | #5e6ad2 | #7170ff | Live dot, active tab text, links |
 | Accent hover | `--accent-2` | #4f5bc4 | #828fff | Link hover |
 | Accent wash | `--accent-wash` | color-mix(accent 12%) | color-mix(accent 18%) | Live dot halo, focus ring halo |
-| Status ok | `--ok` | #1f8f45 | #3ccb6a | `loaded` |
-| Status warn | `--warn` | #a8690f | #e0a84a | `exposed_only` |
-| Status bad | `--bad` | #c0392b | #ef6b6b | `no_match`, ingest errors, offline dot |
-| Status neutral | `--neutral` | #8a8f98 | #7f848d | `aborted`, `not_used`, unattributed |
+| Status ok | `--ok` | #1f8f45 | #3ccb6a | `succeeded` (including `no_candidates`) |
+| Status warn | `--warn` | #a8690f | #e0a84a | `in_progress` |
+| Status bad | `--bad` | #c0392b | #ef6b6b | `failed`, ingest errors, offline dot |
+| Status neutral | `--neutral` | #8a8f98 | #7f848d | `cancelled`, `unknown`, `not_attempted`, unattributed, paused live connection |
 
 Rules
 - Accent never marks state on a border. Selected / active / hover are `--wash` / `--wash-2`
@@ -134,19 +313,19 @@ Layout
 - Accessibility: remove button has `aria-label="Remove <label> filter"`.
 
 ### SessionsToolbar (`views/sessions.tsx`)
-- Structure: `form.toolbar` > search input (`q`) + runtime `select` + state `select`.
+- Structure: `form.toolbar` > search input (`q`) + runtime `select` + search status, load status and search result selects.
 - States: input focus ring; placeholder `--ink-3`.
 - Layout: `cluster`; wraps at narrow widths.
 
 ### SessionsTable
-- Structure: `table.sessions` with columns runtime / started / prompt / skills / state /
+- Structure: `table.sessions` with columns runtime / started / prompt / skills / search / load /
   attribution; each row is a link target (`a.rowlink` on the prompt cell + whole row click).
 - Spacing: cell padding `--s-3` x `--s-3`; row min-height 56px.
 - States: hover `--wash`; `focus-visible` ring on the row link; empty (two variants below).
 - Accessibility: real `<table>` semantics on desktop; `<th scope="col">`; on cards each cell keeps
   `data-label` for context.
 - Layout: under 640px rows become grid cards:
-  `"runtime started" / "prompt prompt" / "skills skills" / "state attr"`.
+  `"runtime started" / "prompt prompt" / "skills skills" / "search search" / "load load" / ". attr"`.
 
 ### RuntimeLabel
 - Structure: `span.rt` > `span.rt__mark` (two-letter monogram, `--surface-2` tile, radius
@@ -155,7 +334,8 @@ Layout
 ### StateBadge
 - Structure: `span.badge.badge--<state>` > dot + label. Dot color = status token; text `--ink-2`;
   background `color-mix(status 12%)`.
-- Variants: loaded (ok), exposed_only (warn), no_match (bad), aborted / not_used (neutral).
+- Variants: succeeded (ok), in_progress (warn), failed (bad), cancelled / unknown / not_attempted (neutral).
+- Search and load show all nonzero request counts independently. Zero total displays not_attempted; missing summary data displays unknown.
 
 ### SkillChip
 - Structure: `span.skill` with the skill dir name; `title` carries the full URI. Max 3 shown,
@@ -308,7 +488,7 @@ Layout
 
 ### AbstainBlock (`views/trace.tsx`)
 - Structure: `div.tl__abstain` (hairline `--line`, radius `--r-sm`) > StateBadge
-  `badge--no_match` "abstained · <reason>" > `p.tl__hint` > GhostButton "Save as eval case"
+  `badge--succeeded` "no_candidates · <reason>" > `p.tl__hint` > GhostButton "Save as eval case"
   (POSTs `{query, fromTraceId}`; states idle / saving / saved / error with a `role="alert"` line).
 
 ### Callout

@@ -35,10 +35,10 @@ const negativeBest = negatives.map(c => search(c.query).candidates[0]?.score ?? 
 const calibrated = calibrate(negativeBest);
 const thresholdCurrent = calibrated === DEFAULT_THRESHOLD;
 if (!check && !thresholdCurrent) {
-  const src = new URL('../src/search/fusion.ts', import.meta.url);
+  const src = new URL('../../shared/search/fusion.ts', import.meta.url);
   const text = await readFile(src, 'utf8');
   await writeFile(src, text.replace(/export const DEFAULT_THRESHOLD = [^;]+;/, `export const DEFAULT_THRESHOLD = ${calibrated};`));
-  console.error(`DEFAULT_THRESHOLD ${DEFAULT_THRESHOLD} -> ${calibrated} written to src/search/fusion.ts; rebuild before --check`);
+  console.error(`DEFAULT_THRESHOLD ${DEFAULT_THRESHOLD} -> ${calibrated} written to shared/search/fusion.ts; rebuild before --check`);
 }
 // Gate with the shipped default when it is current, otherwise with the calibrated value via meta override.
 setThreshold(thresholdCurrent ? undefined : calibrated);

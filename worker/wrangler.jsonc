@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "gisul-mcp",
-  "account_id": "00000000000000000000000000000000",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-03",
   "workers_dev": true,
@@ -11,6 +10,9 @@
     "head_sampling_rate": 1
   },
   "r2_buckets": [
-    { "binding": "SKILLS_BUCKET", "bucket_name": "example-skills-releases" }
+    {
+      "binding": "SKILLS_BUCKET",
+      "bucket_name": "example-skills-bucket"
+    }
   ]
 }

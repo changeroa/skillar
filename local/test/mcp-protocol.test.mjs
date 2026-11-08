@@ -92,7 +92,7 @@ test("legacy initialize opens a session served with legacy result shapes and cli
   assert.equal(headerless.body.result.tools.length, 1);
   const badInit = await legacyPost(daemon.port, { jsonrpc: "2.0", id: 9, method: "initialize", params: { protocolVersion: "2025-11-25" } });
   assert.equal(badInit.body.error.code, -32602);
-  assert.deepEqual(daemon.rows().filter((r) => r.kind !== "error").map((r) => [r.kind, r.runtime]), [["search", "openclaw"], ["load", "openclaw"]]);
+  assert.deepEqual(daemon.rows().filter((r) => r.kind !== "error" && r.kind !== "skill_request").map((r) => [r.kind, r.runtime]), [["search", "openclaw"], ["load", "openclaw"]]);
 }));
 
 test("modern requests never fall into the legacy era and legacy session headers never create modern state", () => withDaemon(async (daemon) => {

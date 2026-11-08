@@ -263,11 +263,12 @@ test("skill spans fold the calls they own out of the flat timeline and keep the 
   assert.deepEqual(kinds.filter((kind) => kind === "tool_call").length, 2);
   assert.deepEqual(kinds.filter((kind) => kind === "llm_call").length, 1);
 
-  const plain = trace.planTimeline(sessionSteps, undefined);
+  const source = trace.createTimelineKeys()(sessionSteps);
+  const plain = trace.planTimeline(source, undefined);
   assert.equal(plain.length, sessionSteps.length);
   assert.deepEqual([...new Set(plain.map((item) => item.kind))], ["step"], "without a skill report nothing is folded");
 
-  const items = trace.planTimeline(sessionSteps, sessionReport);
+  const items = trace.planTimeline(source, sessionReport);
   const spanItems = items.filter((item) => item.kind === "span");
   assert.equal(spanItems.length, 1);
   assert.equal(spanItems[0].span.name, "research-deep");

@@ -8,9 +8,9 @@ export type CandidateLike = Candidate & { chosen?: boolean };
 
 export type CandidatesProps = { candidates: readonly CandidateLike[]; chosen?: readonly SkillUri[]; query?: string };
 
-/** Rank order as the router returned it; the match score is coverage-scaled and need not descend with rank. */
+/** Match score descending; the recorded router rank breaks ties and stays visible. */
 export function orderCandidates<T extends CandidateLike>(candidates: readonly T[]): T[] {
-  return [...candidates].sort((a, b) => a.rank - b.rank);
+  return [...candidates].sort((a, b) => b.score - a.score || a.rank - b.rank);
 }
 
 /** "3/5 terms": query terms the candidate matched, counted with the router's own term rules; undefined without terms. */
@@ -18,7 +18,7 @@ export function coverageLabel(query: string | undefined, matched: readonly strin
   const queryTerms = query ? terms(query) : [];
   if (!queryTerms.length) return undefined;
   const { hit, total } = termCoverage(queryTerms, matched ?? []);
-  return `${hit}/${total} ${total === 1 ? "term" : "terms"}`;
+  return `단어 ${hit}/${total} 일치`;
 }
 
 /** Root id of skill://local/<rootId>/<dir>/SKILL.md, or undefined for a URI of another shape. */
@@ -54,29 +54,29 @@ export function scoreWidth(score: number): string {
   return `${Math.round(clamped * 100)}%`;
 }
 
-export const INVOCATION_LABEL: Record<Candidate["invocation"], string> = { automatic: "auto", explicit: "explicit" };
+export const INVOCATION_LABEL: Record<Candidate["invocation"], string> = { automatic: "자동", explicit: "명시" };
 export const INVOCATION_TITLE: Record<Candidate["invocation"], string> = {
-  automatic: "automatic: eligible for automatic routing",
-  explicit: "explicit: only loads when the skill is named",
+  automatic: "automatic: 검색에서 자동으로 추천될 수 있습니다.",
+  explicit: "explicit: 스킬 이름을 직접 지정했을 때만 읽습니다.",
 };
 
 function CheckIcon() {
   // Lucide "check"
   return (
-    <svg class="cand__check" viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="loaded after this search" focusable="false">
+    <svg class="cand__check" viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="이 검색 후 읽음" focusable="false">
       <path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   );
 }
 
 export function Candidates({ candidates, chosen, query }: CandidatesProps) {
-  if (!candidates.length) return <p class="cands__none">No candidates were returned.</p>;
+  if (!candidates.length) return <p class="cands__none">반환된 후보가 없습니다.</p>;
   const picked = chosenUris(candidates, chosen);
   const roots = rootHints(candidates);
   return (
     <>
-    <p class="cands__legend">match = rank score {"\u00d7"} share of query terms matched</p>
-    <ol class="cands" aria-label="Search candidates">
+    <p class="cands__legend">일치도 = 순위 점수 {"\u00d7"} 일치한 검색어 단어 비율</p>
+    <ol class="cands" aria-label="검색 후보">
       {orderCandidates(candidates).map((candidate) => {
         const isChosen = picked.has(candidate.uri);
         const root = roots.get(candidate.uri);
@@ -89,7 +89,7 @@ export function Candidates({ candidates, chosen, query }: CandidatesProps) {
             data-score={formatScore(candidate.score)}
             data-chosen={isChosen ? "true" : "false"}
           >
-            <span class="cand__rank" aria-label={`rank ${candidate.rank}`}>{candidate.rank}</span>
+            <span class="cand__rank" aria-label={`순위 ${candidate.rank}`}>{candidate.rank}</span>
             <span class="cand__name" title={candidate.uri}>
               <span class="cand__nm">{candidate.name}</span>
               {root ? <span class="cand__root" data-root={root}>{root}</span> : null}
@@ -97,16 +97,21 @@ export function Candidates({ candidates, chosen, query }: CandidatesProps) {
             <span class="cand__inv" title={INVOCATION_TITLE[candidate.invocation] ?? candidate.invocation}>
               {INVOCATION_LABEL[candidate.invocation] ?? candidate.invocation}
             </span>
-            <span class="cand__bar" role="img" title="match" aria-label={`match ${formatScore(candidate.score)}${coverage ? `, ${coverage}` : ""}`}>
+            <span class="cand__bar" role="img" title="일치도" aria-label={`일치도 ${formatScore(candidate.score)}${coverage ? `, ${coverage}` : ""}`}>
               <span class="cand__fill" style={{ width: scoreWidth(candidate.score) }} />
             </span>
             <span class="cand__score">{formatScore(candidate.score)}</span>
             <span class="cand__cov">{coverage ?? ""}</span>
             <span class="cand__pick">{isChosen ? <CheckIcon /> : null}</span>
-            <span class="cand__desc">
+            <details class="cand__desc">
+              <summary>후보 내용 보기</summary>
+              <p>{candidate.name}</p>
+              <code>{candidate.uri}</code>
+              <p>
               {candidate.description}
-              {candidate.matched?.length ? <span class="cand__matched"> {"\u00b7"} matched {candidate.matched.join(", ")}</span> : null}
-            </span>
+              {candidate.matched?.length ? <span class="cand__matched"> {"\u00b7"} 일치 단어 {candidate.matched.join(", ")}</span> : null}
+              </p>
+            </details>
           </li>
         );
       })}

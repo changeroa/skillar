@@ -4,13 +4,13 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
 </p>
 <p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
 
 skillar is a local skill router for coding agents. One daemon on `127.0.0.1` indexes your existing `SKILL.md` folders, serves them over MCP, and records searches and reads in a local dashboard. Skill files stay in place.
 
-[Install](#install) · [Connect your agents](#connect-your-agents) · [Settings](#settings) · [MCP reference](#skills-over-mcp)
+[Install](#install) · [Connect your agents](#connect-your-agents) · [Private skills](#private-skills) · [Settings](#settings) · [MCP reference](#skills-over-mcp)
 
 ## Install
 
@@ -37,6 +37,12 @@ The package installs `skillar` and the compatibility command `gisool`. For sourc
 | On-demand reads | Hosts read the chosen `SKILL.md` and supporting files with MCP `resources/read`. |
 | Session history | Review searches, loads, supporting reads, native-use observations, and dashboard flows. |
 | Reversible setup | Preview configuration changes, keep per-run backups, and roll back with `init`. |
+
+## Private skills
+
+The optional web library keeps private, versioned skill packages in your account. Transfers are explicit: connecting a device or running activity sync does not publish skill directories. You can also download a package and preview, apply or roll back its local files without a daemon.
+
+See the [private skill transfer guide](https://github.com/changeroa/skillar/blob/main/local/docs/private-skills.md) for account permissions, publication review and local recovery.
 
 ## Supported runtimes
 
@@ -266,6 +272,6 @@ Architecture: [daemon and storage design](https://github.com/changeroa/skillar/b
 
 ## More documentation
 
-[Project overview](https://github.com/changeroa/skillar/blob/main/README.md) · [Upgrade & compatibility](https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md) · [MIT license](https://github.com/changeroa/skillar/blob/main/LICENSE)
+[Project overview](https://github.com/changeroa/skillar/blob/main/README.md) · [Upgrade & compatibility](https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md) · [MIT license](https://github.com/changeroa/skillar/blob/main/local/LICENSE)
 
 The former personal Cloudflare deployment is retired. The local CLI needs no hosted service; separate registry and organization deployment context is covered in the [project documentation](https://github.com/changeroa/skillar/blob/main/README.md#remote-registry-and-team-distribution).
