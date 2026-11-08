@@ -14,7 +14,7 @@ import { NegotiatingTransport, ResponseCache, protocolFetch } from "./protocol.j
 import { CallToolResultSchema, ResourceListChangedNotificationSchema, ResourceUpdatedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import { parse } from "yaml";
 import { z } from "zod";
-import { excerpt, searchSkills, type SearchDocument } from "./skill-search.js";
+import { excerpt, searchSkillHits, type SearchDocument } from "./skill-search.js";
 
 const entrySchema = z.object({
   uri: z.string(),
@@ -141,17 +141,20 @@ export function createCodexBridge(client: Client, origin: string, events?: Skill
   }
 
   server.registerTool("search_skills", {
-    description: "Find remote skills by task subject without reading bodies. Use discovery for ranked candidates, including invocation=explicit skills that require a user request before application. Automatic filters those out; explicit is for user-requested skills. Use a few subject/outcome terms; if empty, retry once with a shorter subject. Omitted mode preserves legacy matching. Search does not activate skills. Continue with the same query, mode, commit and nextOffset; load only a relevant exact URI with its commit.",
+    description: "Find remote skills by task subject without reading bodies. Use discovery for ranked candidates, including invocation=explicit skills that require a user request before application. Automatic filters those out; explicit is for user-requested skills. Use a few positive subject/outcome terms; pass only unambiguous unwanted skill names or complete keywords in exclude, not quoted or ambiguous negations. include_evidence explains ranked matches without exposing a confidence score. If empty, retry once with a shorter subject. Omitted mode preserves legacy matching. Search does not activate skills. Continue with the same query, mode, exclude, commit and nextOffset; load only a relevant exact URI with its commit.",
     inputSchema: {
       query: z.string().max(2048).optional(),
       mode: z.enum(["legacy", "automatic", "explicit", "discovery"]).optional(),
+      include_evidence: z.boolean().optional(),
+      exclude: z.array(z.string().trim().min(1).max(128)).max(8).optional(),
       commit: z.string().regex(/^[a-f0-9]{40}$/).optional().describe("Pin continuation pages to a previous search's commit; omit for a new task's current catalog"),
       limit: z.number().int().min(1).max(50).default(5),
       offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).default(0).describe("Zero-based offset; use nextOffset with the same query, mode, limit and commit"),
     }, annotations,
-  }, async ({ query, mode: requestedMode, commit, limit, offset }) => observe("search", { mode: requestedMode ?? "legacy", mode_omitted: requestedMode === undefined, limit, offset }, async () => {
+  }, async ({ query, mode: requestedMode, include_evidence, exclude, commit, limit, offset }) => observe("search", { mode: requestedMode ?? "legacy", mode_omitted: requestedMode === undefined, limit, offset }, async () => {
     const mode = requestedMode ?? "legacy";
     if ((mode === "automatic" || mode === "discovery") && !query?.trim()) throw new Error("Automatic discovery requires a subject; do not enumerate the whole catalog");
+    if (mode === "legacy" && (include_evidence === true || (exclude?.length ?? 0) > 0)) throw new Error("Ranked evidence and exclusions require an explicit ranked mode");
     const documents: SearchDocument[] = [];
     let cursor: string | undefined;
     const cursors = new Set<string>();
@@ -177,12 +180,16 @@ export function createCodexBridge(client: Client, origin: string, events?: Skill
       if (cursor) cursors.add(cursor);
       if (++pages >= 100 && cursor) throw new Error("Catalog exceeds 100 pages; use a known skill URI directly");
     } while (cursor);
-    const matches = searchSkills(documents, query, mode);
-    const skills = matches.slice(offset, offset + limit).map(({ uri, name, description, automatic, digest }) => ({
-      uri, name, ...excerpt(description, query?.toLowerCase().split(/\s+/).filter(Boolean) ?? []), ...(mode === "legacy" ? {} : { invocation: automatic ? "automatic" : "explicit", digest }),
+    const { hits, excludedMatches } = searchSkillHits(documents, query, mode, exclude);
+    const skills = hits.slice(offset, offset + limit).map(({ item: { uri, name, description, automatic, digest }, evidence, descriptionTerms }) => ({
+      uri, name, ...excerpt(description, mode === "legacy" ? query?.toLowerCase().split(/\s+/).filter(Boolean) ?? [] : descriptionTerms),
+      ...(mode === "legacy" ? {} : { invocation: automatic ? "automatic" : "explicit", digest }),
+      ...(include_evidence ? { evidence } : {}),
     }));
-    const nextOffset = offset + skills.length < matches.length ? offset + skills.length : undefined;
-    return respond({ origin, release: meta?.release ?? null, commit: meta?.commit ?? null, skills, totalMatches: matches.length, offset, limit, nextOffset, note: "A partial or empty catalog does not exclude skills available by URI." });
+    const nextOffset = offset + skills.length < hits.length ? offset + skills.length : undefined;
+    return respond({ origin, release: meta?.release ?? null, commit: meta?.commit ?? null, skills, totalMatches: hits.length, offset, limit, nextOffset,
+      ...(exclude?.length ? { filters: { exclude, excludedMatches } } : {}),
+      note: "A partial or empty catalog does not exclude skills available by URI." });
   }));
 
   server.registerTool("load_skill", {

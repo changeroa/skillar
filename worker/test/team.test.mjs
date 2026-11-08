@@ -128,6 +128,24 @@ test("native discovery ranks natural requests, preserves invocation and pins the
   assert.match(loaded.markdown, /Revision a/);
 });
 
+test("native Worker search opts into matching evidence and excludes exact metadata only", async t => {
+  const f = await fixture(t);
+  const token = (await f.login()).access_token;
+  const query = "team review workflow";
+  const original = await f.tool(token, "search_skills", { query, mode: "discovery" });
+  assert.equal("evidence" in original.skills[0], false);
+  const explained = await f.tool(token, "search_skills", { query, mode: "discovery", include_evidence: true });
+  assert.equal(explained.skills[0].uri, uri);
+  assert.ok(explained.skills[0].evidence.matches.some(match => match.field === "description" && match.queryTerm === "review"));
+  const excluded = await f.tool(token, "search_skills", { query, mode: "discovery", exclude: ["example"] });
+  assert.equal(excluded.totalMatches, 0);
+  assert.deepEqual(excluded.filters, { exclude: ["example"], excludedMatches: 1 });
+  const partial = await f.tool(token, "search_skills", { query, mode: "discovery", exclude: ["exam"] });
+  assert.equal(partial.totalMatches, 1, "an exclusion is a complete name or keyword, not a substring");
+  const legacy = await f.rpc(token, "tools/call", { name: "search_skills", arguments: { query: "review", exclude: ["example"] } });
+  assert.equal((await legacy.json()).result.isError, true);
+});
+
 test("team endpoint advertises native OAuth and denies legacy/shared tokens and alternate hosts", async t => {
   const f = await fixture(t);
   const denied = await f.rpc("legacy-reader", "tools/list");
