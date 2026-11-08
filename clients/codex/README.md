@@ -178,9 +178,11 @@ The bridge appends JSONL events to
 `${CODEX_HOME:-~/.codex}/logs/skillar/events-<YYYYMMDD>.jsonl` (UTC date). Override
 the directory with `SKILLAR_EVENT_LOG_DIR`, for example in isolated tests. Events
 include connection lifecycle, searches, loads, reads, and classified errors, with
-release/digest, byte count, and duration where available. Skill bodies and bearer
-credentials are not recorded. Logging failure is reported on stderr and does not
-prevent workflow calls.
+release/digest, byte count, and duration where available. Search events record the
+effective `mode` and boolean `mode_omitted`, so omission rates can be counted
+without recording raw search queries. Skill bodies and bearer credentials are not
+recorded. Logging failure is reported on stderr and does not prevent workflow
+calls.
 
 Each tool response includes the same `connection_id` as its event records, so
 trace exporters can join exact connections. `bridge_cwd` is the bridge process's
