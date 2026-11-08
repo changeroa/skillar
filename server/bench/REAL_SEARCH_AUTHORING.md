@@ -103,6 +103,18 @@ case. Keep all related prompts from one participant, session, source, or
 annotation batch in one group. Use `--split holdout` for independent reporting;
 never retune on a holdout result. The default is `holdout`.
 
+Keep an access-controlled annotation record outside this repository, keyed by
+opaque case ID and pinned catalog commit/digest. Record the query source,
+collection and consent-ledger reference, the written relevance criteria, each
+annotator's candidate-URI judgment, and any disagreement with its resolution,
+rationale, reviewer role and date. Record that no disagreement occurred when
+applicable. Do not put participant identities, raw queries or this ledger in a
+public PR. Assign source groups to tune or holdout before examining search
+results; freeze adjudicated labels and the dataset digest before measuring the
+holdout. An unresolved disagreement blocks freezing the evaluation dataset:
+keep that case in the private ledger, resolve it before reporting, and do not
+silently exclude difficult cases from the selected cohort.
+
 Each case makes an explicit `match` or `abstain` decision. A `match` has at
 least one `relevant` URI. An `abstain` has only `irrelevant` URIs. Use:
 
