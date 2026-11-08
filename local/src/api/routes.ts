@@ -11,7 +11,9 @@ import { deny } from "./security.js";
 import type { SseHub } from "./sse.js";
 
 const STATES: readonly AdoptionState[] = ["loaded", "exposed_only", "no_match", "aborted", "not_used"];
-const CLIENT_ERROR_CODES = new Set(["invalid_tz", "bad_filter", "bad_request"]);
+const CLIENT_ERROR_CODES = new Set([
+  "invalid_tz", "bad_filter", "bad_request", "history_sync_active", "history_sync_pending", "history_sync_unreadable", "history_remote_history",
+]);
 
 class BadRequest extends Error {
   constructor(readonly code: string, message: string) {

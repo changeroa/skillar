@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { request } from "node:http";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fixtureText, bearer, http, jsonHeaders, startTestServer } from "./helpers/api.mjs";
+import { distImport } from "./_helpers.mjs";
 import { DAY, NOW, event, openStore, skillEntry, uri } from "./helpers/store.mjs";
 
 const get = (server, path) => http(server.port, { path, headers: bearer(server.token) });
@@ -139,6 +141,100 @@ test("history API requires an exact confirmation token before deletion", async (
   }
 });
 
+test("history API refuses queued cloud history instead of reporting a local deletion as complete", async () => {
+  const server = await startTestServer();
+  const { openDb } = await distImport("store/db.js");
+  const db = openDb(join(server.skillarHome, "skillar.db"));
+  try {
+    const secret = "queued API privacy secret";
+    const payload = JSON.stringify({ secret });
+    db.prepare(`INSERT INTO sync_streams(stream_id, source_domain, device_id, next_sequence, ack_sequence, ack_cut)
+      VALUES ('privacy-api-pending', 'privacy-api-domain', 'privacy-api-device', 2, 0, 0)`).run();
+    db.prepare(`INSERT INTO sync_outbox
+      (stream_id, sequence, batch_id, payload, payload_hash, payload_bytes, journal_from, journal_through)
+      VALUES ('privacy-api-pending', 1, 'privacy-api-pending-batch', ?, ?, ?, 0, 0)`)
+      .run(payload, "b".repeat(64), Buffer.byteLength(payload));
+
+    const rejected = await deleteHistory(server, { confirm: "DELETE_HISTORY" });
+
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, "history_sync_pending");
+    assert.match(rejected.json.message, /cloud sync batch/);
+    assert.match(db.prepare("SELECT payload FROM sync_outbox").get().payload, new RegExp(secret));
+  } finally {
+    db.close();
+    await server.stop();
+  }
+});
+
+test("history API refuses a cloud-bound source even after its local queue is empty", async () => {
+  const server = await startTestServer();
+  const { openDb } = await distImport("store/db.js");
+  const db = openDb(join(server.skillarHome, "skillar.db"));
+  try {
+    db.prepare("INSERT INTO meta(key, value) VALUES ('cloud.binding', 'bound-instance')").run();
+
+    const rejected = await deleteHistory(server, { confirm: "DELETE_HISTORY" });
+
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, "history_remote_history");
+    assert.match(rejected.json.message, /bound to cloud history/);
+  } finally {
+    db.close();
+    await server.stop();
+  }
+});
+
+test("history API refuses a disconnected P6 spool that can retain full captured text", async () => {
+  const server = await startTestServer();
+  const { CloudBlobs } = await distImport("sync/cloud-blobs.js");
+  const spoolPath = join(server.skillarHome, "cloud", "spool.sqlite");
+  const blobs = new CloudBlobs(spoolPath);
+  blobs.close();
+  const spool = new DatabaseSync(spoolPath);
+  try {
+    const secret = "queued P6 privacy secret";
+    const payload = JSON.stringify({ secret });
+    spool.prepare(`INSERT INTO sync_streams(stream_id, source_domain, device_id, next_sequence, ack_sequence, ack_cut)
+      VALUES ('privacy-p6-pending', 'privacy-p6-domain', 'privacy-p6-device', 2, 0, 0)`).run();
+    spool.prepare(`INSERT INTO sync_outbox
+      (stream_id, sequence, batch_id, payload, payload_hash, payload_bytes, journal_from, journal_through)
+      VALUES ('privacy-p6-pending', 1, 'privacy-p6-pending-batch', ?, ?, ?, 0, 0)`)
+      .run(payload, "c".repeat(64), Buffer.byteLength(payload));
+
+    const rejected = await deleteHistory(server, { confirm: "DELETE_HISTORY" });
+
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, "history_sync_pending");
+    assert.match(rejected.json.message, /disconnected cloud spool/);
+    assert.match(spool.prepare("SELECT payload FROM sync_outbox").get().payload, new RegExp(secret));
+  } finally {
+    spool.close();
+    await server.stop();
+  }
+});
+
+test("history API removes disconnected orphaned cloud spool and snapshot files with local history", async () => {
+  const server = await startTestServer();
+  const { CloudBlobs } = await distImport("sync/cloud-blobs.js");
+  const cloud = join(server.skillarHome, "cloud");
+  const spool = join(cloud, "spool.sqlite");
+  const prepared = join(cloud, "prepared", "orphan.sqlite");
+  const blobs = new CloudBlobs(spool);
+  blobs.close();
+  mkdirSync(join(cloud, "prepared"), { recursive: true, mode: 0o700 });
+  writeFileSync(prepared, "orphaned full-text privacy secret", { mode: 0o600 });
+  try {
+    const deleted = await deleteHistory(server, { confirm: "DELETE_HISTORY" });
+
+    assert.equal(deleted.status, 200);
+    assert.equal(existsSync(spool), false);
+    assert.equal(existsSync(prepared), false);
+  } finally {
+    await server.stop();
+  }
+});
+
 function seedHistory(store, db) {
   const ref = { runtime: "claude-code", runtimeSessionId: "delete-history" };
   const session = store.upsertSession(ref, NOW - DAY);
@@ -199,6 +295,50 @@ test("history deletion rolls back every table when one deletion fails", () => {
     assert.equal(count(db, "loads"), 1);
     assert.equal(count(db, "pane_sessions"), 1);
     assert.equal(count(db, "flows"), 1);
+  } finally {
+    store.close();
+  }
+});
+
+test("history deletion refuses when a queued sync payload can retain full captured text", () => {
+  const { db, store } = openStore();
+  try {
+    const ref = { runtime: "claude-code", runtimeSessionId: "queued-history" };
+    const session = store.upsertSession(ref, NOW - DAY);
+    const secret = "queued full-text privacy secret";
+    store.append(event("prompt", NOW - DAY, ref, { text: secret }), { sessionId: session, method: "runtime_id" });
+    const journal = db.prepare("SELECT group_concat(COALESCE(row_json, '') || COALESCE(before_json, ''), '\n') AS body FROM sync_journal").get().body;
+    assert.match(journal, new RegExp(secret));
+    const through = db.prepare("SELECT MAX(seq) AS seq FROM sync_journal").get().seq;
+    const payload = JSON.stringify({ secret });
+    db.prepare(`INSERT INTO sync_streams(stream_id, source_domain, device_id, next_sequence, ack_sequence, ack_cut)
+      VALUES ('privacy-pending', 'privacy-domain', 'privacy-device', 2, 0, 0)`).run();
+    db.prepare(`INSERT INTO sync_outbox
+      (stream_id, sequence, batch_id, payload, payload_hash, payload_bytes, journal_from, journal_through)
+      VALUES ('privacy-pending', 1, 'privacy-pending-batch', ?, ?, ?, 0, ?)`).run(payload, "a".repeat(64), Buffer.byteLength(payload), through);
+
+    assert.throws(() => store.deleteHistory(), (error) => error?.code === "history_sync_pending");
+    assert.equal(db.prepare("SELECT text FROM events").get().text, secret);
+    assert.match(db.prepare("SELECT payload FROM sync_outbox").get().payload, new RegExp(secret));
+    assert.match(db.prepare("SELECT group_concat(COALESCE(row_json, '') || COALESCE(before_json, ''), '\n') AS body FROM sync_journal").get().body, new RegExp(secret));
+  } finally {
+    store.close();
+  }
+});
+
+test("history deletion clears local raw journal images when no cloud batch exists", () => {
+  const { db, store } = openStore();
+  try {
+    const ref = { runtime: "claude-code", runtimeSessionId: "local-history" };
+    const session = store.upsertSession(ref, NOW - DAY);
+    const secret = "local journal privacy secret";
+    store.append(event("prompt", NOW - DAY, ref, { text: secret }), { sessionId: session, method: "runtime_id" });
+    assert.match(db.prepare("SELECT group_concat(COALESCE(row_json, '') || COALESCE(before_json, ''), '\n') AS body FROM sync_journal").get().body, new RegExp(secret));
+
+    store.deleteHistory();
+
+    assert.equal(count(db, "events"), 0);
+    assert.doesNotMatch(db.prepare("SELECT COALESCE(group_concat(COALESCE(row_json, '') || COALESCE(before_json, ''), '\n'), '') AS body FROM sync_journal").get().body, new RegExp(secret));
   } finally {
     store.close();
   }

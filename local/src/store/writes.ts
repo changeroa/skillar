@@ -40,6 +40,21 @@ export function storeError(code: string, message = code): Error {
 }
 
 const DAY_MS = 86_400_000;
+const HISTORY_JOURNAL_TABLES = [
+  "sessions", "events", "loads", "otel_spans", "herdr_workspaces", "herdr_tabs", "herdr_panes",
+  "pane_sessions", "flows", "flow_steps", "load_candidates",
+] as const;
+
+/** Reject instead of claiming a local deletion also erased queued or acknowledged cloud copies. */
+export function assertHistoryDeletionSafe(db: Db): void {
+  if (db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined) {
+    throw storeError("history_sync_pending", "History deletion is blocked because a cloud sync batch may still contain captured data. Resolve cloud deletion before retrying.");
+  }
+  if (db.prepare("SELECT 1 FROM meta WHERE key = 'cloud.binding' LIMIT 1").get() !== undefined ||
+      db.prepare("SELECT 1 FROM sync_streams WHERE ack_sequence > 0 OR ack_cut > 0 LIMIT 1").get() !== undefined) {
+    throw storeError("history_remote_history", "History deletion is blocked because this source is bound to cloud history. Delete the remote account history before retrying.");
+  }
+}
 
 type SessionDbRow = {
   id: string; runtime: string; runtime_session_id: string | null; conversation_id: string | null;
@@ -397,6 +412,7 @@ export function createWrites(ctx: StoreCtx): Writes {
       const remove = (sql: string): number => Number(db.prepare(sql).run().changes);
       db.exec("BEGIN IMMEDIATE");
       try {
+        assertHistoryDeletionSafe(db);
         // Delete the dependent and link tables first; catalog, curated cases/specs, aliases and recording lineage remain.
         const flowSteps = remove("DELETE FROM flow_steps");
         const flows = remove("DELETE FROM flows");
@@ -410,6 +426,8 @@ export function createWrites(ctx: StoreCtx): Writes {
         const tabs = remove("DELETE FROM herdr_tabs");
         const workspaces = remove("DELETE FROM herdr_workspaces");
         const ingestTelemetry = remove("DELETE FROM meta WHERE key LIKE 'ingest.%'");
+        // The delete triggers recorded old row images, including captured text. Purge every activity image in this transaction.
+        db.prepare(`DELETE FROM sync_journal WHERE table_name IN (${HISTORY_JOURNAL_TABLES.map(() => "?").join(",")})`).run(...HISTORY_JOURNAL_TABLES);
         db.exec("COMMIT");
         return { sessions, events, loads, spans, links, workspaces, tabs, panes, flows, flowSteps, reconciliationCandidates, ingestTelemetry };
       } catch (error) {

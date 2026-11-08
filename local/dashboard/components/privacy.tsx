@@ -120,7 +120,7 @@ export function PrivacyControls({ api, onClose, onHistoryDeleted }: { api: Local
       )}
       <details class="privacy__delete">
         <summary>Delete collected history</summary>
-        <p>This permanently removes recorded sessions, events, loads, telemetry, links, and reconciliation data. Curated eval cases remain.</p>
+        <p>This permanently removes local sessions, events, loads, telemetry, links, and reconciliation data. It refuses while cloud history could exist, so it never claims remote copies were deleted. Curated eval cases remain.</p>
         <form onSubmit={(event) => { event.preventDefault(); void deleteHistory(); }}>
           <label class="privacy__field">
             Type DELETE_HISTORY to confirm

@@ -19,11 +19,12 @@ import { packageVersion } from "./mcp/tools.js";
 import { createSearchIndex } from "./search/index.js";
 import { openDb, selfCheck } from "./store/db.js";
 import { createStore } from "./store/index.js";
+import { assertHistoryDeletionSafe } from "./store/writes.js";
 import { startCloudSync } from "./sync/cloud-runner.js";
 import { captureDaemonRuntime } from "./sync/cloud-runtime.js";
 import { applySourceCommand } from "./sync/command-apply.js";
 import { sourceCommandsEnabled } from "./sync/command-control.js";
-import { readConnection } from "./sync/cloud-connection.js";
+import { assertCloudHistoryCacheSafe, purgeCloudHistoryCache, readConnection } from "./sync/cloud-connection.js";
 import type { PrivacySettings, SkillarConfig, SessionRow, Store } from "./types.js";
 import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
@@ -42,6 +43,10 @@ export type RunningServer = { port: number; host: "127.0.0.1"; close(): Promise<
 export const HOST = "127.0.0.1";
 export const LOG_MAX_BYTES = 5 * 1024 * 1024;
 const DAY_MS = 86_400_000;
+
+function historyDeletionError(code: "history_sync_active", message: string): Error {
+  return Object.assign(new Error(message), { code });
+}
 
 export function createFileLogger(path: string, maxBytes = LOG_MAX_BYTES): (msg: string) => void {
   mkdirSync(dirname(path), { recursive: true });
@@ -224,6 +229,13 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
         return { ...activePrivacy };
       },
       deleteHistory() {
+        if (readConnection(skillarHome) !== null) {
+          throw historyDeletionError("history_sync_active", "History deletion is blocked while cloud sync is connected. Disconnect it and delete remote account history before retrying.");
+        }
+        // Purge disconnected spool/snapshot files before the source transaction. If this fails, source history remains intact.
+        assertHistoryDeletionSafe(db);
+        assertCloudHistoryCacheSafe(skillarHome);
+        purgeCloudHistoryCache(skillarHome);
         const deleted = ownStore.deleteHistory();
         ingestDeps.state.toolUseSessions.clear();
         ingestDeps.state.loadSessions.clear();
