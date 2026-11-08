@@ -10,6 +10,7 @@ import type { LiveState, SessionListRow } from "./api";
 //   #/workspaces/<flow id>         (one flow; an unregistered workspace is addressed as "ws:<id>")
 //   #/flow?skill=skill://local/agents/pr-review-ko/SKILL.md
 //   #/heatmap?dow=1&hour=9&hourSpan=2
+//   #/evaluation                         (saved-query labels and persisted rank comparisons)
 // The query part uses exactly the server's Filter params (from,to epoch ms; runtime,skill,state
 // comma lists; dow,hour,hourSpan ints; q), so the same string feeds /api/* calls.
 
@@ -18,7 +19,7 @@ export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_onl
 export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
-export type View = "dashboard" | "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "not-found";
+export type View = "dashboard" | "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "evaluation" | "not-found";
 export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "state", "-state", "reads", "-reads", "duration", "-duration"] as const;
 export type SessionSort = (typeof SESSION_SORTS)[number];
 export const SESSION_COLUMNS = ["started", "runtime", "state", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
@@ -260,6 +261,7 @@ export function parseHash(hash: string): Route {
     case "dashboard": return { ...ui, view: "dashboard", filter };
     case "flow": return { ...ui, view: "flow", filter };
     case "heatmap": return { ...ui, view: "heatmap", filter };
+    case "evaluation": return { ...ui, view: "evaluation", filter };
     case "workspaces":
       return segments[1] ? { ...ui, view: "workspace", flowId: segments[1], filter } : { ...ui, view: "workspaces", filter };
     case "sessions":

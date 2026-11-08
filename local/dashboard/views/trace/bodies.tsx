@@ -69,7 +69,10 @@ function SearchBody({ detail }: { detail: SearchDetail }) {
           <SaveEvalButton detail={detail} />
         </div>
       ) : (
-        <RankedCandidates candidates={detail.candidates} chosen={detail.chosen} query={detail.query} />
+        <>
+          <RankedCandidates candidates={detail.candidates} chosen={detail.chosen} query={detail.query} />
+          <SaveEvalButton detail={detail} />
+        </>
       )}
     </div>
   );

@@ -24,6 +24,27 @@ export type SearchOutcome = { traceId: string; query: string; mode: SearchMode; 
   abstained?: { reason: AbstainReason; hint: string }; elapsedMs: number };
 export interface SearchIndex { rebuild(entries: SkillEntry[]): void; apply(delta: CatalogDelta): void;
   search(query: string, opts: { mode: SearchMode; limit: number }): SearchOutcome }
+// Evaluation labels are deliberately three-valued: an unlabeled captured query says nothing about relevance;
+// no_match is an explicit human judgement that no catalog skill should be returned.
+export type EvalLabel = "unlabeled" | "skill" | "no_match";
+export type EvalLanguage = "ko" | "en" | "other";
+export type EvalCase = { id: string; query: string; label: EvalLabel; expectedUri?: SkillUri; fromTraceId?: string; createdAt: number };
+export type EvalMetrics = {
+  cases: number; labeled: number; unlabeled: number; skillLabels: number; noMatchLabels: number;
+  hitAt1: number | null; hitAt3: number | null; mrr: number | null; noMatchAccuracy: number | null;
+  labelAccuracy: number | null; abstainRate: number;
+  byLanguage: Partial<Record<"ko" | "en", { labels: number; skillLabels: number; noMatchLabels: number;
+    hitAt1: number | null; hitAt3: number | null; mrr: number | null; noMatchAccuracy: number | null; labelAccuracy: number | null }>>;
+};
+export type EvalRunCase = { evalCaseId: string; label: Exclude<EvalLabel, "unlabeled">; expectedUri?: SkillUri; language: EvalLanguage;
+  rank?: number; abstained: boolean };
+export type EvalRun = { id: string; catalogFingerprint: string; catalogSize: number; createdAt: number; baseline: boolean; metrics: EvalMetrics };
+export type EvalComparisonMetrics = Pick<EvalMetrics, "hitAt1" | "hitAt3" | "mrr" | "noMatchAccuracy" | "labelAccuracy">;
+export type EvaluationComparison = { baseline: EvalRun; current: EvalRun; paired: number; improved: number; regressed: number; newlyFound: number; lost: number;
+  pairedBaseline: EvalComparisonMetrics; pairedCurrent: EvalComparisonMetrics;
+  noMatchImproved: number; noMatchRegressed: number; hitAt1Delta: number | null; hitAt3Delta: number | null; mrrDelta: number | null;
+  noMatchAccuracyDelta: number | null; labelAccuracyDelta: number | null };
+export type EvaluationSummary = { cases: EvalCase[]; baseline?: EvalRun; latest?: EvalRun; comparison?: EvaluationComparison };
 export type EventKind = "session_start" | "prompt" | "search" | "load" | "read_file" | "native_skill" | "llm_call" | "tool_call" | "session_end" | "error" | "skill_request";
 export type SessionRef = { runtime: RuntimeId; runtimeSessionId?: string; conversationId?: string; clientName?: string; cwd?: string };
 // session upsert key = (runtime, runtimeSessionId ?? conversationId); Codex MCP _meta.threadId maps to conversationId
@@ -97,7 +118,11 @@ export interface Store {
     lastEventByRuntime: Partial<Record<RuntimeId, number>>; ingest: { accepted: number; rejected: number; dropped: number; lastError?: { ts: number; code: string } };
     unattributed?: { searches: number; loads: number }; automatedSessions?: number };
   countIngest(kind: "accepted" | "rejected" | "dropped", code?: string): void;
-  addEvalCase(c: { query: string; expectedUri?: SkillUri; fromTraceId?: string }): void; evalCases(): { query: string; expectedUri?: SkillUri }[];
+  addEvalCase(c: { query: string; label?: EvalLabel; expectedUri?: SkillUri; fromTraceId?: string }): EvalCase;
+  updateEvalCase(id: string, c: { label: EvalLabel; expectedUri?: SkillUri }): EvalCase | undefined;
+  evalCases(): { query: string; expectedUri?: SkillUri }[]; evaluationCases(): EvalCase[];
+  saveEvalRun(run: Omit<EvalRun, "id" | "createdAt"> & { outcomes: EvalRunCase[] }): EvalRun;
+  evaluationSummary(): EvaluationSummary;
   exportTo(dir: string, opts: { withHistory: boolean }): void; importFrom(dir: string, opts: { merge: boolean }): { added: number; skipped: number };
   retention(days: number): number;
   // Stores the spans the traces ingest kept (INSERT OR IGNORE) and records the batch with the ingest counters inside the

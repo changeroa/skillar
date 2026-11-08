@@ -208,6 +208,7 @@ button, input, select { font: inherit; color: inherit; }
 
 .tab {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   min-height: 44px;
   padding: 0 var(--s-1);

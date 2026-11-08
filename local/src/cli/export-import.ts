@@ -50,6 +50,7 @@ export const runImport: ExportImportApi["runImport"] = async (dir, opts, deps) =
     console.log(opts.dryRun ? "import preview (dry run, nothing written):" : "import preview:");
     console.log(list("roots to add", d.roots.added));
     console.log(`  eval cases to add: ${d.evalCases.added} (already present: ${d.evalCases.skipped})`);
+    console.log(`  evaluation runs to add: ${d.evaluationRuns.added} (already present: ${d.evaluationRuns.skipped})`);
     console.log(list("config keys to add", d.configKeys.added));
     console.log(list("config keys already present (kept)", d.configKeys.kept));
     console.log(list("aliases to add", d.aliases.added));

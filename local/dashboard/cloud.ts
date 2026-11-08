@@ -180,6 +180,9 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
     addEvalCase: (input) => run(async (post) => {
       dashboardEvalReceiptSchema.parse(await post(dashboardPaths.evalCases, { profile, requestId: crypto.randomUUID(), input }));
     }),
+    updateEvalCase: () => Promise.reject(new ApiError(501, "cloud_evaluation_unsupported", "클라우드 출처에서는 저장된 검색 평가를 수정할 수 없습니다.")),
+    evaluation: () => Promise.reject(new ApiError(501, "cloud_evaluation_unsupported", "클라우드 출처에서는 저장된 검색 평가를 볼 수 없습니다.")),
+    runEvaluation: () => Promise.reject(new ApiError(501, "cloud_evaluation_unsupported", "클라우드 출처에서는 검색 평가를 실행할 수 없습니다.")),
     health: () => run(async (post) => {
       return z.object({ ok: z.boolean(), version: z.string(), transport: z.enum(["snapshot", "live"]) })
         .parse(await post(dashboardPaths.status));

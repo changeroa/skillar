@@ -8,7 +8,7 @@ import { runInit, serviceInstall, serviceRemove } from "./init.js";
 import { runOpen } from "./open.js";
 import { type Io, makeCliDeps, packageVersion, processIo, runServe, serviceStatus } from "./serve.js";
 
-export type EvalApi = { runEval(opts: { cases?: string; json?: boolean }, deps: CliDeps): Promise<number> };
+export type EvalApi = { runEval(opts: { cases?: string; json?: boolean; baseline?: boolean }, deps: CliDeps): Promise<number> };
 export type Loaders = { exportImport(): Promise<ExportImportApi>; evalApi(): Promise<EvalApi> };
 
 const defaultLoaders: Loaders = {
@@ -29,7 +29,7 @@ Usage:
   skillar export <dir> [--with-history]
   skillar import <dir> [--dry-run]
   skillar repair-loads --from <ms> --to <ms> [--limit <n>] [--session <id>...] [--after <event-id>] [--json]
-  skillar eval [--cases <file>] [--json]
+  skillar eval [--cases <file>] [--baseline] [--json]
   skillar sync connect --grant-file <path>    connect a browser-authorized device (no upload consent)
   skillar sync status|prepare|run|backfill|pause|rollback|disconnect
   skillar sync restore --destination <db> --source-domain <id> --snapshot-id <id>
@@ -171,9 +171,10 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         }
       }
       case "eval": {
-        const p = parseArgs(rest, { flags: ["--json"], values: ["--cases"] });
+        const p = parseArgs(rest, { flags: ["--json", "--baseline"], values: ["--cases"] });
         const cases = p.values.get("--cases")?.[0];
-        return await (await loaders.evalApi()).runEval({ ...(cases ? { cases } : {}), json: p.flags.has("--json") }, makeCliDeps(env));
+        if (p.flags.has("--baseline") && cases) throw new UsageError("--baseline cannot be used with --cases");
+        return await (await loaders.evalApi()).runEval({ ...(cases ? { cases } : {}), json: p.flags.has("--json"), baseline: p.flags.has("--baseline") }, makeCliDeps(env));
       }
       case "sync":
         return await (await import("./sync.js")).runSync(rest, env, io);

@@ -4,7 +4,7 @@ import { act, all, loadViews, mount } from "../../site/test/helpers/t10-dom.mjs"
 
 const ui = await loadViews(`
   export { parseHash, buildHash, serializeFilter } from "./local/dashboard/state.ts";
-  export { destination } from "./local/dashboard/components/command-jump.tsx";
+  export { CommandJump, DESTINATIONS, destination } from "./local/dashboard/components/command-jump.tsx";
   export { histogramBars } from "./local/dashboard/views/sessions/histogram.tsx";
   export { readSkills, candidateSkills, sortSessions } from "./local/dashboard/views/sessions/model.ts";
   export { SessionTable } from "./local/dashboard/views/sessions/table.tsx";
@@ -241,4 +241,18 @@ test("navigation-only command destinations retain the list scope and clear entit
   assert.equal(parsed.event, undefined);
   assert.equal(parsed.peek, undefined);
   assert.equal(parsed.sessionId, undefined);
+});
+
+test("evaluation is a first-class sidebar and command-palette destination", async t => {
+  assert.deepEqual(ui.DESTINATIONS.find(item => item.view === "evaluation"), {
+    view: "evaluation", label: "검색 평가", icon: "graph", group: "분석",
+  });
+  const route = { view: "trace", sessionId: "session", filter: { q: "review" }, peek: "session", event: "load-id" };
+  let next, closes = 0;
+  const { container } = await mount(t, ui.CommandJump, { route, navigate(value) { next = value; }, close() { closes++; } });
+  const evaluation = all(container, node => node.getAttribute("id") === "pe-command-evaluation")[0];
+  assert.ok(evaluation, "검색 평가 is available in the command palette");
+  await act(() => evaluation.click());
+  assert.equal(closes, 1);
+  assert.deepEqual(next, ui.destination(route, "evaluation"));
 });

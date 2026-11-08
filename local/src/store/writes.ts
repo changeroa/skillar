@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
 import { toolCallReferencesUri, URI_WINDOW_MS } from "../ingest/attribution.js";
-import type { Attribution, CanonicalEvent, SkillarConfig, OtelSpanRow, RuntimeId, SessionRef, SkillEntry, SkillUri, Store } from "../types.js";
+import type { Attribution, CanonicalEvent, EvalCase, EvalLabel, EvalRun, OtelSpanRow, RuntimeId, SessionRef, SkillarConfig, SkillEntry, SkillUri, Store } from "../types.js";
 
 /**
  * Optional wiring for createStore. `createStore(db)` alone serves ingest and queries;
@@ -78,7 +78,8 @@ export function writeAliasesOverrides(db: Db, value: Record<string, string[]>): 
 }
 
 type Writes = Pick<Store, "append" | "hasSourceKey" | "openSessions" | "reattribute" | "findEventByToolUseId" | "upsertSession" | "putLoad" | "getLoad"
-  | "latestLoad" | "traceSession" | "upsertSkills" | "markRemoved" | "countIngest" | "addEvalCase" | "evalCases" | "retention" | "putSpans" | "reconcileLoads">;
+  | "latestLoad" | "traceSession" | "upsertSkills" | "markRemoved" | "countIngest" | "addEvalCase" | "updateEvalCase" | "saveEvalRun"
+  | "retention" | "putSpans" | "reconcileLoads">;
 
 export function createWrites(ctx: StoreCtx): Writes {
   const { db } = ctx;
@@ -341,14 +342,72 @@ export function createWrites(ctx: StoreCtx): Writes {
       if (kind !== "accepted" && code !== undefined) setMeta(db, "ingest.lastError", JSON.stringify({ ts: ctx.now(), code }));
     },
 
-    addEvalCase(c: { query: string; expectedUri?: SkillUri; fromTraceId?: string }): void {
-      db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at) VALUES (?, ?, ?, ?, ?)")
-        .run(randomUUID(), c.query, c.expectedUri ?? null, c.fromTraceId ?? null, ctx.now());
+    addEvalCase(c) {
+      const label: EvalLabel = c.label ?? (c.expectedUri ? "skill" : "unlabeled");
+      if (label === "skill" && !c.expectedUri) throw storeError("invalid_eval_label", "a skill label needs expectedUri");
+      if (label !== "skill" && c.expectedUri !== undefined) throw storeError("invalid_eval_label", `${label} labels cannot have expectedUri`);
+      const row: EvalCase = { id: randomUUID(), query: c.query, label, ...(label === "skill" ? { expectedUri: c.expectedUri! } : {}),
+        ...(c.fromTraceId ? { fromTraceId: c.fromTraceId } : {}), createdAt: ctx.now() };
+      const ownTransaction = !db.isTransaction;
+      if (ownTransaction) db.exec("BEGIN IMMEDIATE");
+      try {
+        db.prepare("INSERT INTO eval_cases (id, query, expected_uri, from_trace_id, created_at) VALUES (?, ?, ?, ?, ?)")
+          .run(row.id, row.query, row.expectedUri ?? null, row.fromTraceId ?? null, row.createdAt);
+        db.prepare("INSERT INTO eval_case_labels (eval_case_id, label) VALUES (?, ?)").run(row.id, row.label);
+        if (ownTransaction) db.exec("COMMIT");
+      } catch (error) {
+        if (ownTransaction) db.exec("ROLLBACK");
+        throw error;
+      }
+      return row;
     },
 
-    evalCases() {
-      const rows = db.prepare("SELECT query, expected_uri FROM eval_cases ORDER BY created_at, rowid").all() as { query: string; expected_uri: string | null }[];
-      return rows.map((r) => (r.expected_uri === null ? { query: r.query } : { query: r.query, expectedUri: r.expected_uri }));
+    updateEvalCase(id, c) {
+      if (c.label === "skill" && !c.expectedUri) throw storeError("invalid_eval_label", "a skill label needs expectedUri");
+      if (c.label !== "skill" && c.expectedUri !== undefined) throw storeError("invalid_eval_label", `${c.label} labels cannot have expectedUri`);
+      const ownTransaction = !db.isTransaction;
+      if (ownTransaction) db.exec("BEGIN IMMEDIATE");
+      try {
+        const result = db.prepare("UPDATE eval_cases SET expected_uri = ? WHERE id = ?")
+          .run(c.label === "skill" ? c.expectedUri! : null, id);
+        if (Number(result.changes) === 0) {
+          if (ownTransaction) db.exec("COMMIT");
+          return undefined;
+        }
+        db.prepare(`INSERT INTO eval_case_labels (eval_case_id, label) VALUES (?, ?)
+          ON CONFLICT(eval_case_id) DO UPDATE SET label = excluded.label`).run(id, c.label);
+        const row = db.prepare(`SELECT c.id, c.query, l.label, c.expected_uri, c.from_trace_id, c.created_at
+          FROM eval_cases c JOIN eval_case_labels l ON l.eval_case_id = c.id WHERE c.id = ?`).get(id) as
+          { id: string; query: string; label: EvalLabel; expected_uri: string | null; from_trace_id: string | null; created_at: number };
+        if (ownTransaction) db.exec("COMMIT");
+        return { id: row.id, query: row.query, label: row.label, ...(row.expected_uri ? { expectedUri: row.expected_uri } : {}),
+          ...(row.from_trace_id ? { fromTraceId: row.from_trace_id } : {}), createdAt: row.created_at };
+      } catch (error) {
+        if (ownTransaction) db.exec("ROLLBACK");
+        throw error;
+      }
+    },
+
+    saveEvalRun(run) {
+      const id = randomUUID();
+      const createdAt = ctx.now();
+      const baseline = run.baseline ? 1 : 0;
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        if (baseline) db.prepare("UPDATE eval_runs SET baseline = 0 WHERE baseline = 1").run();
+        db.prepare("INSERT INTO eval_runs (id, catalog_fingerprint, catalog_size, created_at, baseline, metrics_json) VALUES (?, ?, ?, ?, ?, ?)")
+          .run(id, run.catalogFingerprint, run.catalogSize, createdAt, baseline, JSON.stringify(run.metrics));
+        const insert = db.prepare(`INSERT INTO eval_run_cases
+          (run_id, eval_case_id, label, expected_uri, language, rank, abstained) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+        for (const outcome of run.outcomes) {
+          insert.run(id, outcome.evalCaseId, outcome.label, outcome.expectedUri ?? null, outcome.language, outcome.rank ?? null, outcome.abstained ? 1 : 0);
+        }
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return { id, catalogFingerprint: run.catalogFingerprint, catalogSize: run.catalogSize, createdAt, baseline: baseline === 1, metrics: run.metrics } as EvalRun;
     },
 
     putSpans(spans: OtelSpanRow[], dropped = 0): number {

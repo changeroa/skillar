@@ -8,6 +8,7 @@ import {
 } from "./state";
 import { FlowView } from "./views/flow";
 import { HeatmapView } from "./views/heatmap";
+import { EvaluationView } from "./views/evaluation";
 import { SessionsView } from "./views/sessions";
 import { TraceView } from "./views/trace";
 import { WorkspaceView, WorkspacesView } from "./views/workspaces";
@@ -116,18 +117,19 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
 }
 
 const VIEW_LABEL: Record<View, string> = {
-  dashboard: "대시보드", sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
+  dashboard: "대시보드", sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", evaluation: "검색 평가", "not-found": "페이지를 찾을 수 없습니다",
 };
 const TABS: { view: View; label: string }[] = [
   { view: "sessions", label: VIEW_LABEL.sessions },
   { view: "flow", label: VIEW_LABEL.flow },
   { view: "workspaces", label: VIEW_LABEL.workspaces },
   { view: "heatmap", label: VIEW_LABEL.heatmap },
+  { view: "evaluation", label: VIEW_LABEL.evaluation },
 ];
 
 /** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  dashboard: "dashboard", sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
+  dashboard: "dashboard", sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", evaluation: "evaluation", "not-found": "not-found",
 };
 
 export type AppOptions = { embedded?: boolean };
@@ -283,6 +285,7 @@ export function App({ embedded = false }: AppOptions = {}) {
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
+        {route.view === "evaluation" && <EvaluationView {...props} />}
         {route.view === "not-found" && <section class="empty">
           {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
           <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>

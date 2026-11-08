@@ -51,13 +51,15 @@ test("mergeSplitSessions moves pane links and load candidates off a duplicate be
   }
 });
 
-test("fresh database migrates to user_version 8 with every table", () => {
+test("fresh database migrates to user_version 9 with every table", () => {
   const db = openDb(":memory:");
   try {
-    assert.equal(SCHEMA_VERSION, 8);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 8);
+    assert.equal(SCHEMA_VERSION, 9);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 9);
     const names = db.prepare("SELECT name FROM sqlite_master WHERE type IN ('table') ORDER BY name").all().map((r) => r.name);
-    for (const t of ["meta", "skills", "skills_fts", "sessions", "events", "loads", "eval_cases"]) assert.ok(names.includes(t), t);
+    for (const t of ["meta", "skills", "skills_fts", "sessions", "events", "loads", "eval_cases", "eval_case_labels", "eval_runs", "eval_run_cases"]) assert.ok(names.includes(t), t);
+    assert.deepEqual(db.prepare("PRAGMA table_info(eval_cases)").all().map((r) => r.name),
+      ["id", "query", "expected_uri", "from_trace_id", "created_at"]);
     const cols = db.prepare("PRAGMA table_info(events)").all().map((r) => r.name);
     assert.ok(cols.includes("tool_use_id"));
     const idx = db.prepare("PRAGMA index_list(events)").all().map((r) => r.name);
@@ -78,7 +80,7 @@ test("file database uses WAL, busy_timeout 5000, foreign keys, and reopens witho
     db.prepare("INSERT INTO meta(key, value) VALUES ('k', 'v')").run();
     db.close();
     const again = openDb(path);
-    assert.equal(again.prepare("PRAGMA user_version").get().user_version, 8);
+    assert.equal(again.prepare("PRAGMA user_version").get().user_version, 9);
     assert.equal(again.prepare("SELECT value FROM meta WHERE key = 'k'").get().value, "v");
     again.close();
   } finally {

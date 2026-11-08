@@ -192,7 +192,7 @@ export async function startServer(config: SkillarConfig, deps: ServerDeps = {}):
       if (req.path.startsWith("/ingest/")) ownStore.countIngest("rejected", "unsupported_media_type");
     }));
 
-    registerRoutes(app, { store: ownStore, catalog, ingest: ingestDeps, sse, version, log, fsHealth: () => watchdog.health() });
+    registerRoutes(app, { store: ownStore, catalog, search, ingest: ingestDeps, sse, version, log, fsHealth: () => watchdog.health() });
     registerMcp(app, { catalog, search, store: ownStore, ingest: ingestDeps, token });
     registerStatic(app, { token, ...(deps.dashboardDir ? { dir: deps.dashboardDir } : {}) });
     app.use((_req: Request, res: Response) => deny(res, 404, "not_found"));

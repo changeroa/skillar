@@ -300,9 +300,9 @@ Layout
   `prefers-reduced-motion` it is static.
 
 ### TabBar
-- Structure: `nav` > `a.tab` x4 (Sessions, Workspaces, Flow, Heatmap); hrefs keep the current filter
+- Structure: `nav` > `a.tab` x5 (Sessions, Workspaces, Flow, Heatmap, Evaluation); hrefs keep the current filter
   query. A detail route marks its list tab current through `TAB_OF` (trace -> Sessions, workspace ->
-  Workspaces).
+  Workspaces). Evaluation has no session filter semantics, but retains the shell's route contract.
 - States: default `--ink-2`; hover `--wash`; active `--wash-2` + `--ink`; `focus-visible` ring.
 - Accessibility: `aria-current="page"` on the active tab; 36px min target height.
 
@@ -457,7 +457,7 @@ Layout
   (read_file, native_skill) are an inset 2px ring of the kind color.
 - Bodies: prompt = `p.tl__text` (pre-wrap) with a `button.foldbtn` fold over 600 chars; search =
   mode / elapsed ms / count / trace id row + `blockquote.tl__query` (`--wash`) + CandidatesPanel
-  or AbstainBlock; load = name + mono URI + `@<8-char manifest digest>`; read_file = mono
+  or AbstainBlock, followed by the GhostButton "Save as eval case"; load = name + mono URI + `@<8-char manifest digest>`; read_file = mono
   resource path relative to the skill dir + bytes + `from <skill>`; native_skill = name + `via`;
   error = mono code in `--bad` + message; session_end = `after <duration>`.
 - Empty states: `section.empty` "Session not found" (stale id) and `div.callout` "This session
@@ -485,7 +485,22 @@ Layout
 ### AbstainBlock (`views/trace.tsx`)
 - Structure: `div.tl__abstain` (hairline `--line`, radius `--r-sm`) > StateBadge
   `badge--succeeded` "no_candidates · <reason>" > `p.tl__hint` > GhostButton "Save as eval case"
-  (POSTs `{query, fromTraceId}`; states idle / saving / saved / error with a `role="alert"` line).
+  (the same capture action follows candidate panels; POSTs `{query, fromTraceId}`; states idle / saving / saved /
+  error with a `role="alert"` line).
+
+### Evaluation (`views/evaluation.tsx`)
+- Structure: `section.eval` > header card (purpose, baseline/current GhostButtons, catalog-change notice) >
+  latest metric card > optional persisted comparison card > saved-query list. The list is a document-flow
+  grid: query, native `select` judgement, then the source trace id. On mobile it becomes one column.
+- Judgements are exactly `Unlabeled`, `No matching catalog skill`, or one current catalog skill. Unlabeled
+  observations are retained and counted, but never rendered or scored as no-match. A removed old skill stays
+  visible as an unavailable selected option so a label is never silently rewritten.
+- Metrics use the existing achromatic card treatment and `--surface-2` metric cells: label accuracy, hit@1,
+  hit@3, MRR, explicit no-match accuracy, and abstain rate. Korean and English rows appear only when labeled
+  queries support that breakdown. Baseline/current comparison reports paired rank gains, regressions, found,
+  and lost results from persisted runs; it never claims a comparison before the catalog fingerprint changes.
+- Actions use the shared `button.btn`; disabled only when no explicit label exists or a request is in flight.
+  Errors are a `role="alert"` line in `--bad`. No polling, animations, or nested scroll regions.
 
 ### Callout
 - `div.callout`: hairline card (`--line`, `--r-md`, `--surface`) with a bold `--ink` title and

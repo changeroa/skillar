@@ -6,7 +6,7 @@ import { installJournalTriggers } from "../sync/triggers.js";
 
 export type Db = DatabaseSync;
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /** migrations[i] upgrades user_version i -> i + 1. */
 function migrations(): string[] {
@@ -19,6 +19,7 @@ function migrations(): string[] {
     readFileSync(new URL("./migrations/006_recording_order.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/007_sync.sql", import.meta.url), "utf8"),
     readFileSync(new URL("./migrations/008_connector_commands.sql", import.meta.url), "utf8"),
+    readFileSync(new URL("./migrations/009_search_evaluation.sql", import.meta.url), "utf8"),
   ];
 }
 
@@ -90,15 +91,77 @@ export function mergeSplitSessions(db: DatabaseSync): number {
   return merges.length;
 }
 
+function repairLegacySearchEvaluation(db: DatabaseSync): void {
+  // The pre-sync evaluation branch put its judgement directly on eval_cases. Move it out before
+  // installing CDC so those historical stores regain the fixed portable row shape.
+  db.exec(`CREATE TABLE eval_case_labels_staged (
+      eval_case_id TEXT PRIMARY KEY,
+      label TEXT NOT NULL
+    );
+    INSERT INTO eval_case_labels_staged (eval_case_id, label) SELECT id, label FROM eval_cases;
+    CREATE TABLE eval_run_cases_staged (
+      run_id TEXT NOT NULL,
+      eval_case_id TEXT NOT NULL,
+      label TEXT NOT NULL,
+      expected_uri TEXT,
+      language TEXT NOT NULL,
+      rank INTEGER,
+      abstained INTEGER NOT NULL,
+      PRIMARY KEY (run_id, eval_case_id)
+    ) WITHOUT ROWID;
+    INSERT INTO eval_run_cases_staged SELECT run_id, eval_case_id, label, expected_uri, language, rank, abstained FROM eval_run_cases;
+    DROP TABLE eval_run_cases;
+    CREATE TABLE eval_cases_next (
+      id TEXT PRIMARY KEY,
+      query TEXT NOT NULL,
+      expected_uri TEXT,
+      from_trace_id TEXT,
+      created_at INTEGER NOT NULL
+    );
+    INSERT INTO eval_cases_next (id, query, expected_uri, from_trace_id, created_at)
+      SELECT id, query, expected_uri, from_trace_id, created_at FROM eval_cases;
+    DROP TABLE eval_cases;
+    ALTER TABLE eval_cases_next RENAME TO eval_cases;
+    CREATE TABLE eval_case_labels (
+      eval_case_id TEXT PRIMARY KEY REFERENCES eval_cases(id) ON DELETE CASCADE,
+      label TEXT NOT NULL CHECK (label IN ('unlabeled', 'skill', 'no_match'))
+    ) WITHOUT ROWID;
+    INSERT INTO eval_case_labels SELECT eval_case_id, label FROM eval_case_labels_staged;
+    DROP TABLE eval_case_labels_staged;
+    CREATE INDEX eval_case_labels_label ON eval_case_labels(label);
+    CREATE TABLE eval_run_cases (
+      run_id TEXT NOT NULL REFERENCES eval_runs(id) ON DELETE CASCADE,
+      eval_case_id TEXT NOT NULL REFERENCES eval_cases(id),
+      label TEXT NOT NULL CHECK (label IN ('skill', 'no_match')),
+      expected_uri TEXT,
+      language TEXT NOT NULL CHECK (language IN ('ko', 'en', 'other')),
+      rank INTEGER,
+      abstained INTEGER NOT NULL CHECK (abstained IN (0, 1)),
+      PRIMARY KEY (run_id, eval_case_id)
+    ) WITHOUT ROWID;
+    INSERT INTO eval_run_cases SELECT run_id, eval_case_id, label, expected_uri, language, rank, abstained FROM eval_run_cases_staged;
+    DROP TABLE eval_run_cases_staged;
+    CREATE INDEX eval_run_cases_case ON eval_run_cases(eval_case_id, run_id);`);
+}
+
 export function migrate(db: DatabaseSync): void {
   const steps = migrations();
   let version = userVersion(db);
+  // Version 7 was released on two branches: search evaluation owns eval_runs, while sync owns sync_journal.
+  // The table identifies the historical lineage before its first forward migration; user_version alone cannot.
+  const legacySearchEvaluation = version === 7 && db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'eval_runs'").get() !== undefined;
   while (version < steps.length) {
-    const sql = steps[version]!;
+    // A search-evaluation v7 never received sync. Run that omitted migration in its next empty version slot,
+    // first restoring the portable eval_cases shape from its branch-local column.
+    const repairingLegacyEvaluation = legacySearchEvaluation && version === 7;
+    const sql = repairingLegacyEvaluation ? steps[6]!
+      : legacySearchEvaluation && version === 8 ? steps[7]!
+      : steps[version]!;
     db.exec("BEGIN IMMEDIATE");
     try {
       db.exec(sql);
-      if (version === 6) installJournalTriggers(db);
+      if (repairingLegacyEvaluation) repairLegacySearchEvaluation(db);
+      if (version === 6 || repairingLegacyEvaluation) installJournalTriggers(db);
       db.exec(`PRAGMA user_version = ${version + 1}`);
       db.exec("COMMIT");
     } catch (error) {
