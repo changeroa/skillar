@@ -31,6 +31,18 @@ EOF
 
 The GREEN change adds `DB`, `디비`, `database`, `스크린리더`, `화면 낭독기`, and `screen reader labels` only to the 12-entry synthetic benchmark catalog. The fixture URI remains canonical for that fixture; it is not a production URI.
 
+## No-match and unrelated-candidate comparison
+
+Using the same built `searchSkills` implementation in `discovery` mode on both catalog snapshots and all 36 cases in this branch's `server/bench/search-cases.json`:
+
+| Measure | RED metadata | GREEN metadata |
+| --- | ---: | ---: |
+| Expected first result on 28 positive cases | 26/28 | 28/28 |
+| A result on any of 8 no-match cases (false positive) | 0/8 | 0/8 |
+| Additional, non-expected names in positive top-five results | 5 | 5 |
+
+Only the two Korean-alias cases changed their candidate lists: each went from no result to its expected synthetic fixture URI. The five additional candidates are *unjudged*, not labeled irrelevant; equal counts do not prove their relevance or any production precision improvement. Both metadata snapshots use the same code, and these authored cases are not a held-out evaluation set.
+
 ## Benchmark result
 
 ```sh
