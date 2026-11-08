@@ -116,6 +116,60 @@ export function workspaceFilter(query: FlowsQuery): Filter {
   return { from: query.from, to: query.to, automated: query.automated === "exclude" ? undefined : query.automated };
 }
 
+/** Merges a fresh head page or a following page without moving existing entries or rendering an id twice. */
+export function mergeFlowEntries(current: readonly FlowListEntry[], page: readonly FlowListEntry[], mode: "refresh" | "append"): FlowListEntry[] {
+  const pageById = new Map(page.map((entry) => [entry.id, entry]));
+  const seen = new Set<string>();
+  const add = (entries: readonly FlowListEntry[], usePageValues: boolean, into: FlowListEntry[]) => {
+    for (const entry of entries) {
+      if (seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      into.push(usePageValues ? pageById.get(entry.id) ?? entry : entry);
+    }
+  };
+  const merged: FlowListEntry[] = [];
+  if (mode === "refresh") {
+    add(page, true, merged);
+    add(current, false, merged);
+  } else {
+    add(current, true, merged);
+    add(page, true, merged);
+  }
+  return merged;
+}
+
+export type WorkspaceRequest = { readonly kind: "reload" | "page"; readonly queryKey: string; readonly epoch: number; readonly id: number };
+
+/** Separates reload and next-page responses while invalidating both whenever a filter changes. */
+export function createWorkspaceRequestGate() {
+  let queryKey = "";
+  let epoch = 0;
+  let reloadId = 0;
+  let pageId = 0;
+  const activate = (nextQueryKey: string): boolean => {
+    if (nextQueryKey === queryKey) return false;
+    queryKey = nextQueryKey;
+    epoch += 1;
+    reloadId = 0;
+    pageId = 0;
+    return true;
+  };
+  return {
+    beginReload(nextQueryKey: string): { queryChanged: boolean; request: WorkspaceRequest } {
+      const queryChanged = activate(nextQueryKey);
+      return { queryChanged, request: { kind: "reload", queryKey: nextQueryKey, epoch, id: ++reloadId } };
+    },
+    beginPage(nextQueryKey: string): { queryChanged: boolean; request: WorkspaceRequest } {
+      const queryChanged = activate(nextQueryKey);
+      return { queryChanged, request: { kind: "page", queryKey: nextQueryKey, epoch, id: ++pageId } };
+    },
+    isCurrent(request: WorkspaceRequest): boolean {
+      return request.queryKey === queryKey && request.epoch === epoch
+        && (request.kind === "reload" ? request.id === reloadId : request.id === pageId);
+    },
+  };
+}
+
 export function turnsOpen(count: number): boolean {
   return count <= TURNS_OPEN_MAX;
 }

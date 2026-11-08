@@ -33,6 +33,20 @@ function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
     signal.addEventListener("abort", abort, { once: true });
   });
 }
+/** The local HTTP API keeps cursors opaque; cloud reports carry the equivalent typed sort key. */
+function decodeFlowCursor(cursor: string): { orderMs: number; id: string } {
+  try {
+    const encoded = cursor.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = `${encoded}${"=".repeat((4 - encoded.length % 4) % 4)}`;
+    const value = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(atob(padded), (char) => char.charCodeAt(0)));
+    const separator = value.indexOf(":");
+    const orderMs = Number(value.slice(0, separator)), id = value.slice(separator + 1);
+    if (separator <= 0 || !Number.isSafeInteger(orderMs) || id.length === 0) throw new Error("invalid cursor");
+    return { orderMs, id };
+  } catch {
+    throw cloudError("cloud_cursor", "작업 공간 페이지 위치가 올바르지 않습니다. 목록을 새로 고침해 다시 시도해 주세요.");
+  }
+}
 /** One adapter owns one profile lifetime; replace it rather than mutating its profile. */
 export function createCloudApi(input: DashboardSource, options: CloudApiOptions): CloudApi {
   const profile = dashboardSourceSchema.parse(input);
@@ -166,7 +180,11 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
     },
     trace: (sessionId) => query({ kind: "trace", sessionId }),
     flow: (filter, opts = {}) => query({ kind: "flow", filter, unit: opts.unit ?? "first_load", top: opts.top ?? 20 }),
-    flows: (opts = {}) => query({ kind: "flows", ...opts, limit: opts.limit ?? 20, automated: opts.automated ?? "exclude" }),
+    flows: (opts = {}) => {
+      const { cursor, ...rest } = opts;
+      return query({ kind: "flows", ...rest, limit: opts.limit ?? 20, automated: opts.automated ?? "exclude",
+        ...(cursor === undefined ? {} : { cursor: decodeFlowCursor(cursor) }) });
+    },
     flowReport: (flowId, opts = {}) => query({ kind: "flow-report", flowId, ...opts, limit: opts.limit ?? 100, automated: opts.automated ?? "exclude" }),
     workflowVersions: (name) => query({ kind: "workflow-versions", name }),
     skillReport: (sessionId, opts = {}) => query({ kind: "session-report", sessionId, automated: opts.automated ?? "exclude" }),

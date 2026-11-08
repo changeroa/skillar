@@ -20,6 +20,7 @@ async function loadModule(relative) {
 }
 
 const workspaces = await loadModule("dashboard/views/workspaces.tsx");
+const dashboardApi = await loadModule("dashboard/api.ts");
 const calls = await loadModule("dashboard/components/calls.tsx");
 const factsMod = await loadModule("dashboard/components/facts.tsx");
 const trace = await loadModule("dashboard/views/trace.tsx");
@@ -39,6 +40,11 @@ const SPEC = {
 
 let seq = 0;
 const candidate = (name, rank) => ({ uri: uri(name), name, description: "", score: 10 - rank, rank, invocation: "automatic", digest: `sha256:${name}`, matched: [] });
+const flowEntry = (id, label = id) => ({
+  id, kind: "workspace", workspaceId: id, tabId: null, label, registered: false, spec: null,
+  startedMs: null, endedMs: null, paneIds: [], sessionIds: [], counts: { panes: 0, sessions: 0 },
+  attribution: { reported: 0, inferred: 0, unlinked: 0 },
+});
 
 /** One registered flow over two panes: a Claude session that searched and loaded, a Codex session that went native. */
 function seedStore(skillarHome) {
@@ -334,4 +340,57 @@ test("the list query carries only the filter keys GET /api/flows accepts", () =>
   assert.equal(workspaces.turnsOpen(workspaces.TURNS_OPEN_MAX), true);
   assert.equal(workspaces.turnsOpen(workspaces.TURNS_OPEN_MAX + 1), false);
   assert.ok(workspaces.SUMMARY_CONCURRENCY >= 1);
+});
+
+test("the dashboard API serializes an opaque flows cursor with the active range and automation filter", () => {
+  const path = new URL(dashboardApi.flowsPath({ from: 10, to: 20, limit: 7, automated: "only", cursor: "next/+=" }), "http://dashboard.test");
+  assert.equal(path.pathname, "/api/flows");
+  assert.deepEqual(Object.fromEntries(path.searchParams), {
+    from: "10", to: "20", limit: "7", automated: "only", cursor: "next/+=",
+  });
+});
+
+test("workspace pagination rejects stale deferred responses, keeps page order stable, and retains older rows on live refresh", async () => {
+  const gate = workspaces.createWorkspaceRequestGate();
+  let entries = [];
+  const apply = (request, page, mode) => {
+    if (!gate.isCurrent(request)) return false;
+    entries = workspaces.mergeFlowEntries(entries, page, mode);
+    return true;
+  };
+
+  const initial = gate.beginReload("{}").request;
+  const initialReply = Promise.withResolvers();
+  const filtered = gate.beginReload('{"automated":"only"}').request;
+  const filteredReply = Promise.withResolvers();
+  initialReply.resolve([flowEntry("stale")]);
+  assert.equal(apply(initial, await initialReply.promise, "refresh"), false, "a response for old filters cannot replace the new list");
+  filteredReply.resolve([flowEntry("filtered")]);
+  assert.equal(apply(filtered, await filteredReply.promise, "refresh"), true);
+  assert.deepEqual(entries.map((entry) => entry.id), ["filtered"]);
+
+  const page = gate.beginPage('{"automated":"only"}').request;
+  const staleLive = gate.beginReload('{"automated":"only"}').request;
+  const currentLive = gate.beginReload('{"automated":"only"}').request;
+  const currentLiveReply = Promise.withResolvers();
+  currentLiveReply.resolve([flowEntry("new"), flowEntry("filtered", "updated")]);
+  assert.equal(apply(currentLive, await currentLiveReply.promise, "refresh"), true);
+  assert.deepEqual(entries.map((entry) => [entry.id, entry.label]), [["new", "new"], ["filtered", "updated"]]);
+
+  const pageReply = Promise.withResolvers();
+  pageReply.resolve([flowEntry("filtered", "page duplicate"), flowEntry("older")]);
+  assert.equal(apply(page, await pageReply.promise, "append"), true, "a current next-page response may finish during a live refresh");
+  assert.deepEqual(entries.map((entry) => entry.id), ["new", "filtered", "older"], "existing rows stay put and duplicate ids are not appended");
+  assert.equal(entries.find((entry) => entry.id === "filtered").label, "page duplicate", "a repeated row receives the newer server value without moving");
+
+  const staleLiveReply = Promise.withResolvers();
+  staleLiveReply.resolve([flowEntry("late")]);
+  assert.equal(apply(staleLive, await staleLiveReply.promise, "refresh"), false, "a superseded live response cannot erase loaded pages");
+  assert.deepEqual(entries.map((entry) => entry.id), ["new", "filtered", "older"]);
+
+  const pageBeforeFilter = gate.beginPage('{"automated":"only"}').request;
+  gate.beginReload('{"from":100}');
+  const latePageReply = Promise.withResolvers();
+  latePageReply.resolve([flowEntry("must-not-appear")]);
+  assert.equal(apply(pageBeforeFilter, await latePageReply.promise, "append"), false, "a filter reset invalidates an in-flight next page");
 });

@@ -116,6 +116,7 @@ installStyles("analysis", `
 .analysis-key{display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--ink-2)}.analysis-key--read{background:var(--accent)}
 .analysis-unmeasured{border:1px dashed var(--line-2);padding:16px;margin-top:8px}
 .workspace-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.workspace-split:has(.workspace-peek){grid-template-columns:minmax(0,1fr) 560px}
+.workspace-pager{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}.workspace-pager p{margin:0}
 .workspace-peek{border:1px solid var(--line);height:calc(100dvh - 48px);position:fixed;top:48px;right:0;width:560px;z-index:20;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
 .workspace-peek__head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line)}
 .workspace-peek__body{overflow:auto;min-height:0;flex:1;padding:12px}.workspace-peek h2{font-size:18px}

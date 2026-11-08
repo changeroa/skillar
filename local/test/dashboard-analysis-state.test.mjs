@@ -67,3 +67,37 @@ test("unavailable traces keep weekly reads unmeasured", async t => {
   assert.ok(weekly.textContent.includes("미측정"));
   assert.equal(all(weekly, node => node.hasAttribute("data-count")).length, 0);
 });
+
+const workspaceEntry = (id, startedMs) => ({
+  id, kind: "workspace", workspaceId: id, tabId: null, label: id, registered: false, spec: null,
+  startedMs, endedMs: null, paneIds: [], sessionIds: [], counts: { panes: 0, sessions: 0 },
+  attribution: { reported: 0, inferred: 0, unlinked: 0 },
+});
+const workspacePage = (flows, nextCursor) => ({ generatedAt: 1, from: null, to: null, limit: 20, automated: "include", flows, nextCursor });
+
+test("workspace cursor appends a page after a live head refresh without dropping loaded rows", async t => {
+  const current = workspaceEntry("current", 200), newer = workspaceEntry("newer", 300), older = workspaceEntry("older", 100);
+  const page = Promise.withResolvers();
+  const requests = [];
+  views.configureApi({ ...base(), mode: "cloud", flows: async query => {
+    requests.push(query);
+    if (query.cursor === "after-current") return page.promise;
+    return requests.filter(request => request.cursor === undefined).length === 1
+      ? workspacePage([current], "after-current")
+      : workspacePage([newer, current], "after-current");
+  } });
+  const props = { route: { view: "workspaces", filter: { automated: "include" } }, live: { state: "paused", seq: 0 }, navigate() {} };
+  const { dom, container, show } = await mount(t, views.WorkspacesView, props);
+  const ids = () => all(container, node => node.getAttribute("data-flow") !== null).map(node => node.getAttribute("data-flow"));
+  await waitFor(dom, () => ids().join(",") === "current", "initial workspace page");
+  const more = all(container, node => node.localName === "button" && node.getAttribute("aria-controls") === "workspace-list")[0];
+  await act(() => more.click());
+  await waitFor(dom, () => requests.length === 2, "next cursor request");
+  await show({ ...props, live: { state: "live", seq: 1 } });
+  await waitFor(dom, () => ids().join(",") === "newer,current", "live head page");
+  await act(() => page.resolve(workspacePage([current, older], null)));
+  await waitFor(dom, () => ids().join(",") === "newer,current,older", "appended cursor page");
+  assert.deepEqual(requests.map(request => ({ automated: request.automated, cursor: request.cursor })), [
+    { automated: "include", cursor: undefined }, { automated: "include", cursor: "after-current" }, { automated: "include", cursor: undefined },
+  ]);
+});

@@ -77,6 +77,16 @@ test("maps every dashboard report read to the actual wire and unwraps payload", 
   api.dispose();
 });
 
+test("converts an opaque workspace cursor into the cloud report sort key", async () => {
+  const cursor = Buffer.from("100:flow:with:colon").toString("base64url");
+  const { api, requests } = harness();
+  await api.flows({ from: 10, to: 20, limit: 7, automated: "only", cursor });
+  assert.deepEqual(requests[0].body.query, {
+    kind: "flows", from: 10, to: 20, limit: 7, automated: "only", cursor: { orderMs: 100, id: "flow:with:colon" },
+  });
+  api.dispose();
+});
+
 test("polls queued and running states only after controlled scheduler release", async () => {
   // Given
   const result = wire();
