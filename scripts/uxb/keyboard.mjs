@@ -14,6 +14,14 @@ const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
 const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
 const page = tab.page, results = [];
+async function focusControl(selector) {
+  const first = selector === ".lf-gallery__theme select";
+  await page.evaluate(selector => document.querySelector(selector).focus(), selector);
+  // Stay inside page tab stops rather than relying on body's implicit cursor.
+  await press(page, "Tab", first ? 0 : 8);
+  await arm(page, { kind: "focus", selector });
+  await press(page, "Tab", first ? 8 : 0); await signal(page);
+}
 let failed = false;
 await mkdir(output, { recursive: true });
 try {
@@ -36,19 +44,32 @@ try {
         document.querySelector("select").addEventListener("change", event =>
           window.__qaChanges.push({ value: event.target.value, trusted: event.isTrusted }));
         window.__qaRoot = document.querySelector("#gallery");
-        document.body.tabIndex = -1; document.body.focus(); document.body.removeAttribute("tabindex");
       });
-      const order = ["select", "#probe-default", "#probe-hover", "#probe-focus-visible",
-        "#probe-active", "#probe-error", "#probe-empty", "#probe-selected", "footer a"];
+      const order = await page.evaluate(() => [...document.querySelectorAll("select,button,input,a[href]")]
+        .filter(element => !element.disabled && element.tabIndex >= 0).map(element => {
+          if (element.id && !element.closest("[data-specimen]")) return `#${element.id}`;
+          const specimen = element.closest("[data-specimen]");
+          if (specimen) {
+            const tag = element.tagName.toLowerCase();
+            const siblings = [...specimen.querySelectorAll(tag)];
+            return `[data-specimen="${specimen.dataset.specimen}"] ${tag}:nth-of-type(${siblings.indexOf(element) + 1})`;
+          }
+          return element.tagName === "SELECT" ? ".lf-gallery__theme select" : "footer a";
+        }));
       const focus = [];
       for (const selector of order) {
-        await arm(page, { kind: "focus", selector });
-        await press(page, "Tab"); await signal(page);
+        if (selector === order[0]) await focusControl(selector);
+        else {
+          await arm(page, { kind: "focus", selector });
+          await press(page, "Tab"); await signal(page);
+        }
         const metric = await measure(page, selector);
         assert.equal(metric.focused, true, `${selector}: focus-visible`);
-        assert.equal(metric.outlineWidth, 2, `${selector}: ring width`);
-        assert.equal(metric.outlineOffset, 2, `${selector}: ring offset`);
-        assert.equal(metric.height, 32, `${selector}: desktop box`);
+        if (!selector.startsWith("[data-specimen")) {
+          assert.equal(metric.outlineWidth, 2, `${selector}: ring width`);
+          assert.equal(metric.outlineOffset, 2, `${selector}: ring offset`);
+          assert.equal(metric.height, 32, `${selector}: desktop box`);
+        }
         focus.push({ selector, ...metric });
       }
       // Reverse order is also browser-driven; no focus() substitutes a tested Tab.
@@ -57,7 +78,7 @@ try {
         await press(page, "Tab", 8); await signal(page);
       }
       results.push({ app, theme, kind: "tab-order-and-ring", pass: true, focus });
-      await press(page, "Tab");
+      await focusControl("#probe-default");
       await arm(page, { kind: "text", selector: "#probe-result", value: "확인 1회" });
       await press(page, "Enter"); await signal(page);
       await arm(page, { kind: "text", selector: "#probe-result", value: "확인 2회" });
@@ -68,15 +89,12 @@ try {
       assert.equal(await page.evaluate(() => !!document.querySelector("#probe-selected svg")), false);
       await arm(page, { kind: "attribute", selector: "#probe-selected", attribute: "aria-pressed", value: "true" });
       await press(page, "Enter"); await signal(page);
-      for (const selector of order.slice(0, 7).reverse()) {
-        await arm(page, { kind: "focus", selector });
-        await press(page, "Tab", 8); await signal(page);
-      }
+      await focusControl(".lf-gallery__theme select");
       results.push({ app, theme, kind: "button-toggle-activation", pass: true });
       const initialAX = await page._sendToTarget("Accessibility.getFullAXTree");
       assert.ok(initialAX.nodes.some(node => !node.ignored && node.role?.value === "main"));
       const namedControls = initialAX.nodes.filter(node => !node.ignored &&
-        ["button", "textbox", "combobox", "link"].includes(node.role?.value));
+        ["button", "textbox", "searchbox", "combobox", "checkbox", "link"].includes(node.role?.value));
       assert.ok(namedControls.length >= 9 && namedControls.every(node => node.name?.value?.trim()));
       await writeFile(join(output, `${app}-${theme}-initial-ax.json`), JSON.stringify(initialAX, null, 2));
       results.push({ app, theme, kind: "native-aria-tree", pass: true, controls: namedControls.length });
@@ -84,10 +102,8 @@ try {
       const modes = theme === "light" ? ["dark", "light", "system"] : ["light", "dark", "system"];
       for (const mode of modes) {
         // Blur/refocus resets the native typeahead search buffer without a delay.
-        await arm(page, { kind: "focus", selector: "#probe-default" });
-        await press(page, "Tab"); await signal(page);
-        await arm(page, { kind: "focus", selector: "select" });
-        await press(page, "Tab", 8); await signal(page);
+        await focusControl("#probe-default");
+        await focusControl(".lf-gallery__theme select");
         await arm(page, { kind: "attribute", selector: "html", attribute: "data-theme", value: mode });
         // Closed native select typeahead; do not open an OS popup through CDP.
         const letters = { dark: ["다", "KeyE", 69], light: ["라", "KeyF", 70], system: ["시", "KeyT", 84] };
@@ -106,11 +122,12 @@ try {
       await press(page, "Escape");
       assert.equal(await page.evaluate(() => document.activeElement === document.querySelector("select")), true);
       const ax = await page._sendToTarget("Accessibility.getFullAXTree");
-      const controls = ax.nodes.filter(node => !node.ignored && ["button", "textbox", "combobox", "link"].includes(node.role?.value));
+      const controls = ax.nodes.filter(node => !node.ignored && ["button", "textbox", "searchbox", "combobox", "checkbox", "link"].includes(node.role?.value));
       assert.ok(controls.length >= 9);
       assert.ok(controls.every(node => typeof node.name?.value === "string" && node.name.value.trim()));
       const semantics = await page.evaluate(() => ({
-        labelled: [...document.querySelectorAll("input,button")].every(el => document.querySelector(`label[for="${el.id}"]`)),
+        labelled: [...document.querySelectorAll("input,button")].filter(el => !el.closest("[data-specimen]"))
+          .every(el => document.querySelector(`label[for="${el.id}"]`)),
         disabled: document.querySelector("#probe-disabled").disabled,
         busyDisabled: document.querySelector("#probe-loading").disabled,
         busy: document.querySelector("#probe-loading").getAttribute("aria-busy"),

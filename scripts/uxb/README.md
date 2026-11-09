@@ -52,6 +52,27 @@ Manifest shape (paths are relative to the manifest):
 
 Phone captures use mobile layout, touch/coarse pointer and DPR 3; the harness
 asserts the real CSS viewport, DPR and pointer mode rather than trusting labels.
+For isolated component parity, `isolateSpecimens: true` places each live
+`[data-specimen]` card at the same integer origin with a 242px sample column,
+before layout and interaction. It restores both inline styles afterward.
+This avoids comparing fractional descendant positions from different gallery
+rows. The real components are neither cloned nor raster-resized. Input
+spellcheck is disabled in this synthetic fixture on both sides, and previous
+focus/selection is cleared before each state. Full-page captures still show
+the normal gallery. `focusSelector` can target an inner input while `selector`
+continues to capture the complete search shell and its ring.
+
+Clipboard actions `copying`, `copied` and `copy-error` capture the whole
+feedback region, not just the icon. `actionSelector` optionally names its
+button. The localhost-only transport supplies a pending, resolved or rejected
+clipboard promise; the real component handler drives the visual state.
+An observer is armed before trusted activation and asserts busy/disabled,
+check or visible error feedback. The clipboard seam is restored afterwards.
+Infinite animation effects use the component's static underlying CSS during
+capture. A paused transform/opacity animation keeps a resampled compositor
+texture, producing false SVG and rounded-fill differences even at time zero.
+Finite interaction transitions still finish through their exact promises;
+loading, status and skeleton cases remain in the matrix.
 Each profile runs light and dark, top/end viewport captures plus every named
 specimen. Crop padding is 4px for rings. Actions: none, hover, focus (trusted
 Shift+Tab/Tab), active (pointer held until after capture). Specimen geometry
@@ -84,6 +105,52 @@ zero-tolerance and alpha always remains exact. The default is still zero.
 Results retain every raw pixel difference, per-channel maxima, accepted corner
 counts, and the policy coordinates. Use this only with a recorded edge-raster
 diagnosis; it cannot accept text/icon or flat-color drift.
+
+## Actual public Demo comparisons
+
+The owner's real-Demo amendment makes this the Gate 1 reference. Pinned
+primitive comparisons remain supplementary; their conflicting defaults do
+not override the deployed Demo. Geometry remains +/-1 CSS px and token colors
+exact, with no image masks or tolerance changes. Matching-content raw diffs
+are reported explicitly, not renamed identical.
+
+```sh
+OMOWRIGHT_HELPER=/path/to/browser/scripts/omowright.mjs \
+  node scripts/uxb/demo-compare.mjs /absolute/demo-captures/records.json /absolute/demo-comparisons
+```
+
+This separate runner consumes actual source PNGs and recorded styles from
+the explicitly permitted public Demo project. It opens only localhost
+product fixtures, with one capture tab and one composition tab on Chrome
+9333. Do not run another keyboard-driving harness concurrently.
+The development-only `?demoControl=Button` host selects real shared Preact
+controls and their ordinary public props. It never overrides primitive
+padding, fonts, colors, radii or focus styling. Host placement preserves
+the source crop's fractional device-pixel phase; raw source PNGs are untouched.
+
+Each site/local light/dark pair records height, padding, typography, radius,
+border/color tokens, shadow and native outline assertions, plus side-by-side
+and zero-tolerance raw pixel diffs. A completed run is not a parity PASS:
+read each `styleStatus` and `pixelStatus`. OS-native expanded Select states
+are explicitly `NATIVE-ADAPTATION`, never silently passed. Missing Demo states
+belong in the provenance ledger as "no demo instance"; scratch evidence is
+supplementary, not a substitute.
+
+Each result also records `computedStyleStatus` and its `computedReference`.
+Source crops are checked before comparison for nonblank pixels and, for checked
+Checkboxes, contrasting fill/check pixels. A visual inventory review still checks
+that labels, glyphs and states are correct; nonblank alone cannot establish that.
+Input/SearchInput focus shadow mismatches are retained as
+`OWNER-APPROVED-DIFFERENCE`, with the original expected/measured values: the owner
+requires a painted ring, unlike the Demo's zero-spread shadow. Other mismatches
+still fail. Skeleton opacity is compared exactly; its real Demo pulse is captured
+at recorded time 0ms (opacity 1), matching the reduced-motion product frame.
+The native options-panel case uses the actual closed Score trigger for those
+assertions while retaining the original popup PNG/raw diff. Mono specimens
+must have the actual `plexMono` FontFace loaded; a matching family string
+alone is insufficient. Owner-approved 32/44px and native/WAI-ARIA differences
+remain named separately. Product variants, not host CSS overrides, match
+header/table Tag and compact/regular Select.
 
 ```sh
 node scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8

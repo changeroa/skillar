@@ -3,6 +3,37 @@ import test from "node:test";
 import { comparePixels } from "../../scripts/uxb/image-diff.mjs";
 import { metricFailures } from "../../scripts/uxb/metrics.mjs";
 import { manifestSchema } from "../../scripts/uxb/manifest.mjs";
+import { inspectReferencePixels } from "../../scripts/uxb/reference-pixels.mjs";
+
+test("checked reference rejects a light fragment instead of the control", () => {
+  // Given: the old defective crop contains slightly different light pixels.
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  pixels[0] = 244;
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Checkbox", checked: true });
+  // Then
+  assert.equal(result.pass, false);
+});
+
+test("reference capture rejects uniform blank images", () => {
+  // Given
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Input" });
+  // Then
+  assert.equal(result.pass, false);
+});
+
+test("checked reference accepts contrasting fill and check", () => {
+  // Given
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  const center = (10 * 22 + 10) * 4;
+  pixels.set([24, 24, 27, 255], center);
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Checkbox", checked: true });
+  // Then
+  assert.equal(result.pass, true);
+});
 
 test("pixel comparison detects alpha-only differences", () => {
   // Given: equal RGB values with different opacity.
@@ -41,6 +72,33 @@ test("unknown interaction actions cannot silently become resting captures", () =
   const result = manifestSchema.safeParse(input);
   // Then: the unsupported action is rejected.
   assert.equal(result.success, false);
+});
+
+test("isolated focus capture retains the outer shell and inner focus target", () => {
+  // Given: a search shell whose input receives keyboard focus.
+  const input = { isolateSpecimens: true, profiles: [{ id: "phone", width: 390, height: 844 }],
+    pages: [{ id: "fixture", url: "http://localhost/", ready: "main",
+      states: [{ name: "search-focus", selector: ".search", focusSelector: ".search input", action: "focus" }] }] };
+  // When: parsing the executable capture contract.
+  const result = manifestSchema.parse(input);
+  // Then: focus and crop targets remain distinct and isolation is not stripped.
+  assert.equal(result.isolateSpecimens, true);
+  assert.equal(result.pages[0].states[0].selector, ".search");
+  assert.equal(result.pages[0].states[0].focusSelector, ".search input");
+  assert.equal(result.pages[0].states[0].action, "focus");
+});
+
+test("clipboard state captures retain their asynchronous action and distinct click target", () => {
+  // Given: a whole feedback region, not just its button.
+  const input = { profiles: [{ id: "desktop", width: 1440, height: 900 }],
+    pages: [{ id: "fixture", url: "http://localhost/", ready: "main",
+      states: [{ name: "copy-error", selector: ".copy", actionSelector: ".copy button", action: "copy-error" }] }] };
+  // When
+  const state = manifestSchema.parse(input).pages[0].states[0];
+  // Then
+  assert.equal(state.action, "copy-error");
+  assert.equal(state.selector, ".copy");
+  assert.equal(state.actionSelector, ".copy button");
 });
 
 test("explicit corner tolerance rejects interior drift and all alpha drift", () => {

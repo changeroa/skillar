@@ -147,7 +147,7 @@ try {
       const context = matrix.getContext("2d");
       context.fillStyle = "#ffffff"; context.fillRect(0, 0, matrix.width, matrix.height);
       context.fillStyle = "#111111"; context.font = "13px system-ui";
-      [sources[0] ? "Langfuse demo (provided)" : "Langfuse: no reference", "before d7e907e", "after PR-0"]
+      [sources[0] ? "Langfuse demo (provided)" : "Langfuse: no reference", "baseline", "current"]
         .forEach((text, i) => context.fillText(text, i * width + 8, 17));
       images.forEach((image, i) => context.drawImage(image, i * width, 24));
       const pixels = images.slice(1).map(image => {

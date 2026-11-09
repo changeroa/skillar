@@ -4,6 +4,8 @@ import { pathToFileURL } from "node:url";
 import { manifestSchema } from "./manifest.mjs";
 import { measure, metricFailures } from "./metrics.mjs";
 import { captureCrop, diffImages } from "./image-diff.mjs";
+import { stageSpecimen, unstageSpecimen } from "./specimen-stage.mjs";
+import { captureClipboardState } from "./clipboard-state.mjs";
 
 const [manifestPath, outputPath] = process.argv.slice(2);
 if (!manifestPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -16,14 +18,14 @@ const { omowright } = await loadOmowright();
 // Never launch Chrome or touch an existing user tab. One owned tab/session only.
 const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
-const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
-const page = tab.page, results = [];
+const results = [];
 try {
   for (const target of manifest.pages) for (const profile of manifest.profiles) for (const theme of ["light", "dark"]) {
     const disk = await statfs("/");
     if (disk.bavail * disk.bsize < 8 * 1024 ** 3) throw Error("STOP: root disk has less than 8 GiB free");
+    const tab = await tabs.create("about:blank", { viewport: { width: profile.width, height: profile.height } });
+    const page = tab.page;
     const url = new URL(target.url); url.searchParams.set("theme", theme);
-    await tabs.repin(tab, { width: profile.width, height: profile.height });
     await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
       width: profile.width, height: profile.height, deviceScaleFactor: profile.deviceScaleFactor, mobile: profile.touch,
     });
@@ -35,17 +37,21 @@ try {
     await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
       width: profile.width, height: profile.height, deviceScaleFactor: profile.deviceScaleFactor, mobile: profile.touch,
     });
+    await page._sendToTarget("Emulation.setEmulatedMedia", { features: [
+      { name: "prefers-color-scheme", value: theme }, { name: "prefers-reduced-motion", value: "reduce" },
+    ] });
     await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
-    await page.evaluate(selector => new Promise((resolve, reject) => {
+    await page.evaluate(({ selector, theme, isolated }) => new Promise((resolve, reject) => {
       const observer = new MutationObserver(check);
       const timer = setTimeout(() => { observer.disconnect(); reject(Error(`Missing ready state: ${selector}`)); }, 10000);
       function check() {
         if (!document.querySelector(selector)) return;
+        if (isolated && getComputedStyle(document.documentElement).colorScheme !== theme) return;
         observer.disconnect(); clearTimeout(timer); resolve();
       }
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
       check();
-    }), target.ready);
+    }), { selector: target.ready, theme, isolated: manifest.isolateSpecimens });
     await page.evaluate(async () => { await document.fonts.ready; });
     const prefix = `${target.id}-${profile.id}-${theme}`;
     const viewport = await page.evaluate(() => ({
@@ -53,10 +59,14 @@ try {
       overflow: document.documentElement.scrollWidth > innerWidth,
       coarse: matchMedia("(pointer: coarse)").matches,
       dpr: devicePixelRatio,
+      dark: matchMedia("(prefers-color-scheme: dark)").matches,
+      reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      nativeScheme: getComputedStyle(document.documentElement).colorScheme,
     }));
     const top = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(join(output, `${prefix}-top.png`), Buffer.from(top.data, "base64"));
     for (const specimen of target.states) {
+      const staged = manifest.isolateSpecimens ? await stageSpecimen(page, specimen.selector) : null;
       const point = await page.evaluate(selector => {
         const element = document.querySelector(selector);
         if (!(element instanceof HTMLElement)) throw Error(`Missing ${selector}`);
@@ -70,7 +80,7 @@ try {
       if (specimen.action === "focus") {
         await page._sendToTarget("Page.bringToFront");
         // Shift+Tab/Tab use trusted keys; focus starts on the known previous control.
-        await page.evaluate(selector => { document.querySelector(selector).focus(); }, specimen.selector);
+        await page.evaluate(selector => { document.querySelector(selector).focus(); }, specimen.focusSelector ?? specimen.selector);
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
@@ -78,14 +88,37 @@ try {
       }
       if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
         { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
+      let restoreClipboard;
       try {
+        if (["copying", "copied", "copy-error"].includes(specimen.action))
+          restoreClipboard = await captureClipboardState(page, specimen);
+        if (staged) await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+        await page.evaluate(async selector => {
+          const element = document.querySelector(selector);
+          getComputedStyle(element).backgroundColor;
+          const animations = document.getAnimations();
+          const finite = animations.filter(animation => animation.effect.getComputedTiming().iterations !== Infinity);
+          for (const animation of animations.filter(animation => animation.effect.getComputedTiming().iterations === Infinity)) {
+            // Pausing retains a resampled compositor texture (pulse/ping).
+            // Capture the real component's static underlying CSS instead.
+            animation.effect.target.style.animation = "none";
+          }
+          let timer;
+          try {
+            await Promise.race([
+              Promise.all(finite.map(animation => animation.finished)),
+              new Promise((_, reject) => { timer = setTimeout(() => reject(Error(`Unsettled transition: ${selector}`)), 8000); }),
+            ]);
+          } finally { clearTimeout(timer); }
+        }, specimen.selector);
         const actual = await measure(page, specimen.selector);
         const failures = metricFailures(actual, {
           ...specimen.expected, ...specimen.themeExpected?.[theme],
           ...(profile.touch || profile.width <= 768 ? specimen.touchExpected : {}),
         });
         if (viewport.width !== profile.width || viewport.height !== profile.height || viewport.overflow ||
-          viewport.dpr !== profile.deviceScaleFactor || viewport.coarse !== profile.touch)
+          viewport.dpr !== profile.deviceScaleFactor || viewport.coarse !== profile.touch ||
+          viewport.dark !== (theme === "dark") || !viewport.reduced)
           failures.push({ property: "viewport", expected: profile, actual: viewport });
         const file = join(output, `${prefix}-${specimen.name}.png`);
         const shot = await captureCrop(page, specimen.selector);
@@ -106,13 +139,16 @@ try {
         results.push(result);
         console.log(`${result.status} ${prefix} ${specimen.name}`);
       } finally {
+        if (restoreClipboard) await restoreClipboard();
         if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
           { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
+        if (staged) await unstageSpecimen(page, specimen.selector, staged);
       }
     }
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
     const end = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(join(output, `${prefix}-end.png`), Buffer.from(end.data, "base64"));
+    await tabs.closeAll();
   }
 } finally {
   await writeFile(join(output, "results.json"), JSON.stringify({ capturedAt: new Date().toISOString(), results }, null, 2));
