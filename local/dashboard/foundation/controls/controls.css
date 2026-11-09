@@ -140,6 +140,10 @@ button.lf-badge:hover { opacity: 0.8; }
 .lf-shortcut--inverse { color: var(--lf-primary-foreground); }
 .lf-shortcut--keycap { border: var(--lf-border-width) solid var(--lf-border); background: var(--lf-muted); padding-inline: var(--lf-space-1); color: var(--lf-muted-foreground); }
 .lf-shortcut [data-symbol="true"] { font-size: var(--lf-text-lg); line-height: 1; }
+.lf-shortcut--sm { height: var(--lf-space-4); min-width: var(--lf-space-4); padding-inline: var(--lf-space-1); font-size: var(--lf-shortcut-sm-text); }
+.lf-shortcut--xs { height: var(--lf-text-base); min-width: var(--lf-text-base); padding-inline: var(--lf-space-1); font-size: var(--lf-shortcut-xs-text); }
+.lf-shortcut--sm [data-symbol="true"] { font-size: var(--lf-text-sm); }
+.lf-shortcut--xs [data-symbol="true"] { font-size: var(--lf-text-xs); }
 .lf-skeleton { display: grid; gap: var(--lf-space-2); min-width: 0; }
 .lf-skeleton > div { height: var(--lf-space-4); border-radius: var(--lf-radius-md); background: var(--lf-muted); }
 .lf-skeleton--contrast > div { background: var(--lf-border-contrast); }
@@ -147,10 +151,12 @@ button.lf-badge:hover { opacity: 0.8; }
 .lf-copy__feedback { font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); color: var(--lf-foreground); }
 .lf-copy__feedback:empty { display: none; }
 @media (pointer: coarse), (max-width: 768px) {
+  .lf-button, .lf-checkbox, button.lf-badge, .lf-link { min-width: var(--lf-control-height); }
   .lf-icon-button, .lf-icon-button--xs, .lf-icon-button--sm { width: var(--lf-control-height); height: var(--lf-control-height); }
   .lf-button--text, button.lf-badge, .lf-tag:has(button), .lf-link { min-height: var(--lf-control-height); }
   .lf-tag button { width: var(--lf-control-height); height: var(--lf-control-height); }
   .lf-search button { min-width: var(--lf-control-height); }
+  .lf-search { border-width: 0; box-shadow: inset 0 0 0 var(--lf-border-width) var(--lf-input); }
   .lf-search--large { height: var(--lf-control-height); }
 }
 @media (prefers-reduced-motion: reduce) { .lf-spinner { animation: none; } }

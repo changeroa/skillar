@@ -186,6 +186,8 @@ html {
   --lf-badge-yellow-text: light-dark(oklch(47.6% 0.114 61.907), var(--lf-dark-yellow));
   --lf-opacity-disabled: 0.5;
   --lf-badge-height: 22px;
+  --lf-shortcut-sm-text: 10px;
+  --lf-shortcut-xs-text: 9px;
   --lf-spinner-duration: 1s;
   --lf-space-half: 2px; --lf-space-1: 4px; --lf-space-1h: 6px;
   --lf-space-2: 8px; --lf-space-3: 12px; --lf-space-4: 16px;

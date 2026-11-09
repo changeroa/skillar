@@ -4,7 +4,7 @@ Skillar third-party notices
 Lucide control icon paths (lucide-react 0.552.0)
 ----------------------------------------------
 Source: https://github.com/lucide-icons/lucide, icons check, x, search, copy,
-chevron-down, minus and external-link. Reimplemented as Preact SVG paths in
+chevron-down, minus, external-link and loader-circle. Reimplemented as Preact SVG paths in
 local/dashboard/foundation/controls/icons.tsx; no React dependency is shipped.
 Copyright (c) Lucide Contributors 2025. Portions derived from Feather:
 Copyright (c) 2013-2023 Cole Bemis (MIT; permission text below also applies).
@@ -26,7 +26,7 @@ Langfuse semantic theme tokens
 PR-1 also reimplements the anatomy/variants of these MIT files at the same SHA:
 web/src/components/design-system/{Button/Button,IconButton/IconButton,
 Badge/Badge,Tag/Tag,Input/Input,SearchInput/SearchInput,SelectInput/SelectInput,
-Checkbox/Checkbox,TextLink/TextLink,KeyboardShortcut/KeyboardShortcut}.tsx,
+Checkbox/Checkbox,TextLink/TextLink,KeyboardShortcut/KeyboardShortcut,Spinner/Spinner}.tsx,
 web/src/components/design-system/internal/InputControl/InputControl.tsx,
 web/src/components/ui/{StatusBadge/StatusBadge,skeleton}.tsx.
 Destination: local/dashboard/foundation/controls/. React, Radix and cmdk

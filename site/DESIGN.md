@@ -18,7 +18,8 @@ and 8px/4px padding. Dismissible badges/tags become 44px on touch; static
 labels do not. Status labels retain unknown/cancelled/pending distinctions.
 TextLink is 12px/18px, weight 600; standalone touch links have 44px height.
 KeyboardShortcut is non-interactive semantic kbd with platform-specific Mod
-labels. Skeleton uses muted fill, 6px radius and a status announcement, static
+labels and 20/16/14px boxes with 12/10/9px text. CopyButton uses the Codeblock
+24px IconButton composition on desktop. Skeleton uses muted fill, 6px radius and a status announcement, static
 under reduced motion. CopyButton copies the original value, reports rejection
 inline, and resets feedback when its value changes.
 

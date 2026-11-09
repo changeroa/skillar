@@ -102,10 +102,14 @@ try {
       await page._sendToTarget("Emulation.setTouchEmulationEnabled", { enabled: true });
       const geometry = await page.evaluate(() => {
         const root = document.querySelector("#basic-controls");
-        const selectors = [".lf-button", ".lf-icon-button", ".lf-input-wrap", ".lf-select", ".lf-search", ".lf-checkbox", "button.lf-badge", ".lf-tag:has(button)", ".lf-link"];
-        return selectors.flatMap(selector => [...root.querySelectorAll(selector)].map(node => ({ selector, height: node.getBoundingClientRect().height })));
+        const selectors = [".lf-button", ".lf-icon-button", ".lf-input-wrap", ".lf-select", ".lf-search", ".lf-search button", ".lf-checkbox", "button.lf-badge", ".lf-tag:has(button)", ".lf-link"];
+        return selectors.flatMap(selector => [...root.querySelectorAll(selector)].map(node => {
+          const bounds = node.getBoundingClientRect();
+          return { selector, width: bounds.width, height: bounds.height };
+        }));
       });
-      assert.ok(geometry.every(item => item.height >= 44), JSON.stringify(geometry.filter(item => item.height < 44)));
+      assert.ok(geometry.every(item => item.height >= 44 && item.width >= 44),
+        JSON.stringify(geometry.filter(item => item.height < 44 || item.width < 44)));
       results.push({ app, theme, width, coarse: true, pass: true, geometry });
     }
     console.log(`PASS controls ${app} ${theme}`);

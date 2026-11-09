@@ -70,6 +70,8 @@ export function ControlsGallery() {
       <Specimen id="link-external"><Link href="https://skillar.sh" text="스킬 보기" external /></Specimen>
       <Specimen id="shortcut-default"><KeyboardShortcut keys={["Mod", "K"]} /></Specimen>
       <Specimen id="shortcut-keycap"><KeyboardShortcut keys={["Mod", "K"]} variant="keycap" /></Specimen>
+      <Specimen id="shortcut-small"><KeyboardShortcut keys={["Mod", "K"]} size="sm" /></Specimen>
+      <Specimen id="shortcut-xs"><KeyboardShortcut keys={["Mod", "K"]} size="xs" /></Specimen>
       <Specimen id="skeleton-default"><Skeleton /></Specimen>
       <Specimen id="skeleton-contrast"><Skeleton variant="contrast" /></Specimen>
       <Specimen id="copy-default"><CopyButton value="skillar-original-value" label="ID" /></Specimen>

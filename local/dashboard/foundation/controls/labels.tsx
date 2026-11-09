@@ -51,12 +51,13 @@ const keyLabels: Readonly<Record<string, string>> = {
   Control: "Ctrl", Meta: "\u2318", Enter: "\u21b5", Escape: "Esc", ArrowUp: "\u2191",
   ArrowDown: "\u2193", ArrowLeft: "\u2190", ArrowRight: "\u2192", Backspace: "\u232b", Delete: "Del",
 };
-export function KeyboardShortcut({ keys, variant = "default", platform = "auto", title }: {
+export function KeyboardShortcut({ keys, variant = "default", size = "default", platform = "auto", title }: {
   readonly keys: readonly [string, ...string[]]; readonly variant?: "default" | "subtle" | "inverse" | "keycap";
+  readonly size?: "default" | "sm" | "xs";
   readonly platform?: "auto" | "mac" | "other"; readonly title?: string;
 }) {
   const mac = platform === "mac" || (platform === "auto" && typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform));
-  return <kbd class={`lf-shortcut lf-shortcut--${variant}`} title={title} aria-label={keys.join("+")}>
+  return <kbd class={`lf-shortcut lf-shortcut--${variant} lf-shortcut--${size}`} title={title} aria-label={keys.join("+")}>
     {keys.map((key, index) => {
       const label = key === "Mod" ? (mac ? "\u2318" : "Ctrl")
         : mac && key === "Shift" ? "\u21e7" : mac && key === "Alt" ? "\u2325" : keyLabels[key] ?? key;
