@@ -7,6 +7,7 @@
 }
 .lf-button *, .lf-icon-button *, .lf-field *, .lf-checkbox *, .lf-badge *, .lf-tag *, .lf-status * { box-sizing: border-box; }
 .lf-button, .lf-icon-button {
+  appearance: button;
   display: inline-flex; position: relative; align-items: center; justify-content: center;
   flex-shrink: 0; margin: 0; border: 0 solid var(--lf-border); border-radius: var(--lf-radius-md);
   background: transparent; color: var(--lf-foreground); cursor: pointer;
@@ -80,7 +81,7 @@
 .lf-search input::-webkit-search-cancel-button { display: none; }
 .lf-search button { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: calc(var(--lf-control-height) - 2 * var(--lf-border-width)); border: 0; border-radius: var(--lf-radius-sm); padding: 0; background: transparent; color: var(--lf-foreground-tertiary); cursor: pointer; }
 .lf-search[data-disabled="true"] input { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
-.lf-select-wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--lf-space-1); min-width: 0; }
+.lf-select-wrap { appearance: button; position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--lf-space-1); min-width: 0; }
 .lf-select { appearance: none; position: absolute; inset: calc(-1 * var(--lf-border-width)); width: calc(100% + 2 * var(--lf-border-width)); height: calc(100% + 2 * var(--lf-border-width)); opacity: 0; cursor: inherit; }
 .lf-select-value { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
 .lf-select-wrap > svg { flex-shrink: 0; pointer-events: none; color: var(--lf-foreground-tertiary); }
@@ -180,15 +181,19 @@ button.lf-badge:hover { opacity: 0.8; }
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 .lf-input-wrap[data-prefixed="true"] { overflow: hidden; }
+.lf-input, .lf-search input { appearance: none; display: block; }
 .lf-input-wrap[data-prefixed="true"] .lf-input { padding-block: 0; }
 .lf-search { overflow: hidden; }
 .lf-search button { font: inherit; }
 .lf-search[data-disabled="true"] input { background: color-mix(in oklab, var(--lf-muted) 50%, transparent); }
-.lf-button:focus-visible, .lf-icon-button:focus-visible, .lf-select-wrap:has(select:focus-visible) {
+.lf-button:focus-visible, .lf-icon-button:focus-visible {
+  outline: revert; outline-style: none; outline-offset: 0;
+}
+.lf-select-wrap:has(select:focus-visible) {
   outline-style: none; outline-offset: 0; outline-color: -webkit-focus-ring-color;
 }
 .lf-input:focus-visible { outline-style: none; }
-.lf-link:focus-visible { outline: var(--lf-border-width) auto -webkit-focus-ring-color; outline-offset: var(--lf-border-width); box-shadow: none; }
+.lf-link:focus-visible { outline: revert; outline-offset: var(--lf-border-width); box-shadow: none; }
 .lf-spinner { width: auto; height: 50%; aspect-ratio: 1; color: inherit; }
 .lf-search:focus-within input { border-color: var(--lf-primary-accent); outline: none transparent; outline-offset: var(--lf-focus-offset); }
 @media (forced-colors: active) {

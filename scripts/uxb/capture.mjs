@@ -36,17 +36,21 @@ try {
     await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
       width: profile.width, height: profile.height, deviceScaleFactor: profile.deviceScaleFactor, mobile: profile.touch,
     });
+    await page._sendToTarget("Emulation.setEmulatedMedia", { features: [
+      { name: "prefers-color-scheme", value: theme }, { name: "prefers-reduced-motion", value: "reduce" },
+    ] });
     await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
-    await page.evaluate(selector => new Promise((resolve, reject) => {
+    await page.evaluate(({ selector, theme, isolated }) => new Promise((resolve, reject) => {
       const observer = new MutationObserver(check);
       const timer = setTimeout(() => { observer.disconnect(); reject(Error(`Missing ready state: ${selector}`)); }, 10000);
       function check() {
         if (!document.querySelector(selector)) return;
+        if (isolated && getComputedStyle(document.documentElement).colorScheme !== theme) return;
         observer.disconnect(); clearTimeout(timer); resolve();
       }
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
       check();
-    }), target.ready);
+    }), { selector: target.ready, theme, isolated: manifest.isolateSpecimens });
     await page.evaluate(async () => { await document.fonts.ready; });
     const prefix = `${target.id}-${profile.id}-${theme}`;
     const viewport = await page.evaluate(() => ({
@@ -54,6 +58,9 @@ try {
       overflow: document.documentElement.scrollWidth > innerWidth,
       coarse: matchMedia("(pointer: coarse)").matches,
       dpr: devicePixelRatio,
+      dark: matchMedia("(prefers-color-scheme: dark)").matches,
+      reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      nativeScheme: getComputedStyle(document.documentElement).colorScheme,
     }));
     const top = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(join(output, `${prefix}-top.png`), Buffer.from(top.data, "base64"));
@@ -106,7 +113,8 @@ try {
           ...(profile.touch || profile.width <= 768 ? specimen.touchExpected : {}),
         });
         if (viewport.width !== profile.width || viewport.height !== profile.height || viewport.overflow ||
-          viewport.dpr !== profile.deviceScaleFactor || viewport.coarse !== profile.touch)
+          viewport.dpr !== profile.deviceScaleFactor || viewport.coarse !== profile.touch ||
+          viewport.dark !== (theme === "dark") || !viewport.reduced)
           failures.push({ property: "viewport", expected: profile, actual: viewport });
         const file = join(output, `${prefix}-${specimen.name}.png`);
         const shot = await captureCrop(page, specimen.selector);
