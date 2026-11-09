@@ -14,14 +14,19 @@ const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
 const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
 const page = tab.page, results = [];
+let failed = false;
 await mkdir(output, { recursive: true });
 try {
   for (const [app, url] of [["site", site], ["local", local]]) {
     for (const theme of ["light", "dark"]) {
+      try {
       await tabs.repin(tab, { width: 1440, height: 900 });
       await page._sendToTarget("Emulation.setTouchEmulationEnabled", { enabled: false });
       await page._sendToTarget("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme }] });
       await page.goto(`${url}?theme=${theme}`, { waitUntil: "domcontentloaded" });
+      await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
+        width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      });
       await ready(page, "#gallery[data-ready=true]");
       await page._sendToTarget("Page.bringToFront");
       await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
@@ -41,6 +46,7 @@ try {
         assert.equal(metric.focused, true, `${selector}: focus-visible`);
         assert.equal(metric.outlineWidth, 2, `${selector}: ring width`);
         assert.equal(metric.outlineOffset, 2, `${selector}: ring offset`);
+        assert.equal(metric.height, 32, `${selector}: desktop box`);
         focus.push({ selector, ...metric });
       }
       // Reverse order is also browser-driven; no focus() substitutes a tested Tab.
@@ -48,6 +54,7 @@ try {
         await arm(page, { kind: "focus", selector });
         await press(page, "Tab", 8); await signal(page);
       }
+      results.push({ app, theme, kind: "tab-order-and-ring", pass: true, focus });
       await press(page, "Tab");
       await arm(page, { kind: "text", selector: "#probe-result", value: "확인 1회" });
       await press(page, "Enter"); await signal(page);
@@ -59,6 +66,41 @@ try {
       assert.equal(await page.evaluate(() => !!document.querySelector("#probe-selected svg")), false);
       await arm(page, { kind: "attribute", selector: "#probe-selected", attribute: "aria-pressed", value: "true" });
       await press(page, "Enter"); await signal(page);
+      for (const selector of order.slice(0, 7).reverse()) {
+        await arm(page, { kind: "focus", selector });
+        await press(page, "Tab", 8); await signal(page);
+      }
+      results.push({ app, theme, kind: "button-toggle-activation", pass: true });
+      const initialAX = await page._sendToTarget("Accessibility.getFullAXTree");
+      assert.ok(initialAX.nodes.some(node => !node.ignored && node.role?.value === "main"));
+      const namedControls = initialAX.nodes.filter(node => !node.ignored &&
+        ["button", "textbox", "combobox", "link"].includes(node.role?.value));
+      assert.ok(namedControls.length >= 9 && namedControls.every(node => node.name?.value?.trim()));
+      await writeFile(join(output, `${app}-${theme}-initial-ax.json`), JSON.stringify(initialAX, null, 2));
+      results.push({ app, theme, kind: "native-aria-tree", pass: true, controls: namedControls.length });
+      const themeChecks = [];
+      for (const mode of ["dark", "light", "system"]) {
+        const current = await page.evaluate(() => document.querySelector("select").value);
+        const indices = { system: 0, light: 1, dark: 2 };
+        await arm(page, { kind: "attribute", selector: "html", attribute: "data-theme", value: mode });
+        await press(page, " ");
+        for (let i = 0; i < Math.abs(indices[mode] - indices[current]); i++)
+          await press(page, indices[mode] > indices[current] ? "ArrowDown" : "ArrowUp");
+        await press(page, "Enter"); await signal(page);
+        for (const os of ["light", "dark"]) {
+          await page._sendToTarget("Emulation.setEmulatedMedia", {
+            features: [{ name: "prefers-color-scheme", value: os }],
+          });
+          const background = await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+          const effective = mode === "system" ? os : mode;
+          assert.equal(background, effective === "light" ? "rgb(255, 255, 255)" : "rgb(15, 15, 15)");
+          themeChecks.push({ mode, os, background });
+        }
+      }
+      // Native picker owns its popup. Trusted open/cancel keys must leave its
+      // trigger focused; there is no custom overlay or saved account setting.
+      await press(page, " "); await press(page, "Escape");
+      assert.equal(await page.evaluate(() => document.activeElement === document.querySelector("select")), true);
       const ax = await page._sendToTarget("Accessibility.getFullAXTree");
       const controls = ax.nodes.filter(node => !node.ignored && ["button", "textbox", "combobox", "link"].includes(node.role?.value));
       assert.ok(controls.length >= 9);
@@ -76,8 +118,15 @@ try {
       assert.equal(semantics.busy, "true"); assert.equal(semantics.invalid, "true");
       assert.ok(semantics.keys.length > 20 && semantics.keys.every(event => event.trusted));
       await writeFile(join(output, `${app}-${theme}-ax.json`), JSON.stringify(ax, null, 2));
-      results.push({ app, theme, kind: "tab-activation-aria", pass: true, focus, semantics });
+      results.push({ app, theme, kind: "tab-activation-aria", pass: true, focus, semantics, themeChecks });
       console.log(`PASS ${app} ${theme} Tab/Shift+Tab/Enter/Space/AX`);
+      } catch (error) {
+        if (!(error instanceof Error)) throw error;
+        failed = true;
+        results.push({ app, theme, kind: "keyboard-case-failure", pass: false, name: error.name, message: error.message });
+        console.error(error.stack);
+        await press(page, "Escape");
+      }
     }
     for (const profile of [{ id: "phone", width: 390, height: 844, touch: true, dpr: 3 },
       { id: "coarse", width: 1440, height: 900, touch: true, dpr: 1 }]) {
@@ -101,7 +150,15 @@ try {
       console.log(`PASS ${app} ${profile.id} 44px/coarse/DPR`);
     }
   }
+} catch (error) {
+  if (!(error instanceof Error)) throw error;
+  failed = true;
+  results.push({ kind: "failure", pass: false, name: error.name, message: error.message });
+  console.error(error.stack);
 } finally {
   await writeFile(join(output, "results.json"), JSON.stringify({ results }, null, 2));
-  await tabs.closeAll(); await browser.close();
+  await press(page, "Escape");
+  await page._sendToTarget("Page.close");
+  await browser.close();
 }
+if (failed) process.exitCode = 1;

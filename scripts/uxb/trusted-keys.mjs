@@ -4,7 +4,7 @@ export async function press(page, key, modifiers = 0) {
   const code = key === " " ? "Space" : key;
   const windowsVirtualKeyCode = codes[key];
   if (!windowsVirtualKeyCode) throw new RangeError(`Unsupported trusted key ${key}`);
-  const event = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode, modifiers };
+  const event = { key, code, windowsVirtualKeyCode, modifiers };
   await page._sendToTarget("Input.dispatchKeyEvent", { ...event, type: "keyDown",
     ...(key === " " || key === "Enter" ? { text: key === "Enter" ? "\r" : " " } : {}) });
   await page._sendToTarget("Input.dispatchKeyEvent", { ...event, type: "keyUp" });
