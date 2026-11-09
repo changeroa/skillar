@@ -1,5 +1,37 @@
 # skillar.sh
 
+## Phase B overlays (PR-2)
+
+Reusable Preact overlays live in `local/dashboard/foundation/overlays/`.
+Dialog and Confirm use native modal dialogs, a 512px desktop maximum,
+85dvh maximum height, modal surface, 8px radius, 16px header/body padding,
+and 16px/16px strong titles. Phone dialogs fill the viewport. Confirm uses
+an alertdialog description and initially focuses Cancel, never destruction.
+Sheet uses the same body/header anatomy with a 440px right-hand pane.
+The body is the only vertical scroll owner; header/actions remain visible.
+Native modality, explicit Tab wrapping, one-layer Escape and opener restoration
+are required. Nested menus remain inside their owning dialog's top layer.
+
+DropdownMenu uses popover surface, 6px radius, 4px padding, 8px item inset,
+13px/20px text and 32px/44px item boxes. It focuses the first enabled item
+on open, skips disabled items, supports Home/End, cyclic arrows and prefix
+typeahead, closes on Tab without trapping it, and restores its opener on Escape.
+The menu shell retains the real Demo's 16px/24px inherited type, with explicit
+13px/20px item typography. Separators are 1px with 4px block margin and bleed.
+Tooltip uses the real Demo's 13px/20px type, 6px/12px padding and a 6px radius; it is
+non-interactive, shown for pointer hover or keyboard focus, linked by
+aria-describedby, hoverable and dismissible with Escape.
+
+Overlay geometry tokens: dialog 512px, sheet 440px, menu 192px, tooltip 320px;
+modal shadow 0 10px 15px -3px #000/10%, 0 4px 6px -4px #000/10%;
+popover shadow 0 4px 6px -1px #000/10%, 0 2px 4px -2px #000/10%.
+Backdrop uses black 25%/45% (light/dark), blocking Confirm 50%/65%.
+These values derive from pinned MIT Dialog, alert-dialog, sheet and menu sources.
+Real Demo observations and any remaining parity differences are in PR-2 evidence.
+No decorative motion is introduced. Approved accessibility and 32px/44px
+adaptations override upstream. Existing PeekPanel and ConsoleSheet retain
+their lifecycle, URL, dirty-state and dismissal handlers; only paint changes.
+
 ## Phase B basic controls (PR-1)
 
 ### Real Demo amendment (2026-11-09)

@@ -36,11 +36,15 @@
 .ui-segments [aria-selected="true"] { background: var(--surface); font-weight: 600; text-decoration: underline; }
 .ui-segments [role="tabpanel"] { padding-block: var(--s3); }
 .ui-segments [hidden], .ui-toast [hidden] { display: none; }
-.ui-peek { position: fixed; inset: 0 0 0 auto; width: min(640px, 48vw); max-width: none; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; border-inline-start: 1px solid var(--border); color: var(--ink); background: var(--bg); }
+.ui-peek { position: fixed; inset: 0 0 0 auto; width: min(640px, 48vw); max-width: none; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; border-inline-start: 1px solid var(--lf-border); color: var(--lf-foreground); background: var(--lf-modal); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .ui-peek[open] { display: flex; flex-direction: column; }
-.ui-peek header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: var(--s3); border-bottom: 1px solid var(--rule); }
-.ui-peek h2 { margin-inline-end: auto; font-size: 22px; }
-.ui-peek-body { min-height: 0; overflow: auto; padding: var(--s3); }
+.ui-peek::backdrop { background: var(--lf-overlay-backdrop); }
+.ui-peek header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lf-space-2); padding: var(--lf-space-4); border-bottom: 1px solid var(--lf-border); }
+.ui-peek h2 { margin: 0 auto 0 0; font-size: var(--lf-text-lg); font-weight: var(--lf-weight-strong); }
+.ui-peek header .button { min-height: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-3); border: 1px solid var(--lf-border); border-radius: var(--lf-radius-md); color: var(--lf-foreground); background: var(--lf-modal); font: inherit; }
+.ui-peek header .button:hover { background: var(--lf-accent); }
+.ui-peek header .button:focus-visible { outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset); }
+.ui-peek-body { min-height: 0; overflow: auto; padding: var(--lf-space-4); }
 .ui-toast { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s2); border: 1px solid var(--border); background: var(--bg); font-size: var(--small); }
 .ui-toast-empty { border: 0; padding: 0; }
 .ui-skeleton { display: grid; gap: var(--s2); }

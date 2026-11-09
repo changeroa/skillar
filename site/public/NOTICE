@@ -23,6 +23,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Langfuse semantic theme tokens
 -----------------------------
+PR-2 reimplements MIT overlay visual anatomy from this same commit:
+web/src/components/design-system/Dialog/Dialog.tsx,
+web/src/components/ui/{dialog,alert-dialog,sheet,dropdown-menu}.tsx.
+Destination: local/dashboard/foundation/overlays/, site/src/ui/ui.css and
+local/dashboard/components/console-style.ts. Native dialog/popover and Preact
+own behavior; no React, Radix or Floating UI code is imported.
+
 PR-1 also reimplements the anatomy/variants of these MIT files at the same SHA:
 web/src/components/design-system/{Button/Button,IconButton/IconButton,
 Badge/Badge,Tag/Tag,Input/Input,SearchInput/SearchInput,SelectInput/SelectInput,

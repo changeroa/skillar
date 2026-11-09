@@ -2,6 +2,8 @@ import { render } from "preact";
 import { useState } from "preact/hooks";
 import { ControlsGallery } from "./controls-gallery";
 import { DemoControls } from "./demo-controls";
+import { OverlaysGallery } from "./overlays-gallery";
+import { DemoOverlays } from "./demo-overlays";
 
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
@@ -38,6 +40,7 @@ function Gallery() {
       </label>
     </header>
 
+    <OverlaysGallery />
     <ControlsGallery />
     <section aria-labelledby="surface-title" data-component="surfaces">
       <h2 id="surface-title">표면 계층</h2>
@@ -116,5 +119,6 @@ export function mountGallery(root: HTMLElement): void {
   if (theme === "light" || theme === "dark" || theme === "system") {
     document.documentElement.dataset["theme"] = theme;
   }
-  render(new URLSearchParams(location.search).has("demoControl") ? <DemoControls /> : <Gallery />, root);
+  const parameters = new URLSearchParams(location.search);
+  render(parameters.has("demoOverlay") ? <DemoOverlays /> : parameters.has("demoControl") ? <DemoControls /> : <Gallery />, root);
 }
