@@ -12,12 +12,14 @@ export type DialogProps = {
   readonly description?: string;
   readonly initialFocusId?: string;
   readonly kind?: "dialog" | "alertdialog";
-  readonly placement?: "center" | "side";
+  readonly placement?: "center" | "side" | "bottom";
+  readonly size?: "default" | "comparison";
+  readonly subtitle?: string;
 };
 
 /** Native top-layer modality; ownership of drafts and async work stays with callers. */
 export function Dialog({ id, open, title, onClose, children, actions, description,
-  initialFocusId, kind = "dialog", placement = "center" }: DialogProps) {
+  initialFocusId, kind = "dialog", placement = "center", size = "default", subtitle }: DialogProps) {
   const panel = useRef<HTMLDialogElement>(null);
   useLayoutEffect(() => {
     const node = panel.current;
@@ -35,7 +37,7 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
       if (origin instanceof HTMLElement && origin.isConnected) origin.focus({ preventScroll: true });
     };
   }, [open, initialFocusId]);
-  return <dialog ref={panel} id={id} class={`lf-dialog lf-dialog--${placement}`}
+  return <dialog ref={panel} id={id} class={`lf-dialog lf-dialog--${placement} lf-dialog--${size}`}
     role={kind} aria-modal="true" aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined} tabIndex={-1}
     onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose(); }}
@@ -56,9 +58,10 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
     }}
     onClick={event => event.stopPropagation()}>
     <header class="lf-dialog__head">
-      <h2 id={`${id}-title`} tabIndex={-1} data-dialog-start>{title}</h2>
+      <div class="lf-dialog__heading"><h2 id={`${id}-title`} tabIndex={-1} data-dialog-start>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}</div>
       <button type="button" class="lf-overlay-close" aria-label="닫기" onClick={onClose}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
       </button>
     </header>
@@ -71,20 +74,23 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
 }
 
 export function ConfirmDialog({ id, open, title, description, confirmLabel, onConfirm,
-  onClose, busy = false, error }: {
+  onClose, busy = false, error, confirmDisabled = false }: {
   readonly id: string; readonly open: boolean; readonly title: string; readonly description: string;
   readonly confirmLabel: string; readonly onConfirm: () => void; readonly onClose: () => void;
   readonly busy?: boolean; readonly error?: string | undefined;
+  readonly confirmDisabled?: boolean;
 }) {
   return <Dialog id={id} open={open} title={title} description={description} kind="alertdialog"
     initialFocusId={`${id}-cancel`} onClose={onClose} actions={<>
       <Button id={`${id}-cancel`} text="취소" variant="outline" onClick={onClose} />
-      <Button text={confirmLabel} variant="destructive" loading={busy} onClick={onConfirm} />
+      <Button text={confirmLabel} variant="destructive" disabled={confirmDisabled} loading={busy} onClick={onConfirm} />
     </>}>
-    {error && <p role="alert">{error}</p>}
+    {error && <div role="alert" class="lf-confirm-error"><p><strong>오류:</strong></p><p>{error}</p></div>}
   </Dialog>;
 }
 
-export function Sheet(props: Omit<DialogProps, "placement" | "kind">) {
-  return <Dialog {...props} placement="side" />;
+export function Sheet({ side = "right", ...props }: Omit<DialogProps, "placement" | "kind"> & {
+  readonly side?: "right" | "bottom";
+}) {
+  return <Dialog {...props} placement={side === "bottom" ? "bottom" : "side"} />;
 }

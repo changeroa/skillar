@@ -9,7 +9,7 @@ import { TraceView } from "./trace";
 
 export function SessionPeek({ route, navigate, live, rows }: ViewProps & { readonly rows: readonly SessionListRow[] }) {
   installStyles("session-peek", `
-.session-peek{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;min-width:0;padding:0;border:1px solid var(--lf-border);background:var(--lf-modal);color:var(--lf-foreground);border-radius:var(--lf-radius-lg);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
+.session-peek{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;min-width:0;padding:0;border:1px solid var(--lf-border);background:var(--lf-modal);color:var(--lf-foreground);border-radius:0;box-shadow:var(--lf-shadow-peek);font:var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-menu-leading) var(--lf-font-sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .session-peek__body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:var(--lf-space-4)}
 .session-peek__actions{display:flex;flex:none;align-items:center;gap:var(--lf-space-1);z-index:2;background:var(--lf-modal);padding:var(--lf-space-2);border-bottom:1px solid var(--lf-border)}
 .session-peek__actions .pe-button{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0;border-color:var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-modal);color:var(--lf-foreground)}

@@ -2,8 +2,9 @@ import type { ComponentChildren } from "preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 /** Put one named, focusable control inside; the tooltip never adds a Tab stop. */
-export function Tooltip({ id, content, children }: {
+export function Tooltip({ id, content, children, size = "bounded" }: {
   readonly id: string; readonly content: string; readonly children: ComponentChildren;
+  readonly size?: "bounded" | "content";
 }) {
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -14,10 +15,13 @@ export function Tooltip({ id, content, children }: {
     const trigger = root.current?.querySelector<HTMLElement>("button,a[href],input,[tabindex]");
     if (!trigger) return;
     const previous = trigger.getAttribute("aria-describedby");
+    const nativeTitle = trigger.getAttribute("title");
+    trigger.removeAttribute("title");
     trigger.setAttribute("aria-describedby", [previous, id].filter(Boolean).join(" "));
     return () => {
       if (previous === null) trigger.removeAttribute("aria-describedby");
       else trigger.setAttribute("aria-describedby", previous);
+      if (nativeTitle !== null) trigger.setAttribute("title", nativeTitle);
     };
   }, [id, children]);
   useLayoutEffect(() => {
@@ -26,8 +30,8 @@ export function Tooltip({ id, content, children }: {
     node.showPopover();
     const update = () => {
       const rect = anchor.getBoundingClientRect(), box = node.getBoundingClientRect();
-      node.style.left = `${Math.max(8, Math.min(rect.left + (rect.width - box.width) / 2, innerWidth - box.width - 8))}px`;
-      node.style.top = `${Math.max(8, rect.top > box.height + 4 ? rect.top - box.height - 4 : rect.bottom + 4)}px`;
+      node.style.left = `${Math.round(Math.max(8, Math.min(rect.left + (rect.width - box.width) / 2, innerWidth - box.width - 8)) * devicePixelRatio) / devicePixelRatio}px`;
+      node.style.top = `${Math.round(Math.max(8, rect.top > box.height + 4 ? rect.top - box.height - 4 : rect.bottom + 4) * devicePixelRatio) / devicePixelRatio}px`;
     };
     update();
     const escape = (event: KeyboardEvent) => {
@@ -53,6 +57,6 @@ export function Tooltip({ id, content, children }: {
     onFocusIn={() => { active.current.focus = true; setOpen(true); }}
     onFocusOut={() => { active.current.focus = false; leave(); }}>
     {children}
-    <span id={id} ref={tip} popover="manual" role="tooltip" class="lf-tooltip">{content}</span>
+    <span id={id} ref={tip} popover="manual" role="tooltip" class="lf-tooltip" data-size={size}>{content}</span>
   </span>;
 }

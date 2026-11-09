@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
-import { Fragment } from "preact";
-import { Button } from "../controls/buttons";
-import { Glyph } from "../controls/icons";
+import { Fragment, type JSX } from "preact";
+import { Button, IconButton } from "../controls/buttons";
+import { Glyph, type ControlIcon } from "../controls/icons";
 
 export type MenuItem = {
   readonly id: string;
@@ -10,11 +10,14 @@ export type MenuItem = {
   readonly destructive?: boolean;
   readonly checked?: boolean;
   readonly separatorBefore?: boolean;
+  readonly icon?: ControlIcon;
   readonly onSelect: () => void;
 };
 
-export function DropdownMenu({ id, label, items, disabled = false }: {
+export function DropdownMenu({ id, label, items, disabled = false, icon,
+  width = "content", align = "start" }: {
   readonly id: string; readonly label: string; readonly items: readonly MenuItem[]; readonly disabled?: boolean;
+  readonly icon?: ControlIcon; readonly width?: "content" | "wide"; readonly align?: "start" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -38,8 +41,9 @@ export function DropdownMenu({ id, label, items, disabled = false }: {
       if (!origin) return;
       const rect = origin.getBoundingClientRect();
       const box = node.getBoundingClientRect();
-      node.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - box.width - 8))}px`;
-      node.style.top = `${Math.max(8, rect.bottom + box.height + 4 <= innerHeight ? rect.bottom + 4 : rect.top - box.height - 4)}px`;
+      const left = align === "end" ? rect.right - box.width : rect.left;
+      node.style.left = `${Math.round(Math.max(8, Math.min(left, innerWidth - box.width - 8)) * devicePixelRatio) / devicePixelRatio}px`;
+      node.style.top = `${Math.round(Math.max(8, rect.bottom + box.height + 4 <= innerHeight ? rect.bottom + 4 : rect.top - box.height - 4) * devicePixelRatio) / devicePixelRatio}px`;
     };
     update();
     const outside = (event: PointerEvent) => {
@@ -54,18 +58,20 @@ export function DropdownMenu({ id, label, items, disabled = false }: {
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [open, disabled]);
-  return <span class="lf-menu-anchor" ref={root}>
-    <Button id={`${id}-trigger`} text={label} variant="outline" disabled={disabled}
-      aria-haspopup="menu" aria-expanded={open && !disabled} aria-controls={id}
-      onClick={() => { lastOnOpen.current = false; search.current.text = ""; setOpen(value => !value); }}
-      onKeyDown={event => {
+  }, [open, disabled, align]);
+  const trigger = {
+    id: `${id}-trigger`, disabled, "aria-haspopup": "menu", "aria-expanded": open && !disabled, "aria-controls": id,
+    onClick: () => { lastOnOpen.current = false; search.current.text = ""; setOpen(value => !value); },
+    onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLButtonElement>) => {
         if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
         event.preventDefault();
         lastOnOpen.current = event.key === "ArrowUp"; search.current.text = ""; setOpen(true);
-      }} />
+    },
+  } satisfies JSX.ButtonHTMLAttributes<HTMLButtonElement>;
+  return <span class="lf-menu-anchor" ref={root}>
+    {icon ? <IconButton {...trigger} label={label} icon={icon} /> : <Button {...trigger} text={label} variant="outline" />}
     {open && !disabled && <div id={id} ref={menu} popover="manual" role="menu" tabIndex={-1}
-      aria-labelledby={`${id}-trigger`} class="lf-menu"
+      aria-labelledby={`${id}-trigger`} class="lf-menu" data-width={width}
       onKeyDown={event => {
         const enabled = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
         const index = enabled.findIndex(node => node === document.activeElement);
@@ -89,7 +95,7 @@ export function DropdownMenu({ id, label, items, disabled = false }: {
         const ordered = [...enabled.slice(index + 1), ...enabled.slice(0, index + 1)];
         ordered.find(node => node.textContent?.trim().toLocaleLowerCase().startsWith(text))?.focus();
       }}>
-      {items.map(item => <Fragment key={item.id}>
+      <div class="lf-menu__body">{items.map(item => <Fragment key={item.id}>
         {item.separatorBefore && <div role="separator" class="lf-menu__separator" />}
         <button id={`${id}-${item.id}`} type="button"
         role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
@@ -97,10 +103,10 @@ export function DropdownMenu({ id, label, items, disabled = false }: {
         class="lf-menu__item" data-destructive={item.destructive || undefined}
         onPointerMove={event => { if (!item.disabled) event.currentTarget.focus(); }}
         onClick={() => { dismiss(true); item.onSelect(); }}>
-        {item.label}
+        {item.icon && <Glyph name={item.icon} />}{item.label}
         {item.checked && <span aria-hidden="true"><Glyph name="check" /></span>}
       </button></Fragment>)}
-      {!items.length && <span class="lf-menu__empty">사용 가능한 항목이 없습니다.</span>}
+      {!items.length && <span class="lf-menu__empty">사용 가능한 항목이 없습니다.</span>}</div>
     </div>}
   </span>;
 }

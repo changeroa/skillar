@@ -4,53 +4,83 @@
   width: min(var(--lf-dialog-width), 100%); max-width: 100%; max-height: 85dvh;
   overflow: hidden; border-radius: var(--lf-radius-lg);
   background: var(--lf-modal); color: var(--lf-foreground); box-shadow: var(--lf-shadow-modal);
-  font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
+  font: var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-menu-leading) var(--lf-font-sans);
   font-feature-settings: "rlig" 1, "calt" 1; word-break: keep-all; overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
 .lf-dialog[open] { display: flex; flex-direction: column; }
 .lf-dialog::backdrop { background: var(--lf-overlay-backdrop); }
 .lf-dialog[role="alertdialog"]::backdrop { background: var(--lf-confirm-backdrop); }
 .lf-dialog__head { display: flex; align-items: center; gap: var(--lf-space-4); padding: var(--lf-space-4); flex: none; }
 .lf-dialog__head h2 { margin: 0; flex: 1; min-width: 0; font: var(--lf-weight-strong) var(--lf-text-lg)/1 var(--lf-font-sans); letter-spacing: -0.025em; }
-.lf-dialog__body { padding: 0 var(--lf-space-4) var(--lf-space-4); min-height: 0; overflow: auto; overscroll-behavior: contain; flex: 1; }
+.lf-dialog__heading { flex: 1; min-width: 0; }
+.lf-dialog__heading p { margin: var(--lf-space-1) 0 0; color: var(--lf-muted-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
+.lf-dialog__body { display: flex; flex-direction: column; gap: var(--lf-space-4); padding: var(--lf-space-4); min-height: 0; overflow: auto; overscroll-behavior: contain; flex: 1; font-size: var(--lf-text-sm); line-height: var(--lf-dialog-body-leading); }
 .lf-dialog__body p { margin: 0; }
-.lf-dialog__actions { display: flex; justify-content: flex-end; gap: var(--lf-space-2); padding: var(--lf-space-4); flex: none; }
+.lf-dialog__actions { display: flex; justify-content: flex-end; gap: var(--lf-space-2); padding: var(--lf-space-4); flex: none; color: inherit; }
 .lf-overlay-close {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
   width: var(--lf-control-height); height: var(--lf-control-height); padding: 0;
-  border: 0; border-radius: var(--lf-radius-md); color: var(--lf-muted-foreground); background: transparent; cursor: pointer;
+  margin-top: calc(-1 * var(--lf-space-2)); margin-inline-end: calc(-1 * var(--lf-space-2));
+  border: 0; border-radius: var(--lf-radius-md); color: var(--lf-foreground); opacity: .7; background: transparent; cursor: pointer;
+  font: inherit;
 }
-.lf-overlay-close:hover { background: var(--lf-accent); color: var(--lf-foreground); }
+.lf-overlay-close:hover { background: var(--lf-accent); opacity: 1; }
 .lf-overlay-close:active { background: var(--lf-secondary); }
+.lf-overlay-close:focus-visible { background: var(--lf-accent); opacity: 1; }
 .lf-overlay-close:focus-visible,.lf-menu__item:focus-visible {
   outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: calc(-1 * var(--lf-focus-width));
 }
-.lf-dialog--side { margin: 0 0 0 auto; width: min(var(--lf-sheet-width), 100%); height: 100dvh; max-height: 100dvh; border-radius: 0; }
+.lf-dialog--side { margin: 0 0 0 auto; width: min(var(--lf-sheet-width), 100%); height: 100dvh; max-height: 100dvh; border-radius: 0; border-inline-start: var(--lf-border-width) solid var(--lf-border); box-shadow: var(--lf-shadow-peek); }
+.lf-dialog--side .lf-dialog__body { font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading); }
+.lf-dialog--side .lf-overlay-close { opacity: 1; color: var(--lf-foreground-secondary); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
 .lf-menu-anchor,.lf-tooltip-anchor { display: inline-flex; vertical-align: middle; }
 .lf-menu,.lf-tooltip {
   box-sizing: border-box; position: fixed; inset: auto; margin: 0;
   color: var(--lf-popover-foreground); background: var(--lf-popover); border: var(--lf-border-width) solid var(--lf-border);
   font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
   font-feature-settings: "rlig" 1, "calt" 1; box-shadow: var(--lf-shadow-popover);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
-.lf-menu { width: var(--lf-menu-width); max-width: calc(100vw - var(--lf-space-4)); max-height: calc(100dvh - var(--lf-space-4)); overflow: auto; padding: var(--lf-space-1); border-radius: var(--lf-radius-md); font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading); }
+.lf-menu { width: max-content; min-width: var(--lf-menu-min-width); max-width: calc(100vw - var(--lf-space-4)); max-height: calc(100dvh - var(--lf-space-4)); overflow: auto; padding: 0; border-radius: var(--lf-radius-md); font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading); }
+.lf-menu[data-width="wide"] { width: var(--lf-menu-width); padding: var(--lf-space-1); }
+.lf-menu[data-width="wide"] > .lf-menu__body { padding: 0; }
+.lf-menu__body { padding: var(--lf-space-1); }
 .lf-menu__item {
-  display: flex; gap: var(--lf-space-2); align-items: center; width: 100%; min-height: var(--lf-control-height);
+  display: flex; gap: normal; align-items: center; width: 100%; min-height: var(--lf-control-height);
   padding: var(--lf-space-1h) var(--lf-space-2); border: 0; border-radius: var(--lf-radius-sm);
   font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); text-align: left; color: inherit; background: transparent; cursor: pointer;
 }
 .lf-menu__item:focus,.lf-menu__item:hover:not(:disabled) { background: var(--lf-accent); }
 .lf-menu__item[data-destructive] { color: var(--lf-destructive); }
 .lf-menu__item:disabled { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
-.lf-menu__item > span { width: var(--lf-space-4); margin-inline-start: auto; }
+.lf-menu__item > svg { flex: none; margin-inline-end: var(--lf-space-1h); color: var(--lf-icon-foreground); }
+.lf-menu__item[data-destructive] > svg { color: inherit; }
+.lf-menu__item > span { display: inline-flex; width: var(--lf-overlay-icon-size); margin-inline-start: auto; }
 .lf-menu__separator { height: var(--lf-border-width); margin: var(--lf-space-1) calc(-1 * var(--lf-space-1)); background: var(--lf-border); }
-.lf-menu__empty { display: block; padding: var(--lf-space-2); color: var(--lf-muted-foreground); }
+.lf-menu__empty { display: block; padding: var(--lf-space-2); color: var(--lf-muted-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
 .lf-tooltip { max-width: min(var(--lf-tooltip-width), calc(100vw - var(--lf-space-4))); padding: var(--lf-space-1h) var(--lf-space-3); border-radius: var(--lf-radius-md); }
+.lf-tooltip[data-size="content"] { max-width: none; }
 .lf-tooltip::before { content: ""; position: absolute; inset: calc(-1 * var(--lf-space-1)) 0; }
+.lf-dialog[role="alertdialog"] .lf-dialog__body > p[id] { color: var(--lf-muted-foreground); line-height: var(--lf-leading-sm); }
+.lf-confirm-error { padding: var(--lf-space-3); border: var(--lf-border-width) solid var(--lf-confirm-error-border); border-radius: var(--lf-radius-sm); background: var(--lf-confirm-error-fill); color: var(--lf-confirm-error-ink); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
 @media (max-width: 639px) {
   .lf-dialog { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
-  .lf-dialog__actions { flex-wrap: wrap; padding-bottom: max(var(--lf-space-4), env(safe-area-inset-bottom)); }
+  .lf-dialog__actions { flex-direction: column-reverse; padding-bottom: max(var(--lf-space-4), env(safe-area-inset-bottom)); }
+  .lf-dialog__actions > .lf-button { width: 100%; }
 }
 @media (forced-colors: active) {
   .lf-overlay-close:focus-visible,.lf-menu__item:focus-visible { outline: 2px solid CanvasText; }
 }
+.lf-dialog--comparison { width: min(var(--lf-dialog-comparison-width), 100%); height: 90dvh; max-height: none; font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading); }
+.lf-dialog--comparison .lf-dialog__head { gap: var(--lf-space-8); border-bottom: var(--lf-border-width) solid var(--lf-border); }
+.lf-dialog--comparison .lf-dialog__head h2 { font-size: var(--lf-text-xl); line-height: 1; }
+.lf-dialog--comparison .lf-dialog__body { padding: var(--lf-space-4); font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading); }
+.lf-dialog--comparison .lf-overlay-close { margin: calc(-1 * var(--lf-space-2)); }
+.lf-dialog--comparison .lf-dialog__actions { padding: var(--lf-space-6); border-top: var(--lf-border-width) solid var(--lf-border); border-radius: 0 0 var(--lf-radius-lg) var(--lf-radius-lg); background: var(--lf-modal); }
+.lf-dialog--bottom { margin: auto 0 0; width: 100%; height: 85svh; max-height: 85svh; border-radius: 0; border-top: var(--lf-border-width) solid var(--lf-border); }
+.lf-dialog--bottom .lf-dialog__head { padding: var(--lf-space-3) var(--lf-space-4); border-bottom: var(--lf-border-width) solid var(--lf-border); }
+.lf-dialog--bottom .lf-dialog__head h2 { line-height: var(--lf-leading-lg); }
+.lf-dialog--bottom .lf-overlay-close { margin: 0; opacity: 1; color: var(--lf-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
+.lf-dialog--bottom .lf-dialog__actions { flex-direction: row; justify-content: space-between; padding: var(--lf-space-3) var(--lf-space-4); border-top: var(--lf-border-width) solid var(--lf-border); }
+.lf-dialog--bottom .lf-dialog__actions > .lf-button { width: auto; }

@@ -26,6 +26,9 @@ Langfuse semantic theme tokens
 PR-2 reimplements MIT overlay visual anatomy from this same commit:
 web/src/components/design-system/Dialog/Dialog.tsx,
 web/src/components/ui/{dialog,alert-dialog,sheet,dropdown-menu}.tsx.
+Follow-up measurements also use
+web/src/components/design-system/DropdownMenu/DropdownMenu.tsx and
+web/src/components/design-system/ConfirmationDialogController/ConfirmationDialogController.tsx.
 Destination: local/dashboard/foundation/overlays/, site/src/ui/ui.css and
 local/dashboard/components/console-style.ts. Native dialog/popover and Preact
 own behavior; no React, Radix or Floating UI code is imported.
