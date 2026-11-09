@@ -5,6 +5,7 @@ import { manifestSchema } from "./manifest.mjs";
 import { measure, metricFailures } from "./metrics.mjs";
 import { captureCrop, diffImages } from "./image-diff.mjs";
 import { stageSpecimen, unstageSpecimen } from "./specimen-stage.mjs";
+import { captureClipboardState } from "./clipboard-state.mjs";
 
 const [manifestPath, outputPath] = process.argv.slice(2);
 if (!manifestPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -87,7 +88,10 @@ try {
       }
       if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
         { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
+      let restoreClipboard;
       try {
+        if (["copying", "copied", "copy-error"].includes(specimen.action))
+          restoreClipboard = await captureClipboardState(page, specimen);
         if (staged) await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
         await page.evaluate(async selector => {
           const element = document.querySelector(selector);
@@ -135,6 +139,7 @@ try {
         results.push(result);
         console.log(`${result.status} ${prefix} ${specimen.name}`);
       } finally {
+        if (restoreClipboard) await restoreClipboard();
         if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
           { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
         if (staged) await unstageSpecimen(page, specimen.selector, staged);

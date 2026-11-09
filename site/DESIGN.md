@@ -43,6 +43,11 @@ error messages, mixed checkboxes and status text contrast are intentional
 accessibility adaptations. References and measured differences are recorded
 per component in PR-1 evidence, not inferred from token equality.
 
+Button supports an optional trailing glyph for real filter-trigger composition:
+the trailing slot uses the 4px spacing token; leading-only content keeps its
+6px gap. Comparison hosts may match reference labels and widths, but must not
+override primitive typography, padding, colors, radii or rings to force a pass.
+
 ## Phase B foundation (PR-0, 2026-11-09)
 
 This section takes precedence for the new shared UI foundation. Existing product

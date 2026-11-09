@@ -23,6 +23,10 @@ explicit error descriptions, no custom overlay dependencies, and real
 Langfuse reference provenance. Static badges/keyboard hints retain compact
 geometry; interactive dismiss/clear/copy targets grow on touch.
 
+Button's optional trailing glyph uses the 4px spacing token; leading-only
+content keeps its 6px gap. Development comparison hosts match labels and
+available widths without overriding primitive styles.
+
 ## Phase B foundation (PR-0, 2026-11-09)
 
 This section supersedes the older geometry/type rules only for the new shared

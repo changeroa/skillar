@@ -57,6 +57,19 @@ test("isolated focus capture retains the outer shell and inner focus target", ()
   assert.equal(result.pages[0].states[0].action, "focus");
 });
 
+test("clipboard state captures retain their asynchronous action and distinct click target", () => {
+  // Given: a whole feedback region, not just its button.
+  const input = { profiles: [{ id: "desktop", width: 1440, height: 900 }],
+    pages: [{ id: "fixture", url: "http://localhost/", ready: "main",
+      states: [{ name: "copy-error", selector: ".copy", actionSelector: ".copy button", action: "copy-error" }] }] };
+  // When
+  const state = manifestSchema.parse(input).pages[0].states[0];
+  // Then
+  assert.equal(state.action, "copy-error");
+  assert.equal(state.selector, ".copy");
+  assert.equal(state.actionSelector, ".copy button");
+});
+
 test("explicit corner tolerance rejects interior drift and all alpha drift", () => {
   const reference = new Uint8Array(10 * 10 * 4).fill(255), actual = reference.slice();
   actual[(1 * 10 + 1) * 4] -= 8;

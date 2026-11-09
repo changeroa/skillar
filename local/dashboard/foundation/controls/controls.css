@@ -15,6 +15,7 @@
 }
 .lf-button { height: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-3); gap: var(--lf-space-1h); white-space: nowrap; }
 .lf-button__content { display: inline-flex; align-items: center; gap: var(--lf-space-1h); }
+.lf-button__content[data-trailing="true"] { gap: var(--lf-space-1); }
 .lf-button--sm { height: var(--lf-control-sm-height); padding: 0 var(--lf-space-2); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
 .lf-button--primary { background: var(--lf-primary); color: var(--lf-primary-foreground); }
 .lf-button--secondary { background: var(--lf-secondary); color: var(--lf-secondary-foreground); }

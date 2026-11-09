@@ -21,6 +21,18 @@ test("loading button blocks activation without losing its accessible name", asyn
   assert.equal(activated, 0);
 });
 
+test("trailing button glyph follows its unchanged accessible label", async t => {
+  // Given
+  const label = "Account menu";
+  // When
+  const { container } = await mount(t, Button, { text: label, trailingIcon: "chevron" });
+  // Then
+  const content = byTag(container, "span")[0];
+  assert.equal(byTag(content, "svg")[0], content.childNodes.at(-1));
+  assert.equal(byTag(content, "svg").length, 1);
+  assert.equal(byTag(container, "button")[0].getAttribute("aria-label"), label);
+});
+
 test("input associates its visible label and validation message", async t => {
   // Given
   const { container } = await mount(t, Input, { label: "Name", error: "Required", id: "name" });

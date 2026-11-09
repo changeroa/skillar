@@ -1,6 +1,7 @@
 import { render } from "preact";
 import { useState } from "preact/hooks";
 import { ControlsGallery } from "./controls-gallery";
+import { DemoControls } from "./demo-controls";
 
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
@@ -115,5 +116,5 @@ export function mountGallery(root: HTMLElement): void {
   if (theme === "light" || theme === "dark" || theme === "system") {
     document.documentElement.dataset["theme"] = theme;
   }
-  render(<Gallery />, root);
+  render(new URLSearchParams(location.search).has("demoControl") ? <DemoControls /> : <Gallery />, root);
 }

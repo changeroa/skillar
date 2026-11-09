@@ -76,6 +76,9 @@ export function ControlsGallery() {
       <Specimen id="skeleton-contrast"><Skeleton variant="contrast" /></Specimen>
       <Specimen id="copy-default"><CopyButton value="skillar-original-value" label="ID" /></Specimen>
       <Specimen id="copy-disabled"><CopyButton value="skillar-original-value" label="ID" disabled /></Specimen>
+      <Specimen id="copy-copying"><CopyButton value="skillar-original-value" label="ID" /></Specimen>
+      <Specimen id="copy-copied"><CopyButton value="skillar-original-value" label="ID" /></Specimen>
+      <Specimen id="copy-error"><CopyButton value="skillar-original-value" label="ID" /></Specimen>
     </div>
     <output id="controls-result" aria-live="polite">확인 {count}회 / 검색: {submitted || "아직 없음"} / 항목: {selection}</output>
   </section>;

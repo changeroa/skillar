@@ -61,6 +61,13 @@ spellcheck is disabled in this synthetic fixture on both sides, and previous
 focus/selection is cleared before each state. Full-page captures still show
 the normal gallery. `focusSelector` can target an inner input while `selector`
 continues to capture the complete search shell and its ring.
+
+Clipboard actions `copying`, `copied` and `copy-error` capture the whole
+feedback region, not just the icon. `actionSelector` optionally names its
+button. The localhost-only transport supplies a pending, resolved or rejected
+clipboard promise; the real component handler drives the visual state.
+An observer is armed before trusted activation and asserts busy/disabled,
+check or visible error feedback. The clipboard seam is restored afterwards.
 Infinite animation effects use the component's static underlying CSS during
 capture. A paused transform/opacity animation keeps a resampled compositor
 texture, producing false SVG and rounded-fill differences even at time zero.
@@ -98,6 +105,30 @@ zero-tolerance and alpha always remains exact. The default is still zero.
 Results retain every raw pixel difference, per-channel maxima, accepted corner
 counts, and the policy coordinates. Use this only with a recorded edge-raster
 diagnosis; it cannot accept text/icon or flat-color drift.
+
+## Actual public Demo comparisons
+
+```sh
+OMOWRIGHT_HELPER=/path/to/browser/scripts/omowright.mjs \
+  node scripts/uxb/demo-compare.mjs /absolute/demo-captures/records.json /absolute/demo-comparisons
+```
+
+This separate runner consumes actual source PNGs and recorded styles from
+the explicitly permitted public Demo project. It opens only localhost
+product fixtures, with one capture tab and one composition tab on Chrome
+9333. Do not run another keyboard-driving harness concurrently.
+The development-only `?demoControl=Button` host selects real shared Preact
+controls and their ordinary public props. It never overrides primitive
+padding, fonts, colors, radii or focus styling. Host placement preserves
+the source crop's fractional device-pixel phase; raw source PNGs are untouched.
+
+Each site/local light/dark pair records height, padding, typography, radius,
+border/color tokens, shadow and native outline assertions, plus side-by-side
+and zero-tolerance raw pixel diffs. A completed run is not a parity PASS:
+read each `styleStatus` and `pixelStatus`. OS-native expanded Select states
+are explicitly `NATIVE-ADAPTATION`, never silently passed. Missing Demo states
+belong in the provenance ledger as "no demo instance"; scratch evidence is
+supplementary, not a substitute.
 
 ```sh
 node scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8

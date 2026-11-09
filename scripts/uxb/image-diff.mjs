@@ -1,8 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 /** Crop integer device pixels from the composited viewport, never re-rasterize a CSS clip. */
-export async function captureCrop(page, selector) {
-  const bounds = await page.evaluate(selector => {
+export async function captureCrop(page, selector, { align = true } = {}) {
+  const bounds = await page.evaluate(({ selector, align }) => {
     const element = document.querySelector(selector);
     const before = element.getBoundingClientRect();
     const computed = getComputedStyle(element);
@@ -11,12 +11,14 @@ export async function captureCrop(page, selector) {
     const originalPosition = element.style.position;
     const originalTop = element.style.top, originalLeft = element.style.left;
     const dpr = devicePixelRatio, padding = 4;
-    const shiftX = Math.round(before.left * dpr) / dpr - before.left;
-    const shiftY = Math.round(before.top * dpr) / dpr - before.top;
+    const shiftX = align ? Math.round(before.left * dpr) / dpr - before.left : 0;
+    const shiftY = align ? Math.round(before.top * dpr) / dpr - before.top : 0;
     // Layout offsets avoid interpolating a fractionally translated raster layer.
-    element.style.position = "relative";
-    element.style.left = `${(parseFloat(computed.left) || 0) + shiftX}px`;
-    element.style.top = `${(parseFloat(computed.top) || 0) + shiftY}px`;
+    if (align) {
+      element.style.position = "relative";
+      element.style.left = `${(parseFloat(computed.left) || 0) + shiftX}px`;
+      element.style.top = `${(parseFloat(computed.top) || 0) + shiftY}px`;
+    }
     const rect = element.getBoundingClientRect();
     if (rect.top < padding || rect.bottom + padding > innerHeight)
       throw new RangeError(`Specimen must fit the viewport: ${selector}`);
@@ -25,7 +27,7 @@ export async function captureCrop(page, selector) {
     return { x, y, width: Math.min(Math.ceil((rect.right + padding) * dpr), innerWidth * dpr) - x,
       height: Math.ceil((rect.bottom + padding) * dpr) - y, dpr,
       cssX: rect.x, cssY: rect.y, scrollY, shiftX, shiftY, originalPosition, originalTop, originalLeft };
-  }, selector);
+  }, { selector, align });
   try {
   // The first frame applies the layout offset; the second observes its paint.
   await page.evaluate(() => new Promise(resolve =>
@@ -50,7 +52,7 @@ export async function captureCrop(page, selector) {
   }), { frame: frame.data, bounds });
   return { data, bounds };
   } finally {
-    await page.evaluate(({ selector, bounds }) => {
+    if (align) await page.evaluate(({ selector, bounds }) => {
       const style = document.querySelector(selector).style;
       style.position = bounds.originalPosition; style.top = bounds.originalTop; style.left = bounds.originalLeft;
     }, { selector, bounds });

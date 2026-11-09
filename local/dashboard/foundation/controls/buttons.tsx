@@ -9,14 +9,15 @@ export type ButtonProps = NativeButton & {
   readonly size?: "default" | "sm";
   readonly loading?: boolean;
   readonly icon?: ControlIcon;
+  readonly trailingIcon?: ControlIcon;
 };
 
 export function Button({ text, variant = "primary", size = "default", loading = false,
-  icon, disabled, type = "button", ...props }: ButtonProps) {
+  icon, trailingIcon, disabled, type = "button", ...props }: ButtonProps) {
   return <button {...props} type={type} class={`lf-button lf-button--${variant} lf-button--${size}`}
     disabled={disabled || loading} aria-busy={loading || undefined} aria-label={props["aria-label"] ?? text}>
-    <span class="lf-button__content" aria-hidden={loading || undefined}>
-      {icon && <Glyph name={icon} />}{text}
+    <span class="lf-button__content" data-trailing={Boolean(trailingIcon)} aria-hidden={loading || undefined}>
+      {icon && <Glyph name={icon} />}{text}{trailingIcon && <Glyph name={trailingIcon} />}
     </span>
     {loading && <span class="lf-button__busy" aria-hidden="true"><svg class="lf-spinner" viewBox="0 0 24 24"
       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
