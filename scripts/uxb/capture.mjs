@@ -88,7 +88,9 @@ try {
           const animations = document.getAnimations();
           const finite = animations.filter(animation => animation.effect.getComputedTiming().iterations !== Infinity);
           for (const animation of animations.filter(animation => animation.effect.getComputedTiming().iterations === Infinity)) {
-            animation.pause(); animation.currentTime = 0;
+            // Pausing retains a resampled compositor texture (pulse/ping).
+            // Capture the real component's static underlying CSS instead.
+            animation.effect.target.style.animation = "none";
           }
           let timer;
           try {

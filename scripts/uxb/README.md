@@ -61,6 +61,11 @@ spellcheck is disabled in this synthetic fixture on both sides, and previous
 focus/selection is cleared before each state. Full-page captures still show
 the normal gallery. `focusSelector` can target an inner input while `selector`
 continues to capture the complete search shell and its ring.
+Infinite animation effects use the component's static underlying CSS during
+capture. A paused transform/opacity animation keeps a resampled compositor
+texture, producing false SVG and rounded-fill differences even at time zero.
+Finite interaction transitions still finish through their exact promises;
+loading, status and skeleton cases remain in the matrix.
 Each profile runs light and dark, top/end viewport captures plus every named
 specimen. Crop padding is 4px for rings. Actions: none, hover, focus (trusted
 Shift+Tab/Tab), active (pointer held until after capture). Specimen geometry

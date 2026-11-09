@@ -188,7 +188,7 @@ button.lf-badge:hover { opacity: 0.8; }
   outline-style: none; outline-offset: 0; outline-color: -webkit-focus-ring-color;
 }
 .lf-input:focus-visible { outline-style: none; }
-.lf-link:focus-visible { outline: 1px auto -webkit-focus-ring-color; box-shadow: none; }
+.lf-link:focus-visible { outline: var(--lf-border-width) auto -webkit-focus-ring-color; outline-offset: var(--lf-border-width); box-shadow: none; }
 .lf-spinner { width: auto; height: 50%; aspect-ratio: 1; color: inherit; }
 .lf-search:focus-within input { border-color: var(--lf-primary-accent); outline: none transparent; outline-offset: var(--lf-focus-offset); }
 @media (forced-colors: active) {
