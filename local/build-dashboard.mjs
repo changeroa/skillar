@@ -22,6 +22,8 @@ await build({
 });
 await copyFile(new URL("dashboard/index.html", root), new URL("index.html", out));
 await copyFile(new URL("dashboard/styles.css", root), new URL("assets/styles.css", out));
+await copyFile(new URL("dashboard/foundation/tokens.css", root), new URL("assets/tokens.css", out));
+await copyFile(new URL("NOTICE", root), new URL("NOTICE", out));
 // tsc does not copy non-TS assets; the store reads schema.sql and migrations/*.sql next to db.js.
 await mkdir(new URL("dist/store/migrations/", root), { recursive: true });
 await copyFile(new URL("src/store/schema.sql", root), new URL("dist/store/schema.sql", root));

@@ -17,7 +17,8 @@
     "src/store/schema.sql",
     "src/store/migrations",
     "src/store/task-types.json",
-    "README.md"
+    "README.md",
+    "NOTICE"
   ],
   "type": "module",
   "bin": {
@@ -28,6 +29,7 @@
     "node": ">=24.15"
   },
   "scripts": {
+    "dev:dashboard": "node dev-dashboard.mjs",
     "build": "tsc -p tsconfig.json && node build-cloud.mjs && node build-dashboard.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p dashboard/tsconfig.json",
     "test": "node --test \"test/**/*.test.mjs\" && node --test test/sync-performance.mjs",

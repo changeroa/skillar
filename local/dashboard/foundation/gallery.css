@@ -1,0 +1,73 @@
+/* Shared dev-only foundation specimens, not the product component migration. */
+html { background: var(--lf-background); color: var(--lf-foreground); }
+body { margin: 0; }
+.lf-gallery, .lf-gallery * { box-sizing: border-box; }
+.lf-gallery {
+  --gallery-max: 1200px;
+  --gallery-column: 240px;
+  --gallery-surface-height: 96px;
+  --gallery-radius-width: 144px;
+  max-width: var(--gallery-max);
+  margin-inline: auto;
+  padding: var(--lf-space-8) var(--lf-space-6);
+  display: grid;
+  gap: var(--lf-space-8);
+  font: var(--lf-weight-regular) var(--lf-text-sm) / var(--lf-leading-sm) var(--lf-font-sans);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.lf-gallery h1, .lf-gallery h2, .lf-gallery p { margin: 0; }
+.lf-gallery h1 { font-size: var(--lf-text-2xl); line-height: var(--lf-leading-2xl); font-weight: var(--lf-weight-strong); }
+.lf-gallery h2 { font-size: var(--lf-text-lg); line-height: var(--lf-leading-lg); font-weight: var(--lf-weight-strong); }
+.lf-gallery section { min-width: 0; display: grid; gap: var(--lf-space-3); }
+.lf-gallery__header { display: flex; gap: var(--lf-space-6); justify-content: space-between; align-items: start; flex-wrap: wrap; }
+.lf-gallery__header > div { display: grid; gap: var(--lf-space-2); }
+.lf-gallery__eyebrow, .lf-gallery footer { color: var(--lf-foreground-secondary); }
+.lf-gallery__theme { display: grid; gap: var(--lf-space-1); }
+.lf-gallery__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--gallery-column), 100%), 1fr)); gap: var(--lf-space-4); }
+.lf-gallery__cluster { display: flex; flex-wrap: wrap; gap: var(--lf-space-3); align-items: center; }
+.lf-gallery__surface, .lf-gallery__specimen, .lf-gallery__radius {
+  min-width: 0;
+  border: var(--lf-border-width) solid var(--lf-border);
+  border-radius: var(--lf-radius-lg);
+  padding: var(--lf-space-4);
+  display: grid;
+  gap: var(--lf-space-2);
+  align-content: start;
+}
+.lf-gallery__surface { min-height: var(--gallery-surface-height); }
+.lf-gallery__surface span { font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.lf-gallery__specimen { background: var(--lf-card); }
+.lf-gallery__radius { width: var(--gallery-radius-width); min-height: var(--gallery-surface-height); background: var(--lf-muted); }
+.lf-gallery code { font-family: var(--lf-font-mono); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.lf-gallery__status { display: inline-flex; gap: var(--lf-space-1); align-items: center; padding: var(--lf-space-1) var(--lf-space-2); border-radius: var(--lf-radius-md); }
+.lf-gallery__control, .lf-gallery select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lf-space-1h);
+  height: var(--lf-control-height);
+  min-width: var(--lf-control-height);
+  max-width: 100%;
+  padding: var(--lf-space-1) var(--lf-space-3);
+  border: var(--lf-border-width) solid var(--lf-input);
+  border-radius: var(--lf-radius-md);
+  background: var(--lf-background);
+  color: var(--lf-foreground);
+  font: var(--lf-weight-regular) var(--lf-text-sm) / var(--lf-leading-sm) var(--lf-font-sans);
+}
+.lf-gallery button, .lf-gallery select { cursor: pointer; }
+.lf-gallery button:hover:not(:disabled), .lf-gallery button:active:not(:disabled), .lf-gallery button[aria-pressed="true"] {
+  background: var(--lf-accent); color: var(--lf-accent-foreground);
+}
+.lf-gallery button:active:not(:disabled) { background: var(--lf-tertiary); }
+.lf-gallery button:disabled { cursor: not-allowed; color: var(--lf-foreground-secondary); background: var(--lf-muted); }
+.lf-gallery input[aria-invalid="true"] { border-color: var(--lf-destructive); }
+.lf-gallery :focus-visible { outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset); }
+.lf-gallery input::placeholder { color: var(--lf-foreground-secondary); opacity: 1; }
+.lf-gallery output { display: block; }
+.lf-gallery a { color: var(--lf-link); display: inline-flex; align-items: center; min-height: var(--lf-control-height); }
+.lf-gallery a:hover { color: var(--lf-link-hover); }
+@media (max-width: 768px) {
+  .lf-gallery { padding: var(--lf-space-6) var(--lf-space-4); }
+}

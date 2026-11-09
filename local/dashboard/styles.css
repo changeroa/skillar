@@ -24,7 +24,7 @@
     --ink: #F0F1E9; --ink-2: #B3BAAA; --ink-3: #B3BAAA;
     --line: #3C4336; --line-2: #7A8273; --wash: #22261F; --wash-2: #22261F;
     --accent: #FF8F70; --accent-2: #FF8F70; --accent-wash: #22261F; --on-accent: #23110C;
-    --ok: #8BD2A0; --warn: #EAC477; --bad: #FF9CB4; --neutral: #B3BAAA;
+    --ok: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --bad: var(--lf-dark-red); --neutral: #B3BAAA;
     --brand-ink: #F0F1E9; --brand-prompt: #FF8F70;
   }
 }
@@ -34,7 +34,7 @@
     --ink: #F0F1E9; --ink-2: #B3BAAA; --ink-3: #B3BAAA;
     --line: #3C4336; --line-2: #7A8273; --wash: #22261F; --wash-2: #22261F;
     --accent: #FF8F70; --accent-2: #FF8F70; --accent-wash: #22261F; --on-accent: #23110C;
-    --ok: #8BD2A0; --warn: #EAC477; --bad: #FF9CB4; --neutral: #B3BAAA;
+    --ok: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --bad: var(--lf-dark-red); --neutral: #B3BAAA;
     --brand-ink: #F0F1E9; --brand-prompt: #FF8F70;
 }
 :root[data-theme="light"] { color-scheme: light; }

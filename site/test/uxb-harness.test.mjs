@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { comparePixels } from "../../scripts/uxb/image-diff.mjs";
+import { metricFailures } from "../../scripts/uxb/metrics.mjs";
+import { manifestSchema } from "../../scripts/uxb/manifest.mjs";
+
+test("pixel comparison detects alpha-only differences", () => {
+  // Given: equal RGB values with different opacity.
+  const reference = new Uint8Array([10, 20, 30, 255]);
+  // When: comparing a transparent pixel.
+  const result = comparePixels(reference, new Uint8Array([10, 20, 30, 0]));
+  // Then: the pixel is a difference, not a false fidelity pass.
+  assert.equal(result.diffRatio, 1);
+});
+
+test("geometry tolerance does not tolerate color mismatches", () => {
+  // Given: near-identical geometry but a different border token.
+  const actual = { height: 32.5, borderColor: "rgb(0, 0, 0)" };
+  // When: applying the component contract.
+  const failures = metricFailures(actual, { height: 32, borderColor: "rgb(255, 255, 255)" });
+  // Then: only the exact color mismatch fails.
+  assert.deepEqual(failures.map(item => item.property), ["borderColor"]);
+});
+
+test("raster tolerance preserves alpha and meaningful color differences", () => {
+  // Given: RGB rounding, larger RGB drift, and a one-step alpha difference.
+  const reference = new Uint8Array([10, 20, 30, 255, 10, 20, 30, 255, 10, 20, 30, 255]);
+  // When: allowing an explicitly declared two-step RGB rounding tolerance.
+  const result = comparePixels(reference, new Uint8Array([12, 20, 30, 255, 13, 20, 30, 255, 10, 20, 30, 254]), 2);
+  // Then: rounding is measured but only RGB drift and changed alpha fail.
+  assert.equal(result.rawDiffPixels, 3);
+  assert.equal(result.diffPixels, 2);
+});
+
+test("unknown interaction actions cannot silently become resting captures", () => {
+  // Given: an otherwise valid capture manifest.
+  const input = { profiles: [{ id: "desktop", width: 1440, height: 900 }],
+    pages: [{ id: "fixture", url: "http://localhost/", ready: "main",
+      states: [{ name: "hover", selector: "button", action: "typo" }] }] };
+  // When: parsing the manifest boundary.
+  const result = manifestSchema.safeParse(input);
+  // Then: the unsupported action is rejected.
+  assert.equal(result.success, false);
+});

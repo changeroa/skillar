@@ -1,3 +1,5 @@
+@import "../../local/dashboard/foundation/tokens.css";
+
 :root {
   color-scheme: light dark;
   --bg: #FFFFFF; --surface: #F3F5F2; --ink: #20231E; --muted: #565C51;
@@ -12,11 +14,11 @@
   font-synthesis: none;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: #8BD2A0; --warn: #EAC477; --error: #FF9CB4; --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --error: var(--lf-dark-red); --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
   :root:not([data-theme="light"]) .wordmark-light { display: none; }
   :root:not([data-theme="light"]) .wordmark-dark { display: block; }
 }
-:root[data-theme="dark"] { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: #8BD2A0; --warn: #EAC477; --error: #FF9CB4; --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --error: var(--lf-dark-red); --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] .wordmark-light { display: none; }
 :root[data-theme="dark"] .wordmark-dark { display: block; }
