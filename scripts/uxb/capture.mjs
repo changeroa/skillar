@@ -17,14 +17,14 @@ const { omowright } = await loadOmowright();
 // Never launch Chrome or touch an existing user tab. One owned tab/session only.
 const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
-const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
-const page = tab.page, results = [];
+const results = [];
 try {
   for (const target of manifest.pages) for (const profile of manifest.profiles) for (const theme of ["light", "dark"]) {
     const disk = await statfs("/");
     if (disk.bavail * disk.bsize < 8 * 1024 ** 3) throw Error("STOP: root disk has less than 8 GiB free");
+    const tab = await tabs.create("about:blank", { viewport: { width: profile.width, height: profile.height } });
+    const page = tab.page;
     const url = new URL(target.url); url.searchParams.set("theme", theme);
-    await tabs.repin(tab, { width: profile.width, height: profile.height });
     await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
       width: profile.width, height: profile.height, deviceScaleFactor: profile.deviceScaleFactor, mobile: profile.touch,
     });
@@ -143,6 +143,7 @@ try {
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
     const end = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(join(output, `${prefix}-end.png`), Buffer.from(end.data, "base64"));
+    await tabs.closeAll();
   }
 } finally {
   await writeFile(join(output, "results.json"), JSON.stringify({ capturedAt: new Date().toISOString(), results }, null, 2));
