@@ -1,5 +1,53 @@
 import { readFile, writeFile } from "node:fs/promises";
 
+/** Crop integer device pixels from the composited viewport, never re-rasterize a CSS clip. */
+export async function captureCrop(page, selector) {
+  const bounds = await page.evaluate(selector => {
+    const element = document.querySelector(selector);
+    const before = element.getBoundingClientRect();
+    if (getComputedStyle(element).translate !== "none")
+      throw new RangeError(`Static snapshot already has CSS translate: ${selector}`);
+    const originalTranslate = element.style.translate;
+    const dpr = devicePixelRatio, padding = 4;
+    const shiftX = Math.round(before.left * dpr) / dpr - before.left;
+    const shiftY = Math.round(before.top * dpr) / dpr - before.top;
+    element.style.translate = `${shiftX}px ${shiftY}px`;
+    const rect = element.getBoundingClientRect();
+    if (rect.top < padding || rect.bottom + padding > innerHeight)
+      throw new RangeError(`Specimen must fit the viewport: ${selector}`);
+    const x = Math.max(0, Math.floor((rect.left - padding) * dpr));
+    const y = Math.max(0, Math.floor((rect.top - padding) * dpr));
+    return { x, y, width: Math.min(Math.ceil((rect.right + padding) * dpr), innerWidth * dpr) - x,
+      height: Math.ceil((rect.bottom + padding) * dpr) - y, dpr,
+      cssX: rect.x, cssY: rect.y, scrollY, shiftX, shiftY, originalTranslate };
+  }, selector);
+  try {
+  const frame = await page._sendToTarget("Page.captureScreenshot", {
+    format: "png", captureBeyondViewport: false, fromSurface: true,
+  });
+  const data = await page.evaluate(({ frame, bounds }) => new Promise((resolve, reject) => {
+    const image = new Image();
+    const timer = setTimeout(() => reject(Error("Viewport decode timed out")), 5000);
+    image.onerror = () => { clearTimeout(timer); reject(Error("Invalid viewport PNG")); };
+    image.onload = () => {
+      clearTimeout(timer);
+      const canvas = document.createElement("canvas");
+      canvas.width = bounds.width; canvas.height = bounds.height;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, -bounds.x, -bounds.y);
+      resolve(canvas.toDataURL("image/png").split(",")[1]);
+    };
+    image.src = `data:image/png;base64,${frame}`;
+  }), { frame: frame.data, bounds });
+  return { data, bounds };
+  } finally {
+    await page.evaluate(({ selector, value }) => {
+      document.querySelector(selector).style.translate = value;
+    }, { selector, value: bounds.originalTranslate });
+  }
+}
+
 export function comparePixels(reference, actual, threshold = 0) {
   if (reference.length !== actual.length || reference.length % 4)
     throw new RangeError("RGBA buffers must have the same pixel dimensions");

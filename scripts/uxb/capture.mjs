@@ -3,7 +3,7 @@ import { resolve, dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { manifestSchema } from "./manifest.mjs";
 import { measure, metricFailures } from "./metrics.mjs";
-import { diffImages } from "./image-diff.mjs";
+import { captureCrop, diffImages } from "./image-diff.mjs";
 
 const [manifestPath, outputPath] = process.argv.slice(2);
 if (!manifestPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -87,13 +87,8 @@ try {
         if (viewport.width !== profile.width || viewport.height !== profile.height || viewport.overflow ||
           viewport.dpr !== profile.deviceScaleFactor || viewport.coarse !== profile.touch)
           failures.push({ property: "viewport", expected: profile, actual: viewport });
-        const clip = await page.evaluate(selector => {
-          const rect = document.querySelector(selector).getBoundingClientRect();
-          return { x: Math.max(0, rect.x + scrollX - 4), y: Math.max(0, rect.y + scrollY - 4),
-            width: Math.ceil(rect.width + 8), height: Math.ceil(rect.height + 8), scale: 1 };
-        }, specimen.selector);
         const file = join(output, `${prefix}-${specimen.name}.png`);
-        const shot = await page._sendToTarget("Page.captureScreenshot", { format: "png", clip, captureBeyondViewport: true });
+        const shot = await captureCrop(page, specimen.selector);
         await writeFile(file, Buffer.from(shot.data, "base64"));
         let comparison = null;
         const reference = specimen.profileReferences?.[profile.id] ?? specimen.reference;
@@ -107,7 +102,7 @@ try {
             failures.push({ property: "pixels", expected: "reference pixels within declared channel tolerance", actual: comparison });
         } else if (manifest.requireReferences) failures.push({ property: "reference", expected: "upstream capture", actual: null });
         const result = { page: target.id, profile: profile.id, theme, state: specimen.name,
-          file, viewport, actual, comparison, failures, status: failures.length ? "FAIL" : "PASS" };
+          file, viewport, crop: shot.bounds, actual, comparison, failures, status: failures.length ? "FAIL" : "PASS" };
         results.push(result);
         console.log(`${result.status} ${prefix} ${specimen.name}`);
       } finally {

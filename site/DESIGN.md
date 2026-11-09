@@ -17,7 +17,8 @@ scheduled component/screen migration; PR-0 changes only their dark status aliase
   OS. `light-dark()` resolves shared colors using the root color-scheme.
   Surface ladder in dark: header 2%, sidebar 4%, canvas 6%, card 7.5%,
   modal 9%, popover 12%. Existing pages do not adopt these surfaces yet.
-- Type: system sans and system mono, weights 400/600. New shared text
+- Type: upstream system sans and Plex Mono/IBM Plex Mono with system monospace
+  fallback, weights 400/600. New shared text
   xs/sm/base/lg/xl/2xl is 12/13/14/16/20/22px with line heights
   18/20/21/21.6/26/27.5px. Body `text-sm` is **13px/20px**.
 - Geometry: radius lg/md/sm is 8/6/4px. New standard controls are **32px**

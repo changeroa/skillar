@@ -6,6 +6,10 @@ This section supersedes the older geometry/type rules only for the new shared
 foundation and future migrated primitives. Existing screens keep their layout
 and interaction state until their scheduled migration.
 
+Mono source fidelity: the shared mono token preserves upstream
+`var(--font-plex-mono, "IBM Plex Mono")` before the system monospace fallbacks;
+it does not download a font or change existing legacy mono variables.
+
 The MIT source is `local/dashboard/foundation/tokens.css`, shared with site, derived
 from Langfuse `69181812b87169df157841fce1314ec96ecd2c5a`,
 `web/src/styles/globals.css`. Full colors use `--lf-*`, not the existing

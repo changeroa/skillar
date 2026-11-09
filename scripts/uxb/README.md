@@ -55,6 +55,10 @@ asserts the real CSS viewport, DPR and pointer mode rather than trusting labels.
 Each profile runs light and dark, top/end viewport captures plus every named
 specimen. Crop padding is 4px for rings. Actions: none, hover, focus (trusted
 Shift+Tab/Tab), active (pointer held until after capture). Specimen geometry
+is cropped from the full composited viewport on integer device pixels, rather
+than asking Chrome to repaint a fractional CSS clip. The specimen must fit
+the viewport; use a larger profile for taller specimens.
+Specimen geometry
 must match within 1px; strings, booleans, colors and ARIA values match exactly.
 Provide computed upstream properties through `expected`; the harness never
 guesses them from an image.

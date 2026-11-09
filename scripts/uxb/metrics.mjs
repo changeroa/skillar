@@ -20,7 +20,7 @@ export async function measure(page, selector) {
       paddingTop: parseFloat(style.paddingTop), paddingRight: parseFloat(style.paddingRight),
       paddingBottom: parseFloat(style.paddingBottom), paddingLeft: parseFloat(style.paddingLeft),
       fontSize: parseFloat(style.fontSize), lineHeight: parseFloat(style.lineHeight),
-      fontWeight: style.fontWeight, radius: parseFloat(style.borderTopLeftRadius),
+      fontFamily: style.fontFamily, fontWeight: style.fontWeight, radius: parseFloat(style.borderTopLeftRadius),
       borderWidth: parseFloat(style.borderTopWidth), borderColor: style.borderTopColor,
       color: style.color, background: style.backgroundColor,
       outlineWidth: parseFloat(style.outlineWidth), outlineOffset: parseFloat(style.outlineOffset),
