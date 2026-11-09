@@ -7,7 +7,7 @@ Product screen migration remains in its scheduled later PRs.
 
 | Gate | Result | Measured evidence |
 | --- | --- | --- |
-| 1. Component parity | FAIL | 1,800/1,800 capture assertions pass. All original 1,200 comparison IDs retained: upstream 1,194/1,200 pass, cross-app 600/600 pass. Six remaining comparisons each differ by one SVG stroke pixel, max RGB delta 1, alpha delta 0; no metric differences or accepted corner pixels. |
+| 1. Component parity | FAIL | 1,800/1,800 capture assertions pass. All original 1,200 comparison IDs retained: upstream 1,194/1,200 pass, cross-app 600/600 pass. Six remaining comparisons each differ by one paint-edge pixel: four focus-shadow and two SVG stroke pixels. Max RGB delta 1, alpha delta 0; no metric differences or accepted corner pixels. |
 | 2. Three-way screens | PASS | 64/64 fresh cases against untouched main, complete supplied reference inventory, no changed screen pixels. |
 | 3. Keyboard / ARIA / touch | PASS | Final native-appearance run 12/12 control cases; global Tab/theme/AX 20/20. Original clipboard value read back; minimum real touch targets 44x44 at phone and desktop-coarse widths. |
 | 4. R1-R7 structure | PASS | Eight production fixture scenarios; R4 N.A. for this control-only PR, existing home links remain unchanged. |
@@ -32,7 +32,23 @@ and selection failures without modifying their colors or comparisons.
 
 Remaining failures are `{site,local}-phone-dark-` followed by
 `icon-ghost-focus`, `icon-destructive`, or `copy-default-focus`.
-The six one-pixel differences remain unexplained renderer-level residue;
+Exact zero-based device crop coordinates and signed actual-minus-reference
+RGBA deltas (all phone/dark, 156x156 crops):
+
+| Case | x,y | Signed RGBA delta | Region |
+| --- | --- | --- | --- |
+| site-phone-dark-icon-ghost-focus | 131,155 | 0,0,+1,0 | focus halo |
+| local-phone-dark-icon-ghost-focus | 131,155 | 0,0,+1,0 | focus halo |
+| site-phone-dark-icon-destructive | 93,73 | -1,0,0,0 | SVG rect stroke |
+| local-phone-dark-icon-destructive | 93,73 | -1,0,0,0 | SVG rect stroke |
+| site-phone-dark-copy-default-focus | 131,155 | 0,0,+1,0 | focus halo |
+| local-phone-dark-copy-default-focus | 131,155 | 0,0,+1,0 | focus halo |
+
+Actual upstream/source paths, stroke properties, 14px SVG size and
+full-precision screen CTMs match. Substituting the actual upstream SVG
+does not remove the destructive pixel. All source/reference crop origins
+and shifts match; no path, size or placement defect was found.
+The six one-pixel differences remain unresolved paint-edge raster residue;
 they are not waived as component-corner AA. No comparison ID was added
 or dropped, no pixel mask was introduced, and the existing RGB<=8
 component-corner allowance and zero alpha tolerance are unchanged.
