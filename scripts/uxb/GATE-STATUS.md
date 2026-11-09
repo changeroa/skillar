@@ -74,3 +74,7 @@ omitted fill alpha. The implementation uses the pinned raw declarations:
 | Red | `oklch(39.6% 0.141 25.723 / 0.7)` | `oklch(76.5% 0.177 27.325)` |
 
 No wireframe approximation was substituted.
+
+## Gate 1 exception (PR-0 only)
+
+Decision by the lane lead, 2026-11-09: for PR-0 only, Gate 1 accepts the comparison against the raw pinned Langfuse CSS (69181812), because PR-0 ships tokens and native probes and has no real components to capture. From PR-1 on, real per-component diffs against Langfuse demo captures are required with no exception. No other gate changed; no production deploy.
