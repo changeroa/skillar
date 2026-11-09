@@ -5,6 +5,7 @@ const state = z.object({
   name: z.string().regex(/^[a-z0-9-]+$/),
   selector: z.string().min(1),
   action: z.enum(["none", "hover", "focus", "active"]).default("none"),
+  focusSelector: z.string().min(1).optional(),
   expected: expected.default({}),
   touchExpected: expected.default({}),
   themeExpected: z.object({ light: expected, dark: expected }).optional(),
@@ -23,5 +24,6 @@ export const manifestSchema = z.object({
     deviceScaleFactor: z.number().min(1).max(3).default(1),
   }).strict()).min(1),
   requireReferences: z.boolean().default(true),
+  isolateSpecimens: z.boolean().default(false),
   pixelChannelTolerance: z.number().int().min(0).max(2).default(0),
 }).strict();

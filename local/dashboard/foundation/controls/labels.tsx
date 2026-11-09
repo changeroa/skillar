@@ -43,7 +43,7 @@ export function StatusBadge({ type, size = "default", transparent = false, isLiv
   const dot = isLive && !["completed", "error", "partial"].includes(category);
   const text = type ? type[0]?.toUpperCase() + type.slice(1).replaceAll("_", " ") : "Unknown";
   return <span class={`lf-status lf-status--${category} lf-status--${size}`} data-transparent={transparent}>
-    {dot && <span class="lf-status__dot" aria-hidden="true" />}{text}
+    {dot && <span class="lf-status__dot" aria-hidden="true"><span /><span /></span>}{text}
   </span>;
 }
 

@@ -52,6 +52,15 @@ Manifest shape (paths are relative to the manifest):
 
 Phone captures use mobile layout, touch/coarse pointer and DPR 3; the harness
 asserts the real CSS viewport, DPR and pointer mode rather than trusting labels.
+For isolated component parity, `isolateSpecimens: true` places each live
+`[data-specimen]` card at the same integer origin with a 242px sample column,
+before layout and interaction. It restores both inline styles afterward.
+This avoids comparing fractional descendant positions from different gallery
+rows. The real components are neither cloned nor raster-resized. Input
+spellcheck is disabled in this synthetic fixture on both sides, and previous
+focus/selection is cleared before each state. Full-page captures still show
+the normal gallery. `focusSelector` can target an inner input while `selector`
+continues to capture the complete search shell and its ring.
 Each profile runs light and dark, top/end viewport captures plus every named
 specimen. Crop padding is 4px for rings. Actions: none, hover, focus (trusted
 Shift+Tab/Tab), active (pointer held until after capture). Specimen geometry

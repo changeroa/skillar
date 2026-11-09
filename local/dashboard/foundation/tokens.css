@@ -190,7 +190,7 @@ html {
   --lf-shortcut-xs-text: 9px;
   --lf-spinner-duration: 1s;
   --lf-space-half: 2px; --lf-space-1: 4px; --lf-space-1h: 6px;
-  --lf-space-2: 8px; --lf-space-3: 12px; --lf-space-4: 16px;
+  --lf-space-2: 8px; --lf-space-2h: 10px; --lf-space-3: 12px; --lf-space-4: 16px;
   --lf-space-5: 20px; --lf-space-6: 24px; --lf-space-8: 32px;
   --lf-space-12: 48px; --lf-space-16: 64px;
 }

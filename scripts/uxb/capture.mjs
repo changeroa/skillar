@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { manifestSchema } from "./manifest.mjs";
 import { measure, metricFailures } from "./metrics.mjs";
 import { captureCrop, diffImages } from "./image-diff.mjs";
+import { stageSpecimen, unstageSpecimen } from "./specimen-stage.mjs";
 
 const [manifestPath, outputPath] = process.argv.slice(2);
 if (!manifestPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -57,6 +58,7 @@ try {
     const top = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(join(output, `${prefix}-top.png`), Buffer.from(top.data, "base64"));
     for (const specimen of target.states) {
+      const staged = manifest.isolateSpecimens ? await stageSpecimen(page, specimen.selector) : null;
       const point = await page.evaluate(selector => {
         const element = document.querySelector(selector);
         if (!(element instanceof HTMLElement)) throw Error(`Missing ${selector}`);
@@ -70,7 +72,7 @@ try {
       if (specimen.action === "focus") {
         await page._sendToTarget("Page.bringToFront");
         // Shift+Tab/Tab use trusted keys; focus starts on the known previous control.
-        await page.evaluate(selector => { document.querySelector(selector).focus(); }, specimen.selector);
+        await page.evaluate(selector => { document.querySelector(selector).focus(); }, specimen.focusSelector ?? specimen.selector);
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
         await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
@@ -79,6 +81,7 @@ try {
       if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
         { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
       try {
+        if (staged) await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
         await page.evaluate(async selector => {
           const element = document.querySelector(selector);
           getComputedStyle(element).backgroundColor;
@@ -124,6 +127,7 @@ try {
       } finally {
         if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
           { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
+        if (staged) await unstageSpecimen(page, specimen.selector, staged);
       }
     }
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));

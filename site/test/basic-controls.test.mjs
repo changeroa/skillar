@@ -97,6 +97,18 @@ test("checkbox exposes indeterminate state through its native control", async t 
   assert.equal(field.name, "selection");
 });
 
+test("uncontrolled select paints the selected native option after a change", async t => {
+  // Given
+  const options = [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }];
+  const { container } = await mount(t, Select, { label: "Item", defaultValue: "a", options });
+  assert.equal(byTag(container, "span")[0].textContent, options[0].label);
+  // When
+  await input(byTag(container, "select")[0], "b", "change");
+  // Then
+  assert.equal(byTag(container, "span")[0].textContent, options[1].label);
+  assert.equal(byTag(container, "span")[0].getAttribute("aria-hidden"), "true");
+});
+
 test("tag removal does not activate its enclosing row", async t => {
   // Given
   let removed = 0;

@@ -2,6 +2,17 @@
 
 ## Phase B basic controls (PR-1)
 
+Parity repair: add the missing 10px `--lf-space-2h` prefix spacing token.
+Font shorthands must preserve inherited `rlig`/`calt`. Native mixed semantics
+remain, with the pinned Check indicator. Status error uses upstream dark-red
+ink, including its known light-theme contrast debt; exact reference parity is
+the owner's current requirement. Native Select keeps its native popup, with
+12px trigger padding and the same visible trailing indicator.
+The Select's native control owns input, focus and options; a pointer-inert
+value span paints the closed value without the browser clipping its line box.
+TextLink follows upstream inline-block baseline geometry. Native focus ink
+follows the document's color-scheme; rings use the existing ring tokens.
+
 `foundation/controls/` owns the shared Button, IconButton, Badge, StatusBadge,
 Tag, Input, SearchInput, native Select, Checkbox, Link, KeyboardShortcut,
 Skeleton and CopyButton. Both dev galleries render this same Preact source;

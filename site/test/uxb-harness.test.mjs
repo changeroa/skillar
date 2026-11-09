@@ -43,6 +43,20 @@ test("unknown interaction actions cannot silently become resting captures", () =
   assert.equal(result.success, false);
 });
 
+test("isolated focus capture retains the outer shell and inner focus target", () => {
+  // Given: a search shell whose input receives keyboard focus.
+  const input = { isolateSpecimens: true, profiles: [{ id: "phone", width: 390, height: 844 }],
+    pages: [{ id: "fixture", url: "http://localhost/", ready: "main",
+      states: [{ name: "search-focus", selector: ".search", focusSelector: ".search input", action: "focus" }] }] };
+  // When: parsing the executable capture contract.
+  const result = manifestSchema.parse(input);
+  // Then: focus and crop targets remain distinct and isolation is not stripped.
+  assert.equal(result.isolateSpecimens, true);
+  assert.equal(result.pages[0].states[0].selector, ".search");
+  assert.equal(result.pages[0].states[0].focusSelector, ".search input");
+  assert.equal(result.pages[0].states[0].action, "focus");
+});
+
 test("explicit corner tolerance rejects interior drift and all alpha drift", () => {
   const reference = new Uint8Array(10 * 10 * 4).fill(255), actual = reference.slice();
   actual[(1 * 10 + 1) * 4] -= 8;

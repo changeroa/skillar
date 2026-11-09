@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { useId, useRef } from "preact/hooks";
+import { useId, useRef, useState } from "preact/hooks";
 import { Glyph } from "./icons";
 
 type InputAttributes = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
@@ -63,20 +63,24 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
 }
 
 export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean };
-export function Select({ label, error, options, placeholder = "선택", id, ...props }: FieldLabel & {
+export function Select({ label, error, options, placeholder = "선택", id, onChange, ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
 } & Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
   const generatedId = useId();
+  const [nativeValue, setNativeValue] = useState(props.defaultValue ?? "");
   const selectId = id ?? generatedId;
+  const selected = options.find(option => option.value === (props.value ?? nativeValue));
+  const text = selected?.label ?? (options.length === 0 ? "선택 가능한 항목 없음" : placeholder);
   const description = [props["aria-describedby"], error ? `${selectId}-error` : undefined].filter(Boolean).join(" ") || undefined;
   return <div class="lf-field">
     <label for={selectId}>{label}</label>
-    <div class="lf-select-wrap">
+    <div class="lf-select-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}>
       <select {...props} id={selectId} class="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}
-        aria-describedby={description}>
+        aria-describedby={description} onChange={event => { setNativeValue(event.currentTarget.value); onChange?.(event); }}>
         <option value="" disabled>{options.length === 0 ? "선택 가능한 항목 없음" : placeholder}</option>
         {options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </select>
+      <span class="lf-select-value" aria-hidden="true">{text}</span>
       <Glyph name="chevron" />
     </div>
     {error && <span id={`${selectId}-error`} class="lf-field-error">{error}</span>}
@@ -88,7 +92,7 @@ export function Checkbox({ label, mixed = false, size = "default", ...props }: {
 } & Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "class" | "className" | "style" | "children">) {
   return <label class={`lf-checkbox lf-checkbox--${size}`}>
     <input {...props} type="checkbox" ref={element => { if (element) element.indeterminate = mixed; }} />
-    <span class="lf-checkbox__box" aria-hidden="true"><Glyph name={mixed ? "minus" : "check"} small={size === "sm"} /></span>
+    <span class="lf-checkbox__box" aria-hidden="true"><Glyph name="check" small={size === "sm"} /></span>
     <span>{label}</span>
   </label>;
 }
