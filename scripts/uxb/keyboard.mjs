@@ -15,16 +15,12 @@ const tabs = omowright.createAgentTabs(browser);
 const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
 const page = tab.page, results = [];
 async function focusControl(selector) {
-  if (selector === ".lf-gallery__theme select") {
-    await page.evaluate(() => {
-      document.body.tabIndex = -1; document.body.focus(); document.body.removeAttribute("tabindex");
-    });
-  } else {
-    await page.evaluate(selector => document.querySelector(selector).focus(), selector);
-    await press(page, "Tab", 8);
-  }
+  const first = selector === ".lf-gallery__theme select";
+  await page.evaluate(selector => document.querySelector(selector).focus(), selector);
+  // Stay inside page tab stops rather than relying on body's implicit cursor.
+  await press(page, "Tab", first ? 0 : 8);
   await arm(page, { kind: "focus", selector });
-  await press(page, "Tab"); await signal(page);
+  await press(page, "Tab", first ? 8 : 0); await signal(page);
 }
 let failed = false;
 await mkdir(output, { recursive: true });
@@ -48,7 +44,6 @@ try {
         document.querySelector("select").addEventListener("change", event =>
           window.__qaChanges.push({ value: event.target.value, trusted: event.isTrusted }));
         window.__qaRoot = document.querySelector("#gallery");
-        document.body.tabIndex = -1; document.body.focus(); document.body.removeAttribute("tabindex");
       });
       const order = await page.evaluate(() => [...document.querySelectorAll("select,button,input,a[href]")]
         .filter(element => !element.disabled && element.tabIndex >= 0).map(element => {
@@ -63,8 +58,11 @@ try {
         }));
       const focus = [];
       for (const selector of order) {
-        await arm(page, { kind: "focus", selector });
-        await press(page, "Tab"); await signal(page);
+        if (selector === order[0]) await focusControl(selector);
+        else {
+          await arm(page, { kind: "focus", selector });
+          await press(page, "Tab"); await signal(page);
+        }
         const metric = await measure(page, selector);
         assert.equal(metric.focused, true, `${selector}: focus-visible`);
         if (!selector.startsWith("[data-specimen")) {
