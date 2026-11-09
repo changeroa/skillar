@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { arm, press, ready, signal } from "./trusted-keys.mjs";
+import { arm, press, ready, signal, typeahead } from "./trusted-keys.mjs";
 import { measure } from "./metrics.mjs";
 
 const [site, local, output] = process.argv.slice(2);
@@ -31,8 +31,10 @@ try {
       await page._sendToTarget("Page.bringToFront");
       await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
       await page.evaluate(() => {
-        window.__qaKeys = [];
+        window.__qaKeys = []; window.__qaChanges = [];
         document.addEventListener("keydown", event => window.__qaKeys.push({ key: event.key, trusted: event.isTrusted }), true);
+        document.querySelector("select").addEventListener("change", event =>
+          window.__qaChanges.push({ value: event.target.value, trusted: event.isTrusted }));
         window.__qaRoot = document.querySelector("#gallery");
         document.body.tabIndex = -1; document.body.focus(); document.body.removeAttribute("tabindex");
       });
@@ -79,14 +81,17 @@ try {
       await writeFile(join(output, `${app}-${theme}-initial-ax.json`), JSON.stringify(initialAX, null, 2));
       results.push({ app, theme, kind: "native-aria-tree", pass: true, controls: namedControls.length });
       const themeChecks = [];
-      for (const mode of ["dark", "light", "system"]) {
-        const current = await page.evaluate(() => document.querySelector("select").value);
-        const indices = { system: 0, light: 1, dark: 2 };
+      const modes = theme === "light" ? ["dark", "light", "system"] : ["light", "dark", "system"];
+      for (const mode of modes) {
+        // Blur/refocus resets the native typeahead search buffer without a delay.
+        await arm(page, { kind: "focus", selector: "#probe-default" });
+        await press(page, "Tab"); await signal(page);
+        await arm(page, { kind: "focus", selector: "select" });
+        await press(page, "Tab", 8); await signal(page);
         await arm(page, { kind: "attribute", selector: "html", attribute: "data-theme", value: mode });
-        await press(page, " ");
-        for (let i = 0; i < Math.abs(indices[mode] - indices[current]); i++)
-          await press(page, indices[mode] > indices[current] ? "ArrowDown" : "ArrowUp");
-        await press(page, "Enter"); await signal(page);
+        // Closed native select typeahead; do not open an OS popup through CDP.
+        const letters = { dark: ["다", "KeyE", 69], light: ["라", "KeyF", 70], system: ["시", "KeyT", 84] };
+        await typeahead(page, ...letters[mode]); await signal(page);
         for (const os of ["light", "dark"]) {
           await page._sendToTarget("Emulation.setEmulatedMedia", {
             features: [{ name: "prefers-color-scheme", value: os }],
@@ -97,9 +102,8 @@ try {
           themeChecks.push({ mode, os, background });
         }
       }
-      // Native picker owns its popup. Trusted open/cancel keys must leave its
-      // trigger focused; there is no custom overlay or saved account setting.
-      await press(page, " "); await press(page, "Escape");
+      // No custom overlay exists in PR-0; Escape leaves the closed trigger focused.
+      await press(page, "Escape");
       assert.equal(await page.evaluate(() => document.activeElement === document.querySelector("select")), true);
       const ax = await page._sendToTarget("Accessibility.getFullAXTree");
       const controls = ax.nodes.filter(node => !node.ignored && ["button", "textbox", "combobox", "link"].includes(node.role?.value));
@@ -112,11 +116,12 @@ try {
         busy: document.querySelector("#probe-loading").getAttribute("aria-busy"),
         invalid: document.querySelector("#probe-error").getAttribute("aria-invalid"),
         descriptionExists: !!document.getElementById(document.querySelector("#probe-error").getAttribute("aria-describedby")),
-        keys: window.__qaKeys, sameRoot: window.__qaRoot === document.querySelector("#gallery"),
+        keys: window.__qaKeys, changes: window.__qaChanges, sameRoot: window.__qaRoot === document.querySelector("#gallery"),
       }));
       assert.ok(semantics.labelled && semantics.disabled && semantics.busyDisabled && semantics.descriptionExists && semantics.sameRoot);
       assert.equal(semantics.busy, "true"); assert.equal(semantics.invalid, "true");
       assert.ok(semantics.keys.length > 20 && semantics.keys.every(event => event.trusted));
+      assert.deepEqual(semantics.changes, modes.map(value => ({ value, trusted: true })));
       await writeFile(join(output, `${app}-${theme}-ax.json`), JSON.stringify(ax, null, 2));
       results.push({ app, theme, kind: "tab-activation-aria", pass: true, focus, semantics, themeChecks });
       console.log(`PASS ${app} ${theme} Tab/Shift+Tab/Enter/Space/AX`);

@@ -42,3 +42,16 @@ test("unknown interaction actions cannot silently become resting captures", () =
   // Then: the unsupported action is rejected.
   assert.equal(result.success, false);
 });
+
+test("explicit corner tolerance rejects interior drift and all alpha drift", () => {
+  const reference = new Uint8Array(10 * 10 * 4).fill(255), actual = reference.slice();
+  actual[(1 * 10 + 1) * 4] -= 8;
+  actual[(5 * 10 + 5) * 4] -= 8;
+  actual[(1 * 10 + 8) * 4 + 3] -= 1;
+  const result = comparePixels(reference, actual, 0,
+    { width: 10, height: 10, inset: 1, radius: 2, tolerance: 8 });
+  assert.equal(result.rawDiffPixels, 3);
+  assert.equal(result.acceptedCornerPixels, 1);
+  assert.equal(result.diffPixels, 2);
+  assert.deepEqual(result.maxPerChannelDelta, [8, 0, 0, 1]);
+});

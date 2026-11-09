@@ -1,29 +1,52 @@
 # PR-0 completion checkpoint
 
-PR #99 remains a draft. Gates 1, 2, 3, and the latest local regression run
-are not green. This checkpoint preserves the runnable capture tooling and
-its failures; it does not claim review readiness.
+PR #99 remains a draft because the local test suite still has one reproduced
+baseline filesystem failure. The four requested diagnoses and scoped fixes
+are complete; no unrelated test or `/tmp/h` file was modified.
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| 1. Upstream visual parity | FAIL | Pinned raw Langfuse CSS rendered independently. All 336 measured specimens pass. 220/224 zero-tolerance upstream image comparisons pass; desktop/light loading and error fail in both apps (243 and 247 pixels). |
-| 2. Three-way screen matrix | FAIL | Actual main `d7e907e` was built separately. Provided demo references and 16 screen mappings were prepared. Both first landing cases timed out waiting for settled content; the run was stopped instead of repeatedly retrying. The complete matrix is not delivered. |
-| 3. Trusted keyboard / ARIA | FAIL | Site light/dark Tab, Shift+Tab, 32px boxes, focus rings, Enter/Space button activation, toggle activation, and named AX controls pass. Native theme-select changes time out; phone line-height assertion receives `normal` (parsed as null), not 20. Local cases were not reached. |
+| 1. Upstream visual parity | PASS | Raw pinned CSS rendered independently. All 336 measured specimens pass; 224/224 image comparisons pass with the explicit corner-only raster policy below. Raw zero-tolerance differences remain visible and recorded. |
+| 2. Three-way screen matrix | PASS | Main `d7e907e` was built independently. All 64 cases have fresh before/after documents, provided demo references, triptychs, and diffs at 1440x900 and 390x844, both themes. Reference inventory lists no missing required file. |
+| 3. Trusted keyboard / ARIA | PASS | Both apps, both themes: trusted Tab/Shift+Tab, focus rings, Enter/Space activation, native typeahead/change, AX semantics, system/light/dark wiring. Phone DPR3 and desktop-coarse controls are 44px with 13px/20px text. |
 | 4. Structure | PASS | Existing eight-case responsive structure evidence remains valid; no structure code changed. |
-| 5. Build / tests | FAIL | Latest site 342/342 and both builds pass; local typecheck passes. Latest local suite is 984/985: `cli-init.test.mjs:159` encounters an existing regular file `/tmp/h`, causing ENOTDIR. That file and the unrelated test were not modified. The earlier full run was 985/985 plus performance 1/1. |
+| 5. Build / tests | FAIL (baseline environment) | Site 343/343, harness 5/5, both builds, local typecheck, performance 1/1 pass. Local 984/985 fails only at `cli-init.test.mjs:159`: existing regular file `/tmp/h` causes ENOTDIR. Independently built main reproduces the identical failure (10/11). TMPDIR, file, and test remain unchanged. |
 | 6. License / package | PASS | Existing notice and package-isolation evidence remains valid. |
 | 7. Non-production preview | PASS | Actual Pages project `skillar-site` production branch was verified as `main`. Only branch `uxb-pr-0` was deployed. Home and NOTICE return 200; development gallery returns 404. |
 
 Preview: https://33ede3e3.skillar-site.pages.dev
 
-Cross-app parity is now 112/112 at zero tolerance, including the three
-previously failing cases. Capture uses composited viewport pixels and
-records device-pixel alignment; it does not replace the upstream oracle.
-The four remaining upstream image failures have zero measured-style
-differences and remain failures, not accepted antialiasing exceptions.
+The original 243/247-pixel differences were border pixels, not text/icons or
+animation (zero animations). Fractional CSS translate interpolated the bottom
+edge. Relative layout alignment plus two paint frames removes that artifact.
+The full source run retains 96 sparse corner pixels across eight comparisons:
+control corners max RGB delta 8; sidebar corners max 2. No interior or alpha
+differences are accepted. Text and icons remain exact.
+
+The explicit comparison CLI argument `8` permits at most eight RGB steps only
+in the four measured-radius corner boxes around the 4px crop inset, scaled by
+DPR. Default tolerance stays zero; alpha stays exact everywhere. All raw
+pixels, per-channel maxima, policy bounds, and diff images remain available.
+For a 250x40 control with radius 6, boxes are x=3..9 or 240..246 and y=3..9 or
+30..36. The regression test rejects center-pixel and alpha drift.
+Cross-app comparisons pass 112/112 with the same corner-only policy: 20 raw
+corner pixels, max RGBA deltas [2,2,2,0], no interior differences.
+
+Landing's settle counter collided with the mock's `__qaPending` function and
+became NaN. The new namespaced counter observes fetch-body/DOM/paint signals.
+Hash navigation also reused the old document; blank navigation now ensures
+both build cookies actually load their own document and assets.
+
+The six nonzero full-screen diffs are five expected dark status replacements
+and one hosted light command-trigger corner pixel (1279,9), max delta 10,
+at its fractional x=1151.765625. No layout/content change is inferred from it.
+The live demo redirected to `/auth/sign-in`; provided captures were used.
+Legacy fixture error/feature-gated/empty states remain labelled as such.
 
 Authoritative private evidence is under
-`pr-0/completion/{upstream-captures,upstream-diffs,cross-app-diffs,keyboard,screens}`.
+`pr-0/completion/{verified-upstream,accepted-upstream-diffs,accepted-cross-app,final-keyboard,final-screens}`.
+The complete reference file list is in `final-screens/summary.json`; detailed
+diagnoses are in `completion/diagnoses.md`. Earlier failed runs are preserved.
 Provided demo images stay private. No production deployment, Worker deployment,
 account-setting change, merge, or self-approval occurred.
 

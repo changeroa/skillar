@@ -10,6 +10,11 @@ export async function press(page, key, modifiers = 0) {
   await page._sendToTarget("Input.dispatchKeyEvent", { ...event, type: "keyUp" });
 }
 
+export async function typeahead(page, text, code, windowsVirtualKeyCode) {
+  await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyDown", key: text, text, code, windowsVirtualKeyCode });
+  await page._sendToTarget("Input.dispatchKeyEvent", { type: "keyUp", key: text, code, windowsVirtualKeyCode });
+}
+
 /** Register the exact DOM signal before the trusted action, never poll or sleep. */
 export async function arm(page, condition) {
   await page.evaluate(condition => {

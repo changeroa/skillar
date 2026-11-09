@@ -56,7 +56,10 @@ Each profile runs light and dark, top/end viewport captures plus every named
 specimen. Crop padding is 4px for rings. Actions: none, hover, focus (trusted
 Shift+Tab/Tab), active (pointer held until after capture). Specimen geometry
 is cropped from the full composited viewport on integer device pixels, rather
-than asking Chrome to repaint a fractional CSS clip. The specimen must fit
+than asking Chrome to repaint a fractional CSS clip. Temporary relative layout
+offsets align its origin; two animation frames observe the resulting paint.
+CSS `translate` is deliberately avoided because it interpolates border pixels.
+The specimen must fit
 the viewport; use a larger profile for taller specimens.
 Specimen geometry
 must match within 1px; strings, booleans, colors and ARIA values match exactly.
@@ -74,6 +77,28 @@ explicit opt-in for demonstrated rounded-edge rasterization noise, not a color
 token tolerance. Raw differing pixels and maximum channel delta are always
 recorded and highlighted, including within-tolerance pixels; alpha differences
 always fail. Computed color and geometry checks remain exact/1px respectively.
+For the separately rendered raw-CSS reference, `compare.mjs` also accepts an
+explicit final argument `8`: RGB deltas up to 8 only in the four rounded-corner
+boxes (4px crop inset, measured radius, scaled by DPR). Interior pixels remain
+zero-tolerance and alpha always remains exact. The default is still zero.
+Results retain every raw pixel difference, per-channel maxima, accepted corner
+counts, and the policy coordinates. Use this only with a recorded edge-raster
+diagnosis; it cannot accept text/icon or flat-color drift.
+
+```sh
+node scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8
+node scripts/uxb/keyboard.mjs site-gallery-url local-gallery-url keyboard-evidence
+node scripts/uxb/screens.mjs matrix-config.json screen-evidence
+node scripts/uxb/screens.mjs matrix-config.json screen-evidence summary
+```
+
+These commands use the same `OMOWRIGHT_HELPER` environment variable. Screen
+captures force a fresh document for each build cookie, record asset URLs and
+document identities, and use a unique fetch counter plus exact DOM/paint signals.
+Missing provided screen references produce a labelled `no reference` panel;
+the summary lists provided and absent filenames without failing before/after
+delivery.
+
 Missing references fail by default. A foundation-only metrics run may set
 `requireReferences: false`, but its PASS proves metrics, **not upstream parity**.
 Review `results.json` and cite the side/diff files; a numeric pass does not

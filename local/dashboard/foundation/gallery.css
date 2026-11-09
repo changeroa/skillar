@@ -57,6 +57,8 @@ body { margin: 0; }
   font: var(--lf-weight-regular) var(--lf-text-sm) / var(--lf-leading-sm) var(--lf-font-sans);
 }
 .lf-gallery button, .lf-gallery select { cursor: pointer; }
+/* Native macOS select appearance overrides the declared line-height with normal. */
+.lf-gallery select { appearance: none; }
 .lf-gallery button:hover:not(:disabled), .lf-gallery button:active:not(:disabled), .lf-gallery button[aria-pressed="true"] {
   background: var(--lf-accent); color: var(--lf-accent-foreground);
 }
