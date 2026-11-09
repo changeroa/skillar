@@ -1,5 +1,52 @@
 # skillar Dashboard Design System
 
+## Phase B foundation (PR-0, 2026-11-09)
+
+This section supersedes the older geometry/type rules only for the new shared
+foundation and future migrated primitives. Existing screens keep their layout
+and interaction state until their scheduled migration.
+
+Mono source fidelity: the shared mono token preserves upstream
+`var(--font-plex-mono, "IBM Plex Mono")` before the system monospace fallbacks;
+it does not download a font or change existing legacy mono variables.
+
+The MIT source is `local/dashboard/foundation/tokens.css`, shared with site, derived
+from Langfuse `69181812b87169df157841fce1314ec96ecd2c5a`,
+`web/src/styles/globals.css`. Full colors use `--lf-*`, not the existing
+brand/selection aliases. OKLCH values and alpha remain exact. Themes follow
+`html[data-theme]` light/dark/system, with OS fallback when unset. Dark header,
+sidebar, canvas, card, modal and popover are 2/4/6/7.5/9/12% lightness.
+
+New control boxes are **32px desktop**, **44px visual height** at <=768px OR
+`(pointer: coarse)`; small is 28px/44px. Typography is system sans/mono,
+400/600, text-xs/sm/base/lg/xl/2xl = 12/13/14/16/20/22px; line heights
+18/20/21/21.6/26/27.5px. Body `text-sm` is **13px/20px**. Radius lg/md/sm
+is 8/6/4px. Spacing is 2/4/6/8/12/16/20/24/32/48/64px, border 1px, focus
+2px with 2px offset. The owner-approved density overrides the old 14px minimum
+for migrated primitives, not every existing page.
+
+`npm run dev:dashboard` serves the real app with fixtures and `/__gallery.html`.
+The dev-only gallery reuses the site's shared Preact foundation specimens:
+surfaces, status pairs, type/radius scales and metric probes in default,
+hover/focus-visible/active, disabled/busy, invalid/empty and selected states.
+This is the foundation showcase, not a claim that PR-1 components are complete.
+Document scroll owns the page; intrinsic grids become one column without
+horizontal overflow. Spatial reference: StyleGallery
+[ram-grid](https://github.com/changeroa/StyleGallery/blob/main/patterns/grid-repetition/ram-grid.md).
+
+Native labels, keyboard rings, textual status with SVG glyphs and neutral
+selected wash/check remain required. No motion is added. Reference-only faint
+color swatches do not relax contrast requirements for readable UI. Existing
+status specimen labels use neutral foreground; their glyphs retain the exact
+status foregrounds (the original light red text pair is only 3.15:1). Existing
+dark `--ok/--warn/--bad` consume exact shared green/yellow/red foregrounds,
+including the hosted embed through site aliases; light aliases stay unchanged.
+URL, draft, keyed disclosure and renderer ownership contracts are untouched.
+
+Source notices ship in `local/NOTICE` and `dist/dashboard/NOTICE`. Reusable
+capture/diff evidence lives under `scripts/uxb/`. Missing upstream captures or
+independent reviewers must be reported as unverified gates, never self-approved.
+
 ## Approved local analysis P-F (2026-11-05)
 
 The analysis screens reuse the P-E shell, controls, sheet and typography.

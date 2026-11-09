@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cpSync, mkdirSync, symlinkSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -20,7 +20,7 @@ test("packed CLI, cloud wire and private search execute without an unpublished s
   mkdirSync(stagedLocal, { recursive: true });
   mkdirSync(stagedShared);
   for (const name of ["package.json", "tsconfig.json", "build-cloud.mjs", "build-dashboard.mjs",
-    "src", "dashboard", "packs", "docs", "README.md"]) {
+    "src", "dashboard", "packs", "docs", "README.md", "NOTICE"]) {
     cpSync(join(root, name), join(stagedLocal, name), { recursive: true });
   }
   const shared = fileURLToPath(new URL("../../shared/", import.meta.url));
@@ -41,6 +41,12 @@ test("packed CLI, cloud wire and private search execute without an unpublished s
   assert.equal(typeof packed?.filename, "string");
   await exec("tar", ["-xzf", join(directory, packed.filename), "-C", directory]);
   const installed = join(directory, "package");
+  // Notices and token CSS must survive the same real package-isolation path.
+  for (const path of ["NOTICE", "dist/dashboard/NOTICE"]) {
+    assert.deepEqual(readFileSync(join(installed, path)), readFileSync(join(root, "NOTICE")));
+  }
+  assert.deepEqual(readFileSync(join(installed, "dist/dashboard/assets/tokens.css")),
+    readFileSync(join(root, "dashboard/foundation/tokens.css")));
   // Reuse the already installed declared dependencies, not the monorepo sources.
   symlinkSync(join(root, "node_modules"), join(installed, "node_modules"), "dir");
   const home = join(directory, "home");

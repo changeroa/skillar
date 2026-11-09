@@ -4,6 +4,10 @@
     "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "preact": ["./node_modules/preact"],
+      "preact/*": ["./node_modules/preact/*"]
+    },
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "strict": true,

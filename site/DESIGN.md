@@ -1,5 +1,58 @@
 # skillar.sh
 
+## Phase B foundation (PR-0, 2026-11-09)
+
+This section takes precedence for the new shared UI foundation. Existing product
+screens retain their current layout, font sizes and control geometry until their
+scheduled component/screen migration; PR-0 changes only their dark status aliases.
+
+- Source: Langfuse `69181812b87169df157841fce1314ec96ecd2c5a`,
+  MIT `web/src/styles/globals.css`, as catalogued in components-v3/tokens.md.
+  `local/dashboard/foundation/tokens.css` is the shared MIT source, not the
+  API-contract package. Its location keeps Preact's existing module identity.
+  All colors are complete CSS colors under `--lf-*`, including native OKLCH
+  alpha, with separate primary action, selection (`accent`), link and ring roles.
+  Never alias the existing brand `--accent` to Langfuse's selection background.
+- Theme: `html[data-theme="light"|"dark"|"system"]`; absent/system follows the
+  OS. `light-dark()` resolves shared colors using the root color-scheme.
+  Surface ladder in dark: header 2%, sidebar 4%, canvas 6%, card 7.5%,
+  modal 9%, popover 12%. Existing pages do not adopt these surfaces yet.
+- Type: upstream system sans and Plex Mono/IBM Plex Mono with system monospace
+  fallback, weights 400/600. New shared text
+  xs/sm/base/lg/xl/2xl is 12/13/14/16/20/22px with line heights
+  18/20/21/21.6/26/27.5px. Body `text-sm` is **13px/20px**.
+- Geometry: radius lg/md/sm is 8/6/4px. New standard controls are **32px**
+  visual height with a fine pointer, **44px** under `(pointer: coarse)` OR
+  viewport width <=768px; small controls are 28px desktop and 44px touch.
+  The touch rule changes the actual box, not a transparent pseudo-element.
+  Space tokens are 2/4/6/8/12/16/20/24/32/48/64px; borders 1px, focus 2px
+  with 2px offset. Root rem sizing is not required to obtain these pixel sizes.
+- Showcase: `/__gallery.html` is a dev-only foundation gallery, with identical
+  shared Preact content in site and local dev. It proves surface, status, type,
+  radius and control-metric tokens, not completion of PR-1 controls.
+  States: default, real pointer hover/active, keyboard focus-visible, native
+  disabled, busy, invalid, empty and selected. Selected state uses a neutral wash
+  plus a check glyph. Theme selection includes system and never writes account
+  preferences. Its document owns vertical scroll; intrinsic grids collapse to
+  one column. Named spatial reference: StyleGallery
+  [ram-grid](https://github.com/changeroa/StyleGallery/blob/main/patterns/grid-repetition/ram-grid.md).
+- Accessibility: semantic headings/labels, native controls, visible keyboard
+  rings, textual status labels plus SVG glyphs, natural Korean word breaks,
+  no decorative motion. This explicitly approved 13px desktop density overrides
+  the older 14px minimum for migrated primitives only. Known upstream faint
+  text/control-boundary contrast is not silently endorsed: unmodified token
+  swatches are reference samples, not permission to use them for body copy.
+  The light red pair measures 3.15:1: status specimen text uses neutral foreground,
+  while its SVG glyph preserves the exact status foreground on the status fill.
+- Dark status compatibility: existing success/warn/error roles now consume
+  the exact shared green/yellow/red foreground tokens. Their light values and
+  the brand, screen layouts, URL state and interaction ownership are unchanged.
+  Attribution ships at `/NOTICE`; source SHA/files are in THIRD_PARTY_NOTICES.md.
+- Verification/debt: `scripts/uxb/` owns the reusable per-component capture,
+  computed-style and visual diff protocol. Missing upstream references or
+  independent review are failures to report, never parity passes. No screen
+  redesign, overlay replacement or accessibility debt is accepted by PR-0.
+
 ## Hosted date and version labels
 
 All hosted date labels and calendar buckets use Asia/Seoul, explicitly marked
