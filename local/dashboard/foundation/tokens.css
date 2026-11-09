@@ -178,6 +178,15 @@ html {
   --lf-border-width: 1px;
   --lf-focus-width: 2px;
   --lf-focus-offset: 2px;
+  --lf-badge-red-border: light-dark(oklch(93.6% 0.032 17.717), transparent);
+  --lf-badge-red-fill: light-dark(oklch(97.1% 0.013 17.38), color-mix(in oklab, var(--lf-light-red) 40%, transparent));
+  --lf-badge-red-text: light-dark(oklch(44.4% 0.177 26.899), color-mix(in oklab, var(--lf-dark-red) 90%, transparent));
+  --lf-badge-yellow-border: light-dark(oklch(97.3% 0.071 103.193), transparent);
+  --lf-badge-yellow-fill: light-dark(oklch(98.7% 0.026 102.212), color-mix(in oklab, var(--lf-light-yellow) 80%, transparent));
+  --lf-badge-yellow-text: light-dark(oklch(47.6% 0.114 61.907), var(--lf-dark-yellow));
+  --lf-opacity-disabled: 0.5;
+  --lf-badge-height: 22px;
+  --lf-spinner-duration: 1s;
   --lf-space-half: 2px; --lf-space-1: 4px; --lf-space-1h: 6px;
   --lf-space-2: 8px; --lf-space-3: 12px; --lf-space-4: 16px;
   --lf-space-5: 20px; --lf-space-6: 24px; --lf-space-8: 32px;

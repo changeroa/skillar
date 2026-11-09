@@ -1,5 +1,6 @@
 import { render } from "preact";
 import { useState } from "preact/hooks";
+import { ControlsGallery } from "./controls-gallery";
 
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
@@ -36,6 +37,7 @@ function Gallery() {
       </label>
     </header>
 
+    <ControlsGallery />
     <section aria-labelledby="surface-title" data-component="surfaces">
       <h2 id="surface-title">표면 계층</h2>
       <div class="lf-gallery__grid">

@@ -1,4 +1,27 @@
-# PR-0 completion checkpoint
+# PR-1 implementation checkpoint
+
+Branch `uxb/pr-1-controls`, baseline/head
+`9e833df612694156437ef5c725f1a818069bd8a6`.
+All 13 scoped shared Preact controls are implemented in both development
+galleries. Product screen migration remains in its scheduled later PRs.
+The user's follow-up authorizes actual pinned MIT React component renders
+in scratch as references; no scratch React code enters the product.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1. Actual Langfuse component parity | Pending | 98 states across upstream/site/local, desktop/phone/wide and both themes captured. Pixel comparison and diagnosis in progress. |
+| 2. Screen matrix | PASS | 64/64 fresh before/after cases, complete supplied reference inventory, zero changed screen pixels. |
+| 3. Keyboard / ARIA | Pending | New trusted-key control harness is running; 14 behavioral regression tests pass. |
+| 4. R1-R7 structure | Pending | Existing assertions rerun against fresh production fixture server. |
+| 5. Builds / tests | PASS locally with documented exception; CI pending | Site 357/357; both builds and local typecheck pass. Local 984/985: sole failure is the documented `/tmp/h` ENOTDIR. Performance separately passes. |
+| 6. License / package | PASS | Source SHA/files and icon licenses recorded in all notices. Pack dry-run includes NOTICE and dist/dashboard/NOTICE; site build includes NOTICE. |
+| 7. Deployment | Not deployed; deploy gated on owner | No production deployment. Preview pending. |
+
+Full diagnosis and scoped missing-reference inventory:
+`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-1/gate.md`.
+No `/tmp/h` change, test weakening, production deployment, merge or self-approval.
+
+## Historical PR-0 checkpoint (not PR-1 evidence)
 
 PR #99 remains a draft because the local test suite still has one reproduced
 baseline filesystem failure. The four requested diagnoses and scoped fixes

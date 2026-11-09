@@ -5,8 +5,9 @@ export async function captureCrop(page, selector) {
   const bounds = await page.evaluate(selector => {
     const element = document.querySelector(selector);
     const before = element.getBoundingClientRect();
-    if (getComputedStyle(element).position !== "static")
-      throw new RangeError(`Snapshot alignment requires static positioning: ${selector}`);
+    const computed = getComputedStyle(element);
+    if (!["static", "relative"].includes(computed.position))
+      throw new RangeError(`Snapshot alignment requires flow positioning: ${selector}`);
     const originalPosition = element.style.position;
     const originalTop = element.style.top, originalLeft = element.style.left;
     const dpr = devicePixelRatio, padding = 4;
@@ -14,7 +15,8 @@ export async function captureCrop(page, selector) {
     const shiftY = Math.round(before.top * dpr) / dpr - before.top;
     // Layout offsets avoid interpolating a fractionally translated raster layer.
     element.style.position = "relative";
-    element.style.left = `${shiftX}px`; element.style.top = `${shiftY}px`;
+    element.style.left = `${(parseFloat(computed.left) || 0) + shiftX}px`;
+    element.style.top = `${(parseFloat(computed.top) || 0) + shiftY}px`;
     const rect = element.getBoundingClientRect();
     if (rect.top < padding || rect.bottom + padding > innerHeight)
       throw new RangeError(`Specimen must fit the viewport: ${selector}`);

@@ -1,5 +1,17 @@
 # skillar Dashboard Design System
 
+## Phase B basic controls (PR-1)
+
+`foundation/controls/` owns the shared Button, IconButton, Badge, StatusBadge,
+Tag, Input, SearchInput, native Select, Checkbox, Link, KeyboardShortcut,
+Skeleton and CopyButton. Both dev galleries render this same Preact source;
+existing product screens migrate separately. The complete basic-control
+contract is the matching PR-1 section in `site/DESIGN.md`: PR-0 semantic
+tokens, 32px desktop / 44px touch controls, native form and keyboard semantics,
+explicit error descriptions, no custom overlay dependencies, and real
+Langfuse reference provenance. Static badges/keyboard hints retain compact
+geometry; interactive dismiss/clear/copy targets grow on touch.
+
 ## Phase B foundation (PR-0, 2026-11-09)
 
 This section supersedes the older geometry/type rules only for the new shared

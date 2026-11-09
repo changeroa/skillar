@@ -1,5 +1,36 @@
 # skillar.sh
 
+## Phase B basic controls (PR-1)
+
+The reusable Preact controls live in `local/dashboard/foundation/controls/`,
+shared by the two development galleries. Product screens migrate in later PRs.
+They use PR-0 `--lf-*` tokens exclusively. Button variants are primary,
+secondary, outline, destructive, ghost and text; small/default sizes are
+28/32px desktop and 44px touch. IconButton sizes are 16/24/32px desktop and
+44px touch. Loading disables activation without changing label geometry.
+Input and native Select retain form semantics, visible labels and associated
+error descriptions. SearchInput owns submit/clear only, not remote results.
+Checkbox retains native form, Space and mixed-state semantics; its 16/14px
+indicator sits in a 32px desktop, 44px touch label.
+
+Badge sizes are 18/20/22/24px, Tag is 20px, StatusBadge uses 12px/18px type
+and 8px/4px padding. Dismissible badges/tags become 44px on touch; static
+labels do not. Status labels retain unknown/cancelled/pending distinctions.
+TextLink is 12px/18px, weight 600; standalone touch links have 44px height.
+KeyboardShortcut is non-interactive semantic kbd with platform-specific Mod
+labels. Skeleton uses muted fill, 6px radius and a status announcement, static
+under reduced motion. CopyButton copies the original value, reports rejection
+inline, and resets feedback when its value changes.
+
+All interactive controls have keyboard rings and native disabled behavior.
+Selection uses a wash and glyph. No coloured selection border is added;
+invalid fields retain their validation border. Native Select deliberately
+keeps the browser popup rather than adding PR-2 overlays. The desktop visual
+contract is pinned Langfuse MIT source; 44px touch boxes and accessible names,
+error messages, mixed checkboxes and status text contrast are intentional
+accessibility adaptations. References and measured differences are recorded
+per component in PR-1 evidence, not inferred from token equality.
+
 ## Phase B foundation (PR-0, 2026-11-09)
 
 This section takes precedence for the new shared UI foundation. Existing product

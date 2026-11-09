@@ -79,6 +79,22 @@ try {
       if (specimen.action === "active") await page._sendToTarget("Input.dispatchMouseEvent",
         { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
       try {
+        await page.evaluate(async selector => {
+          const element = document.querySelector(selector);
+          getComputedStyle(element).backgroundColor;
+          const animations = document.getAnimations();
+          const finite = animations.filter(animation => animation.effect.getComputedTiming().iterations !== Infinity);
+          for (const animation of animations.filter(animation => animation.effect.getComputedTiming().iterations === Infinity)) {
+            animation.pause(); animation.currentTime = 0;
+          }
+          let timer;
+          try {
+            await Promise.race([
+              Promise.all(finite.map(animation => animation.finished)),
+              new Promise((_, reject) => { timer = setTimeout(() => reject(Error(`Unsettled transition: ${selector}`)), 8000); }),
+            ]);
+          } finally { clearTimeout(timer); }
+        }, specimen.selector);
         const actual = await measure(page, specimen.selector);
         const failures = metricFailures(actual, {
           ...specimen.expected, ...specimen.themeExpected?.[theme],

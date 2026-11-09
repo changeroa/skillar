@@ -1,8 +1,39 @@
 Skillar third-party notices
 ==========================
 
+Lucide control icon paths (lucide-react 0.552.0)
+----------------------------------------------
+Source: https://github.com/lucide-icons/lucide, icons check, x, search, copy,
+chevron-down, minus and external-link. Reimplemented as Preact SVG paths in
+local/dashboard/foundation/controls/icons.tsx; no React dependency is shipped.
+Copyright (c) Lucide Contributors 2025. Portions derived from Feather:
+Copyright (c) 2013-2023 Cole Bemis (MIT; permission text below also applies).
+
+ISC License
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 Langfuse semantic theme tokens
 -----------------------------
+PR-1 also reimplements the anatomy/variants of these MIT files at the same SHA:
+web/src/components/design-system/{Button/Button,IconButton/IconButton,
+Badge/Badge,Tag/Tag,Input/Input,SearchInput/SearchInput,SelectInput/SelectInput,
+Checkbox/Checkbox,TextLink/TextLink,KeyboardShortcut/KeyboardShortcut}.tsx,
+web/src/components/design-system/internal/InputControl/InputControl.tsx,
+web/src/components/ui/{StatusBadge/StatusBadge,skeleton}.tsx.
+Destination: local/dashboard/foundation/controls/. React, Radix and cmdk
+implementations are not included; native Preact controls own behavior.
+The scratch React reference renderer is outside this repository and is not shipped.
+Additional Tailwind palette values: red-50/100/800 and yellow-50/100/800.
+
 Source: https://github.com/langfuse/langfuse
 Commit: 69181812b87169df157841fce1314ec96ecd2c5a
 Copied file: web/src/styles/globals.css (semantic colors, category colors,
