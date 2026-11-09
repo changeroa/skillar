@@ -69,8 +69,10 @@ labels and 20/16/14px boxes with 12/10/9px text. CopyButton uses the Codeblock
 under reduced motion. CopyButton copies the original value, reports rejection
 inline, and resets feedback when its value changes.
 
-All interactive controls retain native keyboard focus and disabled behavior,
-including the input caret and forced-color outlines. Selected Button uses
+All interactive controls retain native keyboard focus and disabled behavior.
+Owner-approved difference from the Demo: Input/SearchInput paint a 2px primary-accent
+focus-visible ring with a 2px background gap; the caret alone is insufficient.
+Forced colors use a visible CanvasText outline. Selected Button uses
 aria-pressed and its glyph without an invented wash. No coloured selection border is added;
 invalid fields retain their validation border. Native Select deliberately
 keeps the browser popup rather than adding PR-2 overlays. The desktop visual

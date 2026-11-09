@@ -27,8 +27,9 @@ html {
   --lf-badge-blue-border: light-dark(lab(92.0301 -2.24757 -11.6453), oklab(0.678154 -0.0529953 -0.145845 / 0.08));
   /* Demo 03-tag-header and status-inactive: foreground/5 and /10. */
   --lf-chip-fill: light-dark(color-mix(in oklab, var(--lf-foreground) 5%, transparent), color-mix(in oklab, var(--lf-foreground) 10%, transparent));
-  /* Demo 04-input/search-focus-visible: unexpanded Tailwind field shadows. */
-  --lf-field-focus-shadow: 0 0 0 0 white, 0 0 0 0 lab(44.0605 29.0279 -86.0352);
+  /* Owner-approved accessibility difference: paint focus beyond the field border. */
+  --lf-field-focus-shadow: 0 0 0 var(--lf-focus-offset) var(--lf-background),
+    0 0 0 calc(var(--lf-focus-offset) + var(--lf-focus-width)) var(--lf-primary-accent);
   --lf-surface-code: light-dark(hsl(0 0% 92%), hsl(0 0% 2.3%));
   --lf-surface-code-header: light-dark(hsl(0 0% 86%), hsl(0 0% 8.2%));
   --lf-surface-sunken: light-dark(hsl(0 0% 99%), hsl(0 0% 8%));

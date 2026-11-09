@@ -137,6 +137,14 @@ belong in the provenance ledger as "no demo instance"; scratch evidence is
 supplementary, not a substitute.
 
 Each result also records `computedStyleStatus` and its `computedReference`.
+Source crops are checked before comparison for nonblank pixels and, for checked
+Checkboxes, contrasting fill/check pixels. A visual inventory review still checks
+that labels, glyphs and states are correct; nonblank alone cannot establish that.
+Input/SearchInput focus shadow mismatches are retained as
+`OWNER-APPROVED-DIFFERENCE`, with the original expected/measured values: the owner
+requires a painted ring, unlike the Demo's zero-spread shadow. Other mismatches
+still fail. Skeleton opacity is compared exactly; its real Demo pulse is captured
+at recorded time 0ms (opacity 1), matching the reduced-motion product frame.
 The native options-panel case uses the actual closed Score trigger for those
 assertions while retaining the original popup PNG/raw diff. Mono specimens
 must have the actual `plexMono` FontFace loaded; a matching family string

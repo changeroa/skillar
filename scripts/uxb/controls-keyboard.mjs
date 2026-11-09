@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { arm, press, ready, signal, typeahead } from "./trusted-keys.mjs";
+import { captureCrop } from "./image-diff.mjs";
 
 const [site, local, output] = process.argv.slice(2);
 if (!site || !local || !output || !process.env.OMOWRIGHT_HELPER)
@@ -77,6 +78,41 @@ try {
     await press(page, "Escape");
     assert.equal(await page.evaluate(selector => document.activeElement === document.querySelector(selector), select), true);
     const search = target("search-default", "input");
+    // Given: real shared fields in each app and theme, reached through trusted Tab.
+    for (const field of [target("input-default", "input"), search]) {
+      // When
+      await focus(field);
+      const indicator = await page.evaluate(selector => {
+        const node = document.querySelector(selector), s = getComputedStyle(node);
+        const shadow = s.boxShadow.split(/,(?![^(]*\))/).map(layer => {
+          const color = layer.match(/(?:rgba?|color|oklab|lab)\([^)]*\)/)?.[0] ?? "";
+          const lengths = layer.replace(color, "").match(/-?[\d.]+px/g)?.map(parseFloat) ?? [];
+          return { color, spread: lengths[3] ?? 0 };
+        });
+        return { focusVisible: node.matches(":focus-visible"), shadow,
+          outline: { style: s.outlineStyle, width: parseFloat(s.outlineWidth), color: s.outlineColor } };
+      }, field);
+      // Then: a zero-spread shadow and transparent outline cannot pass.
+      assert.equal(indicator.focusVisible, true);
+      assert.ok(indicator.shadow.some(layer => layer.spread >= 2 && layer.color &&
+        !/rgba\([^)]*, 0\)/.test(layer.color)) ||
+        (indicator.outline.style === "solid" && indicator.outline.width >= 2 &&
+          !/rgba\([^)]*, 0\)/.test(indicator.outline.color)),
+      `Missing painted focus indicator: ${field} ${JSON.stringify(indicator)}`);
+      const name = field === search ? "search" : "input";
+      const shot = await captureCrop(page, field, { align: false });
+      await writeFile(join(output, `${app}-${theme}-${name}-focus.png`), Buffer.from(shot.data, "base64"));
+      await page._sendToTarget("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "active" }] });
+      const forced = await page.evaluate(selector => {
+        const s = getComputedStyle(document.querySelector(selector));
+        return { active: matchMedia("(forced-colors: active)").matches, style: s.outlineStyle,
+          width: parseFloat(s.outlineWidth), color: s.outlineColor, background: s.backgroundColor };
+      }, field);
+      assert.ok(forced.active && forced.style === "solid" && forced.width >= 2 &&
+        forced.color !== forced.background && !/rgba\([^)]*, 0\)/.test(forced.color),
+      `Missing forced-color field outline: ${JSON.stringify(forced)}`);
+      await page._sendToTarget("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "none" }] });
+    }
     await focus(search);
     await arm(page, { kind: "text", selector: "#controls-result", value: "확인 2회 / 검색: skillar / 항목: b" });
     await press(page, "Enter"); await signal(page);
@@ -96,7 +132,7 @@ try {
     const keys = await page.evaluate(() => window.__controlKeys);
     assert.ok(keys.length > 20 && keys.every(key => key.trusted));
     await writeFile(join(output, `${app}-${theme}-ax.json`), JSON.stringify(ax, null, 2));
-    results.push({ app, theme, pass: true, checks: ["trusted Enter/Space", "disabled skipped", "native mixed checkbox", "native select typeahead/Escape", "search submit/clear/focus", "clipboard readback", "named AX controls"], keys: keys.length });
+    results.push({ app, theme, pass: true, checks: ["trusted Enter/Space", "disabled skipped", "native mixed checkbox", "native select typeahead/Escape", "painted Input/SearchInput focus rings", "search submit/clear/focus", "clipboard readback", "named AX controls"], keys: keys.length });
     for (const width of [390, 1440]) {
       await page._sendToTarget("Emulation.setDeviceMetricsOverride", { width, height: width === 390 ? 844 : 900, deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390 });
       await page._sendToTarget("Emulation.setTouchEmulationEnabled", { enabled: true });

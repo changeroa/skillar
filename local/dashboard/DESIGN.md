@@ -5,8 +5,10 @@
 The real Demo amendment in `site/DESIGN.md` supersedes pinned-primitive
 defaults: inset Button/IconButton/Select rings; mono search-adorned fields;
 Demo Beta/chip palettes; compact uppercase status; table/header Tag variants;
-regular muted inline links; no invented selected Button wash. Named Demo
-captures document any added tokens. Comparison hosts may choose public
+regular muted inline links; no invented selected Button wash. Input/SearchInput deliberately keep a visible
+2px primary-accent keyboard ring with a 2px gap, plus CanvasText outlines in forced
+colors: the owner approved this accessibility difference from the Demo.
+Named Demo captures document any added tokens. Comparison hosts may choose public
 variants and labels, never primitive CSS overrides.
 
 Keep the owner-approved 32px desktop / 44px touch decisions, native Select

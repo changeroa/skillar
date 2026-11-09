@@ -3,6 +3,37 @@ import test from "node:test";
 import { comparePixels } from "../../scripts/uxb/image-diff.mjs";
 import { metricFailures } from "../../scripts/uxb/metrics.mjs";
 import { manifestSchema } from "../../scripts/uxb/manifest.mjs";
+import { inspectReferencePixels } from "../../scripts/uxb/reference-pixels.mjs";
+
+test("checked reference rejects a light fragment instead of the control", () => {
+  // Given: the old defective crop contains slightly different light pixels.
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  pixels[0] = 244;
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Checkbox", checked: true });
+  // Then
+  assert.equal(result.pass, false);
+});
+
+test("reference capture rejects uniform blank images", () => {
+  // Given
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Input" });
+  // Then
+  assert.equal(result.pass, false);
+});
+
+test("checked reference accepts contrasting fill and check", () => {
+  // Given
+  const pixels = new Uint8Array(22 * 22 * 4).fill(255);
+  const center = (10 * 22 + 10) * 4;
+  pixels.set([24, 24, 27, 255], center);
+  // When
+  const result = inspectReferencePixels(pixels, 22, 22, { control: "Checkbox", checked: true });
+  // Then
+  assert.equal(result.pass, true);
+});
 
 test("pixel comparison detects alpha-only differences", () => {
   // Given: equal RGB values with different opacity.

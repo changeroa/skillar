@@ -6,6 +6,7 @@ import { captureCrop, diffImages } from "./image-diff.mjs";
 import { metricFailures } from "./metrics.mjs";
 import { ready, press, arm, signal } from "./trusted-keys.mjs";
 import { captureClipboardState } from "./clipboard-state.mjs";
+import { inspectReferenceImage } from "./reference-pixels.mjs";
 
 const [referencesPath, outputPath] = process.argv.slice(2);
 if (!referencesPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -37,12 +38,18 @@ const selectors = { Button: "button", IconButton: "button", Badge: ".lf-badge", 
   CopyButton: ".lf-copy > button" };
 const styleKeys = ["height", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "fontFamily",
   "fontSize", "fontWeight", "lineHeight", "borderRadius", "borderWidth", "borderColor", "color", "backgroundColor", "boxShadow",
-  "outlineWidth", "outlineOffset", "outlineStyle", "outlineColor"];
+  "outlineWidth", "outlineOffset", "outlineStyle", "outlineColor", "opacity"];
 function paintedShadow(value) {
   return value.split(/,(?![^(]*\))/).map(v => v.trim())
     .filter(v => !/rgba\([^)]*, 0\)/.test(v)).join(", ") || "none";
 }
 try {
+  const sourceChecks = new Map();
+  for (const reference of records) {
+    const check = await inspectReferenceImage(composition.page, reference);
+    if (!check.pass) throw Error(`Invalid Demo source ${reference.id}-${reference.theme}: ${check.failures.join("; ")}`);
+    sourceChecks.set(reference.path, check);
+  }
   for (const [app, origin] of [["site", "http://127.0.0.1:5177"], ["local", "http://127.0.0.1:5178"]]) {
     for (const theme of ["light", "dark"]) {
       const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } });
@@ -141,6 +148,7 @@ try {
           }
           expected.focusRing = paintedShadow(expectedStyles.boxShadow);
           measured.focusRing = paintedShadow(actualStyles.boxShadow);
+          expected.opacity = expectedStyles.opacity; measured.opacity = actualStyles.opacity;
           for (const key of ["outlineWidth", "outlineOffset", "outlineStyle", "outlineColor"]) {
             if (expectedStyles.outlineStyle !== "none" || actualStyles.outlineStyle !== "none") {
               expected[key] = key === "outlineWidth" || key === "outlineOffset" ? parseFloat(expectedStyles[key]) : expectedStyles[key];
@@ -148,7 +156,7 @@ try {
             }
           }
           if (reference.control === "SearchInput") {
-            // The Demo puts paint on its input; ours paints the enclosing shell.
+            // Both implementations paint the input, not the enclosing shell.
             // Compare the same visual owners and actual text insets, not the
             // incidental inherited font/border of an unpainted wrapper.
             const sourceInput = reference.inputStyles;
@@ -169,18 +177,25 @@ try {
             }
             expected.focusRing = paintedShadow(sourceInput.boxShadow);
           }
-          const failures = metricFailures(measured, expected, 1);
+          const differences = metricFailures(measured, expected, 1);
+          const accessibleField = ["Input", "SearchInput"].includes(reference.control) && reference.state === "focus-visible";
+          const approvedDifferences = accessibleField ? differences.filter(item => item.property === "focusRing")
+            .map(item => ({ ...item, reason: "Owner requires a painted field focus ring instead of the Demo's zero-spread shadow" })) : [];
+          const failures = accessibleField ? differences.filter(item => item.property !== "focusRing") : differences;
+          if (accessibleField && !/ 4px/.test(actualStyles.boxShadow))
+            failures.push({ property: "paintedFocusRing", expected: "visible 2px ring outside 2px gap", actual: actualStyles.boxShadow });
+          const computedStyleStatus = failures.length ? "FAIL" : approvedDifferences.length ? "OWNER-APPROVED-DIFFERENCE" : "PASS";
           if (textControl && expected.fontFamily.includes("plexMono") && !actual.fontFaces.some(face => face.status === "loaded"))
             throw Error(`The actual Demo mono font did not load: ${id}`);
           const nativePopup = ["expanded", "options"].includes(reference.state);
           results.push({ id, app, control: reference.control, state: reference.state, theme,
             reference: reference.path, file, referenceUrl: reference.url, version: reference.version,
             computedReference: { id: styleReference.id, path: styleReference.path, state: styleReference.state },
-            computedStyleStatus: failures.length ? "FAIL" : "PASS",
+            computedStyleStatus, sourceValidation: sourceChecks.get(reference.path), approvedDifferences,
             referenceTokens: reference.tokens, actualTokens: actual.tokens,
             counterpart: descriptor, note: reference.note, actual, expected, measured, failures, pixels,
             fontApplicability: textControl ? "text-bearing control" : "no text painted in this primitive crop",
-            styleStatus: nativePopup ? "NATIVE-ADAPTATION" : failures.length ? "FAIL" : "PASS",
+            styleStatus: failures.length ? "FAIL" : nativePopup ? "NATIVE-ADAPTATION" : computedStyleStatus,
             pixelStatus: pixels.dimensionsMatch && pixels.diffPixels === 0 ? "IDENTICAL" : "DIFFERENT" });
           console.log(`DEMO_PAIR ${id} style=${results.at(-1).styleStatus} pixels=${pixels.rawDiffPixels}`);
         } finally {
@@ -196,6 +211,7 @@ try {
     const pairs = results.filter(r => r.control === control);
     return [control, { comparisons: pairs.length, stylePassed: pairs.filter(r => r.styleStatus === "PASS").length,
       styleFailed: pairs.filter(r => r.styleStatus === "FAIL").length,
+      ownerApprovedDifferences: pairs.filter(r => r.styleStatus === "OWNER-APPROVED-DIFFERENCE").length,
       nativeAdaptations: pairs.filter(r => r.styleStatus === "NATIVE-ADAPTATION").length,
       pixelIdentical: pairs.filter(r => r.pixelStatus === "IDENTICAL").length }];
   }));

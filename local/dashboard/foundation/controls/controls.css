@@ -216,4 +216,5 @@ button.lf-badge:hover { opacity: 0.8; }
 .lf-spinner { width: auto; height: 50%; aspect-ratio: 1; color: inherit; }
 @media (forced-colors: active) {
   .lf-button:focus-visible, .lf-icon-button:focus-visible, .lf-input:focus-visible, .lf-select-wrap:has(select:focus-visible) { outline: var(--lf-focus-width) solid transparent; }
+  .lf-input:focus-visible, .lf-search input:focus-visible { outline: var(--lf-focus-width) solid CanvasText; }
 }
