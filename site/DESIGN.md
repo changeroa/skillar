@@ -11,6 +11,9 @@ Sheet uses the same body/header anatomy with a 440px right-hand pane.
 The body is the only vertical scroll owner; header/actions remain visible.
 Native modality, explicit Tab wrapping, one-layer Escape and opener restoration
 are required. Nested menus remain inside their owning dialog's top layer.
+Selected controls inside existing Sheet/Peek surfaces use neutral accent wash
+and the shared Lucide check mask token, replacing inherited accent edge stripes
+without changing their tab, row or facet behavior.
 
 DropdownMenu uses popover surface, 6px radius, 4px padding, 8px item inset,
 13px/20px text and 32px/44px item boxes. It focuses the first enabled item

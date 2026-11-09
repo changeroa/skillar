@@ -1,52 +1,39 @@
-# PR-1 re-review correction evidence
+# PR-2 overlay gate ledger
 
-PR: https://github.com/changeroa/skillar/pull/100, base main, remains draft.
-Evidence root E: /Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-1.
-The a52bb33 review found two invalid source PNGs; its previous blanket
-172/172 claim is superseded by this correction. Exact final head, all CI
-checks and final-head gate receipts are in E/rereview-publication.json.
+PR: https://github.com/changeroa/skillar/pull/101 (draft; do not merge).
+Base: origin/main 46bc344, containing PR-0 and PR-1.
+Evidence root E:
+`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-2/`.
+Final head and exact-head CI receipts are in E/publication.json.
 
-## Corrections
+| Gate | Status | Evidence and remaining cases |
+| --- | --- | --- |
+| 1. Component visual parity | FAIL | Eight actual view-only Demo menu/item/tooltip/Peek light/dark captures; 12 computed-style and raw side/diff comparisons for menu/item/tooltip. Geometry/type/color match apart from approved focus behavior and non-painting shadow/zero-border serialization, but raw crop dimensions/pixel phase differ. Dialog/Confirm and all reference states are not covered. E/demo-captures/records.json and E/demo-comparisons/results.json. |
+| 2. Screen comparison | PASS | 12/12 Langfuse/before/after closed-screen comparisons at 1440/390, both themes, fresh documents and end shots. Product Peek/ConsoleSheet before/after additionally cover 24/24 route/theme/width/build cases. Existing screen compositions are retained for later screen PRs, not claimed pixel-identical to Langfuse. E/screens/, E/product-panels/. |
+| 3. Keyboard/ARIA | PASS | 312 assertions, 12/12 shared-gallery cases, 132 captures at 390/1440/1920 in both apps/themes. Initial enabled item, disabled skip, cyclic arrows, Home/End, repeated-letter typeahead, selection, Tab exit, modal wrap, nested one-layer Escape and opener restoration pass with trusted keys. Existing product URL/focus and mobile ConsoleSheet wrap/Escape pass in 24/24 before/after cases. E/keyboard/results.json; E/product-panels/results.json. |
+| 4. R1-R7 structure | PASS | Reused existing PR-0 assertions unchanged: 8/8 production-fixture cases pass. Probe marks R4 N.A.; product-panel evidence separately exercises Peek URL/focus. E/structure/qa-structure.json. |
+| 5. Build/tests | FAIL | Site 368/368, site build, local typecheck and local build pass. Local 984/985: unchanged cli-init test fails on existing host file /tmp/h (ENOTDIR), as documented on main. No test or host file changed. Exact-head CI is recorded separately in E/publication.json. |
+| 6. Licensing | PASS | MIT SHA/files documented in all three matching notices; site/dist/NOTICE and local/dist/dashboard/NOTICE ship. npm pack --dry-run --json includes NOTICE among 171 files. E/license-pack.log. No React/Radix/cmdk dependencies or excluded ee sources. |
+| 7. Deployment policy | PASS | Production: not deployed; deploy gated on owner. Authorized Pages preview only on uxb-pr-2; URL and deployment receipt in E/preview.log and E/publication.json. No account settings or production branch changed. |
 
-- Audit all 86 original Demo sources: exactly light checked/hover Checkbox
-  fail the expected-state pixel check. Both are recaptured from the view-only
-  Demo. New captures require nonblank pixels, visible contrasting fill/check,
-  center hit-testing, and stable pre/post bounds and state. All 86 now pass.
-  Inventories and full-height option PNGs were visually inspected.
-- Restore Input/SearchInput 2px accent focus-visible rings with a 2px gap.
-  This owner-approved accessibility difference does not replicate the Demo's
-  zero-spread field shadow. Real-browser regression fails before the fix;
-  it asserts visible normal and forced-color focus in both apps/themes.
-- Capture the actual Skeleton pulse at 0ms/opacity 1, after animation.ready
-  and paint signals, matching the product's reduced-motion static frame.
-  The comparator now checks opacity exactly.
-- Badge/Tag alpha and opacity match the Demo. Dark modal references have a
-  different backing surface (rgb(23,23,23)) than the standalone gallery
-  (rgb(15,15,15)); no primitive alpha correction is justified. Raw differences
-  remain counted. See E/transparent-surfaces.json.
+## Scope and review
 
-## Gates and remaining cases
+New primitives are shared Preact DOM components in foundation/overlays.
+Dialog/Confirm/Sheet use native top-layer modality; menus/tooltips use native
+popovers inside their owner's DOM subtree. Existing PeekPanel and ConsoleSheet
+focus/URL/dirty-state handlers are unchanged; SessionPeek changes CSS only.
+Controls retain 32px desktop / 44px phone/coarse visual height. Selected
+controls within changed panels use neutral wash and a Lucide check, not an
+accent edge. No dependency/lockfile, API/data/route/auth or worker/server edits.
 
-E/rereview-results.md and E/rereview-summary.json enumerate all 172 final-head
-pairs, including exact computed matches, eight approved focus differences,
-eight separately classified native adaptations and every raw pixel difference.
-Native options retain the original popup PNG and closed-trigger style reference.
-No masks, pixel threshold changes or corner allowance are used.
+Independent visual/code review is arranged by the lane lead. This child
+session cannot spawn nested reviewers (harness depth limit), so no independent
+visual-QA PASS is claimed. A full contrast/Lighthouse audit and final
+pixel-fidelity approval are unverified. Gate 1 remains FAIL.
 
-Site regression tests: 368 pass. Site build, local typecheck and local build
-exit 0. Fresh real-browser keyboard/AX/touch and forced-color focus evidence
-is retained with the final-head receipts. The unchanged backend suite is
-covered by exact-head Runtime CI; the historical local /tmp/h ENOTDIR is
-not edited or weakened. MJS TypeScript and CSS Biome LSP services are absent;
-Node syntax checks and actual compiler/build checks supply validation.
-
-Approved 32px desktop/44px touch geometry and native form semantics remain.
-Selected Button retains aria-pressed/check without an invented wash. Prior
-selected/copying/copied/error evidence remains supplementary and unchanged;
-no unobserved state is relabeled an actual Demo instance. Earlier full legacy
-screen evidence is historical, not fresh validation for this head.
-
-No dependency, lockfile, licensing, production route or existing screen
-composition change. No new preview, production deployment, merge or account
-write. Owned test servers are stopped after final verification; Chrome 9333
-and the original OS clipboard are preserved.
+The legacy `15-dialog-langfuse-*.png` references are command palettes, not
+generic Dialog/Confirm instances; they are not passed off as those references.
+Real source captures preserve their pixels and hide the account footer.
+An initial local-gallery failure came from crossing the site's separate
+Preact module identity; the gallery no longer imports the site's Peek hooks.
+Product routes, rather than a second renderer, exercise existing panels.

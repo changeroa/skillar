@@ -211,6 +211,7 @@ html {
   --lf-dialog-width: 512px; --lf-sheet-width: 440px;
   --lf-menu-width: 192px; --lf-tooltip-width: 320px;
   --lf-menu-leading: 24px;
+  --lf-selection-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
   --lf-overlay-backdrop: light-dark(rgb(0 0 0 / 25%), rgb(0 0 0 / 45%));
   --lf-confirm-backdrop: light-dark(rgb(0 0 0 / 50%), rgb(0 0 0 / 65%));
   --lf-shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
