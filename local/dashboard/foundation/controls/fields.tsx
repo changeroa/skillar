@@ -1,12 +1,12 @@
 import type { JSX } from "preact";
 import { useId, useRef, useState } from "preact/hooks";
-import { Glyph } from "./icons";
+import { Glyph, type ControlIcon } from "./icons";
 
 type InputAttributes = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
 type FieldLabel = { readonly label: string; readonly error?: string };
 
-export function Input({ label, error, id, prefix, valuePrefix, ...props }: InputAttributes & FieldLabel & {
-  readonly prefix?: string; readonly valuePrefix?: string;
+export function Input({ label, error, id, prefix, valuePrefix, icon = prefix || valuePrefix ? false : "search", ...props }: InputAttributes & FieldLabel & {
+  readonly prefix?: string; readonly valuePrefix?: string; readonly icon?: ControlIcon | false;
 }) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
@@ -15,7 +15,7 @@ export function Input({ label, error, id, prefix, valuePrefix, ...props }: Input
   return <div class="lf-field">
     <label for={inputId}>{label}</label>
     <div class="lf-input-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}
-      data-prefixed={Boolean(prefix || valuePrefix)} data-value-prefixed={Boolean(valuePrefix)}
+      data-prefixed={Boolean(prefix || valuePrefix)} data-value-prefixed={Boolean(valuePrefix)} data-icon={Boolean(icon)}
       onMouseDown={event => {
         if (event.target === ref.current) return;
         event.preventDefault();
@@ -23,6 +23,7 @@ export function Input({ label, error, id, prefix, valuePrefix, ...props }: Input
       }}>
       {prefix && <span class="lf-input-prefix">{prefix}</span>}
       {valuePrefix && <span class="lf-input-value-prefix">{valuePrefix}</span>}
+      {icon && <span class="lf-input-icon"><Glyph name={icon} /></span>}
       <input {...props} ref={ref} id={inputId} class="lf-input"
         aria-invalid={error ? "true" : props["aria-invalid"]} aria-describedby={description} />
     </div>
@@ -63,8 +64,9 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
 }
 
 export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean };
-export function Select({ label, error, options, placeholder = "선택", id, onChange, ...props }: FieldLabel & {
+export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
+  readonly size?: "default" | "sm";
 } & Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
   const generatedId = useId();
   const [nativeValue, setNativeValue] = useState(props.defaultValue ?? "");
@@ -74,14 +76,15 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
   const description = [props["aria-describedby"], error ? `${selectId}-error` : undefined].filter(Boolean).join(" ") || undefined;
   return <div class="lf-field">
     <label for={selectId}>{label}</label>
-    <div class="lf-select-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}>
+    <div class={`lf-select-wrap lf-select-wrap--${size}`} data-invalid={Boolean(error)}
+      data-disabled={Boolean(props.disabled)} data-placeholder={!selected}>
       <select {...props} id={selectId} class="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}
         aria-describedby={description} onChange={event => { setNativeValue(event.currentTarget.value); onChange?.(event); }}>
         <option value="" disabled>{options.length === 0 ? "선택 가능한 항목 없음" : placeholder}</option>
         {options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </select>
       <span class="lf-select-value" aria-hidden="true">{text}</span>
-      <Glyph name="chevron" />
+      <Glyph name={size === "sm" ? "chevrons" : "chevron"} />
     </div>
     {error && <span id={`${selectId}-error`} class="lf-field-error">{error}</span>}
   </div>;

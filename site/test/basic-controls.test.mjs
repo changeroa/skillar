@@ -3,7 +3,7 @@ import test from "node:test";
 import { useState } from "preact/hooks";
 import { act, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
 
-const { Button, Badge, Tag, Input, SearchInput, Select, Checkbox, Link, KeyboardShortcut, CopyButton } = await loadViews(
+const { Button, Badge, Tag, StatusBadge, Input, SearchInput, Select, Checkbox, Link, KeyboardShortcut, CopyButton } = await loadViews(
   'export * from "./local/dashboard/foundation/controls/index.ts";',
 );
 
@@ -31,6 +31,42 @@ test("trailing button glyph follows its unchanged accessible label", async t => 
   assert.equal(byTag(content, "svg")[0], content.childNodes.at(-1));
   assert.equal(byTag(content, "svg").length, 1);
   assert.equal(byTag(container, "button")[0].getAttribute("aria-label"), label);
+});
+
+test("input adornments stay decorative and do not duplicate a supplied prefix", async t => {
+  // Given
+  const plain = await mount(t, Input, { label: "Filter", name: "filter" });
+  const prefixed = await mount(t, Input, { label: "Amount", prefix: "$" });
+  // When
+  const glyph = byTag(plain.container, "svg")[0];
+  // Then
+  assert.equal(glyph.getAttribute("aria-hidden"), "true");
+  assert.equal(byTag(plain.container, "input")[0].name, "filter");
+  assert.equal(byTag(prefixed.container, "svg").length, 0);
+});
+
+test("tag variants keep decoration out of their text", async t => {
+  // Given
+  const text = "qa-chatbot";
+  const table = await mount(t, Tag, { text });
+  const header = await mount(t, Tag, { text, variant: "header" });
+  // When
+  const glyph = byTag(table.container, "svg")[0];
+  // Then
+  assert.equal(glyph.getAttribute("aria-hidden"), "true");
+  assert.equal(table.container.textContent, text);
+  assert.equal(header.container.textContent, text);
+  assert.equal(byTag(header.container, "svg").length, 0);
+});
+
+test("status defaults to a compact label and live decoration is explicit", async t => {
+  // Given
+  const plain = await mount(t, StatusBadge, { type: "active" });
+  const live = await mount(t, StatusBadge, { type: "active", isLive: true });
+  // When / Then
+  assert.equal(byTag(plain.container, "span").length, 1);
+  assert.equal(byTag(live.container, "span").length, 4);
+  assert.equal(byTag(live.container, "span")[1].getAttribute("aria-hidden"), "true");
 });
 
 test("input associates its visible label and validation message", async t => {
@@ -95,6 +131,18 @@ test("select reports native changes and retains disabled options", async t => {
   // Then
   assert.equal(chosen, "b");
   assert.equal(byTag(container, "option")[3].getAttribute("disabled"), "true");
+});
+
+test("compact select retains a native popup and decorative double chevron", async t => {
+  // Given
+  const { container } = await mount(t, Select, { label: "Score", size: "sm",
+    options: [{ value: "a", label: "Alpha" }] });
+  // When
+  const select = byTag(container, "select")[0], glyph = byTag(container, "svg")[0];
+  // Then
+  assert.equal(select.getAttribute("size"), null);
+  assert.equal(glyph.getAttribute("aria-hidden"), "true");
+  assert.equal(byTag(glyph, "path").length, 2);
 });
 
 test("checkbox exposes indeterminate state through its native control", async t => {

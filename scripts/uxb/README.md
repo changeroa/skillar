@@ -108,6 +108,12 @@ diagnosis; it cannot accept text/icon or flat-color drift.
 
 ## Actual public Demo comparisons
 
+The owner's real-Demo amendment makes this the Gate 1 reference. Pinned
+primitive comparisons remain supplementary; their conflicting defaults do
+not override the deployed Demo. Geometry remains +/-1 CSS px and token colors
+exact, with no image masks or tolerance changes. Matching-content raw diffs
+are reported explicitly, not renamed identical.
+
 ```sh
 OMOWRIGHT_HELPER=/path/to/browser/scripts/omowright.mjs \
   node scripts/uxb/demo-compare.mjs /absolute/demo-captures/records.json /absolute/demo-comparisons
@@ -129,6 +135,14 @@ read each `styleStatus` and `pixelStatus`. OS-native expanded Select states
 are explicitly `NATIVE-ADAPTATION`, never silently passed. Missing Demo states
 belong in the provenance ledger as "no demo instance"; scratch evidence is
 supplementary, not a substitute.
+
+Each result also records `computedStyleStatus` and its `computedReference`.
+The native options-panel case uses the actual closed Score trigger for those
+assertions while retaining the original popup PNG/raw diff. Mono specimens
+must have the actual `plexMono` FontFace loaded; a matching family string
+alone is insufficient. Owner-approved 32/44px and native/WAI-ARIA differences
+remain named separately. Product variants, not host CSS overrides, match
+header/table Tag and compact/regular Select.
 
 ```sh
 node scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8

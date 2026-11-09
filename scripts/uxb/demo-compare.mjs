@@ -52,7 +52,8 @@ try {
       ] });
       await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
       for (const reference of records.filter(r => r.theme === theme)) {
-        const url = new URL("/__gallery.html", origin), descriptor = reference.counterpart;
+        const url = new URL("/__gallery.html", origin), descriptor = reference.id === "01-button-disabled"
+          ? { ...reference.counterpart, icon: "dashboard" } : reference.counterpart;
         url.searchParams.set("demoControl", reference.control);
         url.searchParams.set("theme", theme);
         for (const key of ["label", "variant", "icon", "value", "placeholder", "checked", "disabled", "stretch"])
@@ -60,6 +61,8 @@ try {
         if (reference.control === "StatusBadge") url.searchParams.set("label", String(descriptor.type));
         if (reference.id === "03-badge-beta") url.searchParams.set("label", "BETA");
         if (reference.id === "03-badge-metric") url.searchParams.set("metric", "true");
+        if (reference.control === "Tag") url.searchParams.set("variant", descriptor.icon === "tag" ? "default" : "header");
+        if (reference.control === "Select" && !reference.id.includes("native-equivalent")) url.searchParams.set("size", "sm");
         if (reference.state === "disabled") url.searchParams.set("disabled", "true");
         url.searchParams.set("width", String(descriptor.width ?? reference.bounds.width));
         await page.goto(url.href, { waitUntil: "domcontentloaded" });
@@ -106,7 +109,9 @@ try {
               inputInsets: inputRect ? { left: inputRect.left - r.left, right: r.right - inputRect.right,
                 top: inputRect.top - r.top, bottom: r.bottom - inputRect.bottom } : null,
               tokens: Object.fromEntries(tokenNames.map(name => [name, s.getPropertyValue(`--lf-${name}`).trim()])),
-              html: element.outerHTML };
+              html: element.outerHTML,
+              fontFaces: [...document.fonts].filter(face => face.family.replaceAll('"', "") === "plexMono")
+                .map(face => ({ family: face.family, status: face.status, weight: face.weight })) };
           }, { selector, keys: styleKeys, tokenNames: Object.keys(reference.tokens ?? {}) });
           const id = `${app}-${theme}-${reference.id}`, file = join(output, `${id}.png`);
           const shot = await captureCrop(page, selector, { align: false });
@@ -115,8 +120,11 @@ try {
             sideBySide: join(output, `${id}-side.png`), diff: join(output, `${id}-diff.png`), channelTolerance: 0 });
           const expected = {}, measured = {};
           const textControl = !["IconButton", "Checkbox", "Skeleton", "CopyButton"].includes(reference.control);
-          const expectedStyles = reference.styles, actualStyles = actual.styles;
-          expected.height = reference.bounds.height; measured.height = actual.bounds.height;
+          const styleReference = reference.id === "05-select-options"
+            ? records.find(r => r.id === "05-select-score-default" && r.theme === reference.theme) : reference;
+          const expectedStyles = reference.control === "SearchInput" ? reference.inputStyles : styleReference.styles;
+          const actualStyles = reference.control === "SearchInput" ? actual.inputStyles : actual.styles;
+          expected.height = styleReference.bounds.height; measured.height = actual.bounds.height;
           for (const key of ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderRadius", "borderWidth"]) {
             expected[key] = parseFloat(expectedStyles[key]); measured[key] = parseFloat(actualStyles[key]);
           }
@@ -162,9 +170,13 @@ try {
             expected.focusRing = paintedShadow(sourceInput.boxShadow);
           }
           const failures = metricFailures(measured, expected, 1);
+          if (textControl && expected.fontFamily.includes("plexMono") && !actual.fontFaces.some(face => face.status === "loaded"))
+            throw Error(`The actual Demo mono font did not load: ${id}`);
           const nativePopup = ["expanded", "options"].includes(reference.state);
           results.push({ id, app, control: reference.control, state: reference.state, theme,
             reference: reference.path, file, referenceUrl: reference.url, version: reference.version,
+            computedReference: { id: styleReference.id, path: styleReference.path, state: styleReference.state },
+            computedStyleStatus: failures.length ? "FAIL" : "PASS",
             referenceTokens: reference.tokens, actualTokens: actual.tokens,
             counterpart: descriptor, note: reference.note, actual, expected, measured, failures, pixels,
             fontApplicability: textControl ? "text-bearing control" : "no text painted in this primitive crop",

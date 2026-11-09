@@ -2,6 +2,41 @@
 
 ## Phase B basic controls (PR-1)
 
+### Real Demo amendment (2026-11-09)
+
+The permitted public Demo v4.77.0, not the pinned primitive source, defines
+default product rendering. Source records are
+`pr-1/demo-captures/records.json` in the lane evidence root.
+Buttons, compact icon/copy buttons and compact Select triggers use the observed
+2px inset token ring; regular Select and native Checkbox keep the outset ring.
+Input/SearchInput use the Search filters field's mono type, 4/24/4/28px
+padding and search adornment. Input owns its paint; search submit/clear remain
+real named buttons, positioned over the field, and retain Enter/clear behavior.
+Plain links follow the Demo's inline, regular-weight, muted/foreground
+underline rendering rather than the previous inline-block purple treatment.
+
+Badge's blue palette comes from the named Demo Beta capture; header Tag
+and inactive status use the observed foreground/5% (light) and /10% (dark)
+fill. Status defaults to the compact uppercase mono pill without a live dot;
+callers can still explicitly request live feedback. Default Tag includes the
+observed table tag glyph; its `header` variant matches the glyph-free header
+pill. Table Tag retains the muted token fill. Select's compact `sm` variant matches the Score selector, while its
+regular default matches All Objects. Variants are component APIs, not fixture
+CSS overrides. Metric/ghost Badge is unrounded.
+
+The observed outline Button has no selected wash, and no selected basic
+Button instance was found on the checked routes. Do not invent that wash:
+selected Button retains `aria-pressed` and its check indicator without changing
+the resting fill. This supersedes the earlier selected-fill requirement.
+
+Owner-approved exceptions remain 32px desktop / 44px touch interactive targets,
+native Select popup and native Checkbox/form/keyboard semantics. These
+override conflicting Demo dimensions or custom-widget behavior and must be
+listed, not hidden in tolerances. Native popup cases are not pixel-identity
+passes. Raw diff thresholds and masks do not change. For different live
+content, matched computed styles plus side-by-side are the criterion; report
+raw diffs separately where content matches.
+
 Parity repair: add the missing 10px `--lf-space-2h` prefix spacing token.
 Font shorthands must preserve inherited `rlig`/`calt`. Native mixed semantics
 remain, with the pinned Check indicator. Status error uses upstream dark-red
@@ -10,7 +45,7 @@ the owner's current requirement. Native Select keeps its native popup, with
 12px trigger padding and the same visible trailing indicator.
 The Select's native control owns input, focus and options; a pointer-inert
 value span paints the closed value without the browser clipping its line box.
-TextLink follows upstream inline-block baseline geometry. Native focus ink
+TextLink follows the real Demo inline baseline geometry. Native focus ink
 follows the document's color-scheme; rings use the existing ring tokens.
 
 The reusable Preact controls live in `local/dashboard/foundation/controls/`,
@@ -34,18 +69,19 @@ labels and 20/16/14px boxes with 12/10/9px text. CopyButton uses the Codeblock
 under reduced motion. CopyButton copies the original value, reports rejection
 inline, and resets feedback when its value changes.
 
-All interactive controls have keyboard rings and native disabled behavior.
-Selection uses a wash and glyph. No coloured selection border is added;
+All interactive controls retain native keyboard focus and disabled behavior,
+including the input caret and forced-color outlines. Selected Button uses
+aria-pressed and its glyph without an invented wash. No coloured selection border is added;
 invalid fields retain their validation border. Native Select deliberately
 keeps the browser popup rather than adding PR-2 overlays. The desktop visual
-contract is pinned Langfuse MIT source; 44px touch boxes and accessible names,
-error messages, mixed checkboxes and status text contrast are intentional
+contract is the actual public Demo; 44px touch boxes and accessible names,
+error messages and native mixed checkboxes are intentional
 accessibility adaptations. References and measured differences are recorded
 per component in PR-1 evidence, not inferred from token equality.
 
 Button supports an optional trailing glyph for real filter-trigger composition:
-the trailing slot uses the 4px spacing token; leading-only content keeps its
-6px gap. Comparison hosts may match reference labels and widths, but must not
+the trailing slot uses 4px spacing and tertiary ink. Leading gaps are primary
+8px, ghost 4px, otherwise 6px. Hosts may match labels and widths, but must not
 override primitive typography, padding, colors, radii or rings to force a pass.
 
 ## Phase B foundation (PR-0, 2026-11-09)

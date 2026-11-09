@@ -2,6 +2,18 @@
 
 ## Phase B basic controls (PR-1)
 
+The real Demo amendment in `site/DESIGN.md` supersedes pinned-primitive
+defaults: inset Button/IconButton/Select rings; mono search-adorned fields;
+Demo Beta/chip palettes; compact uppercase status; table/header Tag variants;
+regular muted inline links; no invented selected Button wash. Named Demo
+captures document any added tokens. Comparison hosts may choose public
+variants and labels, never primitive CSS overrides.
+
+Keep the owner-approved 32px desktop / 44px touch decisions, native Select
+popup, native Checkbox and WAI-ARIA keyboard/form behavior. Report those
+exceptions explicitly. Different live content uses computed-style plus
+side-by-side evidence; matching content also reports raw, unmasked diffs.
+
 Parity repair: add the missing 10px `--lf-space-2h` prefix spacing token.
 Font shorthands must preserve inherited `rlig`/`calt`. Native mixed semantics
 remain, with the pinned Check indicator. Status error uses upstream dark-red
@@ -10,7 +22,7 @@ the owner's current requirement. Native Select keeps its native popup, with
 12px trigger padding and the same visible trailing indicator.
 The Select's native control owns input, focus and options; a pointer-inert
 value span paints the closed value without the browser clipping its line box.
-TextLink follows upstream inline-block baseline geometry. Native focus ink
+TextLink follows the real Demo inline baseline geometry. Native focus ink
 follows the document's color-scheme; rings use the existing ring tokens.
 
 `foundation/controls/` owns the shared Button, IconButton, Badge, StatusBadge,
@@ -23,8 +35,8 @@ explicit error descriptions, no custom overlay dependencies, and real
 Langfuse reference provenance. Static badges/keyboard hints retain compact
 geometry; interactive dismiss/clear/copy targets grow on touch.
 
-Button's optional trailing glyph uses the 4px spacing token; leading-only
-content keeps its 6px gap. Development comparison hosts match labels and
+Button's optional trailing glyph uses 4px spacing and tertiary ink; leading
+gaps are primary 8px, ghost 4px, otherwise 6px. Comparison hosts match labels and
 available widths without overriding primitive styles.
 
 ## Phase B foundation (PR-0, 2026-11-09)
@@ -34,7 +46,9 @@ foundation and future migrated primitives. Existing screens keep their layout
 and interaction state until their scheduled migration.
 
 Mono source fidelity: the shared mono token preserves upstream
-`var(--font-plex-mono, "IBM Plex Mono")` before the system monospace fallbacks;
+`var(--font-plex-mono, plexMono), "plexMono Fallback"` before system fallbacks;
+the unmodified Regular WOFF2 from the named public Demo resource is embedded
+in the shared token CSS, with IBM Plex SIL OFL 1.1 in all shipped notices.
 it does not download a font or change existing legacy mono variables.
 
 The MIT source is `local/dashboard/foundation/tokens.css`, shared with site, derived

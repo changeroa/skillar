@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 import { Glyph } from "./icons";
 
 export type BadgeColor = "primary" | "filled" | "filledOnMuted" | "ghost" | "inverted" | "green" | "blue" | "violet" | "teal" | "red" | "yellow";
-export function Badge({ text, label, color = "primary", size = "default", mono = false, onDismiss }: {
+export function Badge({ text, label, color = "primary", size = "default", mono = true, onDismiss }: {
   readonly text: string; readonly label?: string; readonly color?: BadgeColor;
   readonly size?: "lg" | "default" | "md" | "sm"; readonly mono?: boolean;
   readonly onDismiss?: () => void;
@@ -14,12 +14,14 @@ export function Badge({ text, label, color = "primary", size = "default", mono =
     : <span class={className}>{content}</span>;
 }
 
-export function Tag({ text, secondaryText, status = "default", remove }: {
+export function Tag({ text, secondaryText, status = "default", variant = "default", remove }: {
   readonly text: string; readonly secondaryText?: string;
   readonly status?: "default" | "warning" | "error";
+  readonly variant?: "default" | "header";
   readonly remove?: { readonly onRemove: () => void; readonly disabled?: boolean };
 }) {
-  return <span class={`lf-tag lf-tag--${status}`}>
+  return <span class={`lf-tag lf-tag--${status}${variant === "header" ? " lf-tag--header" : ""}`}>
+    {variant !== "header" && <Glyph name="tag" small />}
     <span title={[text, secondaryText].filter(Boolean).join(" ")}>{text}</span>
     {secondaryText && <span class="lf-tag__secondary">{secondaryText}</span>}
     {remove && <button type="button" aria-label={`Remove ${text}`} disabled={remove.disabled}
@@ -35,7 +37,7 @@ const categories: Readonly<Record<string, string>> = {
   completed: "completed", done: "completed", finished: "completed", error: "error", failed: "error",
   triggered: "error", partial: "partial", warning: "partial",
 };
-export function StatusBadge({ type, size = "default", transparent = false, isLive = true }: {
+export function StatusBadge({ type, size = "default", transparent = false, isLive = false }: {
   readonly type: string; readonly size?: "default" | "lg"; readonly transparent?: boolean; readonly isLive?: boolean;
 }) {
   const key = type.toLowerCase();

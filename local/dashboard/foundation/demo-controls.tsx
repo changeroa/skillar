@@ -17,7 +17,8 @@ export function DemoControls() {
       const requested = query.get("variant");
       const variant = requested === "ghost" ? "ghost" : requested === "primary" ? "primary" : "outline";
       control = <Button text={label} variant={variant}
-        {...(query.get("icon") === "external" ? { icon: "external" as const } : {})}
+        {...(query.get("icon") === "external" ? { icon: "external" as const }
+          : query.get("icon") === "dashboard" ? { icon: "dashboard" as const } : {})}
         {...(query.get("icon") === "chevron" ? { trailingIcon: "chevron" as const } : {})}
         disabled={query.get("disabled") === "true"} />;
       break;
@@ -33,7 +34,7 @@ export function DemoControls() {
       control = <StatusBadge type={label} isLive={false} />;
       break;
     case "Tag":
-      control = <Tag text={label} />;
+      control = <Tag text={label} variant={query.get("variant") === "header" ? "header" : "default"} />;
       break;
     case "Input":
       control = <Input label={label} placeholder={query.get("placeholder") ?? label} defaultValue={value} />;
@@ -43,7 +44,8 @@ export function DemoControls() {
         value={value} onChange={setValue} onSubmit={() => {}} />;
       break;
     case "Select":
-      control = <Select label={label} placeholder={label} value={value} disabled={query.get("disabled") === "true"}
+      control = <Select label={label} placeholder={label} value={value} size={query.get("size") === "sm" ? "sm" : "default"}
+        disabled={query.get("disabled") === "true"}
         onChange={event => setValue(event.currentTarget.value)}
         options={[{ value: "all", label: value === "all" ? label : "All Objects" }, { value: "score", label: "First score" }]} />;
       break;
