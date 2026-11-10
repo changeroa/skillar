@@ -1,5 +1,6 @@
 import { ready,press } from "./trusted-keys.mjs";
 import { applyViewport } from "./viewport.mjs";
+import { mountHostedEmbed } from "./mount-hosted-embed.mjs";
 
 /** Measure the actual page cascade, never an isolated control recipe. */
 export async function measureShellTargets(page,config){
@@ -19,8 +20,9 @@ export async function measureShellTargets(page,config){
       await ready(page,app==="hosted"?"body.app-shell [data-command-mount]":".lf-topbar");
       if(app==="hosted")await ready(page,".app-account form button");
       if(app==="local"&&width<=1023)await ready(page,'[aria-controls="pe-source-drawer"]');
+      if(app==="hosted"&&path.includes("#/sessions"))await mountHostedEmbed(page);
       const collect=async state=>results.push(await page.evaluate(({app,path,width,coarse,theme,state})=>{
-        const scope=app==="hosted"?".app-topbar,.app-navigation,.app-drawer":".pe-sidebar,.lf-topbar,.pe-mobile-nav,#pe-source-drawer";
+        const scope=app==="hosted"?".app-topbar,.app-navigation,.app-drawer,.local-tabs":".pe-sidebar,.lf-topbar,.pe-mobile-nav,#pe-source-drawer";
         const controls=[...new Set([...document.querySelectorAll(scope)].flatMap(root=>[...root.querySelectorAll('a[href],button,input:not([type="hidden"]),select,summary')]))]
           .filter(e=>e.checkVisibility());
         const target=matchMedia("(pointer:coarse)").matches||innerWidth<=768?44:32;

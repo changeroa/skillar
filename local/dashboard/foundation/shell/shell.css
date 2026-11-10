@@ -19,13 +19,13 @@
 .lf-nav-item[aria-disabled="true"] { opacity:var(--lf-opacity-disabled); pointer-events:none; }
 .lf-sidebar[data-collapsed="true"] { width:max(var(--lf-sidebar-collapsed-width),calc(var(--lf-control-height) + var(--lf-space-4))); }
 .lf-sidebar[data-collapsed="true"] .lf-nav-group__label,.lf-sidebar[data-collapsed="true"] .lf-nav-item > span { display:none; }
-.lf-sidebar[data-collapsed="true"] .lf-nav-item { justify-content:center; padding:0; }
+.lf-sidebar[data-collapsed="true"] .lf-nav-item { justify-content:center; padding:var(--lf-space-2); gap:var(--lf-space-2h); }
 .lf-topbar-surface { background:var(--lf-background); }
 .lf-topbar { min-height:var(--lf-topbar-height); display:flex; flex-direction:column; justify-content:center; background:transparent; border-bottom:var(--lf-border-width) solid var(--lf-border); }
 .lf-topbar__inner { display:flex; align-items:center; justify-content:space-between; min-height:calc(var(--lf-topbar-height) - var(--lf-border-width)); gap:var(--lf-space-2); padding-inline:var(--lf-space-3); }
 .lf-topbar__leading,.lf-topbar__actions { display:flex; align-items:center; gap:var(--lf-space-2); min-width:0; }
 .lf-topbar__actions { flex:none; }
-.lf-page-header { display:flex; flex-direction:column; justify-content:center; min-height:calc(var(--lf-space-8) + var(--lf-space-2)); border-bottom:var(--lf-border-width) solid var(--lf-border); }
+.lf-page-header { display:flex; flex-direction:column; justify-content:center; min-height:calc(var(--lf-space-8) + var(--lf-space-2)); }
 .lf-page-header__inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--lf-space-1); padding:var(--lf-space-1) var(--lf-space-4); }
 .lf-page-header h1 { margin:0; font:var(--lf-weight-strong) var(--lf-text-lg)/var(--lf-menu-leading) var(--lf-font-sans); color:var(--lf-primary); }
 .lf-breadcrumb { min-width:0; font-size:var(--lf-text-lg); line-height:1; }
@@ -46,6 +46,7 @@
 .lf-tabs--underline > [role="tablist"] > [aria-selected="true"] { border-bottom-color:var(--lf-foreground-secondary); background:transparent; box-shadow:none; color:var(--lf-foreground); }
 .lf-tabs--underline > [role="tablist"] > [aria-selected="true"]::before { content:none; }
 .lf-sidebar .lf-nav-item:focus-visible,.lf-breadcrumb a:focus-visible,.lf-tabs [role="tab"]:focus-visible { outline:var(--lf-focus-width) solid var(--lf-ring); outline-offset:calc(-1 * var(--lf-focus-width)); }
+.lf-sidebar .lf-nav-item:focus-visible { outline-color:var(--lf-sidebar-ring); }
 .lf-dialog.lf-dialog--command { position:fixed; inset:var(--lf-command-top) 0 auto; margin-inline:auto; width:min(var(--lf-dialog-width),calc(100% - var(--lf-space-8))); height:auto; max-height:calc(100dvh - var(--lf-command-top) - var(--lf-space-8)); border:0 solid var(--lf-border); background:var(--lf-popover); color:var(--lf-foreground); border-radius:var(--lf-radius-lg); box-shadow:var(--lf-shadow-command); font:var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-menu-leading) var(--lf-font-sans); }
 .lf-dialog--command .lf-dialog__head { position:absolute; inset:0 0 auto auto; padding:0; background:transparent; z-index:1; }
 .lf-dialog--command .lf-dialog__heading { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { act, byTag, FakeEvent, loadViews, mount } from "./helpers/t10-dom.mjs";
+import { act, byTag, FakeEvent, h, loadViews, mount } from "./helpers/t10-dom.mjs";
 import { shellMetric } from "../../scripts/uxb/shell-metrics.mjs";
 import { applyViewport } from "../../scripts/uxb/viewport.mjs";
 import { sidebarContext } from "../../scripts/uxb/shell-context.mjs";
@@ -109,12 +109,12 @@ test("a configured phone viewport survives navigation's cached-size restoration"
   // Then
   assert.deepEqual(observed,{width:390,height:844});
 });
-test("topbar keeps its chrome row inside the independently painted header",async t=>{
-  const {container}=await mount(t,Topbar,{children:"Location"});
+test("topbar keeps a native header landmark with caller content and actions",async t=>{
+  const {container}=await mount(t,Topbar,{children:"Location",actions:h("button",{type:"button"},"Go")});
   const header=byTag(container,"header")[0];
-  assert.equal(header.getAttribute("class"),"lf-topbar-surface");
-  assert.equal(header.childNodes[0].getAttribute("class"),"lf-topbar");
-  assert.equal(header.childNodes[0].childNodes[0].getAttribute("class"),"lf-topbar__inner");
+  assert.equal(byTag(container,"header").length,1);
+  assert.ok(header.textContent.includes("Location"));
+  assert.equal(byTag(header,"button")[0].textContent,"Go");
 });
 test("sidebar fixture derives its bounded parent from source context, not component height",()=>{
   const source={viewport:[1440,900],parent:{position:"fixed",box:{top:29,bottom:900,height:871}}};
@@ -130,4 +130,10 @@ test("topbar parity still rejects paint applied to the chrome row",()=>{
   const actual={tag:"DIV",styles:{backgroundColor:"rgb(255, 255, 255)"}};
   assert.equal(shellMetric({source,actual,field:"backgroundColor",
     context:{family:"Topbar",part:"surface",viewport:[1440,900],coarse:false}}).pass,false);
+});
+test("touch topbar fits the owner control plus its measured divider exactly",()=>{
+  const source={tag:"DIV",box:{height:44},styles:{borderBottomWidth:"1px"}};
+  const context={family:"Topbar",part:"surface",viewport:[390,844],coarse:true};
+  assert.equal(shellMetric({source,actual:source,field:"height",context}).pass,false);
+  assert.equal(shellMetric({source,actual:{...source,box:{height:45}},field:"height",context}).pass,true);
 });

@@ -4,6 +4,7 @@ import { Tabs } from "./shell/tabs";
 import { CommandPalette } from "./shell/command-palette";
 import { Button } from "./controls/buttons";
 import { Glyph as Icon } from "./controls/icons";
+import { shellReferenceCommands } from "./shell-reference-commands";
 
 export function ShellGallery() {
   const [open, setOpen] = useState(false);
@@ -47,7 +48,8 @@ export function ShellGallery() {
         <output aria-live="polite">{action}</output>
       </div>
     </div>
-    {open && <CommandPalette id="gallery-command" onClose={() => setOpen(false)} commands={[
+    {open && <CommandPalette id="gallery-command" onClose={() => setOpen(false)} commands={new URLSearchParams(location.search).has("referenceCommands")
+      ? shellReferenceCommands.map(item => ({...item,onSelect:()=>setAction(item.id)})) : [
       { id: "tracing", label: "Tracing", icon: <Icon name="tree" />, onSelect: () => setAction("tracing") },
       { id: "sessions", label: "Sessions", icon: <Icon name="sessions" />, onSelect: () => setAction("sessions") },
       { id: "disabled", label: "Unavailable", disabled: true, onSelect: () => setAction("disabled") },

@@ -1,6 +1,8 @@
 @import "../../local/dashboard/foundation/controls/controls.css";
 @import "../../local/dashboard/foundation/overlays/overlays.css";
 @import "../../local/dashboard/foundation/shell/shell.css";
+body.app-shell > main.shell .dash-embed .local-tabs [role="tab"] { height:var(--lf-control-height); min-height:var(--lf-control-height); padding-block:0; box-sizing:border-box; }
+body.app-shell #app-navigation a:focus-visible { outline-color:var(--lf-sidebar-ring); }
 
 .app-menu,.app-breadcrumb,.app-jump,.app-account,.app-nav-group > span { display:none; }
 .app-navigation { width:100%; }
