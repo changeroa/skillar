@@ -24,6 +24,9 @@ export function histogramBars(rows: readonly Pick<SessionListRow, "startedAt">[]
 export function SessionHistogram({ rows, filter }: { readonly rows: readonly SessionListRow[]; readonly filter: Filter }) {
   const bars = histogramBars(rows, filter.from, filter.to);
   if (!bars.length) return null;
-  return <Histogram title={`일별 세션 ${rows.length}개 · KST · 수신된 기간`}
-    labels={bars.map(bar => `${bar.date}\nKST`)} values={bars.map(bar => bar.count)} height={160} />;
+  return <details class="session-histogram">
+    <summary>일별 분포</summary>
+    <Histogram title={`일별 세션 ${rows.length}개 · KST · 수신된 기간`}
+      labels={bars.map(bar => `${bar.date}\nKST`)} values={bars.map(bar => bar.count)} height={160} />
+  </details>;
 }

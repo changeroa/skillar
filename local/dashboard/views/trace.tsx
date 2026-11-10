@@ -13,18 +13,18 @@ import { SessionSummary } from "./trace/summary";
 import { CompactTree } from "./trace/compact-tree";
 import { traceConsoleStyles } from "./trace/console-style";
 import { EventConsole } from "./trace/event-console";
+import { EmptyState } from "../foundation/widgets/messages";
 export * from "./trace/model";
 export * from "./trace/plan";
 
 function NotFound({ sessionId, backHref, embedded }: { sessionId: string; backHref: string; readonly embedded: boolean }) {
   const Title = embedded ? "h2" : "h1";
   return (
-    <section class="empty empty--trace">
+    <section class="trace pe-console empty--trace">
       <Title class="trace__title">{sessionId}</Title>
-      <h2>이 세션을 찾을 수 없습니다</h2>
-      <h2>세션을 찾을 수 없습니다</h2>
-      <p><code class="cmd">{sessionId}</code>에 기록된 이벤트가 없습니다. 보존 기간이 지나 삭제되었거나 오래된 링크일 수 있습니다.</p>
-      <a class="btn" href={backHref}>세션으로 돌아가기</a>
+      <EmptyState title="이 세션을 찾을 수 없습니다"
+        description={`${sessionId}에 기록된 이벤트가 없습니다. 보존 기간이 지나 삭제되었거나 오래된 링크일 수 있습니다.`}
+        action={<a class="pe-button" href={backHref}>세션으로 돌아가기</a>} />
     </section>
   );
 }
@@ -97,7 +97,7 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
 
   if (steps === undefined) {
     return (
-      <section class="trace" aria-busy={busy}>
+      <section class="trace pe-console" aria-busy={busy}>
         <Header sessionId={sessionId} steps={[]} backHref={backHref} embedded={embedded} />
         {busy && <p role="status">추적 기록 불러오는 중…</p>}
         {error && <div class="notice" role="alert"><p>{error}</p><button type="button" class="btn"

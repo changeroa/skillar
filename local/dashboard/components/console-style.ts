@@ -8,12 +8,13 @@ export function consoleStyles() {
 .pe-pill{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 7px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:12px;white-space:nowrap;color:var(--ink)}
 .pe-button,.pe-console :is(button.btn,a.btn){display:inline-flex;align-items:center;justify-content:center;gap:var(--lf-space-1h);min-width:var(--lf-control-height);height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0 var(--lf-space-3);border:var(--lf-border-width) solid var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-background);color:var(--lf-foreground);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);text-decoration:none;cursor:pointer}
 .pe-button:hover,.pe-console :is(button.btn,a.btn):hover{background:var(--surface);color:var(--ink);text-decoration:none}
-.pe-button:disabled,.pe-console button.btn:disabled{color:var(--ink-2);cursor:not-allowed}
+.pe-button:disabled,.pe-console button.btn:disabled{cursor:not-allowed}
 .pe-icon-button{width:var(--lf-control-height);padding:var(--lf-space-2)}
 .pe-copy .lf-icon-button{width:var(--lf-control-height);height:var(--lf-control-height);min-width:var(--lf-control-height);min-height:var(--lf-control-height)}
 .pe-console{--lf-ring:var(--lf-muted-foreground)}
 .pe-button:focus-visible,.pe-console :is(button.btn,a.btn):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .pe-button:disabled,.pe-console button.btn:disabled{opacity:var(--lf-opacity-disabled)}
+:is(.analysis,.sessions-console,.trace).pe-console details>summary{height:var(--lf-control-height);min-height:var(--lf-control-height);padding-block:0}
 .pe-muted{color:var(--ink-2)}
 .pe-shell{display:grid;grid-template-columns:var(--lf-sidebar-width) minmax(0,1fr);min-height:100dvh}
 .pe-sidebar{position:sticky;top:0;align-self:start;height:100dvh;display:flex;flex-direction:column;border-right:var(--lf-border-width) solid var(--lf-sidebar-border)}
