@@ -31,6 +31,11 @@ web/src/components/design-system/DropdownMenu/DropdownMenu.tsx and
 web/src/components/design-system/ConfirmationDialogController/ConfirmationDialogController.tsx.
 Confirm state anatomy also uses web/src/components/ui/ConfirmDialog.tsx and
 web/src/components/design-system/Alert/Alert.tsx at the same pinned commit.
+Approved unavailable-state measurements additionally use actual
+web/src/components/design-system/ControlledDropdownMenu/ControlledDropdownMenu.tsx,
+web/src/components/table/peek.tsx,
+web/src/components/ObservabilityEntityDetailHeader/ObservabilityEntityDetailHeader.tsx,
+and web/src/features/events/components/MobileFiltersSheet.tsx.
 Destination: local/dashboard/foundation/overlays/, site/src/ui/ui.css and
 local/dashboard/components/console-style.ts. Native dialog/popover and Preact
 own behavior; no React, Radix or Floating UI code is imported.

@@ -77,7 +77,7 @@
 .lf-menu__item > span { display: inline-flex; width: var(--lf-overlay-icon-size); margin-inline-start: auto; }
 .lf-menu__item > span > svg { color: var(--lf-icon-foreground); }
 .lf-menu__separator { height: var(--lf-border-width); margin: var(--lf-space-1) calc(-1 * var(--lf-space-1)); background: var(--lf-border); }
-.lf-menu__empty { display: block; padding: var(--lf-space-2); color: var(--lf-muted-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
+.lf-menu__empty { display: block; padding: var(--lf-space-4) var(--lf-space-2); color: var(--lf-muted-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); text-align: center; }
 .lf-tooltip { max-width: min(var(--lf-tooltip-width), calc(100vw - var(--lf-space-4))); padding: var(--lf-space-1h) var(--lf-space-3); border-radius: var(--lf-radius-md); }
 .lf-tooltip[data-size="content"] { max-width: none; }
 .lf-tooltip::before { content: ""; position: absolute; inset: calc(-1 * var(--lf-space-1)) 0; }
@@ -87,6 +87,8 @@
 .lf-dialog--confirm .lf-button { gap: normal; }
 .lf-dialog--confirm .lf-button[aria-busy="true"] { width: max(36px, var(--lf-control-height)); min-width: 0; }
 .lf-dialog--confirm .lf-button[aria-busy="true"] .lf-spinner { width: 12px; height: 12px; }
+.lf-dialog--default .lf-button[aria-busy="true"] { width: max(37px, var(--lf-control-height)); min-width: 0; }
+.lf-dialog--default .lf-button[aria-busy="true"] .lf-spinner { width: 11px; height: 11px; }
 .lf-dialog__actions > .lf-button--primary,.lf-menu-anchor > .lf-button--primary {
   justify-content: center; padding: var(--lf-space-1) var(--lf-space-3); border-radius: var(--lf-radius-md);
 }

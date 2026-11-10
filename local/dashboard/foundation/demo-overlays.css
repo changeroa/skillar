@@ -1,5 +1,6 @@
 /* Ordinary caller content for real-Demo comparisons; no primitive overrides. */
 .reference-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--lf-space-4); }
+.reference-host .reference-content-grid > section { display: block; }
 .reference-content-grid pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-mono); }
 .reference-content-grid p,.reference-content-grid pre { margin: 0; }
 .reference-content-heading { margin: 0 0 var(--lf-space-2); font-size: var(--lf-text-base); line-height: var(--lf-leading-base); font-weight: var(--lf-weight-strong); }

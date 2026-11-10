@@ -94,6 +94,12 @@ try {
         verify(await page.evaluate(() => document.activeElement.id), "standalone-menu-trigger");
         await open("#standalone-menu-trigger", "#standalone-menu-alpha");
         await keyFocus("Tab", "#empty-menu-trigger");
+        await open("#empty-menu-trigger", "#empty-menu");
+        await capture(`${id}-empty-menu`, "#empty-menu");
+        verify(await page.evaluate(() => document.querySelector("#empty-menu .lf-menu__empty").getAttribute("role")), "status");
+        verify(await page.evaluate(() => getComputedStyle(document.querySelector("#empty-menu .lf-menu__empty")).paddingBlock), "16px");
+        verify(await page.evaluate(() => getComputedStyle(document.querySelector("#empty-menu .lf-menu__body")).padding), "4px");
+        await keyFocus("Escape", "#empty-menu-trigger");
         // Dialog owns modality; inner Escape cannot dismiss its parent.
         await open("#open-dialog", "#dialog-name");
         verify(await page.evaluate(() => document.querySelector("#sample-dialog").matches(":modal")), true);
