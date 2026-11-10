@@ -120,3 +120,92 @@ not new final-head executions. Current component, 120-screen, focus, build/test,
 cleanup and exact-head CI receipts are required in the correction handoff.
 Lighthouse, a full contrast audit, forced-colors screenshots and preview
 authentication remain unverified.
+
+## PR-5 widgets and charts (2026-11-10)
+
+Implemented 11 exports across the nine requested families: Card/Widget,
+MetricStrip/Metric, Bar, Histogram, Line, EmptyState, Alert, StatusMessage and
+Callout. The two applications expose 34 showcase states. Existing chart
+consumers use thin adapters; no table or facet implementation was changed.
+Chart disclosures own their native-element styles at the component boundary,
+including the hosted embed, instead of inheriting legacy details padding.
+
+| Gate | Result | Measured evidence |
+| --- | --- | --- |
+| 1. Component parity | FAIL | 116 root/part comparisons; zero measured painted-field deltas, but complete per-state/composite pixel pairing is unverified. This is partial coverage, not full parity. |
+| 2. Screen comparison | PASS | 30 before/after cases; 36 real Demo screens and 60 triptychs; no overflow or wrong viewport widths. |
+| 3. Keyboard/ARIA | PASS | 684 gallery assertions and 52 trusted interaction assertions; real-page target, glyph, focus and fallback checks pass. |
+| 4. R1-R7 structure | PASS | Eight home/empty cases; R4 not applicable to this probe; group-spacing checks require measured bins. |
+| 5. Build/tests | FAIL | Site 399/399 and both builds/typechecks pass; local 984/985, with the same LaunchAgent ENOTDIR on untouched abee112. Clean-environment CI is reported on the draft head. |
+| 6. License/package | PASS | Three matching notices; NOTICE included by npm pack; pinned MIT attribution retained. |
+| 7. Deploy | PASS | `not deployed; deploy gated on owner` (production). Preview-only gallery: four real browser cases pass, both themes at 390/1440px. |
+
+The local failure is `test/cli-init.test.mjs:159`, lstat of
+`/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist`. The stray `/tmp/h`
+was not edited or deleted. No assertion or validator threshold was weakened.
+
+Preview: `https://uxb-pr-5.skillar-site.pages.dev/__gallery.html?widgets=1`,
+deployment `8162bb28-3320-41fe-a4ed-3e31591fe819`.
+The artifact adds the existing development gallery only to the preview;
+normal production build/routes are unchanged. Its 34 states render with zero
+runtime errors and 32px mouse/44px touch targets. The production deployment
+remains `a876d0f7-c6e4-441a-a05c-bacfafc3d1b4` on `main`.
+The comparison ledger separately records 48 non-painted equivalences and
+12 equivalent color strings; neither is presented as a pixel match.
+
+### Callout-only reference decision
+
+The parent's PR-5 amendment approves computed-style diffs against a labelled
+render of the **actual MIT Langfuse Callout**, pinned at
+`69181812b87169df157841fce1314ec96ecd2c5a`, for both variants and themes.
+The reference is not a Demo capture. Both top/middle alignments were rendered
+as well. Its actual component code is executed only by the retained reference
+server; no Langfuse React component or screenshot is shipped in the product.
+The independent reviewer must re-check this exception before merge.
+
+The permitted Demo has no Callout: `/skills` is empty, organization overview
+is outside the permitted project, and the evaluator upgrade path requires an
+edit. The global migration status bar is not relabelled as Callout.
+
+### Other absent states and checked routes
+
+Real captures use the permitted project root, `/skills`, `/traces`, and recorded
+session `chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1` under project
+`cmmnj9e9n0006ad06nyz28646` at `https://jp.cloud.langfuse.com`.
+No error, edit, create, setting change or new sign-in was induced.
+
+The standing absent-state amendment covers these individually listed states:
+
+- Alert: default/sm; info/default and sm; warning/default and sm;
+  destructive/default and sm. The four real `/skills` Alerts are
+  default/default, not these variant/size combinations.
+- StatusMessage: DEFAULT, DEBUG and WARNING at default and compact;
+  ERROR/default. The checked recorded tool status exposes ERROR/compact.
+  There is no read-only control for changing its recorded level or size.
+
+These references execute the actual pinned MIT components and are labelled
+`ACTUAL-PINNED-MIT`, never Demo captures. Source inputs and raw reference
+images remain separate from product images.
+
+### Measurement scope and retained evidence
+
+Computed comparisons cover the measured roots/parts. Widget composition and
+MetricStrip layout are exercised in both galleries, not claimed as separately
+pixel-paired Demo composites. Raw pixel diffs are retained without masks or
+corner exclusions; caller content/layout and the owner's 32px mouse/44px
+touch rule can differ from upstream. No full pixel-identical claim is made.
+Zero-width borders, style-none outlines, zero-alpha shadows and equivalent
+color syntax are reported separately and do not count as visual matches.
+
+The live StatusMessage is compared over its observed 8px popover backing,
+using the existing popover token in the development reference host. This
+does not override primitive paint. All actions reuse PR-1 controls.
+Real keyboard focus was inspected; the focus-removal mutation guard remains
+active. Chart fallback tables remain complete after series filtering.
+
+Retained lane artifacts include `widgets-qa.json`, `missing-state-results.json`,
+`screen-results.json`, `source-full-screens.json`, `interaction-results.json`,
+`structure/qa-structure.json`, `checks.json` and unmasked image comparisons.
+Independent review, Lighthouse, a full contrast audit and forced-colors visual
+certification remain outside the implementer's verdict. This is a draft-only
+handoff; PR-4 must land first and production deployment stays gated.

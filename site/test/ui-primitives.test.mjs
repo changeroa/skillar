@@ -247,7 +247,7 @@ test("unmeasured charts do not fabricate SVG points or bars", async t => {
     labels: ["월"], series: [{ label: "읽기", values: [null] }],
   } });
   // Then
-  assert.equal(byTag(container, "svg").length, 0);
+  assert.equal(all(container, node => node.getAttribute("data-chart-point") !== null).length, 0);
   assert.equal(byTag(container, "rect").length, 0);
 });
 

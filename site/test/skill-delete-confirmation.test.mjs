@@ -187,7 +187,8 @@ test("opening one confirmation closes another, so at most one deletion is ever a
   // When
   await act(() => dom.getElementById(olderTrigger).click());
   // Then
-  assert.equal(all(container, node => node.getAttribute("role") === "group").length, 1);
+  assert.equal(all(container, node => node.getAttribute("role") === "group" &&
+    node.getAttribute("aria-labelledby")?.endsWith("-consequence")).length, 1);
   assert.equal(dom.getElementById(skillField), null);
   assert.equal(dom.activeElement, dom.getElementById(olderField));
 });

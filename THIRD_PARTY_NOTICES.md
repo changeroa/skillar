@@ -33,6 +33,17 @@ supplies measured paint. Native Preact tables and PR-1/PR-2 controls own behavio
 no React, TanStack, Radix or cmdk runtime is included. The rows-3 icon is a
 Lucide path, under the ISC notice above.
 
+PR-5 reimplements MIT widget anatomy at the pinned commit below:
+web/src/components/ui/card.tsx,
+web/src/features/widgets/chart-library/BigNumber.tsx,
+web/src/components/design-system/charts/{BarChart/BarChart,LineChart/LineChart,HistogramChart/HistogramChart}.tsx,
+web/src/components/design-system/internal/charts/{BarChartCore,SeriesChartCore}.tsx,
+web/src/components/design-system/{Alert/Alert,Callout/Callout,StatusMessage/StatusMessage}.tsx.
+Destination: local/dashboard/foundation/widgets/.
+Charts retain Skillar's zero-baseline and missing-data semantics, with native
+data-table alternatives and Preact keyboard interactions. Reference-only React
+renderers are external evidence and are not shipped.
+
 Shell anatomy is reimplemented from MIT files at the pinned commit below:
 web/src/components/design-system/Tabs/Tabs.tsx,
 web/src/components/ui/{sidebar,breadcrumb,command}.tsx,

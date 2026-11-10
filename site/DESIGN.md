@@ -64,6 +64,78 @@ The owner-approved native and WAI-ARIA adaptations override Demo behavior.
 No new accessibility debt is accepted. Evidence records measured paint,
 raw pixel differences and non-equivalent product content separately.
 
+## Phase B widgets (PR-5)
+
+Shared primitives live in `local/dashboard/foundation/widgets/`. Card owns a
+neutral bordered card surface, 8px corners, shadow-xs, 16px header/content/footer
+insets and a 4px title/description gap. Widget composes those slots with real
+loading, failed and empty content, never invented numeric results.
+MetricStrip uses a responsive intrinsic grid; Metric uses the Demo's 24px/30px strong
+tabular numbers, 13px/20px descriptions and 14px/21px labels. A measured zero is
+`0`; a missing value is `미측정`. A stale value retains its explicit note.
+
+Bar, Histogram and Line share one zero-based scale and named SVG region,
+13px/20px type, chart palette 1 through 8, 1px grid and a labelled zero baseline.
+Numeric geometry stays in the existing 640x280 coordinate system (left48,
+right592, top32, baseline232) so R7 remains exact. A zero bar is a 1px marker
+ending at that baseline; null draws no bar or dot and breaks a line path.
+Histograms use square buckets inset by one logical geometry unit per edge; interval labels come
+from the caller and must include the real time zone/unit. Values remain labelled.
+Charts expose all supplied values in a native disclosure/data table, including
+nulls. Interactive glyphs are keyboard focusable, describe their data, show
+hover/focus tooltips and dismiss tooltips with Escape. Series controls reuse
+PR-1 Button, keep a check glyph and aria-pressed, and never change the baseline.
+An 8px series-color swatch maps each control to the plotted marks; selection
+also uses a check/minus glyph and pressed state rather than color alone.
+The document owns vertical scroll; chart overflow alone owns horizontal scroll.
+Chart data disclosures explicitly reset legacy summary padding/font/minimums:
+32px mouse, 44px coarse, one ellipsised line with the full accessible name and
+full title retained in the figure and table caption. A scoped hosted focus rule
+beats the existing `#skills-app` focus selector. Accepted debt: retain that
+compatibility scope until the later hosted-page migration removes the legacy
+ID rule; do not edit table/facet styles in PR-5.
+
+EmptyState is centred supporting copy with an optional real next action.
+Its intro variant matches the real skills-empty header: no inset, 24px lower
+margin, 22px/27.5px title, 8px gap and 14px/21px description.
+Alert follows the real Demo `/skills` default anatomy: 12px inset, 8px corners,
+14px icon, title with 4px following gap and 13px/20px description; compact uses
+8px inset, 6px corners and 12px/18px description. Default/info/warning/destructive
+use existing semantic pairs. StatusMessage has 12px inline/8px block insets,
+6px corners, pre-wrapped text and default14px/21px or compact13px/20px type.
+Its recorded severity remains distinct from an operation's loading state.
+Callout has 12px inset, 8px corners, 8px content gaps, info/warning fills,
+top/middle alignment, wrapping action cluster and explicit dismissal.
+Korean consumers group auxiliary phrases with a non-wrapping inline span;
+the showcase keeps "기록을 볼 수 있습니다." together instead of orphaning
+the auxiliary ending at phone width. Rich children retain that control.
+All actions reuse PR-1 controls at 32px mouse/44px touch, with painted focus.
+Static information is not an assertive live announcement; dynamic failures can
+explicitly request alert semantics. No decorative motion or new focus debt.
+
+Callout-only reference exception: the lead approved actual pinned MIT component
+renders at `69181812b87169df157841fce1314ec96ecd2c5a`, both variants/themes,
+labelled separately from live Demo captures. Other components use real Demo
+captures, with the standing absent-state exception only where proved.
+The live widget's title is 14px/21px, overriding the unused pinned CardTitle
+22px primitive; its card root is 16px/24px. Charts reserve at least 72px per
+bucket and 280px plot width in their horizontal scroll region to retain labels.
+Tracing histogram tick labels use the observed 10px size, named
+`--lf-chart-histogram-label-size`; full interval labels remain in the data table.
+Destructive Alert is transparent as in the pinned component; default Alert
+uses the background surface. Color syntax differences and zero-width borders
+are reported separately from painted parity.
+The development-only reference host can mirror an 8px popover backing using the
+existing popover token; the recorded StatusMessage lives in that real tooltip
+context. This changes no primitive paint and prevents comparing transparent
+error fills over two different backing surfaces.
+Geometry tokens: `--lf-metric-value-size:24px`, `--lf-metric-value-leading:30px`,
+`--lf-widget-shadow:0 1px 2px 0 rgb(0 0 0 / 5%)`.
+Recorded StatusMessage ERROR tokens come from the genuine session tool-status
+tooltip: red-100 edge, red-50 fill, red-900 ink; dark dark-red/20 edge,
+light-red/35 fill and red-300 ink. WARNING uses the parallel yellow palette.
+These are distinct from the PR-1 badge colors.
+
 ## Phase B shell (PR-3)
 
 Shared Preact shell primitives live in `local/dashboard/foundation/shell/`.

@@ -7,6 +7,9 @@ import { DemoOverlays } from "./demo-overlays";
 import { ShellGallery } from "./shell-gallery";
 import { TablesGallery } from "./tables-gallery";
 
+import { WidgetsGallery } from "./widgets-gallery";
+import { WidgetsReference } from "./widgets-reference";
+
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
 const states = ["default", "hover", "focus-visible", "active", "disabled", "loading", "error", "empty", "selected"] as const;
@@ -124,5 +127,5 @@ export function mountGallery(root: HTMLElement): void {
     document.documentElement.dataset["theme"] = theme;
   }
   const parameters = new URLSearchParams(location.search);
-  render(parameters.has("demoOverlay") ? <DemoOverlays /> : parameters.has("demoControl") ? <DemoControls /> : <Gallery />, root);
+  render(parameters.has("widgetReference") ? <WidgetsReference /> : parameters.has("widgets") ? <WidgetsGallery /> : parameters.has("demoOverlay") ? <DemoOverlays /> : parameters.has("demoControl") ? <DemoControls /> : <Gallery />, root);
 }

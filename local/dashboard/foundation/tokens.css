@@ -190,6 +190,15 @@ html {
   --lf-text-xl: 20px; --lf-leading-xl: 26px;
   --lf-text-2xl: 22px; --lf-leading-2xl: 27.5px;
   --lf-control-height: 32px;
+  --lf-metric-value-size: 24px; --lf-metric-value-leading: 30px;
+  --lf-widget-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --lf-chart-histogram-label-size: 10px;
+  --lf-status-error-border: light-dark(lab(92.243 10.2865 3.83865), oklab(0.765005 0.157228 0.0812649 / 0.2));
+  --lf-status-error-fill: light-dark(lab(96.5005 4.18508 1.52328), oklab(0.396005 0.127011 0.0612039 / 0.245));
+  --lf-status-error-ink: light-dark(lab(28.5139 44.5539 29.0463), lab(76.5514 36.422 15.5335));
+  --lf-status-warning-border: light-dark(oklch(97.3% .071 103.193), color-mix(in oklab, var(--lf-dark-yellow) 20%, transparent));
+  --lf-status-warning-fill: light-dark(oklch(98.7% .026 102.212), color-mix(in oklab, var(--lf-light-yellow) 35%, transparent));
+  --lf-status-warning-ink: light-dark(oklch(42.1% .095 57.708), oklch(90.5% .182 98.111));
   --lf-sidebar-width: 204px;
   --lf-sidebar-collapsed-width: 48px;
   --lf-sidebar-mobile-width: 192px;
