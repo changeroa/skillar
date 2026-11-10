@@ -243,6 +243,7 @@ html {
   --lf-confirm-backdrop: light-dark(rgb(0 0 0 / 50%), rgb(0 0 0 / 65%));
   --lf-shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
   --lf-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  --lf-shadow-chart-tooltip: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
   --lf-space-half: 2px; --lf-space-1: 4px; --lf-space-1h: 6px;
   --lf-space-2: 8px; --lf-space-2h: 10px; --lf-space-3: 12px; --lf-space-4: 16px;
   --lf-space-5: 20px; --lf-space-6: 24px; --lf-space-8: 32px;

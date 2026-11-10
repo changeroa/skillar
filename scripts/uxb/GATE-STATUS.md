@@ -121,99 +121,172 @@ cleanup and exact-head CI receipts are required in the correction handoff.
 Lighthouse, a full contrast audit, forced-colors screenshots and preview
 authentication remain unverified.
 
-## PR-5 widgets and charts (2026-11-10)
+---
 
-Implemented 11 exports across the nine requested families: Card/Widget,
-MetricStrip/Metric, Bar, Histogram, Line, EmptyState, Alert, StatusMessage and
-Callout. The two applications expose 34 showcase states. Existing chart
-consumers use thin adapters; no table or facet implementation was changed.
-Chart disclosures own their native-element styles at the component boundary,
-including the hosted embed, instead of inheriting legacy details padding.
+# PR-5 widgets and charts gate ledger
 
-| Gate | Result | Measured evidence |
+Draft PR: https://github.com/changeroa/skillar/pull/104
+Branch: `uxb/pr-5-widgets`. Baseline: `abee112ac78e3ebc97dc0b0fcb401b15539be7f2`.
+Evidence root: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-5/`.
+Exact pushed head and terminal CI results are recorded in `publication.json`
+under that evidence root after publication. This is an implementer verdict,
+not independent approval. No merge or production deployment is authorized.
+
+## Seven gates
+
+| Gate | Verdict | Measured evidence |
 | --- | --- | --- |
-| 1. Component parity | FAIL | 116 root/part comparisons; zero measured painted-field deltas, but complete per-state/composite pixel pairing is unverified. This is partial coverage, not full parity. |
-| 2. Screen comparison | PASS | 30 before/after cases; 36 real Demo screens and 60 triptychs; no overflow or wrong viewport widths. |
-| 3. Keyboard/ARIA | PASS | 684 gallery assertions and 72 trusted interaction assertions; real-page target, glyph, focus and fallback checks pass. |
-| 4. R1-R7 structure | PASS | Eight home/empty cases; R4 not applicable to this probe; group-spacing checks require measured bins. |
-| 5. Build/tests | FAIL | Site 403/403 and both builds/typechecks pass; local 984/985, with the same LaunchAgent ENOTDIR on untouched abee112. Clean-environment CI is reported on the draft head. |
-| 6. License/package | PASS | Three matching notices; NOTICE included by npm pack; pinned MIT attribution retained. |
-| 7. Deploy | PASS | `not deployed; deploy gated on owner` (production). Preview-only gallery: four real browser cases pass, both themes at 390/1440px. |
+| 1. Component parity | PASS for the declared style/state contract | 204 paired cases: 51 states, both apps, light/dark. 5,524 assertions pass: 3,332 painted-style, 1,716 geometry, 476 non-painted checks. Every case retains source, product, side-by-side and unmasked raw diff. |
+| 2. Screen comparison | PASS | 30 real before/after comparisons, 120 top/end captures, 36 retained genuine Demo screens, 60 refreshed triptychs. Zero viewport, overflow, sizing, glyph, focus or fallback failures. |
+| 3. Keyboard and accessibility | PASS for tested matrix | 468 component captures; 1,224 matrix assertions and 72 interaction assertions pass. 528 gallery and 720 real-page focus-removal probes reject missing rings, including 636 native SVG point Tab checks. |
+| 4. R1-R7 structure | PASS | Eight home/empty cases pass. R4 is N.A. in this inherited probe. R7 also passes exact SVG and painted zero-baseline checks across 12 app/width/theme contexts. |
+| 5. Build and tests | FAIL: pre-existing local environment only | Site 404/404; both builds, local typecheck, performance and harness syntax checks pass. Local 984/985: the unchanged baseline also fails `cli-init.test.mjs:159` with `/tmp/h` ENOTDIR. Final-head clean CI is recorded separately in `publication.json`. |
+| 6. License and package | PASS | Five source/build notices are byte-identical. Final dry-run package includes NOTICE, 12,226 bytes, among 177 files. Actual pinned MIT renderer has 27 inputs and zero EE inputs. |
+| 7. Deployment verification | PASS: preview only | `not deployed; deploy gated on owner` for production. Preview `156e7543-7e57-4319-ad74-0b2edf578c7e` passes four desktop/touch and light/dark browser cases: 39 specimens, zero runtime errors or overflow, 32/44px targets. Production ID is unchanged. |
 
-The local failure is `test/cli-init.test.mjs:159`, lstat of
-`/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist`. The stray `/tmp/h`
-was not edited or deleted. No assertion or validator threshold was weakened.
+Totals: six PASS, one FAIL limited to the documented local baseline.
+Independent review, Lighthouse, full contrast and forced-colors visual
+certification remain unverified; none is represented as an implementer pass.
 
-Preview: `https://uxb-pr-5.skillar-site.pages.dev/__gallery.html?widgets=1`,
-deployment URL `https://56264bed.skillar-site.pages.dev`.
-The artifact adds the existing development gallery only to the preview;
-normal production build/routes are unchanged. Its 34 states render with zero
-runtime errors and 32px mouse/44px touch targets. The production deployment
-remains `a876d0f7-c6e4-441a-a05c-bacfafc3d1b4` on `main`.
-The comparison ledger separately records 48 non-painted equivalences and
-12 equivalent color strings; neither is presented as a pixel match.
+## Per-component state coverage
 
-The first draft head failed clean-install Site CI because the development
-reference host's `zod` import resolved through local dependencies. The site
-TypeScript boundary now resolves it from the site's declared dependency,
-matching Vite's existing dedupe rule. Four regressions also cover focus/hover
-tooltip persistence, hover-only Escape dismissal, changed measurements and
-measurements becoming absent. Tooltips resolve point identity against current
-data rather than storing stale formatted strings.
+Each state below runs in both applications and both themes. A case includes
+computed-style assertions with an explicit source record, original-size
+side-by-side/raw diff, and a geometry corruption/restoration probe.
+`state-parity.json` contains each field, actual/reference value and provenance;
+`state-evidence-summary.json` contains the table and strict evidence taxonomy.
 
-### Callout-only reference decision
+| Component | States | Paired cases | Assertions | Failures |
+| --- | ---: | ---: | ---: | ---: |
+| Card | 1 | 4 | 132 | 0 |
+| Widget | 4 | 16 | 596 | 0 |
+| MetricStrip / Metric | 3 | 12 | 244 | 0 |
+| Bar | 7 | 28 | 848 | 0 |
+| Line | 7 | 28 | 848 | 0 |
+| Histogram | 7 | 28 | 848 | 0 |
+| EmptyState | 2 | 8 | 168 | 0 |
+| Alert | 8 | 32 | 832 | 0 |
+| StatusMessage | 8 | 32 | 480 | 0 |
+| Callout | 4 | 16 | 528 | 0 |
+| Total | 51 | 204 | 5,524 | 0 |
 
-The parent's PR-5 amendment approves computed-style diffs against a labelled
-render of the **actual MIT Langfuse Callout**, pinned at
-`69181812b87169df157841fce1314ec96ecd2c5a`, for both variants and themes.
-The reference is not a Demo capture. Both top/middle alignments were rendered
-as well. Its actual component code is executed only by the retained reference
-server; no Langfuse React component or screenshot is shipped in the product.
-The independent reviewer must re-check this exception before merge.
+- Card: header, title, description, content, footer and action-bearing shell.
+- Widget: ready, loading, empty and error; Card and state-content parts are
+  separately paired with their genuine Demo or permitted MIT references.
+- Metric: three-value strip, measured zero and unmeasured. Number typography
+  uses real Demo measurements; muted unmeasured ink uses the Demo note ink.
+  Strip gap uses the measured 16px dashboard content spacing.
+- Every chart: default, hover tooltip, keyboard tooltip, hidden series,
+  expanded data table, entirely unmeasured and empty data. The gallery has
+  all three chart families' empty/unmeasured states, not just one proxy.
+- EmptyState: default and intro.
+- Alert: default/info/warning/destructive at default/sm sizes.
+- StatusMessage: DEFAULT/DEBUG/WARNING/ERROR at default/compact sizes.
+- Callout: info/warning with top/middle alignment, including actual action
+  and dismiss controls. Dismissal and restoration are additionally exercised
+  in all eight app/width/theme interaction cases.
 
-The permitted Demo has no Callout: `/skills` is empty, organization overview
-is outside the permitted project, and the evaluator upgrade path requires an
-edit. The global migration status bar is not relabelled as Callout.
+The gallery contains 39 base specimens; 12 additional chart interaction
+states make the 51-state parity matrix. There are 11 component exports.
+Card/Widget and MetricStrip are native compositions: their constituent paint
+and spacing are measured separately, not relabelled as a Demo composite.
+Caller strings, chart data, chart orientation and native fallback layout can
+differ in raw pixels. No pixel-identical claim, threshold, mask, corner
+exclusion or invisible-paint match is used.
 
-### Other absent states and checked routes
+## Reference provenance and standing-rule states
 
-Real captures use the permitted project root, `/skills`, `/traces`, and recorded
-session `chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1` under project
-`cmmnj9e9n0006ad06nyz28646` at `https://jp.cloud.langfuse.com`.
-No error, edit, create, setting change or new sign-in was induced.
+`state-sources.json` retains 40 fresh real Demo part records and 136 labelled
+actual-MIT part records, with images. Two retained real recorded ERROR/compact
+StatusMessage records in `real-sources.json` take precedence over MIT.
+Of the 5,524 assertions, 3,048 use real Demo measurements and 2,476 use
+permitted actual-pinned-MIT measurements.
 
-The standing absent-state amendment covers these individually listed states:
+All live routes are under
+`https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`:
 
-- Alert: default/sm; info/default and sm; warning/default and sm;
-  destructive/default and sm. The four real `/skills` Alerts are
-  default/default, not these variant/size combinations.
-- StatusMessage: DEFAULT, DEBUG and WARNING at default and compact;
-  ERROR/default. The checked recorded tool status exposes ERROR/compact.
-  There is no read-only control for changing its recorded level or size.
+| Checked route | Observed / unavailable state |
+| --- | --- |
+| Project root | Ready Card, number, Bar, Line and real pointer tooltip. Loading/failure were not induced. |
+| `/skills` | Empty intro and four default/default Alerts. No other Alert variant/size selector and no Callout. |
+| `/traces` | Real Histogram and 10px tick-label paint, including muted ink at 80% alpha. |
+| `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1` | Recorded tool ERROR/compact only; other levels and sizes cannot be selected. |
+| `/topics` | "Not found. This page is not available." Retained `topics-read-only-unavailable.png`. |
 
-These references execute the actual pinned MIT components and are labelled
-`ACTUAL-PINNED-MIT`, never Demo captures. Source inputs and raw reference
-images remain separate from product images.
+Standing-state references execute actual MIT files at
+`69181812b87169df157841fce1314ec96ecd2c5a`:
 
-### Measurement scope and retained evidence
+- Alert default/sm and info/warning/destructive at both sizes use actual Alert.
+  Default/default stays on real `/skills` measurements.
+- DEFAULT, DEBUG and WARNING at both sizes, and ERROR/default, use actual
+  StatusMessage. ERROR/compact stays on the real recorded message.
+- Default EmptyState and chart/Widget empty/unmeasured compositions use actual
+  TopicsEmptyState parts because `/topics` is unavailable. Intro stays real.
+- Widget loading uses actual Skeleton fill/radius; error uses the actual
+  destructive Alert. Common Card parts remain real Demo in every state.
+- Zero/null chart and metric data are owner R7 adaptations. Null is never
+  substituted with a measured zero.
 
-Computed comparisons cover the measured roots/parts. Widget composition and
-MetricStrip layout are exercised in both galleries, not claimed as separately
-pixel-paired Demo composites. Raw pixel diffs are retained without masks or
-corner exclusions; caller content/layout and the owner's 32px mouse/44px
-touch rule can differ from upstream. No full pixel-identical claim is made.
-Zero-width borders, style-none outlines, zero-alpha shadows and equivalent
-color syntax are reported separately and do not count as visual matches.
+### Callout-only lead Amendment
 
-The live StatusMessage is compared over its observed 8px popover backing,
-using the existing popover token in the development reference host. This
-does not override primitive paint. All actions reuse PR-1 controls.
-Real keyboard focus was inspected; the focus-removal mutation guard remains
-active. Chart fallback tables remain complete after series filtering.
+The lead explicitly permits labelled renders of the actual pinned MIT
+Callout, both variants and themes; top/middle alignments and action parts
+are also measured. These are never called Demo captures. The permitted
+catalog is empty; organization overview is outside the allowed project;
+the evaluator upgrade path requires an edit. The migration status bar is
+not a Callout. No errors, writes, creates, settings or new sign-in were induced.
+`read-only-state-routes.json` records every unavailable-state decision.
+The reviewer must re-check the Amendment before merge.
 
-Retained lane artifacts include `widgets-qa.json`, `missing-state-results.json`,
-`screen-results.json`, `source-full-screens.json`, `interaction-results.json`,
-`structure/qa-structure.json`, `checks.json` and unmasked image comparisons.
-Independent review, Lighthouse, a full contrast audit and forced-colors visual
-certification remain outside the implementer's verdict. This is a draft-only
-handoff; PR-4 must land first and production deployment stays gated.
+## Mutation probes and repaired failures
+
+The expanded baseline exposed 196 style failures, retained as assertion data
+in `parity-regressions.json`. Fixes cover chart caption typography,
+Histogram tick alpha, empty-state heading/gap, metric null typography, and
+Callout action paint, padding and alignment. Real tooltip measurements also
+now govern its surface, border, radius, spacing, type and shadow.
+
+A real accessibility failure was also found: camel-case SVG `tabIndex`
+produced a case-sensitive XML attribute that Chrome ignored. Points now emit
+native lowercase `tabindex`. The test DOM preserves SVG attribute case; the
+new regression failed before the fix and passes for Bar, Line and Histogram.
+Native forward/reverse Tab, not only `.focus()`, now reaches every tested point.
+
+All 204 state geometry corruptions are rejected by the same reference
+predicate used before mutation and restored afterward. Twelve baseline-height
+and twelve owner-target-height mutations are also rejected. Focus predicates
+ignore transparent/zero-size bookkeeping shadows and reject actual ring removal
+in all 528 gallery and 720 real-page probes.
+
+Painted evidence is counted separately from 1,716 layout checks and 476
+non-painted checks. Sixteen different CSS color spellings paint identical RGBA
+bytes; these are a subset of painted matches. The retained legacy root
+diagnostic has 116 comparisons, zero painted failures, 48 non-painted
+equivalences and 12 color-syntax equivalences; it is not added to the new
+matrix totals. Its 24 raw string-difference cases are not visual failures.
+
+Charts have accessible group/point names, complete named data-table fallbacks,
+stable scales when hiding series, a real zero baseline and distinct missing
+measurements. Empty/unmeasured charts still retain their fallback tables.
+
+## Publication, disk and residual limits
+
+Preview: https://uxb-pr-5.skillar-site.pages.dev/__gallery.html?widgets=1
+Immutable preview: https://156e7543.skillar-site.pages.dev/__gallery.html?widgets=1
+The preview-only artifact exposes the existing development gallery; normal
+production route/build configuration is unchanged. Production remains
+`a876d0f7-c6e4-441a-a05c-bacfafc3d1b4` on `main`.
+
+421 superseded owned files (10,548,352 bytes) and three obsolete preview builds
+were deleted. Cited pairs, source crops, matrix/screens, triptychs and the
+baseline archive remain. Free disk is about 19 GiB; an active guard enforces
+the 8 GiB stop threshold until delivery. `cleanup.json` lists deleted paths.
+
+The sole remaining executed failure is the pre-existing
+`ENOTDIR: lstat /tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist` in
+`local/test/cli-init.test.mjs:159`, reproduced on untouched `abee112`.
+Nothing at `/tmp/h` was changed or deleted. Final clean-environment CI cannot
+erase this local result; both are reported.
+
+This PR remains draft. PR-4 must land first; rebase before merge. Independent
+review belongs to the lead. No table/facet implementation was changed.

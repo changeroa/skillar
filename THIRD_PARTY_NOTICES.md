@@ -37,7 +37,8 @@ PR-5 reimplements MIT widget anatomy at the pinned commit below:
 web/src/components/ui/card.tsx,
 web/src/features/widgets/chart-library/BigNumber.tsx,
 web/src/components/design-system/charts/{BarChart/BarChart,LineChart/LineChart,HistogramChart/HistogramChart}.tsx,
-web/src/components/design-system/internal/charts/{BarChartCore,SeriesChartCore}.tsx,
+web/src/components/design-system/internal/charts/{BarChartCore,SeriesChartCore,ChartTooltip}.tsx,
+web/src/features/topics/TopicsEmptyState.tsx,
 web/src/components/design-system/{Alert/Alert,Callout/Callout,StatusMessage/StatusMessage}.tsx.
 Destination: local/dashboard/foundation/widgets/.
 Charts retain Skillar's zero-baseline and missing-data semantics, with native

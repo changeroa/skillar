@@ -63,6 +63,17 @@ test("keyboard focus exposes point data with an associated tooltip", async t => 
   assert.ok(point.getAttribute("aria-describedby"));
 });
 
+test("SVG chart points expose a case-sensitive keyboard tab stop", async t => {
+  for (const Component of [BarChart, LineChart, Histogram]) {
+    const props = Component === Histogram ? { title: "Counts", labels: ["a"], values: [0] } :
+      { title: "Requests", data: { labels: ["a"], series: [{ label: "Requests", values: [0] }] } };
+    const { container } = await mount(t, Component, props);
+    const points = all(container, node => node.getAttribute("data-chart-point") !== null);
+    assert.ok(points.length > 0);
+    for (const point of points) assert.equal(point.getAttribute("tabindex"), "0");
+  }
+});
+
 test("Escape removes a chart tooltip without changing measured values", async t => {
   // Given
   const { container } = await mount(t, LineChart, { title: "Requests",

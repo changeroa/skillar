@@ -28,7 +28,12 @@ export function WidgetsGallery() {
     <Specimen name="Histogram"><Histogram title="세션 빈도 · KST · 일별" labels={chart.labels} values={[0, 7, 2]} /></Specimen>
     <Specimen name="Chart-unmeasured"><BarChart title="비용 · 미측정" data={{ labels: ["월", "화"], series: [{ label: "비용", values: [null, null] }] }} /></Specimen>
     <Specimen name="Chart-empty"><LineChart title="읽기 · 빈 범위" data={{ labels: [], series: [] }} /></Specimen>
+    <Specimen name="Line-unmeasured"><LineChart title="요청 · 미측정" data={{ labels: ["월", "화"], series: [{ label: "요청", values: [null, null] }] }} /></Specimen>
+    <Specimen name="Histogram-unmeasured"><Histogram title="빈도 · 미측정" labels={["월", "화"]} values={[null, null]} /></Specimen>
+    <Specimen name="Bar-empty"><BarChart title="요청 · 빈 범위" data={{ labels: [], series: [] }} /></Specimen>
+    <Specimen name="Histogram-empty"><Histogram title="빈도 · 빈 범위" labels={[]} values={[]} /></Specimen>
     {([
+      { kind: "ready" },
       { kind: "loading" },
       { kind: "empty", message: "다른 기간을 선택해 주세요.", action: <Button text="다시 읽기" variant="outline" /> },
       { kind: "error", message: "연결을 확인하고 다시 읽어 주세요.", action: <Button text="다시 읽기" variant="outline" /> },

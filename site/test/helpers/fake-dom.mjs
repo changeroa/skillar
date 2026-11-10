@@ -57,10 +57,10 @@ class FakeText extends FakeNode {
 }
 
 class FakeElement extends FakeNode {
-  constructor(document, localName) {
+  constructor(document, localName, namespace = XHTML) {
     super(document, 1);
     this.localName = localName;
-    this.namespaceURI = XHTML;
+    this.namespaceURI = namespace;
     this.childNodes = [];
     this.attributes = new Map();
     this.listeners = [];
@@ -127,19 +127,19 @@ class FakeElement extends FakeNode {
   }
   remove() { this.parentNode?.removeChild(this); }
   setAttribute(name, value) {
-    this.attributes.set(name.toLowerCase(), String(value));
+    this.attributes.set(this.namespaceURI === XHTML ? name.toLowerCase() : name, String(value));
     this.ownerDocument.changed();
   }
   removeAttribute(name) {
-    this.attributes.delete(name.toLowerCase());
+    this.attributes.delete(this.namespaceURI === XHTML ? name.toLowerCase() : name);
     this.ownerDocument.changed();
   }
   getAttribute(name) {
-    const key = name.toLowerCase();
+    const key = this.namespaceURI === XHTML ? name.toLowerCase() : name;
     if (this.attributes.has(key)) return this.attributes.get(key);
     return key === "id" && this.id !== "" ? this.id : null;
   }
-  hasAttribute(name) { return this.attributes.has(name.toLowerCase()); }
+  hasAttribute(name) { return this.attributes.has(this.namespaceURI === XHTML ? name.toLowerCase() : name); }
   addEventListener(type, listener, options = false) {
     this.listeners.push({ type, listener, capture: options === true || options?.capture === true });
   }
@@ -197,7 +197,7 @@ class FakeDocument {
     this.activeElement = this.body;
   }
   createElement(localName) { return new FakeElement(this, localName.toLowerCase()); }
-  createElementNS(_namespace, localName) { return new FakeElement(this, localName.toLowerCase()); }
+  createElementNS(namespace, localName) { return new FakeElement(this, namespace === XHTML ? localName.toLowerCase() : localName, namespace); }
   createTextNode(data) { return new FakeText(this, data); }
   getElementById(id) { return all(this.documentElement, node => node.id === id)[0] ?? null; }
   changed() {

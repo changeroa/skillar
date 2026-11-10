@@ -55,9 +55,48 @@ try {
     }));
     check(`${prefix} exact R7 zero baseline`, baseline.length > 0 && baseline.every(n => n.bottom === n.baseline &&
       Math.abs(n.paintedBottom - n.paintedBaseline) < .02 && (n.value !== 0 || n.zeroHeight === 1)), baseline);
+    const baselineMutation=await page.evaluate(()=>{
+      const read=()=>[...document.querySelectorAll(".lf-chart rect[data-value]")].every(n=>{
+        const axis=n.closest(".lf-chart").querySelector("[data-zero-baseline]");
+        return n.y.baseVal.value+n.height.baseVal.value===Number(n.dataset.baseline)&&
+          Math.abs(n.getBoundingClientRect().bottom-axis.getBoundingClientRect().y)<.02&&
+          (Number(n.dataset.value)!==0||n.height.baseVal.value===1);
+      });
+      const n=document.querySelector(".lf-chart rect[data-value]"),old=n.getAttribute("height"),before=read();
+      n.setAttribute("height",String(Number(old)+1));const rejected=!read();
+      n.setAttribute("height",old);return{before,rejected,restored:read()};
+    });
+    check(`${prefix} baseline geometry mutation is rejected`,baselineMutation.before&&baselineMutation.rejected&&baselineMutation.restored,baselineMutation);
+    const chartSemantics=await page.evaluate(()=>[...document.querySelectorAll(".lf-chart")].map(chart=>{
+      const title=chart.querySelector("figcaption").textContent,svg=chart.querySelector(".lf-chart__scroll > svg");
+      const table=chart.querySelector("table"),points=[...chart.querySelectorAll("[data-chart-point]")];
+      return{title,named:!svg||svg.getAttribute("aria-label")===title,
+        namedPoints:points.every(n=>Boolean(n.getAttribute("aria-label"))&&n.getAttribute("role")==="img"&&n.tabIndex===0),
+        fallback:table.querySelector("caption").textContent.includes(title)&&[...table.querySelectorAll("th")].every(n=>["row","col"].includes(n.getAttribute("scope"))),
+        zero:table.textContent.includes("0"),missing:table.textContent.includes("미측정"),
+        noFabricatedPoint:!chart.querySelector('[data-chart-point][aria-label$="미측정"]')};
+    }));
+    check(`${prefix} every chart and point has an accessible name`,chartSemantics.length===9&&chartSemantics.every(n=>n.named&&n.namedPoints),chartSemantics);
+    check(`${prefix} every chart retains a named complete fallback`,chartSemantics.every(n=>n.fallback&&n.noFabricatedPoint),chartSemantics);
+    const distinct=await page.evaluate(()=>{
+      const zero=document.querySelector('[data-specimen="Metric-zero"] strong'),missing=document.querySelector('[data-specimen="Metric-unmeasured"] strong');
+      const table=document.querySelector('[data-specimen="Bar"] table');
+      return{zero:zero.textContent,zeroMeasured:zero.dataset.measured,missing:missing.textContent,missingMeasured:missing.dataset.measured,
+        cells:[...table.querySelectorAll("td")].map(n=>n.textContent)};
+    });
+    check(`${prefix} missing measurements remain distinct from zero`,distinct.zero==="0"&&distinct.zeroMeasured==="true"&&
+      distinct.missing!=="0"&&distinct.missingMeasured==="false"&&distinct.cells.includes("0")&&distinct.cells.includes(distinct.missing),distinct);
     const controls = await page.evaluate(() => [...document.querySelectorAll(".lf-button,.lf-icon-button,select,.lf-chart summary")]
       .map(n => ({ h: n.getBoundingClientRect().height, visible: Boolean(n.getClientRects().length) })));
     check(`${prefix} owner target heights`, controls.filter(n => n.visible).every(n => Math.abs(n.h - (mobile ? 44 : 32)) < 1), controls);
+    const targetMutation=await page.evaluate(expected=>{
+      const n=document.querySelector(".lf-button"),old=n.getAttribute("style");
+      const read=()=>Math.abs(n.getBoundingClientRect().height-expected)<1;
+      const before=read();n.style.setProperty("height",`${expected-2}px`,"important");n.style.setProperty("min-height","0","important");
+      const rejected=!read();if(old===null)n.removeAttribute("style");else n.setAttribute("style",old);
+      return{before,rejected,restored:read()};
+    },mobile?44:32);
+    check(`${prefix} owner target geometry mutation is rejected`,targetMutation.before&&targetMutation.rejected&&targetMutation.restored,targetMutation);
     const glyphs = await page.evaluate(() => [...document.querySelectorAll(".lf-chart__legend button svg")]
       .map(n => ({ width: n.getBoundingClientRect().width, height: n.getBoundingClientRect().height })));
     check(`${prefix} plot sizing does not leak into control glyphs`, glyphs.length > 0 &&

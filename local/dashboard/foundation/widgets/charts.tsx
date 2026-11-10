@@ -65,7 +65,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
                 const value = series.values[index] ?? null;
                 if (value === null) return null;
                 const text = describe(label, series.label, value);
-                return <g key={label} tabIndex={0} role="img" data-chart-point aria-label={text}
+                return <g key={label} tabindex={0} role="img" data-chart-point aria-label={text}
                   aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                   onFocus={() => setFocused({ label, series: series.label })} onBlur={() => setFocused(null)}
                   onMouseEnter={() => setHovered({ label, series: series.label })}>
@@ -77,7 +77,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
             layout.bars.map((bar, index) => {
               const text = describe(bar.label, bar.series, bar.value);
               return <g key={index} class={`lf-chart__series lf-chart__series--${bar.seriesIndex % 8 + 1}`}
-                hidden={hidden.includes(bar.seriesIndex)} tabIndex={bar.value === null ? undefined : 0}
+                hidden={hidden.includes(bar.seriesIndex)} tabindex={bar.value === null ? undefined : 0}
                 role={bar.value === null ? undefined : "img"} data-chart-point={bar.value !== null || undefined} aria-label={bar.value === null ? undefined : text}
                 aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                 onFocus={() => setFocused({ label: bar.label, series: bar.series })} onBlur={() => setFocused(null)}

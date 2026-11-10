@@ -1,10 +1,10 @@
 @import "./widgets.css";
 .lf-chart { margin: 0; position: relative; }
-.lf-chart > figcaption { font-size: var(--lf-text-sm); font-weight: var(--lf-weight-strong); margin-bottom: var(--lf-space-2); }
+.lf-chart > figcaption { font-size: var(--lf-text-base); line-height: var(--lf-leading-base); font-weight: var(--lf-weight-strong); letter-spacing: -.025em; margin-bottom: var(--lf-space-2); }
 .lf-chart__scroll, .lf-chart__data-scroll { max-width: 100%; overflow-x: auto; }
 .lf-chart__scroll svg { display: block; min-width: 280px; overflow: visible; font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
 .lf-chart text { font-family: var(--lf-font-sans); font-size: var(--lf-text-xs); fill: var(--lf-muted-foreground); stroke: none; }
-.lf-chart[data-kind=histogram] .lf-chart__label { font-size: var(--lf-chart-histogram-label-size); }
+.lf-chart[data-kind=histogram] .lf-chart__label { font-size: var(--lf-chart-histogram-label-size); fill: color-mix(in oklab,var(--lf-muted-foreground) 80%,transparent); }
 .lf-chart__axis { stroke: var(--lf-border); }
 .lf-chart__grid { stroke: var(--lf-chart-grid); stroke-dasharray: 3 3; }
 .lf-chart__series { fill: var(--series-fill); stroke: var(--series-color); }
@@ -27,8 +27,9 @@
   border-radius: 50%; background: var(--series-color); }
 .lf-chart__legend-item[data-hidden=true] .lf-chart__swatch { opacity: .4; }
 .lf-chart__tooltip { position: absolute; inset: var(--lf-space-6) var(--lf-space-4) auto; width: fit-content;
-  padding: var(--lf-space-1h) var(--lf-space-3); border: var(--lf-border-width) solid var(--lf-border);
-  border-radius: var(--lf-radius-md); background: var(--lf-popover); color: var(--lf-popover-foreground); box-shadow: var(--lf-shadow-popover); }
+  padding: var(--lf-space-1h) var(--lf-space-2h); border: var(--lf-border-width) solid color-mix(in oklab,var(--lf-border) 50%,transparent);
+  border-radius: var(--lf-radius-lg); background: var(--lf-background); color: var(--lf-foreground);
+  font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); box-shadow: var(--lf-shadow-chart-tooltip); }
 .lf-chart[data-kind] .lf-chart__data > summary { box-sizing: border-box; height: var(--lf-control-height); min-height: var(--lf-control-height);
   display: list-item; list-style-position: inside; align-content: center; width: fit-content; max-width: 100%;
   margin: 0; padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer;
