@@ -1,6 +1,13 @@
 import { press } from "./trusted-keys.mjs";
 import { paintedFocus } from "./focus-paint.mjs";
 
+/** Include the keyboard-scroll container when the specimen is its inner table. */
+export function tableFocusSelector(selector) {
+  return `${selector} :is(button,a,input,select,[tabindex]),` +
+    `${selector}:is(button,a,input,select,[tabindex]),` +
+    `.lf-table-scroll:has(> :is(${selector}))`;
+}
+
 /** Keyboard modality is established before reading every real focus target. */
 export async function measureTableFocus(page, selector = [
   ".lf-table-surface :is(button,a,input,select,[tabindex])",

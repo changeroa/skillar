@@ -6,14 +6,17 @@ Draft PR: https://github.com/changeroa/skillar/pull/103.
 This is not an independent approval. No merge or production deployment.
 The independent rejection of `106b8aa` is addressed by the review correction
 below; its earlier 96-case and shadow-presence receipts are superseded.
+The subsequent `9e71ad6` rejection found 24 omitted outer scroll regions.
+The scroll-scope correction below supersedes that head's 840-target G3 receipt;
+other gates retain their explicitly recorded runs, with no production changes.
 
 | Gate | Status | Evidence and limits |
 | --- | --- | --- |
 | 1. Component visual parity | PASS for the requested computed-part criterion | 54 real read-only Demo states; 108/108 product cases, 6,440 painted-style/geometry assertions and 432 context assertions pass. All contexts match 1440x900/DPR1/mouse. All 108 side-by-sides and unmasked raw diffs are retained: 0/108 pixel identities, 5,918,028 differing pixels. Live records and content widths are not the acceptance criterion. |
 | 2. Page comparison | PASS, rerun for the correction | 120/120 before/after/reference cases: 20 screens, 1440/390/1920, both themes. Fresh final-build documents, no document overflow or uncaught page errors. Raw differences remain visible. |
-| 3. Keyboard and accessibility | PASS for tested matrix | All 108 cases in both mouse and 390px/coarse profiles: 420+420 actual focus targets pass pixel contrast and absolute sizing. Disabled-only pagination has no enabled focus target and is reported separately. Four ring-only removals retain the background offset shadow and fail; 40 conditional-clear removals fail and restore. Paired upstream/product 60px mutations fail for both owner targets; four actual-DOM 60px mutations fail and restore. All four keyboard workflows and the held-catalog readiness/Space probe pass. Real-page sizing passes 18/18, 476 controls. |
+| 3. Keyboard and accessibility | PASS for corrected tested matrix | Fresh full capture: all 108 cases in both mouse and 390px/coarse profiles, 432+432 = 864 passing painted-focus targets. Includes all 24 populated/empty/loading scroll regions and all 40 conditional-clear observations. All 24 scroll-ring removals fail with zero contrasting pairs and pass after restoration. Inventory comparison preserves all 440 historical observations from `106b8aa` and all 840 state-specific observations from `9e71ad6`, with zero drops. Disabled-only pagination remains separately N.A. Prior offset-shadow, conditional-clear, 60px, keyboard/readiness and real-page sizing receipts remain retained, not newly rerun. |
 | 4. Structural R1-R7 | PASS | 8/8 production-fixture cases. All assertions retained. R3 counts data cells, not the new empty-status row; its expected counts are unchanged. R4 remains N.A. in the inherited probe. |
-| 5. Build and tests | PASS for affected checks; exact-head CI required | Current site 397/397, both builds, local typecheck, QA-script syntax and 108-case CLI exit 0. The final four comparator regressions were rerun after tightening enabled-checkbox geometry. Historical local 984/985 has only the known `/tmp/h` ENOTDIR in cli-init; that unrelated suite was not rerun or changed. Final-head CI is mandatory before handoff. |
+| 5. Build and tests | PASS for affected checks; exact-head CI required | Scroll correction: four affected regressions, changed-script syntax and whitespace checks exit 0. Retained `9e71ad6` receipts: site 397/397, both builds, local typecheck and 108-case CLI. Historical local 984/985 has only the known `/tmp/h` ENOTDIR in cli-init; that unrelated suite was not rerun or changed. Final-head CI is mandatory before handoff. |
 | 6. License and provenance | PASS | Five notices byte-identical; full MIT pin/license and font licenses retained and packaged. 205 renderer inputs; zero EE inputs. |
 | 7. Deployment verification | Historical preview; not republished by this correction | Production not deployed; deploy gated on owner. The existing non-production preview is https://uxb-pr-4.skillar-site.pages.dev. Its earlier receipt is not a final-correction deployment claim. Current head and completed CI belong in `publication.json`. |
 
@@ -86,6 +89,18 @@ Current receipts: `review-demo-parts.json`, `review-table-input.json`,
 `review-negative-proofs.json`, `review-clear-negative-proofs.json`,
 `review-native-60-proofs.json`, `review-keyboard.json`,
 `review-real-sizing.json` and `review-comparisons/`.
+Current G3 supersedes the focus fields in those older receipts:
+`review-scroll-captures.json` contains all 216 case/profile captures;
+`review-scroll-mutations.json` and `review-scroll-pixels/` retain all 24
+PASS/FAIL/PASS sequences and paired PNGs. Complete prior/current lists,
+multiset differences and zero-drop results are in `review-scroll-inventory.json`;
+`review-scroll-summary.json` records 864/864 and 432 per profile.
+The private `capture.mjs` uses `tableFocusSelector` from `table-focus.mjs`,
+including the enclosing `.lf-table-scroll` when capturing an inner table.
+The historical diff uses renderer/theme/viewport/tag/label with multiplicity;
+only changing row timestamp/text suffixes are normalized to stable `example-N`
+selection IDs. The 840-target intermediate diff additionally retains family/state.
+The rerunnable entry is `review-scroll.mjs` in the evidence directory.
 The held-catalog probe records the old status-row match with zero interactive
 rows, subscribes before release, then verifies trusted Space on the loaded row.
 Previous raw receipts remain available and are not rewritten as pixel passes.

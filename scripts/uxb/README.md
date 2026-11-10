@@ -37,6 +37,13 @@ failure and per-component count. `table-focus.mjs` separately drives keyboard
 focus on native controls and roving menu items, measuring actual painted pixels
 and both target dimensions at 32px mouse and 44px touch. Tab intentionally
 dismisses a menu, so menu auditing uses its arrow-key focus contract.
+Use `tableFocusSelector(specimenSelector)` for capture scope: an inner table
+also includes its enclosing keyboard-scroll region. Populated, empty and loading
+regions remain focus targets in both renderers/themes/profiles. The current
+216-case/profile receipt contains 864 targets, including 24 scroll regions;
+all 24 ring-removal probes must fail and pass after restoration. Diff the full
+target lists, preserving multiplicity, against both historical matrices:
+440 observations at `106b8aa` and 840 at `9e71ad6`. See `review-scroll-inventory.json`.
 `focus-paint.mjs` compares unfocused/focused PNGs, requiring two adjacent CSS
 pixels with at least 3:1 contrast. Nonempty or background-colored shadows are
 not proof of visible focus. Passing an output prefix retains both PNGs.
