@@ -8,18 +8,47 @@ The exact published head and terminal CI are recorded in that directory's
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| 1 Component visual/style comparisons | PASS | Existing Demo comparator rerun for 86 real-Demo control/state references; zero computed-style failures. `component-parity/results.json` includes raw diffs, source validation, tokens and owner-approved exceptions. No component implementation or new component state was introduced. |
-| 2 Complete screen comparison | FAIL | Eleven hosted surfaces, both specified viewports and themes, Demo/before/after/v3 captures, triple boards and raw diffs are collected. Independent visual review cannot be spawned at this lane's nesting depth; the lead-arranged review and full visual approval remain outstanding. Do not interpret image counts as approval. |
-| 3 Keyboard/ARIA and real-page measurements | PASS | `runtime/runtime.json`: 36/36 scenarios, 146 painted focus checks and ring/60px mutation probes, 142 absolute 32/44px measurements. `peek-current/` adds six mouse/touch/theme cases, 819 assertions and 24 native confirmations. |
+| 1 Component visual/style comparisons | PASS | Gallery now loads the actual hosted, skills, account, dashboard and UI CSS. 86 live-Demo shared-control comparisons have no unexpected style differences. `hosted-controls/` adds 128 native control/panel/skeleton state comparisons at both widths/themes, preserving raw differences and named native/owner adaptations rather than claiming pixel identity. |
+| 2 Complete screen/state comparison | PASS (coverage) | 176 default captures plus 376 before/after state captures. 47 route/state cases produce 188 paired boards: 44 reachable cases and three explicitly N/A static-404 cases, each at both widths/themes. Source references distinguish live Demo primitives from pinned MIT loading references. Independent approval is separate and remains lead-owned. |
+| 3 Keyboard/ARIA and real-page measurements | PASS | The checked-in `pr6-runtime.mjs` fails on every bad baseline and invokes the real 32/44px predicate for all 142 size mutations. 36/36 scenarios, 146 passing painted-focus measurements and 146 rejected focus-removal mutations; four native publisher-checkbox crops each contain 64 contrasting pairs. Native checkboxes are not falsely counted as 32/44px inputs. Six fresh peek profiles pass 819 assertions and 24 native confirmations. |
 | 4 R1–R7 | PASS | Real grouped shell, sidebar identity/logout, command palette, URL state, peak/full navigation, dirty drafts, default list rows (15 desktop / 7 phone), empty states and common chart baseline preserved. Native pagehide/pageshow and listener cleanup passed; this Chrome run did not restore bfcache, so an actual cache hit remains unverified. |
-| 5 Builds and existing tests | FAIL | Site build and 450/450 tests; shared build and 94/94 tests; local build/typecheck and sync performance passed. Local suite 984/985: the contract's pre-existing `/tmp/h` ENOTDIR LaunchAgent test remains unchanged. Final-head CI is recorded separately. |
-| 6 License/NOTICE | PASS | No new dependencies, source copies or EE files. Existing MIT attribution retained; `npm pack --dry-run --json` includes NOTICE among 176 files and `site/dist/NOTICE` exists. |
+| 5 Builds, tests and release contents | PASS | Site build and 453/453 tests; local build/typecheck and 15 related adapter/state tests pass. The new test performs an isolated real release build and rejects fixture modules, gallery and QA content. A development-mode mutation emits both fixture chunks and is rejected by that same test. Before/after release inventories contain 54/52 files. Exact-head CI is recorded separately. The historical full-local `/tmp/h` ENOTDIR exception was not hidden or edited. |
+| 6 License/NOTICE | PASS | No new dependencies, upstream source copies or EE reads. Existing MIT NOTICE remains in the clean production output. The earlier package NOTICE inspection is historical, not a rerun claimed by these fixes. |
 | 7 Deployment boundary | PASS | Not deployed; deploy gated on owner (production). Only `uxb-pr-6` Pages preview is deployed: https://uxb-pr-6.skillar-site.pages.dev . No merge or self-approval. |
 
 The full per-screen wireframe deviations, source-route mappings, evidence
 pipeline corrections and residual review gaps are in `pr-6/gate.md`.
 The preview's `/__qa/pr6/` contains only synthetic/public-Demo PNG evidence;
 source account footers are hidden and asserted absent from every capture.
+
+## Independent review corrections
+
+Review at `6259817` found fixture leakage, ignored checkbox focus failures,
+tautological height probes and missing hosted state comparisons. These findings
+supersede the original PR-6 evidence claims. Full corrected inventories and
+state/deviation explanations are in `pr-6/review-fixes/`.
+
+Production fixture selection is compile-time gated. Hosted users still start
+with HTTP and configure the existing cloud adapter on source selection; the
+real API paths and response contracts are unchanged. Development fixture mode
+is separately exercised. Gallery output is built outside production dist.
+
+The native publisher checkbox already paints a contrasting outline on its
+input. The old harness cropped its prose sibling. It now crops a sibling only
+for the actual shared `.lf-checkbox__box`, and requires a passing baseline
+before accepting any removal probe. The audit also corrected empty-library
+readiness and checks returned gate verdicts and active navigation.
+
+State capture exposed a real cold-library defect: the table displayed an
+empty-result message while the first catalog request was pending or failed.
+Loading now propagates busy to the shared table; a failed first read keeps its
+table mounted but hidden. Two integration regressions cover those states.
+
+At 390px, version/status labels no longer fragment: columns reserve 128px/96px
+with nowrap. The named horizontal table region retains dates, full digest and
+all actions. The remaining tall detail/peek preamble preserves the five-field
+R5 summary and identifier/head facts; all controls retain 44px touch targets.
+The existing shell's wrapping breadcrumb/version controls remain unchanged.
 
 ## Explicit owner overrides
 

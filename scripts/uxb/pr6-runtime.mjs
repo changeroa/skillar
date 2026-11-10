@@ -23,7 +23,11 @@ await mkdir(out, { recursive: true });
 async function record(name, operation) {
   await page._sendToTarget("Emulation.setFocusEmulationEnabled", { enabled: true });
   await page._sendToTarget("Network.setCookie", { name:"x-qa-scenario",value:"",url:base });
-  try { const evidence = await operation(); results.push({ name, status: "PASS", evidence }); }
+  try {
+    const evidence = await operation();
+    if (evidence?.pass !== undefined) assert.equal(evidence.pass, true, name);
+    results.push({ name, status: "PASS", evidence });
+  }
   catch (error) { results.push({ name, status: "FAIL", error: String(error), stack: error.stack?.split("\n").slice(0,5) }); }
   console.log(`RUNTIME ${name} ${results.at(-1).status}`);
   if (results.at(-1).status === "FAIL") console.log(`RUNTIME_DETAIL ${results.at(-1).error}`);
@@ -139,6 +143,7 @@ try {
       assert.equal(rules.h1Count,1); assert.equal(rules.overflow,false);
       assert.equal(rules.noReadHistoryColumn,true);assert.equal(rules.commonBaseline,true);
       if (!route.includes("signed-out")&&!route.includes("404")) {
+        assert.equal(rules.activeNav,1);
         assert.equal(rules.breadcrumb,true);assert.equal(rules.palette,true);
         assert.equal(rules.identity,true);assert.equal(rules.signout,true);
       }
@@ -148,7 +153,8 @@ try {
       return {targets:targets.length, rules};
     });
     await record(`empty skills ${width} ${mode}`,async()=>{
-      await open("/skills/?library=empty","#skills-app .ui-table tbody",width,mode);
+      await open("/skills/?library=empty",".library-empty",width,mode);
+      assert.equal(await page.evaluate(()=>document.querySelector(".skills-table-main .ui-table").getAttribute("aria-busy")),"false");
       const text=await page.evaluate(()=>document.querySelector("#skills-app").innerText);
       assert.ok(text.includes("새 스킬 게시"));assert.equal(await page.evaluate(()=>document.querySelectorAll('tr[id^="skill-row-"]').length),0);
       await page.screenshot({path:`${out}/empty-skills-${mode}-${width}.png`});

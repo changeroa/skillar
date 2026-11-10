@@ -34,6 +34,8 @@
 .hosted-screen .version-list .ui-table [data-column=actions] { min-width: 280px; }
 .hosted-screen .version-list .ui-table [data-column=digest] { min-width: 120px; }
 .hosted-screen .version-list .ui-table [data-column=created] { min-width: 180px; }
+.hosted-screen .version-list .ui-table [data-column=version] { min-width: 128px; white-space: nowrap; }
+.hosted-screen .version-list .ui-table [data-column=status] { min-width: 96px; white-space: nowrap; }
 .hosted-screen #skills-app :is(.skill-editor-disclosure,.technical,.skill__danger) > summary { height: var(--lf-control-height); min-height: var(--lf-control-height); padding-block: var(--lf-space-1); }
 .hosted-screen .diff-controls { grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--lf-space-3); }
 .hosted-screen .diff-lines { border-radius: var(--lf-radius-md); border-color: var(--lf-border); }
@@ -54,4 +56,6 @@
   .hosted-screen .skills-table-main .ui-table th:first-child { width: 75%; }
   .hosted-screen .version { grid-template-columns: minmax(0,1fr); }
   .hosted-screen .diff-controls { grid-template-columns: minmax(0,1fr); }
+  .hosted-screen .skill--peek .skill-summary .ui-kv { gap: var(--lf-space-2); }
+  .hosted-screen .skill--peek > .ui-kv { font-size: var(--lf-text-xs); }
 }

@@ -26,12 +26,20 @@ the paired change chart/recent-skills table. Missing revision totals are not
 invented to match illustrative wireframe data. Card and Metric supply the widget
 anatomy; consent, source selection and management remain available below.
 The skills table retains its four URL-controlled columns and mobile metadata.
+Cold catalog reads propagate busy to the shared table and show placeholders,
+not an empty result or a zero count. A failed first read keeps that table mounted
+but hidden; a failed refresh retains previously received rows with a stale caption.
 Its existing histogram becomes an initially closed native disclosure so the
 table leads as in v3. The detail uses underline tabs and a document-first layout
 with the supporting version index on the right at desktop, stacked below on
 phones. Peek retains its existing responsive modality and persistent controller.
 Versions keep all current head/pin/export/delete actions and genuine labels;
 the API does not supply historical revision numbers.
+Version/status columns reserve 128px/96px and keep labels on one line, including
+the phone peek. The named table region owns horizontal scroll so dates, digests
+and all management actions remain available without fragmenting Korean labels.
+Phone peek facts use the existing 8px compact gap; the five summary values stay
+visible. The identifier/head facts remain available in their original order.
 
 Connections keeps its command, combined token/device table and existing pairing
 and token disclosures. Its wireframe's device-only table is not a reason to
