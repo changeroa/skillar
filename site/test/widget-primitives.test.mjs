@@ -89,6 +89,43 @@ test("legend toggling hides only its series and retains all source data", async 
   assert.equal(byTag(container, "td")[0].textContent, "3");
 });
 
+test("focused chart tooltip survives pointer departure", async t => {
+  const { container } = await mount(t, BarChart, { title: "Requests",
+    data: { labels: ["a"], series: [{ label: "Requests", values: [3] }] } });
+  const point = all(container, node => node.getAttribute("data-chart-point") !== null)[0];
+  await act(() => point.dispatchEvent(new FakeEvent("focus")));
+  await act(() => byTag(container, "svg")[0].dispatchEvent(new FakeEvent("MouseLeave")));
+  await act(() => byTag(container, "figure")[0].dispatchEvent(new FakeEvent("MouseLeave")));
+  assert.equal(all(container, node => node.getAttribute("role") === "tooltip")[0]?.textContent, point.getAttribute("aria-label"));
+});
+
+test("Escape dismisses hover-only chart tooltips", async t => {
+  const { container, dom } = await mount(t, BarChart, { title: "Requests",
+    data: { labels: ["a"], series: [{ label: "Requests", values: [3] }] } });
+  const point = all(container, node => node.getAttribute("data-chart-point") !== null)[0];
+  await act(() => point.dispatchEvent(new FakeEvent("MouseEnter")));
+  assert.equal(all(container, node => node.getAttribute("role") === "tooltip").length, 1);
+  await act(() => dom.documentElement.dispatchEvent(new FakeEvent("keydown", { key: "Escape" })));
+  assert.equal(all(container, node => node.getAttribute("role") === "tooltip").length, 0);
+});
+
+test("focused chart tooltip follows current measurements", async t => {
+  const props = { title: "Requests", data: { labels: ["a"], series: [{ label: "Requests", values: [3] }] } };
+  const api = await mount(t, BarChart, props);
+  await act(() => all(api.container, node => node.getAttribute("data-chart-point") !== null)[0].dispatchEvent(new FakeEvent("focus")));
+  await api.show({ ...props, data: { ...props.data, series: [{ label: "Requests", values: [7] }] } });
+  const point = all(api.container, node => node.getAttribute("data-chart-point") !== null)[0];
+  assert.equal(all(api.container, node => node.getAttribute("role") === "tooltip")[0]?.textContent, point.getAttribute("aria-label"));
+});
+
+test("chart tooltip disappears when its measurement becomes absent", async t => {
+  const props = { title: "Requests", data: { labels: ["a"], series: [{ label: "Requests", values: [3] }] } };
+  const api = await mount(t, BarChart, props);
+  await act(() => all(api.container, node => node.getAttribute("data-chart-point") !== null)[0].dispatchEvent(new FakeEvent("focus")));
+  await api.show({ ...props, data: { ...props.data, series: [{ label: "Requests", values: [null] }] } });
+  assert.equal(all(api.container, node => node.getAttribute("role") === "tooltip").length, 0);
+});
+
 test("histogram preserves zero buckets without fabricating missing counts", async t => {
   // Given / When
   const { container } = await mount(t, Histogram, { title: "Counts", labels: ["a", "b"], values: [0, null] });

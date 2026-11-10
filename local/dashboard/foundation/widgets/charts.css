@@ -26,7 +26,7 @@
 .lf-chart__swatch { flex: 0 0 var(--lf-space-2); width: var(--lf-space-2); height: var(--lf-space-2);
   border-radius: 50%; background: var(--series-color); }
 .lf-chart__legend-item[data-hidden=true] .lf-chart__swatch { opacity: .4; }
-.lf-chart__tooltip { position: absolute; inset: var(--lf-space-6) var(--lf-space-4) auto; width: fit-content; pointer-events: none;
+.lf-chart__tooltip { position: absolute; inset: var(--lf-space-6) var(--lf-space-4) auto; width: fit-content;
   padding: var(--lf-space-1h) var(--lf-space-3); border: var(--lf-border-width) solid var(--lf-border);
   border-radius: var(--lf-radius-md); background: var(--lf-popover); color: var(--lf-popover-foreground); box-shadow: var(--lf-shadow-popover); }
 .lf-chart[data-kind] .lf-chart__data > summary { box-sizing: border-box; height: var(--lf-control-height); min-height: var(--lf-control-height);

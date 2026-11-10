@@ -6,7 +6,8 @@
     "moduleResolution": "Bundler",
     "paths": {
       "preact": ["./node_modules/preact"],
-      "preact/*": ["./node_modules/preact/*"]
+      "preact/*": ["./node_modules/preact/*"],
+      "zod": ["./node_modules/zod"]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "preact",

@@ -134,9 +134,9 @@ including the hosted embed, instead of inheriting legacy details padding.
 | --- | --- | --- |
 | 1. Component parity | FAIL | 116 root/part comparisons; zero measured painted-field deltas, but complete per-state/composite pixel pairing is unverified. This is partial coverage, not full parity. |
 | 2. Screen comparison | PASS | 30 before/after cases; 36 real Demo screens and 60 triptychs; no overflow or wrong viewport widths. |
-| 3. Keyboard/ARIA | PASS | 684 gallery assertions and 52 trusted interaction assertions; real-page target, glyph, focus and fallback checks pass. |
+| 3. Keyboard/ARIA | PASS | 684 gallery assertions and 72 trusted interaction assertions; real-page target, glyph, focus and fallback checks pass. |
 | 4. R1-R7 structure | PASS | Eight home/empty cases; R4 not applicable to this probe; group-spacing checks require measured bins. |
-| 5. Build/tests | FAIL | Site 399/399 and both builds/typechecks pass; local 984/985, with the same LaunchAgent ENOTDIR on untouched abee112. Clean-environment CI is reported on the draft head. |
+| 5. Build/tests | FAIL | Site 403/403 and both builds/typechecks pass; local 984/985, with the same LaunchAgent ENOTDIR on untouched abee112. Clean-environment CI is reported on the draft head. |
 | 6. License/package | PASS | Three matching notices; NOTICE included by npm pack; pinned MIT attribution retained. |
 | 7. Deploy | PASS | `not deployed; deploy gated on owner` (production). Preview-only gallery: four real browser cases pass, both themes at 390/1440px. |
 
@@ -145,13 +145,21 @@ The local failure is `test/cli-init.test.mjs:159`, lstat of
 was not edited or deleted. No assertion or validator threshold was weakened.
 
 Preview: `https://uxb-pr-5.skillar-site.pages.dev/__gallery.html?widgets=1`,
-deployment `8162bb28-3320-41fe-a4ed-3e31591fe819`.
+deployment URL `https://8d28af60.skillar-site.pages.dev`.
 The artifact adds the existing development gallery only to the preview;
 normal production build/routes are unchanged. Its 34 states render with zero
 runtime errors and 32px mouse/44px touch targets. The production deployment
 remains `a876d0f7-c6e4-441a-a05c-bacfafc3d1b4` on `main`.
 The comparison ledger separately records 48 non-painted equivalences and
 12 equivalent color strings; neither is presented as a pixel match.
+
+The first draft head failed clean-install Site CI because the development
+reference host's `zod` import resolved through local dependencies. The site
+TypeScript boundary now resolves it from the site's declared dependency,
+matching Vite's existing dedupe rule. Four regressions also cover focus/hover
+tooltip persistence, hover-only Escape dismissal, changed measurements and
+measurements becoming absent. Tooltips resolve point identity against current
+data rather than storing stale formatted strings.
 
 ### Callout-only reference decision
 
