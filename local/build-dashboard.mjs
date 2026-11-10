@@ -27,6 +27,8 @@ for (const [source, name] of [
   ["shell/shell.css", "shell.css"],
   ["controls/controls.css", "controls.css"],
   ["overlays/overlays.css", "overlays.css"],
+  ["widgets/widgets.css", "widgets.css"],
+  ["widgets/charts.css", "charts.css"],
 ]) await copyFile(new URL(`dashboard/foundation/${source}`, root), new URL(`assets/${name}`, out));
 await copyFile(new URL("NOTICE", root), new URL("NOTICE", out));
 // tsc does not copy non-TS assets; the store reads schema.sql and migrations/*.sql next to db.js.

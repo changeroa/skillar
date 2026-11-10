@@ -160,7 +160,7 @@ html {
   --lf-chart-fill-6: light-dark(hsl(212 100% 72%), hsl(213 57% 50%));
   --lf-chart-fill-7: light-dark(hsl(115 38% 56%), hsl(115 46% 35%));
   --lf-chart-fill-8: light-dark(hsl(325 61% 68%), hsl(323 39% 47%));
-  --lf-chart-grid: light-dark(var(--lf-muted-gray), var(--lf-muted-gray));
+  --lf-chart-grid: light-dark(hsl(240 5.9% 90%), hsl(0 0% 16.1%));
   --lf-color-1: light-dark(oklch(66.2% 0.225 25.9), oklch(66.2% 0.225 25.9));
   --lf-color-2: light-dark(oklch(60.4% 0.26 302), oklch(60.4% 0.26 302));
   --lf-color-3: light-dark(oklch(69.6% 0.165 251), oklch(69.6% 0.165 251));
@@ -190,6 +190,15 @@ html {
   --lf-text-xl: 20px; --lf-leading-xl: 26px;
   --lf-text-2xl: 22px; --lf-leading-2xl: 27.5px;
   --lf-control-height: 32px;
+  --lf-metric-value-size: 24px; --lf-metric-value-leading: 30px;
+  --lf-widget-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --lf-chart-histogram-label-size: 10px;
+  --lf-status-error-border: light-dark(lab(92.243 10.2865 3.83865), oklab(0.765005 0.157228 0.0812649 / 0.2));
+  --lf-status-error-fill: light-dark(lab(96.5005 4.18508 1.52328), oklab(0.396005 0.127011 0.0612039 / 0.245));
+  --lf-status-error-ink: light-dark(lab(28.5139 44.5539 29.0463), lab(76.5514 36.422 15.5335));
+  --lf-status-warning-border: light-dark(oklch(97.3% .071 103.193), color-mix(in oklab, var(--lf-dark-yellow) 20%, transparent));
+  --lf-status-warning-fill: light-dark(oklch(98.7% .026 102.212), color-mix(in oklab, var(--lf-light-yellow) 35%, transparent));
+  --lf-status-warning-ink: light-dark(oklch(42.1% .095 57.708), oklch(90.5% .182 98.111));
   --lf-sidebar-width: 204px;
   --lf-sidebar-collapsed-width: 48px;
   --lf-sidebar-mobile-width: 192px;
@@ -234,6 +243,7 @@ html {
   --lf-confirm-backdrop: light-dark(rgb(0 0 0 / 50%), rgb(0 0 0 / 65%));
   --lf-shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
   --lf-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  --lf-shadow-chart-tooltip: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
   --lf-space-half: 2px; --lf-space-1: 4px; --lf-space-1h: 6px;
   --lf-space-2: 8px; --lf-space-2h: 10px; --lf-space-3: 12px; --lf-space-4: 16px;
   --lf-space-5: 20px; --lf-space-6: 24px; --lf-space-8: 32px;

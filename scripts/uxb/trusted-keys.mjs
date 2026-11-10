@@ -18,7 +18,7 @@ export async function typeahead(page, text, code, windowsVirtualKeyCode) {
 /** Register the exact DOM signal before the trusted action, never poll or sleep. */
 export async function arm(page, condition) {
   await page.evaluate(condition => {
-    window.__qaSignal = new Promise((resolve, reject) => {
+    window[condition.key ?? "__qaSignal"] = new Promise((resolve, reject) => {
       const observer = new MutationObserver(check);
       const onFocus = () => check();
       const timer = setTimeout(() => finish(Error(`State timeout: ${JSON.stringify(condition)}`)), 8000);
@@ -28,9 +28,14 @@ export async function arm(page, condition) {
       }
       function check() {
         const element = document.querySelector(condition.selector);
+        if (condition.kind === "absent") {
+          if (!element) finish();
+          return;
+        }
         if (!element) return;
         let pass;
         switch (condition.kind) {
+          case "present": pass = true; break;
           case "focus": pass = document.activeElement === element; break;
           case "attribute": pass = element.getAttribute(condition.attribute) === condition.value; break;
           case "text": pass = element.textContent === condition.value; break;
@@ -45,20 +50,12 @@ export async function arm(page, condition) {
   }, condition);
 }
 
-export async function signal(page) {
-  await page.evaluate(() => window.__qaSignal);
+export async function signal(page, key = "__qaSignal") {
+  await page.evaluate(key => window[key], key);
 }
 
 export async function ready(page, selector) {
-  await page.evaluate(selector => new Promise((resolve, reject) => {
-    const observer = new MutationObserver(check);
-    const timer = setTimeout(() => { observer.disconnect(); reject(Error(`Missing ${selector}`)); }, 15000);
-    function check() {
-      if (!document.querySelector(selector)) return;
-      observer.disconnect(); clearTimeout(timer); resolve();
-    }
-    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-    check();
-  }), selector);
+  await arm(page, { kind: "present", selector });
+  await signal(page);
   await page.evaluate(async () => { await document.fonts.ready; });
 }

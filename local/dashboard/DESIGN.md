@@ -1,5 +1,12 @@
 # skillar Dashboard Design System
 
+## Phase B widgets (PR-5)
+
+The shared widget contract is the PR-5 section in `site/DESIGN.md`, including
+measured chart fill/stroke channels and Callout dismissal paint. Local and
+hosted galleries render the same `foundation/widgets/` primitives, preserving
+32px mouse / 44px touch targets and visible keyboard focus.
+
 ## Phase B tables (PR-4)
 
 The complete shared table contract is the PR-4 section in `site/DESIGN.md`.
@@ -664,3 +671,11 @@ Constraints: WCAG 2.2 AA; body contrast >= 4.5:1 in both schemes (`--ink-2` on `
 | The Workspaces list reads one flow report per row to fill its found/used summary | `views/workspaces.tsx` | `GET /api/flows` carries structure only; the analysis is computed on read. The list paints first and enriches at most `SUMMARY_CONCURRENCY` (2) rows at a time, and a row that fails says so | Fold a summary into the list DTO if a page ever feels slow |
 | A flow detail does not follow the live stream | `views/workspaces.tsx` | A full report is far heavier than a session row, and the SSE contract only carries `session` rows; the header states the snapshot time and offers Refresh | Refetch on a flow-scoped event if the stream ever carries one |
 | Workspaces view CSS ships as an injected `installStyles("workspaces")` block, and the call rows as `installStyles("calls")` | `views/workspaces.tsx`, `components/calls.tsx` | Same reason as the trace block: shared primitives (`tag`, `facts`, `dim`, `foldbtn`, step badges) were moved into `styles.css`, view-local rules stayed with their view | Fold into `styles.css` with the trace block in the cleanup todo |
+## PR-5 shared widgets
+
+The PR-5 widget contract is `site/DESIGN.md` section "Phase B widgets (PR-5)".
+Both applications use the same source primitives and semantic tokens in
+`foundation/widgets/`. Zero baseline, null gaps, measured-zero distinction,
+accessible data tables, keyboard tooltips, PR-1 controls and 32px/44px targets
+apply identically. The Callout-only pinned-MIT reference exception is recorded
+there; it does not replace real Demo references for other components.

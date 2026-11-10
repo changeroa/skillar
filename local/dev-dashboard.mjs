@@ -17,6 +17,8 @@ for (const [source, target] of [
   ["dashboard/foundation/shell/shell.css", "assets/shell.css"],
   ["dashboard/foundation/controls/controls.css", "assets/controls.css"],
   ["dashboard/foundation/overlays/overlays.css", "assets/overlays.css"],
+  ["dashboard/foundation/widgets/widgets.css", "assets/widgets.css"],
+  ["dashboard/foundation/widgets/charts.css", "assets/charts.css"],
   ["NOTICE", "NOTICE"],
 ]) await copyFile(new URL(source, root), join(out, target));
 const ctx = await context({

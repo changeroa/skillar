@@ -1,0 +1,54 @@
+@import "./widgets.css";
+.lf-chart { margin: 0; position: relative; }
+.lf-chart > figcaption { font-size: var(--lf-text-base); line-height: var(--lf-leading-base); font-weight: var(--lf-weight-strong); letter-spacing: -.025em; margin-bottom: var(--lf-space-2); }
+.lf-chart__scroll, .lf-chart__data-scroll { max-width: 100%; overflow-x: auto; }
+.lf-chart__scroll svg { display: block; min-width: 280px; overflow: visible; font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.lf-chart text { font-family: var(--lf-font-sans); font-size: var(--lf-text-xs); fill: var(--lf-muted-foreground); stroke: none; }
+.lf-chart[data-kind=histogram] text { font-size: var(--lf-chart-histogram-label-size); fill: color-mix(in oklab,var(--lf-muted-foreground) 80%,transparent); }
+.lf-chart__axis { stroke: var(--lf-chart-grid); }
+.lf-chart__grid { stroke: var(--lf-chart-grid); }
+.lf-chart__series { fill: black; stroke: none; }
+.lf-chart__series[hidden] { display: none; }
+.lf-chart__series path { stroke: var(--series-color); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.lf-chart__series rect { fill: var(--series-fill); stroke: none; }
+.lf-chart__series circle { fill: transparent; stroke: none; }
+.lf-chart__series [data-chart-point]:is(:hover,:focus-visible) circle { fill: var(--series-color); r: 4; }
+.lf-chart[data-kind=histogram] .lf-chart__series rect { fill: var(--lf-chart-4); opacity: .8; }
+.lf-chart[data-kind=histogram] .lf-chart__swatch { background: var(--lf-chart-4); }
+.lf-chart__series--1 { --series-color: var(--lf-chart-1); --series-fill: var(--lf-chart-fill-1); }
+.lf-chart__series--2 { --series-color: var(--lf-chart-2); --series-fill: var(--lf-chart-fill-2); }
+.lf-chart__series--3 { --series-color: var(--lf-chart-3); --series-fill: var(--lf-chart-fill-3); }
+.lf-chart__series--4 { --series-color: var(--lf-chart-4); --series-fill: var(--lf-chart-fill-4); }
+.lf-chart__series--5 { --series-color: var(--lf-chart-5); --series-fill: var(--lf-chart-fill-5); }
+.lf-chart__series--6 { --series-color: var(--lf-chart-6); --series-fill: var(--lf-chart-fill-6); }
+.lf-chart__series--7 { --series-color: var(--lf-chart-7); --series-fill: var(--lf-chart-fill-7); }
+.lf-chart__series--8 { --series-color: var(--lf-chart-8); --series-fill: var(--lf-chart-fill-8); }
+.lf-chart [data-chart-point]:focus-visible { outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset); }
+.lf-chart__legend { display: flex; gap: var(--lf-space-1); flex-wrap: wrap; margin-block: var(--lf-space-2); }
+.lf-chart__legend-item { display: inline-flex; align-items: center; gap: var(--lf-space-1); }
+.lf-chart__legend .lf-button svg { color: var(--lf-icon-foreground); }
+.lf-chart__swatch { flex: 0 0 var(--lf-space-2); width: var(--lf-space-2); height: var(--lf-space-2);
+  border-radius: 50%; background: var(--series-color); }
+.lf-chart__legend-item[data-hidden=true] .lf-chart__swatch { opacity: .4; }
+.lf-chart__tooltip { position: absolute; inset: var(--lf-space-6) var(--lf-space-4) auto; width: fit-content;
+  padding: var(--lf-space-1h) var(--lf-space-2h); border: var(--lf-border-width) solid color-mix(in oklab,var(--lf-border) 50%,transparent);
+  border-radius: var(--lf-radius-lg); background: var(--lf-background); color: var(--lf-foreground);
+  font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); box-shadow: var(--lf-shadow-chart-tooltip); }
+.lf-chart[data-kind] .lf-chart__data > summary { box-sizing: border-box; height: var(--lf-control-height); min-height: var(--lf-control-height);
+  display: list-item; list-style-position: inside; align-content: center; width: fit-content; max-width: 100%;
+  margin: 0; padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lf-chart .lf-chart__data > summary:focus-visible,
+#skills-app .lf-chart .lf-chart__data > summary:focus-visible,
+#skills-app .lf-chart g[data-chart-point]:focus-visible {
+  outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset);
+}
+.lf-chart[data-kind] .lf-chart__data { box-sizing: border-box; margin: 0; padding: 0; border: 0; background: transparent; }
+.lf-chart[data-kind] .lf-chart__data table { border-collapse: collapse; width: 100%; font: inherit; color: inherit; background: transparent; }
+.lf-chart[data-kind] .lf-chart__data :is(th,td) { padding: var(--lf-space-2); border-bottom: var(--lf-border-width) solid var(--lf-border);
+  font: inherit; color: inherit; background: transparent; text-align: start; vertical-align: top; }
+.lf-chart[data-kind] .lf-chart__data th { font-weight: var(--lf-weight-strong); }
+.lf-chart[data-kind] .lf-chart__data caption { font: inherit; text-align: start; padding-block: var(--lf-space-2); color: var(--lf-muted-foreground); }
+@media (forced-colors: active) {
+  .lf-chart [data-chart-point]:focus-visible, .lf-chart__data summary:focus-visible { outline-color: CanvasText; }
+}

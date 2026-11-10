@@ -78,7 +78,7 @@ test("home counts registrations without deduplication and excludes expired revok
   // Then
   assert.deepEqual(tiles(container), ["1", "1", "3", "1"]);
   assert.deepEqual(reads.sort(), ["/api/mcp/connections", "/api/skills"]);
-  const chart = all(container, node => (node.getAttribute("class") ?? "").split(" ").includes("ui-chart"))[0];
+  const chart = all(container, node => (node.getAttribute("class") ?? "").split(" ").includes("lf-chart"))[0];
   assert.equal(all(chart, node => node.localName === "rect" && node.getAttribute("data-value") === "0").length > 0, true);
   assert.equal(all(chart, node => node.localName === "rect").every(node =>
     Number(node.getAttribute("y")) + Number(node.getAttribute("height")) === Number(node.getAttribute("data-baseline"))), true);
