@@ -10,6 +10,7 @@ export function consoleStyles() {
 .pe-button:hover{background:var(--surface);color:var(--ink);text-decoration:none}
 .pe-button:disabled{color:var(--ink-2);cursor:not-allowed}
 .pe-icon-button{width:var(--lf-control-height);padding:var(--lf-space-2)}
+.pe-copy .lf-icon-button{width:var(--lf-control-height);height:var(--lf-control-height);min-width:var(--lf-control-height);min-height:var(--lf-control-height)}
 .pe-console{--lf-ring:var(--lf-muted-foreground)}
 .pe-button:focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .pe-button:disabled{opacity:var(--lf-opacity-disabled)}

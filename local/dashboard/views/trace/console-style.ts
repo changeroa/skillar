@@ -71,6 +71,7 @@ export function traceConsoleStyles() {
 .trace-summary .trace__title{font-size:var(--lf-text-xl);font-weight:var(--lf-weight-strong)}
 .trace .trace__back,.trace-first-request{min-height:var(--lf-control-height);height:var(--lf-control-height);padding-block:0;color:var(--lf-muted-foreground);font-size:var(--lf-text-sm)}
 .trace-summary .trace__prompt summary{min-height:var(--lf-control-height);padding-block:0}
+.trace .tl__args summary{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0}
 .trace-summary__reads .pe-pill{border-radius:var(--lf-radius-sm);border-color:var(--lf-border);background:var(--lf-muted);color:var(--lf-foreground)}
 .trace .trace-event-row{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0 var(--lf-space-2);gap:var(--lf-space-2);background:var(--lf-background);border-color:var(--lf-border);font:var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans);color:var(--lf-foreground)}
 .trace .trace-event-row:hover{background:var(--lf-accent)}
