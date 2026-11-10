@@ -45,7 +45,9 @@ export function sessionsStyles() {
 .session-table .cell-prompt{width:auto;min-width:160px}.session-table .rowlink{display:flex;align-items:center;min-height:44px;color:var(--ink);font-size:12px;text-decoration:none;overflow:hidden}
 .session-table .rowlink>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .session-table-frame.lf-table-surface .session-table{table-layout:fixed}
-.session-table-frame.lf-table-surface .rowlink{min-height:var(--lf-control-height);font:inherit;color:inherit}
+.session-table-frame.lf-table-surface .rowlink{height:var(--lf-control-height);min-height:var(--lf-control-height);font:inherit;color:inherit}
+.session-table-frame.lf-table-surface .session-table :is(th,td){padding:0 var(--lf-space-2)}
+.session-table-frame.lf-table-surface .rowlink>span{-webkit-line-clamp:1}
 .session-table-frame.lf-table-surface .session-table td{height:var(--lf-table-row-height)}
 .session-table__skills{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px 0}
 .session-table__skills .pe-pill{max-width:100%}.session-table__skills code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -64,6 +66,7 @@ export function sessionsStyles() {
  .session-table tr{display:grid;grid-auto-flow:row dense;grid-template-columns:1.1fr .9fr .9fr .8fr;gap:0 6px;padding:8px 0;border-bottom:1px solid var(--line)}
  .session-table td{display:none;border:0;height:auto!important;padding:0;width:auto!important;min-width:0}
  .session-table-frame.lf-table-surface .session-table td{border-bottom:0}
+ .session-table-frame.lf-table-surface .session-table :is(th,td){padding:0}
  .session-table .cell-started,.session-table .cell-runtime,.session-table .cell-state,.session-table .cell-duration{display:block;font-size:12px}
  .session-table .cell-started{grid-column:1}.session-table .cell-runtime{grid-column:2}.session-table .cell-state{grid-column:3}.session-table .cell-duration{grid-column:4;text-align:right}
  .session-table .cell-runtime .pe-pill{font-size:11px;padding:0 4px}.session-table .cell-runtime code{display:none}

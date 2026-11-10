@@ -6,6 +6,9 @@ import { AnalysisError, AnalysisToolbar, conditions, useAnalysisReport } from ".
 import { flowTitle, flowsQuery, formatStarted, workspaceFilter } from "./model";
 import { SpecTag } from "./row-parts";
 import { WorkspaceView } from "./detail";
+import { Input } from "../../foundation/controls/fields";
+import { SortButton } from "../../foundation/table/parts";
+import { tableStyles } from "../../foundation/table/styles";
 
 export function sortWorkspaces(rows: readonly FlowListEntry[], sort: string) {
   const key = sort.replace(/^-/, "");
@@ -41,6 +44,7 @@ function WorkspacePeek(props: ViewProps) {
 }
 
 export function WorkspacesView(props: ViewProps) {
+  tableStyles();
   const { route, navigate, live, embedded } = props;
   const query = flowsQuery(route);
   const report = useAnalysisReport(JSON.stringify(query), async () => ({ dto: await api.flows(query), filter: workspaceFilter(query) }), embedded || api.mode === "cloud" ? live.seq : 0);
@@ -49,11 +53,12 @@ export function WorkspacesView(props: ViewProps) {
   const matches = current?.dto.flows.filter(entry => flowTitle(entry).toLocaleLowerCase().includes(search.toLocaleLowerCase())) ?? [];
   const rows = sortWorkspaces(matches.filter(entry => !route.facet || entry.kind === route.facet), sort);
   const heading = (key: string, text: string) => <th scope="col" aria-sort={sort.replace(/^-/, "") !== key ? "none" : sort.startsWith("-") ? "descending" : "ascending"}>
-    <button onClick={() => navigate({ ...route, analysisSort: sort === key ? `-${key}` : key })}>{text} {sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "↓" : "↑" : "↕"}</button></th>;
+    <SortButton label={text} direction={sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "descending" : "ascending" : undefined}
+      onSort={() => navigate({ ...route, analysisSort: sort === key ? `-${key}` : key })} /></th>;
   return <section class="analysis pe-console" aria-busy={report.busy}>
     <header class="page-title">{embedded ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}<p>작업 공간별 패널과 연결된 세션을 확인합니다.</p></header>
     <AnalysisToolbar route={{ ...route, filter: workspaceFilter(query) }} navigate={navigate} refresh={report.refresh} busy={report.busy} workspace />
-    <label>작업 공간 검색 <input class="field" type="search" value={search} onInput={event => navigate({ ...route, analysisQuery: event.currentTarget.value || undefined, peek: undefined })} /></label>
+    <Input label="작업 공간 검색" type="search" value={search} onInput={event => navigate({ ...route, analysisQuery: event.currentTarget.value || undefined, peek: undefined })} />
     <AnalysisError error={report.error} title="작업 공간을 불러올 수 없습니다" retry={report.refresh} />
     {report.busy && <p role="status">{current ? `갱신 중: ${conditions(workspaceFilter(query))}` : "작업 공간 불러오는 중…"}</p>}
     {current && <p class="analysis-scope" data-result-conditions>{conditions(current.filter)} · {formatStarted(current.dto.generatedAt)} 기준 · 받은 {current.dto.flows.length}개 내부 정렬{current.dto.nextCursor ? " · 추가 작업 공간 있음" : ""}</p>}

@@ -3,7 +3,7 @@ import type { ViewProps } from "../../state";
 
 export function EventViewTabs({ route, navigate, prefix = "event" }: Pick<ViewProps, "route" | "navigate"> & { readonly prefix?: string }) {
   const tab = route.traceTab ?? "tree";
-  return <>
+  return <div class="lf-tabs lf-tabs--underline">
     <div class="event-console__tabs" role="tablist" aria-label="이벤트 표시" onKeyDown={event => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();
@@ -19,5 +19,5 @@ export function EventViewTabs({ route, navigate, prefix = "event" }: Pick<ViewPr
       <button role="tab" class="pe-button" disabled aria-selected="false" aria-describedby={`${prefix}-graph-reason`}><Icon name="graph" />그래프</button>
     </div>
     <p id={`${prefix}-graph-reason`} class="pe-muted event-graph-reason">인과관계 기록이 없어 그래프를 표시하지 않습니다.</p>
-  </>;
+  </div>;
 }

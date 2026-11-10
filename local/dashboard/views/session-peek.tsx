@@ -15,8 +15,6 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
 .session-peek__actions .pe-button{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0;border-color:var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-modal);color:var(--lf-foreground)}
 .session-peek__actions .pe-icon-button{width:var(--lf-control-height)}
 .session-peek__actions .pe-button:hover{background:var(--lf-accent)}.session-peek__actions .pe-button:focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
-.session-peek :is(.trace-event-row[aria-pressed=true],.event-console__tabs [aria-selected=true],.event-inspector__tabs [aria-selected=true]){box-shadow:none;background:var(--lf-accent)}
-.session-peek :is(.trace-event-row[aria-pressed=true],.event-console__tabs [aria-selected=true],.event-inspector__tabs [aria-selected=true])::after{content:"";display:inline-block;flex:none;width:var(--lf-space-4);height:var(--lf-space-4);background:currentColor;mask:var(--lf-selection-check) center/contain no-repeat}
 .session-peek__actions>a{margin-right:auto;font-size:12px}.session-peek__actions>span{font-size:12px}
 .session-peek .trace__back{display:none}.session-peek .trace__console{display:block}.session-peek .trace__title{font-size:16px;overflow-wrap:anywhere}
 .session-peek .trace__inspector{border:0;padding:0;margin:12px 0}.session-peek .trace__scope{display:none}

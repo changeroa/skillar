@@ -120,12 +120,17 @@ test("formatted and raw inspect the same event while native argument state survi
   await act(() => { original.open = true; });
   await show({ ...props, route: { ...route, format: "raw" } });
   const raw = all(container, node => node.hasAttribute("data-event-raw"))[0];
+  const branch = all(raw, node => node.localName === "details")[0];
+  await act(() => { branch.open = false; });
   assert.deepEqual(all(raw, node => node.getAttribute("class") === "json-value").map(node => JSON.parse(node.textContent)),
     [step.kind, step.ts, step.summary, step.detail.kind, step.detail.toolName, step.detail.args]);
   assert.ok(all(container, node => node === original)[0]);
   assert.equal(original.open, true);
   await show({ ...props, route: { ...route, format: "formatted" } });
-  assert.equal(all(container, node => node.hasAttribute("data-event-raw")).length, 0);
+  assert.equal(all(container, node => node.hasAttribute("data-event-raw"))[0], raw);
+  assert.equal(raw.parentNode.hidden, true);
+  assert.equal(all(raw, node => node.localName === "details")[0], branch);
+  assert.equal(branch.open, false);
   assert.ok(all(container, node => node === original)[0]);
   assert.equal(original.open, true);
 });
@@ -140,6 +145,26 @@ test("tree/timeline selection retains event and filters and graph remains disabl
   assert.deepEqual(next, { ...route, traceTab: "timeline" });
   const graph = all(container, node => node.getAttribute("aria-describedby") === "event-graph-reason")[0];
   assert.equal(graph.disabled || graph.hasAttribute("disabled"), true);
+});
+
+test("event navigation keeps one tab stop and preserves rows between tree and grid", async t => {
+  // Given chronological leaves without causal edges.
+  const source = ui.createTimelineKeys("roving")([100, 200].map(ts => ({
+    kind: "prompt", ts, summary: String(ts), detail: { kind: "prompt", text: String(ts) },
+  })));
+  const route = { view: "trace", filter: {}, event: source[0].key };
+  const props = { source, bounds: { startedAt: 100, endedAt: 200 }, route, navigate() {} };
+  const { container, show } = await mount(t, ui.EventConsole, props);
+  const rows = all(container, node => node.getAttribute("role") === "treeitem");
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map(node => node.getAttribute("tabindex")), ["0", "-1"]);
+  // When the same console switches representation.
+  await show({ ...props, route: { ...route, traceTab: "timeline" } });
+  // Then the live row identities and single entry point survive.
+  const cells = all(container, node => node.getAttribute("role") === "gridcell");
+  assert.deepEqual(cells, rows);
+  assert.deepEqual(cells.map(node => node.getAttribute("tabindex")), ["0", "-1"]);
+  assert.equal(all(container, node => node.getAttribute("role") === "grid").length, 1);
 });
 
 test("summary reads and selected-load digest come only from captured reads", async t => {
@@ -160,7 +185,7 @@ test("an unavailable event URL never silently selects another captured event", a
   const { container } = await mount(t, ui.EventConsole, {
     source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {}, event: "unavailable" }, navigate() {},
   });
-  assert.equal(all(container, node => node.hasAttribute("data-event-kind") && node.getAttribute("aria-pressed") === "true").length, 0);
+  assert.equal(all(container, node => node.hasAttribute("data-event-kind") && node.getAttribute("aria-selected") === "true").length, 0);
   assert.ok(all(container, node => node.getAttribute("role") === "status").length);
 });
 

@@ -3,7 +3,8 @@ import type { SessionListRow } from "../../api";
 import { OperationCounts } from "../../components/requests";
 import { SortButton, TableRow } from "../../foundation/table/parts";
 import { tableStyles } from "../../foundation/table/styles";
-import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK, SESSION_COLUMNS, STATE_LABEL, buildHash, skillName,
+import { Badge, Tag } from "../../foundation/controls/labels";
+import { ATTRIBUTION_LABEL, RUNTIME_LABEL, SESSION_COLUMNS, STATE_LABEL, buildHash, skillName,
   type SessionColumn, type SessionSort, type ViewProps } from "../../state";
 import { COLUMN_LABEL, candidateSkills, readSkills } from "./model";
 
@@ -11,7 +12,7 @@ const date = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "
 export const DEFAULT_COLUMNS: readonly SessionColumn[] = SESSION_COLUMNS.slice(0, 7);
 const sortable: Partial<Record<SessionColumn, SessionSort>> = { started: "started", runtime: "runtime", state: "state", reads: "reads", duration: "duration" };
 function Skills({ values }: { readonly values: readonly string[] }) {
-  return values.length ? <span class="session-table__skills">{values.map(uri => <span class="pe-pill" title={uri} key={uri}><code>{skillName(uri)}</code></span>)}</span> : <>0</>;
+  return values.length ? <span class="session-table__skills">{values.map(uri => <Tag key={uri} text={skillName(uri)} />)}</span> : <>0</>;
 }
 
 export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" | "navigate"> & { readonly rows: readonly SessionListRow[] }) {
@@ -22,8 +23,8 @@ export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" 
   function cell(row: SessionListRow, column: SessionColumn): ComponentChildren {
     switch (column) {
       case "started": return <time dateTime={new Date(row.startedAt).toISOString()} title={new Date(row.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>{date.format(row.startedAt)}</time>;
-      case "runtime": return <span class="pe-pill"><code aria-hidden="true">{RUNTIME_MARK[row.runtime]}</code>{RUNTIME_LABEL[row.runtime]}</span>;
-      case "state": return <span class="pe-pill" data-state={row.state}>{STATE_LABEL[row.state]}</span>;
+      case "runtime": return <Badge text={RUNTIME_LABEL[row.runtime]} color="ghost" mono={false} />;
+      case "state": return <Badge text={STATE_LABEL[row.state]} color="filledOnMuted" mono={false} />;
       case "reads": return <Skills values={readSkills(row)} />;
       case "candidates": return candidateSkills(row).length ? <span title="세션 요약에 기록된 대표 후보입니다. 전체 후보는 상세에서 확인하세요."><Skills values={candidateSkills(row)} /></span> : <span class="pe-muted" title="전체 후보는 세션 이벤트 상세에서 확인할 수 있습니다.">—</span>;
       case "duration": return row.endedAt === undefined ? <span class="pe-muted">종료 미기록</span> : `${Math.max(0, Math.round((row.endedAt - row.startedAt) / 60000))}분`;

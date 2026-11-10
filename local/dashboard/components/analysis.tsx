@@ -5,6 +5,10 @@ import { ApiError } from "../api";
 import { DOW_LABEL, RUNTIME_IDS, RUNTIME_LABEL, STATE_LABEL, buildHash, serializeFilter, skillName, type ViewProps } from "../state";
 import { installStyles } from "../charts/sankey";
 import { kstPeriodStart } from "../time";
+import { Button } from "../foundation/controls/buttons";
+import { Select } from "../foundation/controls/fields";
+import { Card, Metric as FoundationMetric } from "../foundation/widgets/cards";
+import { Alert, EmptyState } from "../foundation/widgets/messages";
 
 /** Keep a report and the exact conditions that produced it together. */
 export function useAnalysisReport<T>(key: string, load: () => Promise<T>, sequence: number) {
@@ -25,11 +29,10 @@ export function useAnalysisReport<T>(key: string, load: () => Promise<T>, sequen
 
 export function AnalysisError({ error, retry, title }: { readonly error: unknown; readonly retry: () => void; readonly title: string }) {
   if (error === undefined) return null;
-  return <div class="notice" role="alert">
-    <p>{error instanceof ApiError && error.status === 403 ? "이 기록을 볼 권한이 없습니다" : title}</p>
-    <button class="pe-button" onClick={retry}>다시 시도</button>
+  return <Alert announce variant="destructive" title={error instanceof ApiError && error.status === 403 ? "이 기록을 볼 권한이 없습니다" : title}
+    action={<Button text="다시 시도" variant="outline" onClick={retry} />}>
     <details><summary>기술 세부 정보</summary><pre>{error instanceof Error ? error.message : String(error)}</pre></details>
-  </div>;
+  </Alert>;
 }
 
 export function conditions(filter: Filter) {
@@ -54,36 +57,42 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
 }) {
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
   return <div class="analysis-toolbar">
-    <label>기간<select class="field" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={event => {
+    <Select label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={event => {
       const value = event.currentTarget.value, now = Date.now();
       update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
-    }}><option value="all">전체 기간</option><option value="custom" disabled>지정 기간</option>
-      <option value="7">최근 7일</option><option value="30">최근 30일</option><option value="60">최근 60일</option></select></label>
-    {!workspace && <label>실행 환경<select class="field" value={route.filter.runtime?.[0] ?? ""} onChange={event => {
+    }} options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
+      { value: "7", label: "최근 7일" }, { value: "30", label: "최근 30일" }, { value: "60", label: "최근 60일" }]} />
+    {!workspace && <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
       const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
       update({ runtime: runtime ? [runtime] : undefined });
-    }}><option value="">전체</option>{RUNTIME_IDS.map(value => <option value={value} key={value}>{RUNTIME_LABEL[value]}</option>)}</select></label>}
-    <label>자동 실행<select class="field" value={route.filter.automated ?? "exclude"} onChange={event => {
+    }} options={[{ value: "all", label: "전체" }, ...RUNTIME_IDS.map(value => ({ value, label: RUNTIME_LABEL[value] }))]} />}
+    <Select label="자동 실행" value={route.filter.automated ?? "exclude"} onChange={event => {
       const value = event.currentTarget.value;
       update({ automated: value === "include" || value === "only" ? value : undefined });
-    }}><option value="exclude">제외</option><option value="include">포함</option><option value="only">자동 실행만</option></select></label>
-    <button class="pe-button analysis-refresh" onClick={refresh} disabled={busy} aria-label={busy ? "갱신 중" : "새로 고침"} title="새로 고침"><span aria-hidden="true">↻</span><span class="analysis-refresh__text">{busy ? "갱신 중…" : "새로 고침"}</span></button>
-    {serializeFilter(route.filter) && <button class="pe-button" onClick={() => navigate({ ...route, peek: undefined, filter: {} })}>필터 지우기</button>}
+    }} options={[{ value: "exclude", label: "제외" }, { value: "include", label: "포함" }, { value: "only", label: "자동 실행만" }]} />
+    <Button text={busy ? "갱신 중…" : "새로 고침"} variant="outline" onClick={refresh} disabled={busy} />
+    {serializeFilter(route.filter) && <Button text="필터 지우기" variant="outline" onClick={() => navigate({ ...route, peek: undefined, filter: {} })} />}
   </div>;
 }
 
 export function AnalysisEmpty({ route, navigate }: Pick<ViewProps, "route" | "navigate">) {
   const filtered = Boolean(serializeFilter(route.filter));
-  return <section class="empty"><h2>{filtered ? "조건에 맞는 세션이 없습니다" : "아직 기록된 세션이 없습니다"}</h2>
-    <p>{filtered ? "기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다." : "연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다."}</p>
-    {filtered ? <button class="pe-button" onClick={() => navigate({ ...route, filter: {} })}>필터 지우기</button>
-      : <a class="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a>}
-    {!filtered && <code>skillar doctor</code>}
-  </section>;
+  return <EmptyState title={filtered ? "조건에 맞는 세션이 없습니다" : "아직 기록된 세션이 없습니다"}
+    description={filtered ? "기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다." : "연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다."}
+    action={filtered ? <Button text="필터 지우기" variant="outline" onClick={() => navigate({ ...route, filter: {} })} />
+      : <><a class="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a><code>skillar doctor</code></>} />;
 }
 
-export function Metric({ label, value, children }: { readonly label: string; readonly value: ComponentChildren; readonly children?: ComponentChildren }) {
-  return <section class="analysis-tile"><h2>{label}</h2><p class="analysis-number">{value}</p><div class="pe-muted">{children}</div></section>;
+export function Metric({ label, value, suffix, children }: { readonly label: string; readonly value: number | null; readonly suffix?: string; readonly children?: ComponentChildren }) {
+  return <section class="analysis-tile"><FoundationMetric label={label} value={value} suffix={suffix} /><div class="pe-muted">{children}</div></section>;
+}
+
+export function AnalysisWidget({ title, id, wide = false, children }: {
+  readonly title: string; readonly id: string; readonly wide?: boolean; readonly children: ComponentChildren;
+}) {
+  return <div class={wide ? "analysis-widget-shell analysis-widget--wide" : "analysis-widget-shell"} data-widget={id}>
+    <Card title={title}>{children}</Card>
+  </div>;
 }
 
 installStyles("analysis", `
@@ -145,6 +154,24 @@ installStyles("analysis", `
 .dashboard-activity-grid [data-level="2"]{background:color-mix(in srgb,var(--accent) 15%,var(--bg))}
 .dashboard-activity-grid [data-level="3"]{background:color-mix(in srgb,var(--accent) 30%,var(--bg))}
 .dashboard-activity-grid [data-level="4"]{background:var(--accent);color:var(--on-accent)}
+.analysis.pe-console{line-height:var(--lf-leading-sm);color:var(--lf-foreground)}
+.analysis.pe-console .analysis-toolbar{gap:var(--lf-space-2)}
+.analysis.pe-console .analysis-toolbar>.lf-field{min-width:0;flex:0 1 auto}
+.analysis.pe-console .analysis-toolbar :is(select,.lf-select-wrap){height:var(--lf-control-height);min-height:var(--lf-control-height)}
+.analysis.pe-console .analysis-toolbar label{display:block}
+.analysis.pe-console .analysis-tile{padding:0;border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card);box-shadow:var(--lf-widget-shadow)}
+.analysis.pe-console .analysis-tile>.pe-muted{padding:0 var(--lf-space-4) var(--lf-space-4);font-size:var(--lf-text-xs)}
+.analysis-widget-shell{min-width:0;display:flex}.analysis-widget-shell>.lf-card{width:100%}
+.analysis.pe-console :is(.analysis-table th,.analysis-table td){height:var(--lf-control-height);font-size:var(--lf-text-sm);border-color:var(--lf-border)}
+.analysis.pe-console :is(.analysis-table th button,.analysis-table td>button,.analysis-table a,.paths__skill,.ws__back,.sess__link,.pane__sum,.turn__sum){min-height:var(--lf-control-height);min-width:var(--lf-control-height)}
+.analysis.pe-console :is(.seg__btn,.seg__b){height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);font-size:var(--lf-text-sm);font-weight:var(--lf-weight-regular)}
+.analysis.pe-console :is(.hmc,.flow__paths,.flow__chart){border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
+.analysis.pe-console .workspace-peek{border-color:var(--lf-border);background:var(--lf-modal)}
+.analysis.pe-console :is(.pe-button,summary,.seg__btn,.seg__b,.analysis-table button,.analysis-table a):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
+.analysis.pe-console :is(.seg__btn,.seg__b)[aria-pressed=true]::after{content:" ✓";color:inherit}
+.analysis.pe-console .analysis-facets [aria-pressed=true]{background:var(--lf-muted)}
+.analysis.pe-console .analysis-facets [aria-pressed=true]::after{content:" ✓"}
+.analysis.pe-console .analysis-scroll{scrollbar-gutter:auto}
 @media(max-width:1023px){.workspace-split:has(.workspace-peek){display:block}.workspace-peek{position:fixed;inset:0;height:100dvh;z-index:100;width:100%}}
 @media(max-width:639px){.analysis-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.analysis-tile,.analysis-widget{padding:12px}.analysis-number{font-size:22px}.analysis-widgets{grid-template-columns:minmax(0,1fr)}.analysis-widget--wide{grid-column:auto}.analysis-toolbar{gap:6px}.analysis-toolbar label{flex:1;min-width:0}.analysis-toolbar select{min-width:0;width:100%;padding-inline:4px}.analysis-refresh{width:44px;padding:0}.analysis-refresh__text{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.analysis-table th,.analysis-table td{padding:0 4px}}
 @media(max-width:639px){.analysis .paths td{padding:0 8px}}

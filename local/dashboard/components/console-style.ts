@@ -2,14 +2,17 @@ import { installStyles } from "../charts/sankey";
 
 export function consoleStyles() {
   installStyles("local-console", `
-.pe-shell,.pe-console{--fs-title:22px;--fs-body:14px;--fs-sm:14px;--fs-cap:12px;--fs-micro:12px;font-size:14px;line-height:1.5}
+.pe-shell,.pe-console{--bg:var(--lf-background);--surface:var(--lf-muted);--surface-2:var(--lf-card);--ink:var(--lf-foreground);--ink-2:var(--lf-muted-foreground);--ink-3:var(--lf-foreground-tertiary);--line:var(--lf-border);--line-2:var(--lf-border-contrast);--wash:var(--lf-accent);--wash-2:var(--lf-muted);--font-sans:var(--lf-font-sans);--font-mono:var(--lf-font-mono);--fs-title:var(--lf-text-2xl);--fs-body:var(--lf-text-sm);--fs-sm:var(--lf-text-sm);--fs-cap:var(--lf-text-xs);--fs-micro:var(--lf-text-xs);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);color:var(--lf-foreground)}
 .pe-icon{display:inline-block;flex:none;vertical-align:middle}
 .pe-shell .sr-only,.pe-console .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);border:0;white-space:nowrap}
 .pe-pill{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 7px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:12px;white-space:nowrap;color:var(--ink)}
-.pe-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:6px 10px;border:1px solid var(--line-2);border-radius:2px;background:var(--bg);color:var(--ink);font-size:14px;text-decoration:none;cursor:pointer}
+.pe-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--lf-space-1h);min-width:var(--lf-control-height);height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0 var(--lf-space-3);border:var(--lf-border-width) solid var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-background);color:var(--lf-foreground);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);text-decoration:none;cursor:pointer}
 .pe-button:hover{background:var(--surface);color:var(--ink);text-decoration:none}
 .pe-button:disabled{color:var(--ink-2);cursor:not-allowed}
-.pe-icon-button{width:44px;padding:8px}
+.pe-icon-button{width:var(--lf-control-height);padding:var(--lf-space-2)}
+.pe-console{--lf-ring:var(--lf-muted-foreground)}
+.pe-button:focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
+.pe-button:disabled{opacity:var(--lf-opacity-disabled)}
 .pe-muted{color:var(--ink-2)}
 .pe-shell{display:grid;grid-template-columns:var(--lf-sidebar-width) minmax(0,1fr);min-height:100dvh}
 .pe-sidebar{position:sticky;top:0;align-self:start;height:100dvh;display:flex;flex-direction:column;border-right:var(--lf-border-width) solid var(--lf-sidebar-border)}

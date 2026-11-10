@@ -1,5 +1,50 @@
 # skillar Dashboard Design System
 
+## Phase B local screens (PR-7)
+
+The local v3 wireframes supply screen composition; the merged foundation owns
+control, table, shell and widget paint. This section supersedes legacy screen
+geometry below. Standalone and the real hosted `LocalViews` embed consume the
+same components. No host shell, API, filter or route contract changes.
+
+Screen content uses `--lf-background`, `--lf-foreground`, muted foreground,
+border, accent and card tokens, system sans at 13px/20px and mono at 12px/18px.
+Cards retain the shared 8px radius and shadow; page gutters and split gaps are
+16px (12px on phones). Interactive controls are exactly 32px with mouse and
+44px on coarse pointers or phone widths. Dense event rows use the same heights.
+Selected events use a neutral muted wash and check glyph, never an accent edge.
+Focus-visible uses the shared contrasting 2px ring and 2px clearance.
+Local screen focus overrides `--lf-ring` to `--lf-muted-foreground`: the
+source ring measured only 2.33:1 against selected rows. This owner accessibility
+override keeps the source hue while clearing the required 3:1 in both themes.
+
+Trace tree exposes chronological root-level leaves: the source has no causal
+parent/child edges. It has one roving Tab stop; Up/Down, Home/End move focus,
+Enter/Space select. Left/Right on a leaf do not invent expansion. Timeline is
+a one-column grid of event cells with Up/Down and Ctrl+Home/End. Home/End
+stay within the current one-cell row, as the grid pattern requires.
+Focus and selection are independent. Switching tree/timeline changes semantics
+on the same keyed row nodes. Source event inspectors and JSON disclosures stay
+mounted when hidden, including format, selection and report updates.
+
+JSON uses native nested disclosure, mono keys/values, line numbers, shared
+CopyButton and muted code surface. Folding changes display only. Long recorded
+values wrap, retain selectable full content and copy without truncation.
+Syntax tokens from the public Demo's `react18-json-view` GitHub theme:
+`--trace-json-property` is light `#005cc5` / dark `#79b8ff` for keys,
+punctuation, numbers, booleans and null; `--trace-json-string` is light
+`#032f62` / dark `#9ecbff`. No third-party JSON renderer is imported.
+Timeline geometry retains actual offsets and measured intervals only.
+Trace geometry tokens are `--trace-icon-size:14px`, `--trace-interval-height:18px`,
+`--trace-point-size:4px` and `--trace-mark-radius:1px`, measured from Demo
+tree icons and dense timeline bars. Observation palette mapping uses existing
+`--lf-observation-*`: model calls=generation, tool/read actions=tool,
+search=retriever, prompt/skill intervals=span, errors=guardrail, lifecycle=event.
+Instantaneous events stay points; unmeasured durations never become bars.
+R7 chart baselines, zero ticks, KST and unknown measurements remain unchanged.
+Document owns page scroll; desktop event panes and mobile sheets retain their
+bounded scroll regions. No decorative motion or new accessibility debt.
+
 ## Phase B widgets (PR-5)
 
 The shared widget contract is the PR-5 section in `site/DESIGN.md`, including
