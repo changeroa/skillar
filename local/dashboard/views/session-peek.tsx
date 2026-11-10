@@ -9,9 +9,14 @@ import { TraceView } from "./trace";
 
 export function SessionPeek({ route, navigate, live, rows }: ViewProps & { readonly rows: readonly SessionListRow[] }) {
   installStyles("session-peek", `
-.session-peek{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;min-width:0;padding:0;border:1px solid var(--line);background:var(--bg)}
-.session-peek__body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px}
-.session-peek__actions{display:flex;flex:none;align-items:center;gap:4px;z-index:2;background:var(--bg);padding:8px;border-bottom:1px solid var(--line)}
+.session-peek{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;min-width:0;padding:0;border:1px solid var(--lf-border);background:var(--lf-modal);color:var(--lf-foreground);border-radius:0;box-shadow:var(--lf-shadow-peek);font:var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-menu-leading) var(--lf-font-sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.session-peek__body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:var(--lf-space-4)}
+.session-peek__actions{display:flex;flex:none;align-items:center;gap:var(--lf-space-1);z-index:2;background:var(--lf-modal);padding:var(--lf-space-2);border-bottom:1px solid var(--lf-border)}
+.session-peek__actions .pe-button{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0;border-color:var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-modal);color:var(--lf-foreground)}
+.session-peek__actions .pe-icon-button{width:var(--lf-control-height)}
+.session-peek__actions .pe-button:hover{background:var(--lf-accent)}.session-peek__actions .pe-button:focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
+.session-peek :is(.trace-event-row[aria-pressed=true],.event-console__tabs [aria-selected=true],.event-inspector__tabs [aria-selected=true]){box-shadow:none;background:var(--lf-accent)}
+.session-peek :is(.trace-event-row[aria-pressed=true],.event-console__tabs [aria-selected=true],.event-inspector__tabs [aria-selected=true])::after{content:"";display:inline-block;flex:none;width:var(--lf-space-4);height:var(--lf-space-4);background:currentColor;mask:var(--lf-selection-check) center/contain no-repeat}
 .session-peek__actions>a{margin-right:auto;font-size:12px}.session-peek__actions>span{font-size:12px}
 .session-peek .trace__back{display:none}.session-peek .trace__console{display:block}.session-peek .trace__title{font-size:16px;overflow-wrap:anywhere}
 .session-peek .trace__inspector{border:0;padding:0;margin:12px 0}.session-peek .trace__scope{display:none}
@@ -59,7 +64,7 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
       <button class="pe-button pe-icon-button" aria-label="이전 세션" disabled={index <= 0} onClick={() => move(-1)}><Icon name="previous" /></button>
       <button class="pe-button pe-icon-button" aria-label="다음 세션" disabled={index < 0 || index >= rows.length - 1} onClick={() => move(1)}><Icon name="next" /></button>
       <CopyButton value={route.peek ?? ""} />
-      <button ref={closeButton} class="pe-button" aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "닫기" : ""}</button>
+      <button ref={closeButton} class={`pe-button${narrow ? "" : " pe-icon-button"}`} aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "닫기" : ""}</button>
     </div>
     <div class="session-peek__body">
       <TraceView key={route.peek} route={{ ...route, view: "trace", sessionId: route.peek }}

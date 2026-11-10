@@ -1,5 +1,64 @@
 # skillar.sh
 
+## Phase B overlays (PR-2)
+
+Real Demo follow-up: DropdownMenu supports content-sized (128px minimum) and
+192px filter menus, optional 14px Lucide item glyphs and icon triggers, and
+start/end anchoring. Its scroll surface has a separate 4px content inset.
+The public prompt-version comparison is a read-only Dialog instance: the
+comparison size is 1280px maximum, 90dvh, with 16px header/body insets, 24px
+footer inset, 20px/20px title, optional 13px/20px subtitle with 4px top gap,
+and 1px header/footer dividers. Default Dialog retains the modern 512px shell.
+Native controls remain 32px/44px even where the Demo uses 24px/36px controls.
+The modern default shell inherits 16px/24px, its body is 13px/21.125px
+(leading-relaxed), flex-column with 16px gap and 16px padding on every edge.
+The close control uses foreground at 70% opacity, becoming opaque on hover,
+with the upstream -8px top/trailing inset. Phone action rows reverse into
+full-width buttons. Comparison dialogs retain the legacy 16px/24px body.
+The real mobile filter Sheet is a bottom sheet at 85svh with a 1px top edge,
+12px/16px header/footer padding, a 16px/21.6px title, and horizontal actions.
+Existing right-hand Peek/ConsoleSheet lifecycles and caller geometry stay in
+place; their surface font is 16px/24px. Peek elevation uses the Demo's
+-12px 0 32px -16px foreground/background 30% shadow.
+Supplementary confirmation error styling follows the pinned MIT controller:
+12px inset, 4px radius, red-200 edge/red-50 fill/red-700 ink, with a strong
+error heading and 13px/20px text. The Demo's measured global palette supplies
+the named error tokens. `confirmDisabled` is caller-controlled; it does not
+replace existing inline type-to-confirm or dirty-state guards.
+
+Reusable Preact overlays live in `local/dashboard/foundation/overlays/`.
+Dialog and Confirm use native modal dialogs, a 512px desktop maximum,
+85dvh maximum height, modal surface, 8px radius, 16px header/body padding,
+and 16px/16px strong titles. Phone dialogs fill the viewport. Confirm uses
+an alertdialog description and initially focuses Cancel, never destruction.
+Sheet uses the same body/header anatomy with a 440px right-hand pane.
+The body is the only vertical scroll owner; header/actions remain visible.
+Native modality, explicit Tab wrapping, one-layer Escape and opener restoration
+are required. Nested menus remain inside their owning dialog's top layer.
+Selected controls inside existing Sheet/Peek surfaces use neutral accent wash
+and the shared Lucide check mask token, replacing inherited accent edge stripes
+without changing their tab, row or facet behavior.
+
+DropdownMenu uses popover surface, 6px radius, 4px padding, 8px item inset,
+13px/20px text and 32px/44px item boxes. It focuses the first enabled item
+on open, skips disabled items, supports Home/End, cyclic arrows and prefix
+typeahead, closes on Tab without trapping it, and restores its opener on Escape.
+The menu shell retains the real Demo's 16px/24px inherited type, with explicit
+13px/20px item typography. Separators are 1px with 4px block margin and bleed.
+Tooltip uses the real Demo's 13px/20px type, 6px/12px padding and a 6px radius; it is
+non-interactive, shown for pointer hover or keyboard focus, linked by
+aria-describedby, hoverable and dismissible with Escape.
+
+Overlay geometry tokens: dialog 512px, sheet 440px, menu 192px, tooltip 320px;
+modal shadow 0 10px 15px -3px #000/10%, 0 4px 6px -4px #000/10%;
+popover shadow 0 4px 6px -1px #000/10%, 0 2px 4px -2px #000/10%.
+Backdrop uses black 25%/45% (light/dark), blocking Confirm 50%/65%.
+These values derive from pinned MIT Dialog, alert-dialog, sheet and menu sources.
+Real Demo observations and any remaining parity differences are in PR-2 evidence.
+No decorative motion is introduced. Approved accessibility and 32px/44px
+adaptations override upstream. Existing PeekPanel and ConsoleSheet retain
+their lifecycle, URL, dirty-state and dismissal handlers; only paint changes.
+
 ## Phase B basic controls (PR-1)
 
 ### Real Demo amendment (2026-11-09)

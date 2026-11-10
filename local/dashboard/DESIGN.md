@@ -1,5 +1,15 @@
 # skillar Dashboard Design System
 
+## Phase B overlays (PR-2)
+
+The complete overlay contract is the PR-2 section in `site/DESIGN.md`.
+Shared `foundation/overlays/` provides Dialog, ConfirmDialog, Sheet,
+DropdownMenu and Tooltip with native modality and WAI-ARIA keyboard behavior.
+Paint uses the existing semantic tokens with named geometry/shadow/backdrop
+tokens in `overlays/overlays.css`. Both galleries exercise these primitives.
+Existing PeekPanel and ConsoleSheet change visuals only; their focus, URL,
+dirty-state and responsive modality contracts remain owned by existing code.
+
 ## Phase B basic controls (PR-1)
 
 The real Demo amendment in `site/DESIGN.md` supersedes pinned-primitive

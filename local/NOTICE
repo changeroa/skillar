@@ -23,6 +23,23 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Langfuse semantic theme tokens
 -----------------------------
+PR-2 reimplements MIT overlay visual anatomy from this same commit:
+web/src/components/design-system/Dialog/Dialog.tsx,
+web/src/components/ui/{dialog,alert-dialog,sheet,dropdown-menu}.tsx.
+Follow-up measurements also use
+web/src/components/design-system/DropdownMenu/DropdownMenu.tsx and
+web/src/components/design-system/ConfirmationDialogController/ConfirmationDialogController.tsx.
+Confirm state anatomy also uses web/src/components/ui/ConfirmDialog.tsx and
+web/src/components/design-system/Alert/Alert.tsx at the same pinned commit.
+Approved unavailable-state measurements additionally use actual
+web/src/components/design-system/ControlledDropdownMenu/ControlledDropdownMenu.tsx,
+web/src/components/table/peek.tsx,
+web/src/components/ObservabilityEntityDetailHeader/ObservabilityEntityDetailHeader.tsx,
+and web/src/features/events/components/MobileFiltersSheet.tsx.
+Destination: local/dashboard/foundation/overlays/, site/src/ui/ui.css and
+local/dashboard/components/console-style.ts. Native dialog/popover and Preact
+own behavior; no React, Radix or Floating UI code is imported.
+
 PR-1 also reimplements the anatomy/variants of these MIT files at the same SHA:
 web/src/components/design-system/{Button/Button,IconButton/IconButton,
 Badge/Badge,Tag/Tag,Input/Input,SearchInput/SearchInput,SelectInput/SelectInput,
@@ -31,7 +48,7 @@ web/src/components/design-system/internal/InputControl/InputControl.tsx,
 web/src/components/ui/{StatusBadge/StatusBadge,skeleton}.tsx.
 Destination: local/dashboard/foundation/controls/. React, Radix and cmdk
 implementations are not included; native Preact controls own behavior.
-The scratch React reference renderer is outside this repository and is not shipped.
+The unmodified pinned MIT React reference renderer is external-only and is not shipped.
 Additional Tailwind palette values: red-50/100/800 and yellow-50/100/800.
 
 Source: https://github.com/langfuse/langfuse

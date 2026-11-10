@@ -69,6 +69,20 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
     };
   }, [selectedId, returnFocus]);
   return h("dialog", { id, ref: dialog, class: "ui-peek", "aria-labelledby": `${id}-title`,
+    onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLDialogElement>) => {
+      const panel = event.currentTarget;
+      if (event.defaultPrevented || event.key !== "Tab" || !panel.matches(":modal")) return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(
+        "button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex='0']",
+      )).filter(node => node.tabIndex >= 0 && node.checkVisibility() && !node.closest("[inert]"));
+      const first = nodes[0], last = nodes.at(-1);
+      if (!first) { event.preventDefault(); panel.focus(); }
+      else if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    },
     onCancel: event => { event.preventDefault(); if (!closeDisabled) onClose(); } },
     h("header", null, h("h2", { id: `${id}-title` }, title),
       fullPageHref && h("a", { class: "button secondary", href: fullPageHref, onClick: onFullPage

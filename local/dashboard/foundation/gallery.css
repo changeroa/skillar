@@ -22,7 +22,7 @@ body { margin: 0; }
 .lf-gallery section { min-width: 0; display: grid; gap: var(--lf-space-3); }
 .lf-gallery__header { display: flex; gap: var(--lf-space-6); justify-content: space-between; align-items: start; flex-wrap: wrap; }
 .lf-gallery__header > div { display: grid; gap: var(--lf-space-2); }
-.lf-gallery__eyebrow, .lf-gallery footer { color: var(--lf-foreground-secondary); }
+.lf-gallery__eyebrow, .lf-gallery > footer { color: var(--lf-foreground-secondary); }
 .lf-gallery__theme { display: grid; gap: var(--lf-space-1); }
 .lf-gallery__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--gallery-column), 100%), 1fr)); gap: var(--lf-space-4); }
 .lf-gallery__cluster { display: flex; flex-wrap: wrap; gap: var(--lf-space-3); align-items: center; }
@@ -67,13 +67,13 @@ body { margin: 0; }
 .lf-gallery__control:active:not(:disabled) { background: var(--lf-tertiary); }
 .lf-gallery__control:disabled { cursor: not-allowed; color: var(--lf-foreground-secondary); background: var(--lf-muted); }
 .lf-gallery__control[aria-invalid="true"] { border-color: var(--lf-destructive); }
-.lf-gallery__control:focus-visible, .lf-gallery__theme select:focus-visible, .lf-gallery footer a:focus-visible {
+.lf-gallery__control:focus-visible, .lf-gallery__theme select:focus-visible, .lf-gallery > footer a:focus-visible {
   outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset);
 }
 .lf-gallery__control::placeholder { color: var(--lf-foreground-secondary); opacity: 1; }
 .lf-gallery output { display: block; }
-.lf-gallery footer a { color: var(--lf-link); display: inline-flex; align-items: center; min-height: var(--lf-control-height); }
-.lf-gallery footer a:hover { color: var(--lf-link-hover); }
+.lf-gallery > footer a { color: var(--lf-link); display: inline-flex; align-items: center; min-height: var(--lf-control-height); }
+.lf-gallery > footer a:hover { color: var(--lf-link-hover); }
 @media (max-width: 768px) {
   .lf-gallery { padding: var(--lf-space-6) var(--lf-space-4); }
 }
