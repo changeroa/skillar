@@ -41,7 +41,7 @@
 .ui-peek::backdrop { background: var(--lf-overlay-backdrop); }
 .ui-peek header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lf-space-2); padding: var(--lf-space-4); border-bottom: 1px solid var(--lf-border); }
 .ui-peek h2 { margin: 0 auto 0 0; font-size: var(--lf-text-lg); font-weight: var(--lf-weight-strong); }
-.ui-peek :is(button:not(.lf-button, .lf-icon-button), a.button, input:not([type="checkbox"], [type="radio"]), select, summary) { height: var(--lf-control-height); min-height: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-3); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
+.ui-peek :is(button:not(.lf-button, .lf-icon-button), a.button, input:not([type="checkbox"], [type="radio"]), select, summary) { height: var(--lf-control-height); min-height: var(--lf-control-height); min-width: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-3); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
 .ui-peek textarea { font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
 .ui-peek header .button { border: 1px solid var(--lf-border); border-radius: var(--lf-radius-md); color: var(--lf-foreground); background: var(--lf-modal); }
 .ui-peek header .button:hover { background: var(--lf-accent); }

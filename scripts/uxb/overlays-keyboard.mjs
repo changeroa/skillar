@@ -14,8 +14,8 @@ const tabs = omowright.createAgentTabs(browser);
 const tab = await tabs.create("about:blank");
 const page = tab.page, results = [], captures = [];
 await mkdir(output, { recursive: true });
-let checks = 0;
-const verify = (actual, expected) => { assert.deepEqual(actual, expected); checks++; };
+let checks = 0, requestedCoarse = false;
+const verify = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks++; };
 async function focus(selector) {
   await page.evaluate(selector => document.querySelector(selector).focus(), selector);
 }
@@ -24,6 +24,17 @@ async function keyFocus(key, selector, modifiers = 0) {
 }
 async function open(trigger, selector) {
   await focus(trigger); await keyFocus("Enter", selector);
+}
+async function navigate(url, documentId) {
+  const marker = await page._sendToTarget("Page.addScriptToEvaluateOnNewDocument", {
+    source: `addEventListener("DOMContentLoaded",()=>{document.documentElement.dataset.overlayQaDocument=${JSON.stringify(documentId)}},{once:true});`,
+  });
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await ready(page, `html[data-overlay-qa-document="${documentId}"] #open-dialog`);
+  } finally {
+    await page._sendToTarget("Page.removeScriptToEvaluateOnNewDocument", { identifier: marker.identifier });
+  }
 }
 async function capture(id, selector) {
   await page.evaluate(async () => {
@@ -39,17 +50,36 @@ async function capture(id, selector) {
       background: s.backgroundColor, shadow: s.boxShadow, outline: s.outline,
       active: document.activeElement?.id, focusVisible: document.activeElement?.matches(":focus-visible"),
       viewport: [innerWidth, innerHeight], coarse: matchMedia("(pointer:coarse)").matches,
-      overflow: document.documentElement.scrollWidth > innerWidth };
+      overflow: document.documentElement.scrollWidth > innerWidth,
+      controlToken: getComputedStyle(document.documentElement).getPropertyValue("--lf-control-height").trim(),
+      controls: [...element.querySelectorAll('button,a[href],input:not([type="checkbox"],[type="radio"]),select,summary,[role="menuitem"],[role="menuitemcheckbox"]')]
+        .filter(node => node.checkVisibility()).map(node => {
+          const box = node.getBoundingClientRect();
+          return { id: node.id, tag: node.tagName, role: node.getAttribute("role"),
+            label: node.getAttribute("aria-label") ?? node.textContent.trim(),
+            classes: node.className, width: box.width, height: box.height,
+            square: node.matches(".lf-overlay-close,.lf-icon-button,[aria-busy=true]") };
+        }) };
   }, selector);
   verify(details.box.width > 0 && details.box.height > 0, true);
+  const target = details.coarse || details.viewport[0] <= 768 ? 44 : 32;
+  verify(details.coarse, requestedCoarse, `${id}: actual input mode`);
+  verify(details.controlToken, `${target}px`, `${id}: owner policy token`);
+  for (const control of details.controls) {
+    const label = `${id}: ${control.id || control.label || control.classes}`;
+    verify(control.height, target, `${label}: owner control height`);
+    verify(control.square ? control.width === target : control.width >= target, true, `${label}: owner control width`);
+  }
   const frame = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
   await writeFile(join(output, `${id}.png`), Buffer.from(frame.data, "base64"));
   captures.push({ id, ...details });
 }
 try {
   for (const [app, url] of [["site", site], ["local", local]])
-    for (const width of [1440, 390, 1920]) for (const theme of ["light", "dark"]) {
-      const id = `${app}-${width}-${theme}`, before = checks;
+    for (const [width, coarse] of [[1440, false], [1440, true], [390, false], [390, true], [768, false], [769, false], [1920, false]])
+      for (const theme of ["light", "dark"]) {
+      requestedCoarse = coarse;
+      const id = `${app}-${width}-${coarse ? "coarse" : "fine"}-${theme}`, before = checks;
       try {
         await tabs.repin(tab, { width, height: width === 390 ? 844 : 900 });
         await page._sendToTarget("Emulation.setDeviceMetricsOverride", {
@@ -60,8 +90,8 @@ try {
         await page._sendToTarget("Emulation.setEmulatedMedia", { features: [
           { name: "prefers-color-scheme", value: theme }, { name: "prefers-reduced-motion", value: "reduce" },
         ] });
-        await page.goto(`${url}?theme=${theme}`, { waitUntil: "domcontentloaded" });
-        await ready(page, "#open-dialog");
+        await navigate(`${url}?theme=${theme}`, `${id}-start`);
+        await page._sendToTarget("Emulation.setTouchEmulationEnabled", { enabled: coarse });
         await page._sendToTarget("Page.bringToFront");
         await page.evaluate(() => {
           window.__overlayKeys = [];
@@ -69,7 +99,7 @@ try {
         });
         await capture(`${id}-rest`, "#overlays-gallery");
         const height = await page.evaluate(() => document.querySelector("#open-dialog").getBoundingClientRect().height);
-        verify(height, width === 390 ? 44 : 32);
+        verify(height, coarse || width <= 768 ? 44 : 32);
         verify(await page.evaluate(() => document.querySelector("#disabled-menu-trigger").disabled), true);
         // Given a closed menu, opening enters the first enabled item.
         await open("#standalone-menu-trigger", "#standalone-menu-alpha");
@@ -116,19 +146,6 @@ try {
         await keyFocus("Escape", "#nested-confirm");
         verify(await page.evaluate(() => document.querySelector("#sample-dialog").open), true);
         await keyFocus("Escape", "#open-dialog");
-        await open("#confirm-loading", "#sample-confirm-title");
-        verify(await page.evaluate(() => document.querySelector("#sample-confirm-cancel").disabled), true);
-        verify(await page.evaluate(() => document.querySelector('#sample-confirm [aria-busy="true"]').disabled), true);
-        await capture(`${id}-confirm-loading`, "#sample-confirm");
-        await press(page, "Escape");
-        verify(await page.evaluate(() => document.querySelector("#sample-confirm").open), true);
-        const beforeBusyReload = await page.evaluate(() => window.__overlayKeys);
-        await page.goto(`${url}?theme=${theme}`, { waitUntil: "domcontentloaded" });
-        await ready(page, "#open-dialog");
-        await page.evaluate(() => {
-          window.__overlayKeys = [];
-          document.addEventListener("keydown", e => window.__overlayKeys.push({ key: e.key, trusted: e.isTrusted }), true);
-        });
         await open("#confirm-error", "#sample-confirm-cancel");
         verify(await page.evaluate(() => Boolean(document.querySelector("#sample-confirm [role=alert]"))), true);
         await capture(`${id}-confirm-error`, "#sample-confirm");
@@ -154,7 +171,15 @@ try {
         verify(await page.evaluate(() => document.querySelector("#tooltip-trigger").getAttribute("aria-describedby")), "sample-tooltip");
         await press(page, "Escape");
         verify(await page.evaluate(() => document.querySelector("#sample-tooltip").matches(":popover-open")), false);
-        const trusted = [...beforeBusyReload, ...await page.evaluate(() => window.__overlayKeys)];
+        // Busy Confirm cannot be dismissed: test it last, with no intermediate
+        // navigation racing the next trigger's focus or splitting the key log.
+        await open("#confirm-loading", "#sample-confirm-title");
+        verify(await page.evaluate(() => document.querySelector("#sample-confirm-cancel").disabled), true);
+        verify(await page.evaluate(() => document.querySelector('#sample-confirm [aria-busy="true"]').disabled), true);
+        await capture(`${id}-confirm-loading`, "#sample-confirm");
+        await press(page, "Escape");
+        verify(await page.evaluate(() => document.querySelector("#sample-confirm").open), true);
+        const trusted = await page.evaluate(() => window.__overlayKeys);
         verify(trusted.length > 25 && trusted.every(e => e.trusted), true);
         const ax = await page._sendToTarget("Accessibility.getFullAXTree");
         await writeFile(join(output, `${id}-ax.json`), JSON.stringify(ax, null, 2));

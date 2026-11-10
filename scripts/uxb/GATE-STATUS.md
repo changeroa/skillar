@@ -1,20 +1,58 @@
 # PR-2 overlay gate ledger
 
 PR: https://github.com/changeroa/skillar/pull/101 (draft; no merge or production deployment).
-Base: origin/main 46bc344. This ledger supersedes the fce3b28 and 3ec35dd coverage claims.
+Base: origin/main 46bc344. This ledger also supersedes f4c997f's incorrect upstream-sized close-button acceptance.
 Evidence root E: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-2/`.
 Current authoritative evidence: E/followup. Older scratch artifacts are historical and excluded.
-Final published SHA and exact-head CI receipts: E/followup/publication.json and final-head-ci.json.
+Current sizing publication and exact-head CI receipts: E/followup/owner-sizing/publication.json and final-head-ci.json.
 
 | Gate | Status | Evidence and limits |
 | --- | --- | --- |
 | 1. Component visual parity | **PASS under the explicit Confirm and non-Confirm amendments** | 104 state/theme references: 74 actual hosted Demo, 30 labelled actual pinned MIT renders. Both apps: 208 comparisons, 72,008 assertions, 208 PASS, zero missing references or unexplained mismatches. E/followup/parity/{sources,products,comparisons,measured-validation}.json and approved-fallbacks.json. |
-| 2. Screen comparison | Prior evidence retained | Original 12/12 closed-screen and 24/24 product-panel before/after cases remain E/screens and E/product-panels; not recaptured or claimed pixel-identical. Current changed overlay captures were visually inspected, including light/dark and mobile. |
-| 3. Keyboard/ARIA and actual Peek sizing | PASS | Updated shared overlays: 384 assertions, 12/12 site/local cases at 390/1440/1920 in both themes, 144 captures, including empty-menu focus/status/insets and Escape restoration. E/followup/keyboard-amendment/results.json. Unchanged actual hosted Peek evidence: 729 assertions, 6/6 cases, 24 native dirty-draft confirm decisions, 32px mouse/44px touch. E/followup/real-peek/final/results.json. |
+| 2. Screen comparison | Current actual-panel sizing/behavior PASS; prior screen comparisons retained | Current 24 real panel cases and 72 captures check actual owner targets, URL and focus; not a new before/after pixel-equality claim. Original 12 closed-screen and 24 before/after panel cases remain historical evidence. Changed desktop/mobile light/dark captures were visually inspected. |
+| 3. Keyboard/ARIA and actual control sizing | PASS | Current normal component pages: 4,088 assertions, 28/28 cases, 336 captures. Actual hosted/embedded/local panels: 1,576 assertions, 24/24 cases, 72 captures. Actual hosted Peek: 729 assertions, 6/6 cases, 24 native dirty-draft decisions. All enforce the owner 32/44px override, including phone/fine and desktop/coarse. E/followup/owner-sizing/{keyboard,product-panels,real-peek}/results.json. |
 | 4. R1-R7 structure | Prior PASS retained | Unchanged PR-0 assertions: 8/8 production-page fixture cases; R4 N.A. in that probe. Actual Peek separately checks URL, focus and draft ownership. E/structure/qa-structure.json. This amendment changes no real-page structure. |
 | 5. Build/tests | PASS except recorded pre-existing host failure | Site 368/368; both builds, local typecheck and package dry-run pass. Local 984/985: unchanged cli-init.test.mjs:159 fails ENOTDIR at existing host file /tmp/h. Neither host file nor failing test modified. E/checks.json and logs. Exact final-head CI is reported separately. |
 | 6. Licensing | PASS | Three matching notices list actual pinned source modules. Built packages include NOTICE; reference React/Radix/Floating UI dependencies are external-only, not shipped. No product dependency or lockfile change. |
 | 7. Deployment policy | PASS | No merge, production deployment, project mutation or account-setting change. Existing preview receipts belong to an older head, not this amendment. |
+
+## Owner sizing correction after f4c997f re-review
+
+The owner's target contract wins over upstream: **32px mouse/desktop; 44px for
+pointer:coarse OR viewport width <=768px**. Labelled controls keep intrinsic
+width >= the target; close/icon-only and spinner-only frames are square. Glyph
+sizes are not hit-target sizes. Upstream 36px closes and 36/37px busy frames
+are retained as raw source measurements, never accepted as the expected owner target.
+
+The committed validator is now `scripts/uxb/validate-overlay-parity.mjs`, invoked
+with the parity evidence directory. Its owner checks are unconditional, even
+when source and product are both 36px. The actual f4c997f negative run rejected
+144 close width/height assertions (36 actual/source versus 32 required); see
+E/followup/owner-sizing/before-validation.json. All 208 updated cases pass.
+
+The complete scan also fixed narrow hosted paging widths, desktop legacy Peek
+body buttons/summary height, and a 38px desktop icon-only local close. Changes
+are scoped to overlays; full-page control paint and unrelated R1 recipes remain
+unchanged. E/followup/owner-sizing/scan.json records the before/after rules.
+
+| Real rendered matrix | Coverage | Result |
+| --- | --- | --- |
+| Both consumers' normal component pages | 1440 fine/coarse, 390 fine/coarse, 768 fine, 769 fine, 1920 fine; both themes | 28/28 cases, 4,088 assertions, 1,260 control observations, 336 captures |
+| Hosted skill Peek, hosted embedded session Peek, local session Peek; mobile filter Sheet and local Source Drawer | 1440 fine/coarse and 390 fine/coarse; both themes | 24/24 cases, 1,576 assertions, 776 control observations, 72 captures |
+| Actual hosted Peek drafts, native confirm, URL and focus | Both themes, mouse/touch desktop and phone | 6/6 cases, 729 assertions, 24 native decisions |
+
+The real-page probes check every visible button, relevant link/ARIA menu or tab,
+input/select and summary in the opened surfaces. The component-page probe also
+checks menu items, triggers, disabled and busy controls. Expected size comes
+from the owner rule and actual viewport/input, not from upstream or the CSS
+token being tested. Actual pointer mode and the policy token are independently
+asserted. New-document readiness is event-based, and non-dismissible busy
+Confirm runs last without an intermediate navigation racing focus. No sleeps.
+
+These are actual production modules/pages, not handwritten source approximations.
+The local application probe uses the existing read-only mock API on an allocated
+port: the old static gallery server does not implement /api/sessions. This is
+test setup only, not an application API/data/auth change.
 
 ## Coverage: hosted Demo and actual MIT renders are distinct
 
@@ -107,7 +145,7 @@ The earlier handwritten scratch renderer is excluded from every current comparis
 ## Repairs and verification limits
 
 Measured product repairs: isolate caller comparison sections from the gallery's section grid;
-match default Dialog busy-action width/spinner; use content-width empty Dropdown with actual
+apply owner target width to busy actions while retaining source spinner glyphs; use content-width empty Dropdown with actual
 inner padding, centered empty status and accessible role. The empty-menu keyboard regression
 opens it with trusted input, checks focus/status/insets, and verifies Escape restoration.
 Standalone R1 controls, existing actual Peek sizing/draft handlers, API/data/route/auth,
@@ -118,7 +156,7 @@ The apparent delay was the active scripts/verify.mjs step; logs were not publish
 E/followup/runtime-diagnosis.md records timestamps and log endpoint results. The final commit
 must have its own completed CI receipts rather than inherit that earlier result.
 
-Current TSX diagnostics, typecheck and builds pass; CSS LSP was unavailable earlier.
+Typecheck and builds pass; session-peek TSX diagnostics are clean. Console-style diagnostics timed out and the MJS/CSS language server was unavailable; actual builds and browser gates ran.
 The unchanged local host-only test failure is recorded above. Fresh independent approval,
 full Lighthouse/contrast and forced-colors screenshot audits remain unclaimed. The lead's
 reviewer re-checks against both amendments; no merge or production deployment is authorized.

@@ -38,7 +38,9 @@ export function consoleStyles() {
 .pe-sheet__head h2{font-size:var(--lf-text-lg);font-weight:var(--lf-weight-strong);margin:0}.pe-sheet__body{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:var(--lf-space-4)}
 .pe-sheet__actions{border-top:1px solid var(--lf-border);border-bottom:0;padding-bottom:max(var(--lf-space-4),env(safe-area-inset-bottom))}
 .pe-sheet .pe-button{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0;border-color:var(--lf-border);border-radius:var(--lf-radius-md);font:inherit;color:var(--lf-foreground);background:var(--lf-modal)}
-.pe-sheet .pe-icon-button{width:var(--lf-control-height)}
+.session-peek.pe-console .pe-button{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0}
+.pe-sheet .pe-icon-button,.session-peek.pe-console .pe-icon-button{width:var(--lf-control-height)}
+:is(.pe-sheet,.session-peek.pe-console) :is(details.trace__prompt,details.tl__args,details.cand__desc)>summary{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0}
 .pe-sheet .pe-button:hover{background:var(--lf-accent)}.pe-sheet .pe-button:focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .pe-sheet .session-facet__modes [aria-pressed=true],.pe-sheet .pe-nav .tab[aria-current=page]{box-shadow:none;background:var(--lf-accent)}
 .pe-sheet .session-facet__modes [aria-pressed=true]::after,.pe-sheet .pe-nav .tab[aria-current=page]::after{content:"";width:var(--lf-space-4);height:var(--lf-space-4);background:currentColor;mask:var(--lf-selection-check) center/contain no-repeat}

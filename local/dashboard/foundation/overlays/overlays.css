@@ -38,7 +38,7 @@
   font: inherit;
 }
 .lf-overlay-close:hover { background: var(--lf-accent); opacity: 1; }
-.lf-dialog--center .lf-overlay-close { width: max(36px, var(--lf-control-height)); height: max(36px, var(--lf-control-height)); margin: calc(-1 * var(--lf-space-2)); margin-inline-start: var(--lf-space-2); }
+.lf-dialog--center .lf-overlay-close { margin: calc(-1 * var(--lf-space-2)); margin-inline-start: var(--lf-space-2); }
 .lf-overlay-close:active { background: var(--lf-secondary); }
 .lf-overlay-close:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--lf-focus-width) var(--lf-ring); }
 .lf-dialog--center .lf-overlay-close:focus {
@@ -85,9 +85,8 @@
 .lf-dialog--confirm .lf-dialog__head { padding: var(--lf-space-4) var(--lf-space-4) var(--lf-space-2); }
 .lf-dialog--confirm .lf-dialog__actions { padding: var(--lf-space-2) var(--lf-space-6) var(--lf-space-6); }
 .lf-dialog--confirm .lf-button { gap: normal; }
-.lf-dialog--confirm .lf-button[aria-busy="true"] { width: max(36px, var(--lf-control-height)); min-width: 0; }
+.lf-dialog--confirm .lf-button[aria-busy="true"],.lf-dialog--default .lf-button[aria-busy="true"] { width: var(--lf-control-height); min-width: 0; }
 .lf-dialog--confirm .lf-button[aria-busy="true"] .lf-spinner { width: 12px; height: 12px; }
-.lf-dialog--default .lf-button[aria-busy="true"] { width: max(37px, var(--lf-control-height)); min-width: 0; }
 .lf-dialog--default .lf-button[aria-busy="true"] .lf-spinner { width: 11px; height: 11px; }
 .lf-dialog__actions > .lf-button--primary,.lf-menu-anchor > .lf-button--primary {
   justify-content: center; padding: var(--lf-space-1) var(--lf-space-3); border-radius: var(--lf-radius-md);
