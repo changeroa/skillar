@@ -4,22 +4,30 @@ Base: `origin/main` at `abee112`. Branch: `uxb/pr-4-table`.
 Evidence root: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-4/`.
 Draft PR: https://github.com/changeroa/skillar/pull/103.
 This is not an independent approval. No merge or production deployment.
+The independent rejection of `106b8aa` is addressed by the review correction
+below; its earlier 96-case and shadow-presence receipts are superseded.
 
 | Gate | Status | Evidence and limits |
 | --- | --- | --- |
-| 1. Component visual parity | PASS for the requested computed-part criterion | 48 real read-only Demo states; 96/96 product cases and 5,596 computed-part/context assertions pass. All contexts match 1440x900/DPR1/mouse. All 96 side-by-sides and unmasked raw diffs are retained: 0/96 pixel identities, 4,938,434 differing pixels. Live records and content widths are not the acceptance criterion. |
+| 1. Component visual parity | PASS for the requested computed-part criterion | 54 real read-only Demo states; 108/108 product cases, 6,440 painted-style/geometry assertions and 432 context assertions pass. All contexts match 1440x900/DPR1/mouse. All 108 side-by-sides and unmasked raw diffs are retained: 0/108 pixel identities, 5,918,028 differing pixels. Live records and content widths are not the acceptance criterion. |
 | 2. Page comparison | PASS, rerun for the correction | 120/120 before/after/reference cases: 20 screens, 1440/390/1920, both themes. Fresh final-build documents, no document overflow or uncaught page errors. Raw differences remain visible. |
-| 3. Keyboard and accessibility | PASS for tested matrix | Existing trusted-key behavior probes retained. The correction verifies 440/440 real focus and width/height targets, including roving menu items, across site/local, light/dark and 1440/390px. Targets are 32px mouse and 44px touch. Removing focus paint fails; changing a 33px row to 80px fails; restoring each passes. |
+| 3. Keyboard and accessibility | PASS for tested matrix | All 108 cases in both mouse and 390px/coarse profiles: 420+420 actual focus targets pass pixel contrast and absolute sizing. Disabled-only pagination has no enabled focus target and is reported separately. Four ring-only removals retain the background offset shadow and fail; 40 conditional-clear removals fail and restore. Paired upstream/product 60px mutations fail for both owner targets; four actual-DOM 60px mutations fail and restore. All four keyboard workflows and the held-catalog readiness/Space probe pass. Real-page sizing passes 18/18, 476 controls. |
 | 4. Structural R1-R7 | PASS | 8/8 production-fixture cases. All assertions retained. R3 counts data cells, not the new empty-status row; its expected counts are unchanged. R4 remains N.A. in the inherited probe. |
-| 5. Build and tests | PASS for affected checks; exact-head CI required | Current site 393/393, both builds, local typecheck, QA-script syntax and 96-case CLI exit 0. Historical local 984/985 has only the known `/tmp/h` ENOTDIR in cli-init; that unrelated suite was not rerun or changed. Final-head CI is mandatory before handoff. |
+| 5. Build and tests | PASS for affected checks; exact-head CI required | Current site 397/397, both builds, local typecheck, QA-script syntax and 108-case CLI exit 0. The final four comparator regressions were rerun after tightening enabled-checkbox geometry. Historical local 984/985 has only the known `/tmp/h` ENOTDIR in cli-init; that unrelated suite was not rerun or changed. Final-head CI is mandatory before handoff. |
 | 6. License and provenance | PASS | Five notices byte-identical; full MIT pin/license and font licenses retained and packaged. 205 renderer inputs; zero EE inputs. |
 | 7. Deployment verification | Historical preview; not republished by this correction | Production not deployed; deploy gated on owner. The existing non-production preview is https://uxb-pr-4.skillar-site.pages.dev. Its earlier receipt is not a final-correction deployment claim. Current head and completed CI belong in `publication.json`. |
 
 ## Owner overrides
 
-32px mouse controls, 44px coarse-pointer or <=768px controls; visible focus;
+Absolute 32px mouse controls, 44px coarse-pointer or <=768px controls; visible focus;
 correct WAI-ARIA semantics; native links and dialogs. The validator gives
 owner sizing precedence even if the upstream and product share a wrong size.
+Control height tolerance is 0.01px, independent of upstream height. Table rows
+retain their separate density/content rules. Focus evidence compares actual
+before/focused PNG pixels: two consecutive CSS pixels must change with at
+least 3:1 contrast against the unfocused background. A white offset shadow
+on white cannot pass. The stronger ring color is scoped to tables and their
+menus, not shared tokens or PR-5 components.
 Zero-width border colours are non-painted, not visual mismatches.
 
 ## Reference and verification limits
@@ -43,11 +51,21 @@ Raw pixel identity is diagnostic and is not claimed.
 | DataTable | 12/12 |
 | SortableHeader | 12/12 |
 | Row | 12/12 |
-| Toolbar | 4/4 |
-| FacetPanel | 16/16 |
+| Toolbar | 8/8 |
+| FacetPanel | 20/20 |
 | Pagination | 20/20 |
 | Density | 16/16 |
-| ColumnVisibility | 4/4 |
+| ColumnVisibility | 8/8 |
+
+`table-states.mjs` enumerates required membership rather than trusting a total.
+New states cover empty facets, nonempty toolbar search and an unchecked column.
+Conditional facet clears are measured whenever present, including collapsed,
+text and empty states. Both disabled and enabled column rows assert background,
+padding and radius; enabled checkbox paint, geometry and opacity are asserted.
+The real Demo shows these states read-only, so no pinned-MIT exception is used.
+Facet references use the traces route; search-clear references use `/datasets`.
+The source's nested clear `role=button` becomes a native button; the search
+clear is keyboard reachable instead of the source's `tabindex=-1`.
 
 Non-comparable content is enumerated by `tableContentExclusions` in
 `validate-table-parity.mjs`: records and labels, row/column/option counts,
@@ -63,9 +81,13 @@ DOM state, not by an invented equivalent screenshot. Known-total first/last
 actions and busy disabling use the matching observed navigation paint.
 Native semantics, 32/44px hit areas and visible 2px focus take owner precedence.
 
-Current receipts: `actual-demo-parts.json`, `table-parity-input.json`,
-`table-parity-results.json`, `focus-matrix-final.json`,
-`negative-part-proofs.json`, `comparisons-final/` and `viewport-final/`.
+Current receipts: `review-demo-parts.json`, `review-table-input.json`,
+`review-table-results.json`, `review-touch-parts.json`, `review-focus-pixels/`,
+`review-negative-proofs.json`, `review-clear-negative-proofs.json`,
+`review-native-60-proofs.json`, `review-keyboard.json`,
+`review-real-sizing.json` and `review-comparisons/`.
+The held-catalog probe records the old status-row match with zero interactive
+rows, subscribes before release, then verifies trusted Space on the loaded row.
 Previous raw receipts remain available and are not rewritten as pixel passes.
 The capture profile explicitly resets coarse-pointer emulation so mouse
 comparisons cannot accidentally use 44px touch controls.

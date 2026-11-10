@@ -4,6 +4,7 @@ const installed = new WeakSet<Document>();
 export function tableStyles(): void {
   if (typeof document === "undefined" || installed.has(document)) return;
   const css = `
+.lf-table-surface,.lf-table-toolbar,.lf-table-pagination,.lf-facet-panel,.lf-menu[aria-labelledby^="columns-"],.lf-menu[aria-labelledby^="density-"]{--lf-ring:var(--lf-icon-foreground)}
 .lf-table-surface{--lf-table-compact-row-height:28px;--lf-table-row-height:var(--lf-table-compact-row-height);min-width:0;color:var(--lf-foreground);font:var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans);-webkit-font-smoothing:antialiased}
 .lf-table-surface[data-density=normal]{--lf-table-row-height:96px}
 .lf-table-surface:is([data-density=spacious],[data-density=comfortable]){--lf-table-row-height:256px}
@@ -37,6 +38,7 @@ export function tableStyles(): void {
 .lf-table-toolbar .lf-field{margin:0;gap:0;min-width:0}
 .lf-table-toolbar .lf-search{width:100%}
 .lf-table-toolbar .lf-search>button{min-width:var(--lf-control-height);width:var(--lf-control-height)}
+.lf-table-toolbar .lf-search>button[aria-label$="지우기"]{border-radius:0;color:var(--lf-foreground-tertiary)}
 .lf-table-pagination{container-type:inline-size;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--lf-space-4);min-width:0;color:var(--lf-foreground);font:var(--lf-weight-strong) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
 .lf-table-surface>.lf-table-pagination{margin-block:var(--lf-space-2)}
 .lf-table-pagination .lf-field{display:flex;align-items:center;gap:var(--lf-space-2);margin:0}
@@ -63,6 +65,8 @@ export function tableStyles(): void {
 .lf-facet-heading[data-active=true]{border-radius:var(--lf-radius-md);background:var(--lf-muted)}
 .lf-facet-heading[data-active=true]>.lf-button{background:var(--lf-muted)}
 .lf-facet-heading[data-active=true]>.lf-button:hover:not(:disabled){background:var(--lf-accent)}
+.lf-facet-heading[data-active=true]>.lf-button:not(:first-child){padding:2px 4px;border-radius:var(--lf-radius-sm);background:transparent;color:var(--lf-muted-foreground);font-size:11px;line-height:16px;font-weight:var(--lf-weight-regular)}
+.lf-facet-heading>.lf-button:not(:first-child) svg{width:12px;height:12px}
 .lf-facet-heading>.lf-button svg{width:var(--lf-overlay-icon-size);height:var(--lf-overlay-icon-size)}
 .lf-facet-heading>[aria-expanded=false] svg{transform:rotate(-90deg)}
 .lf-facet-modes{display:flex;gap:var(--lf-space-half);margin:var(--lf-space-1) var(--lf-space-2);padding:var(--lf-space-half);border-radius:var(--lf-radius-md);background:light-dark(color-mix(in oklab,var(--lf-control-track) 60%,transparent),var(--lf-muted))}
@@ -77,6 +81,7 @@ export function tableStyles(): void {
 .lf-facet-choice .lf-checkbox>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--lf-foreground-secondary)}
 .lf-facet-choice>span{color:var(--lf-muted-foreground);font-variant-numeric:tabular-nums}
 .lf-facet-values>.lf-field{margin-block:var(--lf-space-1)}
+.lf-facet-values>[role=status]{margin:0;padding:var(--lf-space-1) 0;text-align:center;color:var(--lf-muted-foreground);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
 .lf-facet-values .lf-input{padding-inline-end:var(--lf-space-2);font-family:var(--lf-font-sans);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);border-color:var(--lf-input)}
 .lf-facet-values .lf-input[type=search]{font-family:var(--lf-font-mono)}
 .lf-facet-values .lf-input[type=text]{padding-inline:var(--lf-space-2)}

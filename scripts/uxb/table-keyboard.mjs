@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { arm, press, ready, signal } from "./trusted-keys.mjs";
+import { paintedFocus } from "./focus-paint.mjs";
 
 async function focus(page, selector) {
   await page._sendToTarget("Page.bringToFront");
@@ -11,13 +12,13 @@ async function focus(page, selector) {
 }
 
 export async function focusPaint(page, selector) {
-  return page.evaluate(selector => {
+  const pixels = await paintedFocus(page, selector);
+  return page.evaluate(({ selector, pixels }) => {
     const node = document.querySelector(selector), style = getComputedStyle(node);
-    const outline = style.outlineStyle !== "none" && Number.parseFloat(style.outlineWidth) >= 2;
-    const shadow = style.boxShadow !== "none" && /(?:^| )2px(?: |$)/.test(style.boxShadow);
     return { selector, focused: node === document.activeElement, focusVisible: node.matches(":focus-visible"),
-      outline: style.outline, shadow: style.boxShadow, pass: node.matches(":focus-visible") && (outline || shadow) };
-  }, selector);
+      outline: style.outline, shadow: style.boxShadow, pixels,
+      pass: node === document.activeElement && node.matches(":focus-visible") && pixels.pass };
+  }, { selector, pixels });
 }
 
 /** The mutation is confined to a localhost tab and removed before returning. */
@@ -172,7 +173,8 @@ export async function sessionsKeyboard(page, base) {
 export async function skillsKeyboard(page, base) {
   await page._sendToTarget("Page.bringToFront");
   await page.goto(`${base}/skills/`, { waitUntil: "domcontentloaded" });
-  await ready(page, ".ui-table tbody tr");
+  const row = '.ui-table tbody tr[tabindex="0"]';
+  await ready(page, row);
   const density = ".ui-table button[id^=density-]";
   await openMenu(page, density); await press(page, "End");
   await arm(page, { kind: "attribute", selector: ".ui-table", attribute: "data-density", value: "spacious" });
@@ -187,11 +189,11 @@ export async function skillsKeyboard(page, base) {
   const query = new URL(url).searchParams;
   assert.equal(query.get("density"), "spacious");
   assert.equal(query.get("sort"), "name"); assert.equal(query.get("hide"), "revision");
-  await page.goto(url, { waitUntil: "domcontentloaded" }); await ready(page, ".ui-table tbody tr");
+  await page.goto(url, { waitUntil: "domcontentloaded" }); await ready(page, row);
   assert.equal(await page.evaluate(() => document.querySelector('th[data-column="revision"]')), null);
   assert.equal(await page.evaluate(() => document.querySelector(".ui-table").dataset.density), "spacious");
-  await focus(page, ".ui-table tbody tr");
-  await arm(page, { kind: "attribute", selector: ".ui-table tbody tr", attribute: "data-selected", value: "true" });
+  await focus(page, row);
+  await arm(page, { kind: "attribute", selector: row, attribute: "data-selected", value: "true" });
   await press(page, "Enter"); await signal(page);
   const selected = await page.evaluate(() => location.href);
   assert.ok(new URL(selected).searchParams.get("skill"));

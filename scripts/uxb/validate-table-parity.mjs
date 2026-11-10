@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import { tableStates } from "./table-states.mjs";
 
 // Compare painted parts with real Demo observations, never business-data pixels.
 const text = ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "color"];
@@ -47,7 +48,7 @@ export function compareTableCase(actual, reference, references, { colors, minimu
         check(part, `border${edge}Color`, a[part].styles[`border${edge}Color`], source.styles[`border${edge}Color`]);
   };
   const height = (part, expected) => check(part, "height", a[part]?.box.height, expected, 1);
-  const control = (part, source = r[part]) => height(part, Math.max(minimum, source?.box.height ?? NaN));
+  const control = part => check(part, "height", a[part]?.box.height, minimum, .01);
   const glyph = part => {
     styles(part, ["color"]); height(part, r[part]?.box.height);
     check(part, "width", a[part]?.box.width, r[part]?.box.width, 1);
@@ -66,10 +67,10 @@ export function compareTableCase(actual, reference, references, { colors, minimu
     check("context", property, actual.semantic[property], reference.semantic[property]);
   if (tableFamilies.has(actual.family) && !(actual.family === "Density" && actual.state === "open")) {
     styles("header", [...text, ...padding, ...shape]);
-    height("header", Math.max(r.header.box.height, minimum + 8));
+    height("header", minimum + 8);
     if (actual.family === "SortableHeader") {
       styles("sortButton", text, r.header);
-      control("sortButton", { box: { height: r.header.box.height - 8 } });
+      control("sortButton");
       if (actual.state !== "unsorted") glyph("sortIndicator");
       else check("sortIndicator", "absent", Boolean(a.sortIndicator), false);
     } else {
@@ -83,9 +84,13 @@ export function compareTableCase(actual, reference, references, { colors, minimu
       }
     }
   }
-  if (actual.family === "Toolbar") for (const part of ["columnsTrigger", "densityTrigger"]) {
+  if (actual.family === "Toolbar" && actual.state === "default") for (const part of ["columnsTrigger", "densityTrigger"]) {
     styles(part, [...text, ...padding]); box(part); control(part);
     if (part === "densityTrigger") check(part, "width", a[part].box.width, minimum, 1);
+  }
+  if (actual.family === "Toolbar" && actual.state === "search") {
+    styles("searchClear", ["color", ...padding, ...shape]); control("searchClear"); glyph("searchClearGlyph");
+    check("searchClear", "width", a.searchClear.box.width, minimum, .01);
   }
   if (actual.family === "Density" && actual.state === "open") {
     box("container"); shadow("container");
@@ -96,22 +101,34 @@ export function compareTableCase(actual, reference, references, { colors, minimu
   }
   if (actual.family === "ColumnVisibility") {
     box("container"); shadow("container"); styles("itemLabel", text);
-    height("item", minimum);
+    for (const part of ["item", "enabledItem"]) {
+      styles(part, [...padding, ...shape]); control(part);
+    }
+    styles("enabledLabel", text); styles("enabledCheckbox", [...shape, "borderLeftWidth", "borderRightWidth", "color"]);
+    height("enabledCheckbox", r.enabledCheckbox.box.height);
+    check("enabledCheckbox", "width", a.enabledCheckbox.box.width, r.enabledCheckbox.box.width, .01);
+    check("enabledCheckbox", "effectiveOpacity", a.enabledCheckbox.effectiveOpacity, r.enabledCheckbox.effectiveOpacity);
     check("checkbox", "outerInset", a.checkbox.box.left - a.container.box.left,
       r.checkbox.box.left - r.container.box.left, 1);
   }
   if (actual.family === "FacetPanel") {
     styles("heading", [...text, ...padding, ...shape]); control("heading");
+    if (a.clear || r.clear) {
+      styles("clear", [...text, ...padding, ...shape]); control("clear"); glyph("clearGlyph");
+    }
     if (actual.state !== "collapsed") {
       styles("modeTrack", [...padding, "backgroundColor", "borderRadius"]);
-      height("modeTrack", r.modeTrack.box.height + minimum - r.modeActive.box.height);
+      height("modeTrack", minimum + numeric(r.modeTrack.styles.paddingTop) + numeric(r.modeTrack.styles.paddingBottom));
       for (const part of ["modeActive", "modeInactive"]) {
         styles(part, [...text, ...padding, "borderRadius"]); control(part);
       }
       styles("modeInactive", ["backgroundColor"]);
       styles("modeFill", ["backgroundColor", "borderRadius"]); shadow("modeFill");
       styles("input", [...text, ...padding, ...shape]); control("input");
-      if (actual.state !== "text") {
+      if (actual.state === "empty") {
+        styles("empty", [...text, ...padding, ...shape]);
+        check("checkbox", "absent", Boolean(a.checkbox), false);
+      } else if (actual.state !== "text") {
         styles("choiceLabel", text);
         check("choiceLabel", "checkboxGap", a.choiceLabel.box.left - a.checkbox.box.right,
           r.choiceLabel.box.left - r.checkbox.box.right, 1);
@@ -127,7 +144,7 @@ export function compareTableCase(actual, reference, references, { colors, minimu
     for (const part of ["previous", "next"]) {
       const source = [reference, ...references].filter(item => item.theme === actual.theme && item.family === "Pagination")
         .map(item => item.semantic.parts[part]).find(node => node.disabled === a[part].disabled);
-      styles(part, [...text, ...padding, ...shape], source); control(part, source);
+      styles(part, [...text, ...padding, ...shape], source); control(part);
       check(part, "width", a[part].box.width, minimum, 1);
       check(part, "effectiveOpacity", a[part].effectiveOpacity, source.effectiveOpacity);
       glyph(`${part}Glyph`);
@@ -153,9 +170,14 @@ export function compareTableCase(actual, reference, references, { colors, minimu
 
 export function compareTableMatrix({ cases, references, colors }) {
   const key = item => `${item.theme}/${item.family}/${item.state}`;
-  if (cases.length !== 96 || references.length !== 48 ||
-    new Set(cases.map(item => `${item.app}/${key(item)}`)).size !== 96 ||
-    new Set(references.map(key)).size !== 48) throw Error("Expected 96 unique product cases and 48 real Demo states");
+  const expected = Object.entries(tableStates).flatMap(([family, states]) =>
+    states.flatMap(state => ["light", "dark"].map(theme => `${theme}/${family}/${state}`)));
+  const actualKeys = cases.map(item => `${item.app}/${key(item)}`);
+  const expectedKeys = ["site", "local"].flatMap(app => expected.map(item => `${app}/${item}`));
+  if (references.length !== expected.length || cases.length !== expectedKeys.length ||
+    expected.some(item => !references.some(reference => key(reference) === item)) ||
+    new Set(actualKeys).size !== expectedKeys.length || expectedKeys.some(item => !actualKeys.includes(item)))
+    throw Error("Missing or duplicate shipped state/theme/renderer in table matrix");
   const results = cases.map(item => compareTableCase(item,
     references.find(reference => key(reference) === key(item)), references,
     { colors, minimum: item.semantic.coarse || item.semantic.viewport[0] <= 768 ? 44 : 32 }));

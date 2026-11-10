@@ -54,6 +54,8 @@ export async function measureTableParts(page, selector, family) {
       add("columnsTrigger", first(root, 'button[title="Show/hide columns"],button[id^="columns-"]'));
       add("densityTrigger", first(root, 'button[title="Row height"],button[id^="density-"]'));
       add("search", first(root, 'input[type="search"]'));
+      add("searchClear", first(root, 'button[aria-label$="지우기"],button[aria-label="Clear search"]'));
+      add("searchClearGlyph", first(root, 'button[aria-label$="지우기"] svg,button[aria-label="Clear search"] svg'));
     }
     if (family === "Density" && !table) {
       add("body", first(root, ".lf-menu__body") ?? root);
@@ -69,6 +71,13 @@ export async function measureTableParts(page, selector, family) {
       add("item", first(root, '[role="menuitemcheckbox"]') ?? checkbox?.closest("label") ?? checkbox?.parentElement);
       add("itemLabel", checkbox?.nextElementSibling ?? first(root, '[role="menuitemcheckbox"]'));
       add("checkbox", checkbox);
+      const enabled = [...root.querySelectorAll('[role="menuitemcheckbox"]')]
+        .find(node => visible(node) && !node.matches(':disabled,[aria-disabled=true]')) ??
+        [...root.querySelectorAll('[role="checkbox"]')].find(node => visible(node) &&
+          !node.matches(':disabled,[aria-disabled=true]'))?.parentElement;
+      add("enabledItem", enabled);
+      add("enabledLabel", enabled?.querySelector("span[title],label") ?? enabled);
+      add("enabledCheckbox", enabled?.querySelector('[role="checkbox"],.lf-menu__checkbox'));
       add("search", first(root, 'input'));
     }
     if (family === "FacetPanel") {
@@ -82,6 +91,10 @@ export async function measureTableParts(page, selector, family) {
         getComputedStyle(node).position === "absolute" && getComputedStyle(node).backgroundColor !== "rgba(0, 0, 0, 0)" &&
         node.getBoundingClientRect().height > 10)) ?? first(root, '.lf-facet-modes>[aria-pressed="true"]'));
       add("input", first(root, 'input[type="search"],input[placeholder]'));
+      add("clear", first(root, 'button[aria-label$="필터 해제"],[role="button"][aria-label^="Clear "]'));
+      add("clearGlyph", first(root, 'button[aria-label$="필터 해제"] svg,[role="button"][aria-label^="Clear "] svg'));
+      add("empty", first(root, '[role="status"]') ?? [...root.querySelectorAll("div")]
+        .find(node => visible(node) && node.children.length === 0 && node.textContent === "No matches found"));
       add("choice", first(root, '.lf-facet-choice,.lf-checkbox,[role="checkbox"]')?.closest("label") ??
         first(root, '.lf-facet-choice,[role="checkbox"]'));
       add("checkbox", first(root, '.lf-checkbox__box,[role="checkbox"]'));

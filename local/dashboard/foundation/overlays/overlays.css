@@ -82,6 +82,10 @@
 .lf-menu__item>.lf-menu__checkbox{width:var(--lf-space-4);height:var(--lf-space-4);flex:none;margin:0 var(--lf-space-2) 0 0;border:var(--lf-border-width) solid var(--lf-control-border);border-radius:var(--lf-radius-sm)}
 .lf-menu__checkbox[data-checked=true]{background:var(--lf-control-fill);border-color:var(--lf-control-fill);color:var(--lf-primary-foreground)}
 .lf-menu__item>.lf-menu__checkbox>svg{color:inherit}
+.lf-menu__body:has(>.lf-menu__item>.lf-menu__checkbox){padding:var(--lf-space-3)}
+.lf-menu[data-width="wide"]:has(.lf-menu__checkbox){padding:0}
+.lf-menu__item:has(>.lf-menu__checkbox){padding:0;border-radius:0}
+.lf-menu__item:has(>.lf-menu__checkbox):is(:focus,:hover){background:transparent}
 .lf-menu__separator { height: var(--lf-border-width); margin: var(--lf-space-1) calc(-1 * var(--lf-space-1)); background: var(--lf-border); }
 .lf-menu__empty { display: block; padding: var(--lf-space-4) var(--lf-space-2); color: var(--lf-muted-foreground); font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); text-align: center; }
 .lf-tooltip { max-width: min(var(--lf-tooltip-width), calc(100vw - var(--lf-space-4))); padding: var(--lf-space-1h) var(--lf-space-3); border-radius: var(--lf-radius-md); }

@@ -17,7 +17,7 @@ export function TableFacet<T extends string>({ label, choices, selected = [], ch
   return <fieldset class="lf-facet">
     <legend><span class="lf-facet-heading" data-active={selected.length > 0}>
       <Button text={label} icon="chevron" variant="ghost" aria-expanded={expanded} onClick={() => setExpanded(value => !value)} />
-      {selected.length > 0 && <Button text="해제" aria-label={`${label} 필터 해제`} variant="ghost" onClick={() => change(undefined)} />}
+      {selected.length > 0 && <Button text="해제" icon="close" aria-label={`${label} 필터 해제`} variant="ghost" onClick={() => change(undefined)} />}
     </span></legend>
     {expanded && <>
       <div class="lf-facet-modes" role="group" aria-label={`${label} 입력 방식`}>
