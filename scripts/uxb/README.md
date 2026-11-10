@@ -1,5 +1,13 @@
 # Component visual evidence
 
+PR-4 table receipts and limits are in `GATE-STATUS.md`. `table-keyboard.mjs`
+exercises sorting, selection, paging, menus and caller keyboard behavior.
+`table-sizing.mjs` checks actual native hit areas on skills, sessions and the
+mounted hosted embed; wrapper-only measurements miss inherited Select sizing.
+Component capture, raw comparison and 20-screen matrix runners live in the
+PR-4 evidence directory named by the ledger. Strict same-data visual approval
+is separate from successful keyboard, sizing and structural checks.
+
 Skillar is a Preact application. This harness captures live DOM specimens,
 computed geometry, real hover/focus/held-pointer states and optional Langfuse
 references without introducing a second renderer or a browser dependency.
