@@ -10,7 +10,7 @@ export function ColumnVisibility({ columns, hidden, onChange, onReset, allowEmpt
   tableStyles();
   const id = useId();
   const visible = columns.filter(column => !hidden.includes(column.id));
-  return <DropdownMenu id={`columns-${id}`} label={`열 ${visible.length}/${columns.length}`} buttonIcon="columns" width="wide"
+  return <DropdownMenu id={`columns-${id}`} label={`열 ${visible.length}/${columns.length}`} buttonIcon="columns" variant="ghost" width="wide" selectionIndicator="checkbox"
     items={[...columns.map(column => ({
       id: column.id, label: column.label, checked: !hidden.includes(column.id),
       disabled: column.hideable === false || (!allowEmpty && visible.length === 1 && visible[0]?.id === column.id),

@@ -1,4 +1,4 @@
-import { Button } from "../controls/buttons";
+import { IconButton } from "../controls/buttons";
 import { Select } from "../controls/fields";
 import { tableStyles } from "./styles";
 
@@ -22,10 +22,10 @@ export function TablePagination({ index, size, total, onChange, busy = false }: 
       onChange={event => onChange({ index: 0, size: Number(event.currentTarget.value) })} />
     <span class="lf-table-page" aria-live="polite">{current + 1} / {count} 페이지</span>
     <span class="lf-table-page-actions">
-      <Button text="처음" variant="outline" disabled={busy || current === 0} onClick={() => onChange({ index: 0, size })} />
-      <Button text="이전" variant="outline" disabled={busy || current === 0} onClick={() => onChange({ index: current - 1, size })} />
-      <Button text="다음" variant="outline" disabled={busy || current === count - 1} onClick={() => onChange({ index: current + 1, size })} />
-      <Button text="마지막" variant="outline" disabled={busy || current === count - 1} onClick={() => onChange({ index: count - 1, size })} />
+      <IconButton label="처음" icon="chevronsLeft" variant="outline" disabled={busy || current === 0} onClick={() => onChange({ index: 0, size })} />
+      <IconButton label="이전" icon="chevronLeft" variant="outline" disabled={busy || current === 0} onClick={() => onChange({ index: current - 1, size })} />
+      <IconButton label="다음" icon="chevronRight" variant="outline" disabled={busy || current === count - 1} onClick={() => onChange({ index: current + 1, size })} />
+      <IconButton label="마지막" icon="chevronsRight" variant="outline" disabled={busy || current === count - 1} onClick={() => onChange({ index: count - 1, size })} />
     </span>
   </nav>;
 }

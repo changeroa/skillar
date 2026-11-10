@@ -2,6 +2,19 @@
 
 ## Phase B tables (PR-4)
 
+Measured-part correction: compact non-interactive row content is 28px;
+focusable rows and native checkbox targets grow to the owner's 32/44px.
+Loading bars are 16px. Loaded-row hover and selection use opaque accent;
+the loading-row source class is not the loaded-row paint reference.
+Facet tracks use control-track at 60% in light and muted in dark,
+12px/12px mode labels, a 14px checkbox indicator and 12px/18px Plex Mono
+search with 4/8/4/28px padding; text mode uses sans and 8px inline padding. Density menu
+headings are 13px/20px with a 1px separator and 4px block margins.
+Column menu checkboxes are 16px with an 8px label gap and 12px effective
+outer inset. Pagination uses 32/44px outlined icon buttons and 14px muted arrows.
+These are actual Demo measurements; row/column counts, text-driven widths,
+optional captions and known-total first/last actions remain caller content.
+
 Shared table primitives live in `local/dashboard/foundation/table/`. The real
 view-only Demo v4.77.0 table defines paint and anatomy; the pinned MIT table
 sources define supplementary states. Headers use 13px/20px strong type, 4px

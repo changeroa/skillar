@@ -25,10 +25,10 @@ export function TableFacet<T extends string>({ label, choices, selected = [], ch
         <Button text="텍스트" variant="ghost" aria-pressed={mode === "text"} onClick={() => setMode("text")} />
       </div>
       <div class="lf-facet-values">
-        <Input label={`${label} 값 찾기`} type="search" placeholder={mode === "text" ? "포함하는 값 찾기" : "값 찾기"}
+        <Input label={`${label} 값 찾기`} type={mode === "text" ? "text" : "search"} icon={mode === "text" ? false : "search"} placeholder={mode === "text" ? "포함하는 값 찾기" : "값 찾기"}
           value={query} onInput={event => setQuery(event.currentTarget.value)} />
         {shown.map(choice => <div class="lf-facet-choice" key={choice.value}>
-          <Checkbox label={choice.label} title={choice.value} checked={selected.includes(choice.value)}
+          <Checkbox size="sm" label={choice.label} title={choice.value} checked={selected.includes(choice.value)}
             onChange={event => {
               const next = event.currentTarget.checked ? [...selected, choice.value] : selected.filter(value => value !== choice.value);
               change(next.length ? next : undefined);

@@ -15,11 +15,12 @@ export type MenuItem = {
 };
 
 export function DropdownMenu({ id, label, items, disabled = false, icon, heading, checkPosition = "end",
-  width = "content", align = "start", variant = "outline", buttonIcon }: {
+  width = "content", align = "start", variant = "outline", buttonIcon, selectionIndicator = "check" }: {
   readonly id: string; readonly label: string; readonly items: readonly MenuItem[]; readonly disabled?: boolean;
   readonly icon?: ControlIcon; readonly width?: "content" | "wide"; readonly align?: "start" | "end";
   readonly variant?: ButtonProps["variant"]; readonly buttonIcon?: ControlIcon;
   readonly heading?: string; readonly checkPosition?: "start" | "end";
+  readonly selectionIndicator?: "check" | "checkbox";
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -98,17 +99,19 @@ export function DropdownMenu({ id, label, items, disabled = false, icon, heading
         ordered.find(node => node.textContent?.trim().toLocaleLowerCase().startsWith(text))?.focus();
       }}>
       <div class="lf-menu__body" data-check-position={checkPosition}>
-        {heading && <div class="lf-menu__heading">{heading}</div>}
+        {heading && <><div class="lf-menu__heading">{heading}</div><div role="separator" class="lf-menu__separator" /></>}
         {items.map(item => <Fragment key={item.id}>
         {item.separatorBefore && <div role="separator" class="lf-menu__separator" />}
         <button id={`${id}-${item.id}`} type="button"
         role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
         aria-checked={item.checked} disabled={item.disabled} tabIndex={-1}
-        class="lf-menu__item" data-destructive={item.destructive || undefined}
+        class="lf-menu__item" data-destructive={item.destructive || undefined} data-indicator={item.checked === undefined ? undefined : selectionIndicator}
         onPointerMove={event => { if (!item.disabled) event.currentTarget.focus(); }}
         onClick={() => { dismiss(true); item.onSelect(); }}>
-        {item.icon && <Glyph name={item.icon} />}{item.label}
-        {item.checked && <span aria-hidden="true"><Glyph name="check" /></span>}
+        {item.icon && <Glyph name={item.icon} />}
+        {item.checked !== undefined && selectionIndicator === "checkbox" && <span class="lf-menu__checkbox" data-checked={item.checked} aria-hidden="true">{item.checked && <Glyph name="check" />}</span>}
+        {item.label}
+        {item.checked && selectionIndicator === "check" && <span aria-hidden="true"><Glyph name="check" /></span>}
       </button></Fragment>)}
       {!items.length && <span role="status" class="lf-menu__empty">사용 가능한 항목이 없습니다.</span>}</div>
     </div>}

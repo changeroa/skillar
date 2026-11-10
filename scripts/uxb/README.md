@@ -5,8 +5,37 @@ exercises sorting, selection, paging, menus and caller keyboard behavior.
 `table-sizing.mjs` checks actual native hit areas on skills, sessions and the
 mounted hosted embed; wrapper-only measurements miss inherited Select sizing.
 Component capture, raw comparison and 20-screen matrix runners live in the
-PR-4 evidence directory named by the ledger. Strict same-data visual approval
-is separate from successful keyboard, sizing and structural checks.
+PR-4 evidence directory named by the ledger.
+
+For the table correction, Gate 1 uses the PR-1 accepted rule: compare painted
+parts and meaningful geometry against real Demo measurements when business
+content differs. `table-parts.mjs` observes real DOM parts rather than cloning
+them. `validate-table-parity.mjs` asserts all 96 unique product cases against
+48 actual Demo states, including matching viewport/theme/DPR/pointer context,
+header and cell fonts, row hover/selection, glyph geometry, density menu,
+facet labels and input variants. Missing required parts fail closed.
+Colors use exact Chrome-decoded RGBA bytes; geometry tolerance is 1px.
+
+`tableContentExclusions` enumerates content/model-driven dimensions and owner
+native-control differences. Whole-table pixels, labels and record counts are
+not structural proxies for style parity. Original source/actual PNGs, all
+side-by-sides and raw unmasked diffs remain separate diagnostics.
+
+```sh
+node scripts/uxb/validate-table-parity.mjs \
+  /absolute/evidence/table-parity-input.json \
+  /absolute/evidence/table-parity-results.json
+```
+
+The input contains `cases`, `references` and the Chrome-decoded `colors` map
+recorded by the real capture runner. The report contains every assertion,
+failure and per-component count. `table-focus.mjs` separately drives keyboard
+focus on native controls and roving menu items, measuring the painted ring
+and both target dimensions at 32px mouse and 44px touch. Tab intentionally
+dismisses a menu, so menu auditing uses its arrow-key focus contract.
+Actual-DOM focus removal and row-height mutation must fail before restoring.
+Pin the actual viewport after navigation and assert `innerWidth`; labels
+alone do not prove a phone capture.
 
 Skillar is a Preact application. This harness captures live DOM specimens,
 computed geometry, real hover/focus/held-pointer states and optional Langfuse
