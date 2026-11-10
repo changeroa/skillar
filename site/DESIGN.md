@@ -1,5 +1,47 @@
 # skillar.sh
 
+## Phase B hosted screens (PR-6)
+
+The hosted wireframes-v3 define composition; merged PR-1 through PR-5 primitives
+define measured paint. This section supersedes earlier hosted screen sizing and
+palette rules, not their state, data, consent or lifecycle contracts.
+`hosted.css` adapts legacy HTML controls to the same existing semantic tokens;
+Preact screens compose the existing Card, Metric, table, tabs and overlay layer.
+No local view or hosted embed wiring changes.
+
+Hosted app bodies use 13px/20px sans, 22px/27.5px page titles, 14px/21px section
+titles, 16px main gutters and the existing 4/8/12/16/24px spacing tokens.
+Canvas/card/code/border/ink roles map to the corresponding `--lf-*` tokens.
+Buttons and selects are exactly 32px mouse or 44px phone/coarse, 6px corners,
+13px/20px type; destructive actions retain their existing confirmation.
+All keyboard targets retain contrasting 2px painted focus. Inputs remain named.
+The existing fixed-sidenav-shell keeps main as vertical scroll owner; table
+overflow and peek body retain their separate named responsibilities.
+
+Dashboard B retains the four actual catalog/change/connection/token metrics and
+the paired change chart/recent-skills table. Missing revision totals are not
+invented to match illustrative wireframe data. Card and Metric supply the widget
+anatomy; consent, source selection and management remain available below.
+The skills table retains its four URL-controlled columns and mobile metadata.
+Its existing histogram becomes an initially closed native disclosure so the
+table leads as in v3. The detail uses underline tabs and a document-first layout
+with the supporting version index on the right at desktop, stacked below on
+phones. Peek retains its existing responsive modality and persistent controller.
+Versions keep all current head/pin/export/delete actions and genuine labels;
+the API does not supply historical revision numbers.
+
+Connections keeps its command, combined token/device table and existing pairing
+and token disclosures. Its wireframe's device-only table is not a reason to
+remove OAuth/PAT management. Account shows the genuine profile and session;
+device consent remains at Connections, not an invented account checkbox.
+Anonymous login is a centred 360px card with 24px inset and one Google action.
+GitHub sign-in, policy acceptance and account consent editing in the mock are
+not implemented routes or capabilities. The public 404 is centred with its
+existing recovery destinations. Both retain system/light/dark.
+
+No new decorative motion or accessibility debt. The evidence ledger records
+every v3 difference, live Demo comparisons and source-only exceptions separately.
+
 ## Phase B tables (PR-4)
 
 Measured-part correction: compact non-interactive row content is 28px;

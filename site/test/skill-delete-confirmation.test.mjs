@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { h, render } from "preact";
 import { act } from "preact/test-utils";
 import { createPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
 import { routes } from "../src/skills/api.ts";
-import { loadViews } from "./helpers/t10-dom.mjs";
-import { all, buttonNamed, byTag, classed, FakeEvent, installFakeDom, waitFor } from "./helpers/fake-dom.mjs";
+import { loadViews, mount } from "./helpers/t10-dom.mjs";
+import { all, buttonNamed, byTag, classed, FakeEvent, waitFor } from "./helpers/fake-dom.mjs";
 const { confirmationText, confirmsDeletion, SkillPanel } =
   await loadViews('export { confirmationText, confirmsDeletion, SkillPanel } from "./site/src/skills/skill.ts";');
 
@@ -42,10 +41,7 @@ function fakeApi(t, onDelete = () => ({ deleted: true })) {
 }
 
 async function mountPanel(t, onDelete) {
-  const dom = installFakeDom();
   const api = fakeApi(t, onDelete);
-  const container = dom.createElement("div");
-  dom.body.appendChild(container);
   const deleted = Promise.withResolvers();
   const changed = Promise.withResolvers();
   const events = { deleted: [] };
@@ -53,9 +49,8 @@ async function mountPanel(t, onDelete) {
     skillId, summary: null, signal: new AbortController().signal, focusHeading: 0,
     onChanged: () => changed.resolve(), onDeleted: name => { events.deleted.push(name); deleted.resolve(name); }, onBack: () => {}, onUnauthorized: () => {},
   };
-  await act(() => { render(h(SkillPanel, props), container); });
+  const { dom, container } = await mount(t, SkillPanel, props);
   await waitFor(dom, () => buttonNamed(container, "새 버전 게시")[0], "the skill panel to finish loading");
-  t.after(() => render(null, container));
   return { dom, api, container, events, deleted: deleted.promise, changed: changed.promise };
 }
 

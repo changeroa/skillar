@@ -9,6 +9,7 @@ import { SearchBox } from "./search.ts";
 import { readSkillsView } from "./view-state.ts";
 import type { SkillsView, SkillSort } from "./view-state.ts";
 import { kstDay, shortKstDate } from "../time.ts";
+import { Button } from "../../../local/dashboard/foundation/controls/buttons";
 
 export type LibraryProps = {
   readonly skills: readonly PrivateSkillSummary[];
@@ -89,7 +90,12 @@ export function LibraryPanel(props: LibraryProps) {
   ];
   return h("section", { class: "library", "aria-labelledby": "library-title" },
     h("div", { class: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
-      h("button", { class: "button secondary", type: "button", disabled: status === "loading", onClick: onReload }, "새로고침")),
+      h("div", { class: "cluster" },
+        h(Button, { text: "새로고침", variant: "outline", disabled: status === "loading", onClick: onReload }),
+        h(Button, { text: "새 스킬", onClick: () => {
+          const title = document.getElementById("publish-title");
+          if (title) { title.tabIndex = -1; title.scrollIntoView({ block: "start" }); title.focus({ preventScroll: true }); }
+        } }))),
     notice !== "" && h("p", { class: "note", role: "status" }, notice),
     h("p", { class: "note library-status", role: "status", "aria-live": "polite" }, status === "loading" ? "스킬 불러오는 중…" : message),
     status === "loading" && skills.length === 0 && h(Skeleton, { label: "스킬 불러오는 중", rows: 3 }),
@@ -102,7 +108,9 @@ export function LibraryPanel(props: LibraryProps) {
           selected: { revision: view.revisions, day: view.days },
           onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
       h("div", { class: "skills-table-main" },
-        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 }),
+        skills.length > 0 && selectedId === null && h("details", { class: "skills-distribution" },
+          h("summary", null, "최근 변경일 분포 · KST"),
+          h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 })),
         h(DataTable<PrivateSkillSummary>, { caption: `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`,
           rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },

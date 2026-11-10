@@ -32,8 +32,9 @@
     <link rel="stylesheet" href="/src/account.css">
     <link rel="stylesheet" href="/src/shell.css">
     <link rel="stylesheet" href="/src/login.css">
+    <link rel="stylesheet" href="/src/hosted.css">
   </head>
-  <body class="account-route login-route">
+  <body class="account-route login-route hosted-screen">
     <a class="skip" href="#main">본문으로 건너뛰기</a>
     <header class="shell header app-topbar">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
@@ -54,6 +55,7 @@
     <main id="main" class="shell account-main" tabindex="-1">
       <div class="account-grid">
         <section aria-labelledby="account-title">
+          <div class="login-card-brand"><a href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a></div>
           <h1 id="account-title">로그인</h1>
           <p class="account-lead">세션 기록을 확인하고 내 비공개 스킬을 관리하세요.</p>
           <p id="auth-result" class="note session-status" role="status" hidden></p>
@@ -74,6 +76,9 @@
             </details>
           </div>
           <div id="signed-in" class="auth-actions" hidden>
+            <div class="account-profile">
+            <h2>프로필</h2>
+            <dl class="account-profile-facts"><dt>이름</dt><dd data-profile-name></dd><dt>이메일</dt><dd data-profile-email></dd><dt>로그인 방식</dt><dd>Google</dd></dl>
             <div class="account-user">
               <img id="user-picture" alt="" width="48" height="48" referrerpolicy="no-referrer" hidden>
               <div>
@@ -86,9 +91,11 @@
               <div><dt>최초 로그인</dt><dd><time id="user-created"></time></dd></div>
               <div><dt>최근 로그인</dt><dd><time id="user-last"></time></dd></div>
             </dl>
+            </div>
             <a class="button primary" href="/dashboard/">활동 대시보드 열기 <span aria-hidden="true">→</span></a>
             <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
           </div>
+          <section class="account-session" aria-labelledby="account-session-title"><h2 id="account-session-title">이 브라우저의 세션</h2><form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form></section>
         </section>
         <aside class="account-aside" aria-labelledby="next-title">
           <h2 id="next-title">로그인 다음에는</h2>

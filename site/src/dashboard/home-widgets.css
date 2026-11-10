@@ -1,4 +1,14 @@
 .home-widgets { display: grid; gap: var(--s4); min-width: 0; }
+.hosted-screen .home-widgets { gap: var(--lf-space-4); }
+.hosted-screen .home-number-tiles { gap: var(--lf-space-4); }
+.hosted-screen .home-number-tiles > .lf-metric { border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg); background: var(--lf-card); }
+.hosted-screen .home-widget-grid { gap: var(--lf-space-4); }
+.hosted-screen .home-changes { border-radius: var(--lf-radius-lg); border-color: var(--lf-border); background: var(--lf-card); padding: var(--lf-space-4); }
+.hosted-screen .home-consent { border-top: var(--lf-border-width) solid var(--lf-border); }
+.hosted-screen .home-consent-slot { border-radius: var(--lf-radius-lg); background: var(--lf-card); border-color: var(--lf-border); padding: var(--lf-space-4); }
+.hosted-screen .home-widgets .lf-card__title { font-size: var(--lf-text-base); }
+.hosted-screen .home-range select { min-height: var(--lf-control-height); }
+.hosted-screen .home-widgets .ui-table a, .hosted-screen .home-link { min-height: var(--lf-control-height); }
 .home-number-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
 .home-widget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
 .home-widget { min-width: 0; padding: var(--s4); border: 1px solid var(--rule); background: var(--bg); }
