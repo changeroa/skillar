@@ -1,4 +1,4 @@
-const codes = Object.freeze({ Tab: 9, Enter: 13, Escape: 27, " ": 32, Home: 36, End: 35, ArrowUp: 38, ArrowDown: 40 });
+const codes = Object.freeze({ Tab: 9, Enter: 13, Escape: 27, " ": 32, Home: 36, End: 35, ArrowLeft: 37, ArrowRight: 39, ArrowUp: 38, ArrowDown: 40 });
 
 export async function press(page, key, modifiers = 0) {
   const code = key === " " ? "Space" : key;

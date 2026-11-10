@@ -110,10 +110,19 @@ try {
         await keyFocus("Escape", "#nested-confirm");
         verify(await page.evaluate(() => document.querySelector("#sample-dialog").open), true);
         await keyFocus("Escape", "#open-dialog");
-        await open("#confirm-loading", "#sample-confirm-cancel");
+        await open("#confirm-loading", "#sample-confirm-title");
+        verify(await page.evaluate(() => document.querySelector("#sample-confirm-cancel").disabled), true);
         verify(await page.evaluate(() => document.querySelector('#sample-confirm [aria-busy="true"]').disabled), true);
         await capture(`${id}-confirm-loading`, "#sample-confirm");
-        await keyFocus("Escape", "#confirm-loading");
+        await press(page, "Escape");
+        verify(await page.evaluate(() => document.querySelector("#sample-confirm").open), true);
+        const beforeBusyReload = await page.evaluate(() => window.__overlayKeys);
+        await page.goto(`${url}?theme=${theme}`, { waitUntil: "domcontentloaded" });
+        await ready(page, "#open-dialog");
+        await page.evaluate(() => {
+          window.__overlayKeys = [];
+          document.addEventListener("keydown", e => window.__overlayKeys.push({ key: e.key, trusted: e.isTrusted }), true);
+        });
         await open("#confirm-error", "#sample-confirm-cancel");
         verify(await page.evaluate(() => Boolean(document.querySelector("#sample-confirm [role=alert]"))), true);
         await capture(`${id}-confirm-error`, "#sample-confirm");
@@ -139,7 +148,7 @@ try {
         verify(await page.evaluate(() => document.querySelector("#tooltip-trigger").getAttribute("aria-describedby")), "sample-tooltip");
         await press(page, "Escape");
         verify(await page.evaluate(() => document.querySelector("#sample-tooltip").matches(":popover-open")), false);
-        const trusted = await page.evaluate(() => window.__overlayKeys);
+        const trusted = [...beforeBusyReload, ...await page.evaluate(() => window.__overlayKeys)];
         verify(trusted.length > 25 && trusted.every(e => e.trusted), true);
         const ax = await page._sendToTarget("Accessibility.getFullAXTree");
         await writeFile(join(output, `${id}-ax.json`), JSON.stringify(ax, null, 2));
@@ -150,7 +159,7 @@ try {
     }
 } finally {
   await writeFile(join(output, "results.json"), JSON.stringify({ checks, results, captures }, null, 2));
-  await tabs.closeAll(); await browser.close();
+  await tabs.close(tab); await browser.close();
 }
 console.log(JSON.stringify({ checks, cases: results.length, passed: results.filter(r => r.pass).length,
   failed: results.filter(r => !r.pass), captures: captures.length }));

@@ -13,7 +13,7 @@ export type DialogProps = {
   readonly initialFocusId?: string;
   readonly kind?: "dialog" | "alertdialog";
   readonly placement?: "center" | "side" | "bottom";
-  readonly size?: "default" | "comparison";
+  readonly size?: "default" | "comparison" | "confirm";
   readonly subtitle?: string;
 };
 
@@ -29,7 +29,7 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
     document.documentElement.style.overflow = "hidden";
     node.showModal();
     const initial = initialFocusId ? document.getElementById(initialFocusId) : null;
-    if (initial && node.contains(initial)) initial.focus({ preventScroll: true });
+    if (initial && node.contains(initial) && !initial.matches(":disabled")) initial.focus({ preventScroll: true });
     else node.querySelector<HTMLElement>("[data-dialog-start]")?.focus({ preventScroll: true });
     return () => {
       node.close();
@@ -58,12 +58,14 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
     }}
     onClick={event => event.stopPropagation()}>
     <header class="lf-dialog__head">
+      <div class="lf-dialog__head-content">
       <div class="lf-dialog__heading"><h2 id={`${id}-title`} tabIndex={-1} data-dialog-start>{title}</h2>
         {subtitle && <p>{subtitle}</p>}</div>
       <button type="button" class="lf-overlay-close" aria-label="닫기" onClick={onClose}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
       </button>
+      </div>
     </header>
     <div class="lf-dialog__body">
       {description && <p id={`${id}-description`}>{description}</p>}
@@ -73,19 +75,22 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
   </dialog>;
 }
 
-export function ConfirmDialog({ id, open, title, description, confirmLabel, onConfirm,
-  onClose, busy = false, error, confirmDisabled = false }: {
+export function ConfirmDialog({ id, open, title, description, confirmLabel, cancelLabel = "취소", onConfirm,
+  onClose, busy = false, error, confirmDisabled = false, children }: {
   readonly id: string; readonly open: boolean; readonly title: string; readonly description: string;
   readonly confirmLabel: string; readonly onConfirm: () => void; readonly onClose: () => void;
+  readonly cancelLabel?: string; readonly children?: ComponentChildren;
   readonly busy?: boolean; readonly error?: string | undefined;
   readonly confirmDisabled?: boolean;
 }) {
-  return <Dialog id={id} open={open} title={title} description={description} kind="alertdialog"
-    initialFocusId={`${id}-cancel`} onClose={onClose} actions={<>
-      <Button id={`${id}-cancel`} text="취소" variant="outline" onClick={onClose} />
+  const dismiss = () => { if (!busy) onClose(); };
+  return <Dialog id={id} open={open} title={title} description={description} kind="alertdialog" size="confirm"
+    initialFocusId={`${id}-cancel`} onClose={dismiss} actions={<>
+      <Button id={`${id}-cancel`} text={cancelLabel} variant="outline" disabled={busy} onClick={dismiss} />
       <Button text={confirmLabel} variant="destructive" disabled={confirmDisabled} loading={busy} onClick={onConfirm} />
     </>}>
-    {error && <div role="alert" class="lf-confirm-error"><p><strong>오류:</strong></p><p>{error}</p></div>}
+    {error && <div role="alert" class="lf-confirm-error"><h5>오류:</h5><div>{error}</div></div>}
+    {children}
   </Dialog>;
 }
 

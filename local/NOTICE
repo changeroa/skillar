@@ -29,6 +29,8 @@ web/src/components/ui/{dialog,alert-dialog,sheet,dropdown-menu}.tsx.
 Follow-up measurements also use
 web/src/components/design-system/DropdownMenu/DropdownMenu.tsx and
 web/src/components/design-system/ConfirmationDialogController/ConfirmationDialogController.tsx.
+Confirm state anatomy also uses web/src/components/ui/ConfirmDialog.tsx and
+web/src/components/design-system/Alert/Alert.tsx at the same pinned commit.
 Destination: local/dashboard/foundation/overlays/, site/src/ui/ui.css and
 local/dashboard/components/console-style.ts. Native dialog/popover and Preact
 own behavior; no React, Radix or Floating UI code is imported.
@@ -41,7 +43,7 @@ web/src/components/design-system/internal/InputControl/InputControl.tsx,
 web/src/components/ui/{StatusBadge/StatusBadge,skeleton}.tsx.
 Destination: local/dashboard/foundation/controls/. React, Radix and cmdk
 implementations are not included; native Preact controls own behavior.
-The scratch React reference renderer is outside this repository and is not shipped.
+The unmodified pinned MIT React reference renderer is external-only and is not shipped.
 Additional Tailwind palette values: red-50/100/800 and yellow-50/100/800.
 
 Source: https://github.com/langfuse/langfuse

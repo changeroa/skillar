@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { Fragment, type JSX } from "preact";
-import { Button, IconButton } from "../controls/buttons";
+import { Button, IconButton, type ButtonProps } from "../controls/buttons";
 import { Glyph, type ControlIcon } from "../controls/icons";
 
 export type MenuItem = {
@@ -15,9 +15,10 @@ export type MenuItem = {
 };
 
 export function DropdownMenu({ id, label, items, disabled = false, icon,
-  width = "content", align = "start" }: {
+  width = "content", align = "start", variant = "outline", buttonIcon }: {
   readonly id: string; readonly label: string; readonly items: readonly MenuItem[]; readonly disabled?: boolean;
   readonly icon?: ControlIcon; readonly width?: "content" | "wide"; readonly align?: "start" | "end";
+  readonly variant?: ButtonProps["variant"]; readonly buttonIcon?: ControlIcon;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -69,7 +70,7 @@ export function DropdownMenu({ id, label, items, disabled = false, icon,
     },
   } satisfies JSX.ButtonHTMLAttributes<HTMLButtonElement>;
   return <span class="lf-menu-anchor" ref={root}>
-    {icon ? <IconButton {...trigger} label={label} icon={icon} /> : <Button {...trigger} text={label} variant="outline" />}
+    {icon ? <IconButton {...trigger} label={label} icon={icon} /> : <Button {...trigger} text={label} variant={variant} {...(buttonIcon ? { icon: buttonIcon } : {})} />}
     {open && !disabled && <div id={id} ref={menu} popover="manual" role="menu" tabIndex={-1}
       aria-labelledby={`${id}-trigger`} class="lf-menu" data-width={width}
       onKeyDown={event => {

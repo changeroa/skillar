@@ -1,68 +1,107 @@
 # PR-2 overlay gate ledger
 
-PR: https://github.com/changeroa/skillar/pull/101 (draft; do not merge).
-Base: origin/main 46bc344, containing PR-0 and PR-1.
-Evidence root E:
-`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-2/`.
-Final head and exact-head CI receipts are in E/publication.json.
+PR: https://github.com/changeroa/skillar/pull/101 (draft; no merge or production deployment).
+Base: origin/main 46bc344. This follow-up supersedes the fce3b28 parity claims.
+Evidence root E: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-2/`.
+Current review-fix evidence is under E/followup; older E/parity scratch artifacts are historical and excluded.
+Final published SHA and exact-head CI receipts belong to E/followup/publication.json and final-head-ci.json.
 
-| Gate | Status | Evidence and remaining cases |
+| Gate | Status | Current evidence |
 | --- | --- | --- |
-| 1. Component visual parity | PASS | All 52 shipped states in both themes: 64 real view-only Demo cases plus 40 explicitly documented "no demo instance" cases with labelled supplementary MIT renders. Both apps: 208 computed-style, side-by-side and raw zero-tolerance comparisons; 4,072 measured assertions pass. Native/WAI and caller-content/geometry differences remain explicit, not masked or claimed pixel-identical. E/parity/README.md, coverage.json, measured-validation.json and comparisons.json. |
-| 2. Screen comparison | PASS | 12/12 Langfuse/before/after closed-screen comparisons at 1440/390, both themes, fresh documents and end shots. Product Peek/ConsoleSheet before/after additionally cover 24/24 route/theme/width/build cases. Existing screen compositions are retained for later screen PRs, not claimed pixel-identical to Langfuse. E/screens/, E/product-panels/. |
-| 3. Keyboard/ARIA | PASS | 416 assertions, 16/16 cases, 176 captures in both apps/themes at 390/1440/1920, including phone touch/DPR 3. Trusted-key menu entry, disabled skip, cyclic arrows, Home/End, typeahead, selection, Tab exit, modal wrap, nested one-layer Escape and opener restoration pass. Real product URL/focus and mobile ConsoleSheet wrap/Escape pass in 24/24 before/after cases. E/keyboard/, E/iphone/ and E/product-panels/. |
-| 4. R1-R7 structure | PASS | Reused existing PR-0 assertions unchanged: 8/8 production-fixture cases pass. Probe marks R4 N.A.; product-panel evidence separately exercises Peek URL/focus. E/structure/qa-structure.json. |
-| 5. Build/tests | PASS | Site 368/368, site build, local typecheck and local build pass. Local 984/985: the only failure is unchanged cli-init.test.mjs:159, ENOTDIR at the existing host file /tmp/h, explicitly permitted by the contract. No test or host file changed. Exact final-head CI receipts are in E/final-head-ci.json and E/publication.json. |
-| 6. Licensing | PASS | MIT SHA/files documented in all three matching notices; site/dist/NOTICE and local/dist/dashboard/NOTICE ship. npm pack --dry-run --json includes NOTICE among 171 files. E/license-pack.log. No React/Radix/cmdk dependencies or excluded ee sources. |
-| 7. Deployment policy | PASS | Production: not deployed; deploy gated on owner. Authorized Pages preview only on uxb-pr-2; URL and deployment receipt in E/preview.log and E/publication.json. No account settings or production branch changed. |
+| 1. Component visual parity | **FAIL: 20 missing source state/theme references** | 74 real Demo references, 10 actual pinned MIT Confirm references, 20 unavailable. 208 actual site/local state renders; 168 available-reference comparisons pass 55,220 assertions with zero unexplained mismatches. The 40 corresponding app cases without references remain FAIL. E/followup/parity/{sources,products,comparisons,measured-validation,unavailable}.json. |
+| 2. Screen comparison | Prior closed-screen evidence retained | Original 12/12 closed-screen and 24/24 product-panel before/after cases remain E/screens and E/product-panels; not recaptured or claimed pixel-identical. Current real Peek screenshots and sizing checks are E/followup/real-peek/final. |
+| 3. Keyboard/ARIA and actual Peek sizing | PASS | Shared overlays: 336 assertions, 12/12 site/local cases at 390/1440/1920 in both themes, 132 captures. Actual hosted Peek: 729 assertions, 6/6 light/dark mouse/touch cases at 1440/390, including 24 native dirty-draft confirm decisions. Controls measure 32px with mouse, 44px with touch. E/followup/keyboard-final/results.json and real-peek/final/results.json. |
+| 4. R1-R7 structure | PASS | Unchanged PR-0 assertions: 8/8 actual fixture-backed production-page cases. R4 remains N.A. in that probe; the actual Peek tests separately check URL, focus, and dirty-draft navigation. E/structure/qa-structure.json. |
+| 5. Build/tests | PASS except recorded pre-existing host failure | Site 368/368; site build, local typecheck/build and package dry-run pass. Local 984/985: unchanged cli-init.test.mjs:159 fails ENOTDIR at existing host file /tmp/h. No host file or failing test modified. E/checks.json and logs. Final-head CI is reported separately, not inferred from local results. |
+| 6. Licensing | PASS | Three matching notices include actual pinned ConfirmDialog and Alert sources. Built packages include NOTICE; no React/Radix/cmdk runtime dependency or lockfile changes. E/license-pack.log. |
+| 7. Deployment policy | PASS | No merge, production deployment, project mutation, or account-setting change. Existing preview receipts refer to the previous head, not this follow-up. |
 
-## Scope and review
+## Measured coverage and explicit native differences
 
-New primitives are shared Preact DOM components in foundation/overlays.
-Dialog/Confirm/Sheet use native top-layer modality; menus/tooltips use native
-popovers inside their owner's DOM subtree. Existing PeekPanel and ConsoleSheet
-focus/URL/dirty-state handlers are unchanged; SessionPeek changes CSS only.
-Controls retain 32px desktop / 44px phone/coarse visual height. Selected
-controls within changed panels use neutral wash and a Lucide check, not an
-accent edge. No dependency/lockfile, API/data/route/auth or worker/server edits.
+Each reference below is one state/theme; each available reference has separate site/local measurements.
 
-Independent visual/code review is arranged by the lane lead. This child
-session cannot spawn nested reviewers (harness depth limit), so no independent
-visual-QA PASS is claimed. A full contrast/Lighthouse audit and independent
-approval remain unverified. Gate 1 records measured component skin/state
-coverage, not independent approval or a zero-pixel-difference assertion.
+| Family | States | Real Demo | Actual MIT Confirm | Missing references | Available app comparisons |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Dialog | 11 | 10 | 0 | 12 | 20 |
+| Confirm | 9 | 8 | 10 | 0 | 36 |
+| Dropdown | 12 | 22 | 0 | 2 | 44 |
+| Tooltip | 7 | 14 | 0 | 0 | 28 |
+| Sheet/Peek | 13 | 20 | 0 | 6 | 40 |
+| Total | 52 | 74 | 10 | 20 | 168 |
 
-## Per-family state coverage
+Every available state checks every captured primitive part plus its actual focused element:
+font family/size/line-height/weight/spacing, foreground/background, four border widths/colors/styles,
+four corner radii, four paddings, shadow, opacity, outline fields, smoothing and geometry.
+Missing mandatory fields fail. Closed, disabled and Sheet cases have no whole-case bypass.
+Source measurements and approved native replacements are separate assertions; source values are never rewritten.
+Approved differences are 32/44px targets, retained standalone R1 control recipes, native top-layer ownership,
+visible token focus rings, and documented caller-owned content/geometry. Invisible zero-width borders,
+non-painted outlines and equivalent color serialization are canonicalized, not screenshot-masked.
+Raw image diffs use zero tolerance and remain available; this is not a zero-different-pixel claim.
 
-Counts below are state/theme cases; each has separate site/local comparisons.
+## Read-only route audit
 
-| Family | States | Real Demo | No Demo instance | Comparisons |
-| --- | ---: | ---: | ---: | ---: |
-| Dialog | 11 | 10 | 12 | 44 |
-| AlertDialog/Confirm | 9 | 0 | 18 | 36 |
-| Dropdown | 12 | 20 | 4 | 48 |
-| Tooltip | 7 | 14 | 0 | 28 |
-| Sheet/Side panel/Peek | 13 | 20 | 6 | 52 |
-| Total | 52 | 64 | 40 | 208 |
+Route prefix P = `https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`.
+Set R14 means all of: P, P/dashboards, P/traces, P/sessions, P/users, P/alerts,
+P/skills, P/prompts, P/playground, P/scores, P/evals, P/annotation-queues,
+P/datasets and P/experiments. Full URLs and observed controller/permission evidence are
+E/followup/demo-route-audit.json and each missing row's routesChecked.
+No account-settings route was entered. Only verified intermediate confirmation controllers were opened.
+No final destructive confirmation was clicked.
 
-`E/parity/no-demo-instances.json` lists the checked public routes and exact
-reason for every missing instance. No create/edit/settings/delete controller
-was opened. Real Dialog captures use the read-only prompt comparison. Confirm
-is inaccessible in the public view-only project; its disabled destructive
-actions were not invoked. Supplementary scratch frames visibly identify
-themselves and are never counted as real Demo captures.
+## Confirm provenance, separately for every fallback state
 
-Measured repairs include comparison geometry and typography, menu widths/
-icons/checked state, tooltip width variants and native-title suppression,
-bottom-sheet anatomy, error panels, Peek elevation, physical-pixel popup
-positioning, inherited Demo antialiasing, and gallery footer
-selector isolation. The source drawer selection wash/check repair is retained.
-Source trace/diff/filter content and persisted resizable pane widths are
-caller-owned context; existing product pane geometry and lifecycle remain.
+Actual Demo P/evals supplies open, cancel-focus, confirm-hover and closed in both themes (8 references).
+Its row Delete opens the intermediate controller; final Delete evaluators was never clicked.
+All five fallback states below were unavailable after R14 and P/evals controller rechecks.
+Each uses an **actual unmodified pinned MIT component render, not hosted Demo** in both themes.
+Source SHA: `69181812b87169df157841fce1314ec96ecd2c5a`.
+The external-only renderer imports actual ui/ConfirmDialog.tsx, its legacy Dialog,
+design-system/Alert/Alert.tsx, LayerProvider and source CSS; official Tailwind scanning/compilation
+preserves arbitrary variants. No primitive styling overrides or handwritten replacement component.
+E/followup/actual-mit-confirm/{entry.tsx,serve.mjs,provenance.json,sources.json} records inputs and screenshots.
 
-The legacy `15-dialog-langfuse-*.png` references are command palettes, not
-generic Dialog/Confirm instances; they are not passed off as those references.
-Real source captures preserve their pixels and hide the account footer.
-An initial local-gallery failure came from crossing the site's separate
-Preact module identity; the gallery no longer imports the site's Peek hooks.
-Product routes, rather than a second renderer, exercise existing panels.
+| Confirm state | Checked routes / why unavailable in Demo | Actual reference (light and dark) |
+| --- | --- | --- |
+| disabled | R14, especially P/evals: available intermediate Confirm has enabled action; disabled callers do not expose a disabled-action dialog. | MIT render /?state=disabled&theme=light or dark |
+| loading | R14, P/evals: busy state requires the final mutation, which was not invoked. | MIT render /?state=loading&theme=light or dark |
+| error | R14, P/evals: mutation failure is not a read-only state; no final mutation or induced failure. | MIT render /?state=error&theme=light or dark |
+| empty | R14, P/evals: actual Confirm always has description; no safe empty-description caller. | MIT render /?state=empty&theme=light or dark |
+| nested | R14, P/evals: verified controller opens from a row menu, not within a parent modal. | MIT render /?state=nested&theme=light or dark; actual parent Dialog mounted first |
+
+## Remaining non-Confirm cases: individually FAIL, no fallback
+
+Of the original 22 missing non-Confirm state/theme cases, disabled Dropdown trigger light/dark
+was recovered from actual P/skills New skill. The remaining 20 references are below.
+Both app counterparts fail coverage for each missing reference. All rows checked R14;
+no scratch rendering or other component is substituted.
+
+| Family/state | Light | Dark | Checked routes and concrete remaining gap |
+| --- | --- | --- | --- |
+| Dialog/default-open | FAIL | FAIL | R14, P/prompts/P/skills: available comparison/install variants are not the default 512px dialog. |
+| Dialog/disabled-action | FAIL | FAIL | R14, P/prompts/P/skills: no safe default-dialog caller with disabled action; write entry controls disabled. |
+| Dialog/loading-action | FAIL | FAIL | R14, P/prompts/P/skills: no read-only default-dialog loading action; no write initiated. |
+| Dialog/error-body | FAIL | FAIL | R14, P/prompts/P/skills: no genuine default-dialog error body observed. |
+| Dialog/empty-body | FAIL | FAIL | R14, P/prompts/P/skills: no genuine empty default-dialog body observed. |
+| Dialog/nested-menu | FAIL | FAIL | R14, P/prompts/P/skills: no menu inside a safe default-dialog instance. |
+| Dropdown/empty | FAIL | FAIL | R14, P/traces/P/sessions/P/prompts/P/skills: actual caller menus contain items, never zero items. |
+| Sheet/peek-error | FAIL | FAIL | R14, P/traces/P/sessions: no genuine Peek error; none fabricated or induced. |
+| Sheet/sheet-loading | FAIL | FAIL | R14, P/traces/P/sessions: no genuine filter-Sheet loading surface. |
+| Sheet/sheet-error | FAIL | FAIL | R14, P/traces/P/sessions: no genuine filter-Sheet error surface. |
+
+## Review-fix scope and test details
+
+Actual hosted Peek legacy buttons/links/inputs/selects/summary use token 32/44px sizing,
+13px/20px typography, token focus rings, and existing draft ownership. Tests use trusted events
+and subscribe before actions; native confirm cancel preserves draft/URL, accept discards and restores
+focus, full-page navigation is covered, and network requests are GET-only.
+Shared Confirm uses actual source anatomy, disabled busy cancel and guarded dismissal;
+its keyboard test asserts heading focus and non-dismissal while busy, then reloads before the next case.
+Menu/Tooltip/Sheet parts, disabled New skill icon geometry, alert anatomy and focus rendering
+were repaired from actual measurements. Relevant light/dark desktop/mobile captures were visually inspected.
+No API/data/route/auth, server/worker, dependency or lockfile changes.
+
+Independent review of the previous head failed and motivated this follow-up; no fresh independent
+approval is claimed. This nested session cannot spawn reviewers. LSP was unavailable (Biome and workspace
+tsserver missing); actual typecheck/builds ran. Full Lighthouse/contrast and forced-colors screenshot
+audits remain unrun. Draft status and the 20 reference gaps must remain visible in the PR body.
