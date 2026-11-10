@@ -17,6 +17,7 @@
 .hosted-screen .skill-summary { border: 0; margin-block: var(--lf-space-3); }
 .hosted-screen .skill-summary .ui-kv { gap: var(--lf-space-3); }
 .hosted-screen .skill-summary .ui-kv > div { padding: 0; border: 0; gap: var(--lf-space-1); }
+.hosted-screen #skills-app .lf-tabs--underline [role=tab] { line-height: var(--lf-leading-sm); }
 .hosted-screen .skill-document-layout { grid-template-columns: minmax(0,1fr) 320px; gap: var(--lf-space-4); }
 .hosted-screen .skill-version-rail { border-inline-start: var(--lf-border-width) solid var(--lf-border); padding-inline-start: var(--lf-space-4); }
 .hosted-screen .skill-version-choice { min-height: var(--lf-control-height); height: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-2); border-radius: var(--lf-radius-sm); }

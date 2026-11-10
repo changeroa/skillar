@@ -14,7 +14,10 @@ titles, 16px main gutters and the existing 4/8/12/16/24px spacing tokens.
 Canvas/card/code/border/ink roles map to the corresponding `--lf-*` tokens.
 Buttons and selects are exactly 32px mouse or 44px phone/coarse, 6px corners,
 13px/20px type; destructive actions retain their existing confirmation.
-All keyboard targets retain contrasting 2px painted focus. Inputs remain named.
+All keyboard targets retain contrasting 2px painted focus using
+`--lf-primary-accent`, including legacy controls and shared primitives. This is
+the owner's visible-focus override, not the Demo's lower-contrast neutral ring.
+Inputs remain named.
 The existing fixed-sidenav-shell keeps main as vertical scroll owner; table
 overflow and peek body retain their separate named responsibilities.
 

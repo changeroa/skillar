@@ -118,7 +118,7 @@ try {
         }, theme);
         focusTokens = await page.evaluate(() => {
           const root = getComputedStyle(document.documentElement), probe = document.createElement("span");
-          probe.style.color = "var(--lf-ring)"; probe.hidden = true;
+          probe.style.color = "var(--lf-primary-accent)"; probe.hidden = true;
           document.documentElement.append(probe);
           const color = getComputedStyle(probe).color; probe.remove();
           return { width: root.getPropertyValue("--lf-focus-width").trim(),

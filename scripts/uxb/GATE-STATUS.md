@@ -1,4 +1,37 @@
-# PR-5 widgets and charts: paint-review correction
+# PR-6 hosted screens
+
+Draft PR: https://github.com/changeroa/skillar/pull/105
+Branch: `uxb/pr-6-hosted`, based on merged PR-0 through PR-5 at `ba64d91`.
+Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-6/`.
+The exact published head and terminal CI are recorded in that directory's
+`publication.json` and `ci-final.json`. This is implementer evidence, not approval.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1 Component visual/style comparisons | PASS | Existing Demo comparator rerun for 86 real-Demo control/state references; zero computed-style failures. `component-parity/results.json` includes raw diffs, source validation, tokens and owner-approved exceptions. No component implementation or new component state was introduced. |
+| 2 Complete screen comparison | FAIL | Eleven hosted surfaces, both specified viewports and themes, Demo/before/after/v3 captures, triple boards and raw diffs are collected. Independent visual review cannot be spawned at this lane's nesting depth; the lead-arranged review and full visual approval remain outstanding. Do not interpret image counts as approval. |
+| 3 Keyboard/ARIA and real-page measurements | PASS | `runtime/runtime.json`: 36/36 scenarios, 146 painted focus checks and ring/60px mutation probes, 142 absolute 32/44px measurements. `peek-current/` adds six mouse/touch/theme cases, 819 assertions and 24 native confirmations. |
+| 4 R1–R7 | PASS | Real grouped shell, sidebar identity/logout, command palette, URL state, peak/full navigation, dirty drafts, default list rows (15 desktop / 7 phone), empty states and common chart baseline preserved. Native pagehide/pageshow and listener cleanup passed; this Chrome run did not restore bfcache, so an actual cache hit remains unverified. |
+| 5 Builds and existing tests | FAIL | Site build and 450/450 tests; shared build and 94/94 tests; local build/typecheck and sync performance passed. Local suite 984/985: the contract's pre-existing `/tmp/h` ENOTDIR LaunchAgent test remains unchanged. Final-head CI is recorded separately. |
+| 6 License/NOTICE | PASS | No new dependencies, source copies or EE files. Existing MIT attribution retained; `npm pack --dry-run --json` includes NOTICE among 176 files and `site/dist/NOTICE` exists. |
+| 7 Deployment boundary | PASS | Not deployed; deploy gated on owner (production). Only `uxb-pr-6` Pages preview is deployed: https://uxb-pr-6.skillar-site.pages.dev . No merge or self-approval. |
+
+The full per-screen wireframe deviations, source-route mappings, evidence
+pipeline corrections and residual review gaps are in `pr-6/gate.md`.
+The preview's `/__qa/pr6/` contains only synthetic/public-Demo PNG evidence;
+source account footers are hidden and asserted absent from every capture.
+
+## Explicit owner overrides
+
+- Absolute 32px mouse / 44px phone/coarse controls.
+- Contrasting visible keyboard focus and accessible labels override Demo parity.
+  Hosted controls use `--lf-primary-accent`; the peek validator checks that token
+  and retains every existing target, geometry, native-dialog and lifecycle check.
+- Dashboard B, no read-history column, actual reads only, KST everywhere.
+- Account v3 intentionally shows its own profile email; the general R1 prohibition
+  on duplicating account information in unrelated main views remains intact.
+
+## Historical PR-5 record (not the current PR's gate verdict)
 
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Merged PR-4 base: `431fb9b0351c6f82eaacb16e36b32f7c7c658f32`.
