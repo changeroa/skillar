@@ -1,7 +1,8 @@
 import type { ComponentChildren } from "preact";
 import type { SessionListRow } from "../../api";
 import { OperationCounts } from "../../components/requests";
-import { Icon } from "../../components/icons";
+import { SortButton, TableRow } from "../../foundation/table/parts";
+import { tableStyles } from "../../foundation/table/styles";
 import { ATTRIBUTION_LABEL, RUNTIME_LABEL, RUNTIME_MARK, SESSION_COLUMNS, STATE_LABEL, buildHash, skillName,
   type SessionColumn, type SessionSort, type ViewProps } from "../../state";
 import { COLUMN_LABEL, candidateSkills, readSkills } from "./model";
@@ -14,6 +15,7 @@ function Skills({ values }: { readonly values: readonly string[] }) {
 }
 
 export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" | "navigate"> & { readonly rows: readonly SessionListRow[] }) {
+  tableStyles();
   const columns = route.columns ?? DEFAULT_COLUMNS;
   const sort = route.sort ?? "-started";
   const select = (row: SessionListRow) => ({ ...route, view: "sessions" as const, peek: row.id, event: undefined });
@@ -32,24 +34,25 @@ export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" 
       case "id": return <a class="rowlink" href={buildHash(select(row))}><code>{row.id}</code></a>;
     }
   }
-  return <div class="sessions__frame session-table-frame">
+  return <div class="sessions__frame session-table-frame lf-table-surface" data-density={route.density ?? "compact"}>
     {columns.length === 0 ? <p role="status">열 메뉴에서 표시할 열을 선택하세요.</p> : <table class="sessions session-table"
       data-density={route.density ?? "compact"} data-custom-columns={route.columns !== undefined}>
       <caption class="sr-only">세션 기록. 정렬은 수신된 범위에 적용됩니다.</caption>
       <thead><tr>{columns.map(column => {
         const field = sortable[column], active = sort.replace(/^-/, "") === field;
         return <th key={column} class={`cell-${column}`} scope="col" aria-sort={field ? active ? sort.startsWith("-") ? "descending" : "ascending" : "none" : undefined}>
-          {field ? <button onClick={() => navigate({ ...route, sort: sort === field ? `-${field}` as SessionSort : field })}>
-            {COLUMN_LABEL[column]}<Icon name="sort" /></button> : COLUMN_LABEL[column]}
+          {field ? <SortButton label={COLUMN_LABEL[column]}
+            direction={active ? sort.startsWith("-") ? "descending" : "ascending" : undefined}
+            onSort={() => navigate({ ...route, sort: sort === field ? `-${field}` as SessionSort : field })} /> : COLUMN_LABEL[column]}
         </th>;
       })}</tr></thead>
-      <tbody>{rows.map(row => <tr key={row.id} data-session-id={row.id} aria-selected={route.peek === row.id}
-        onClick={event => { if (!(event.target instanceof Element) || !event.target.closest("a,button,input,summary")) navigate(select(row)); }}>
+      <tbody>{rows.map(row => <TableRow key={row.id} data-session-id={row.id} selected={route.peek === row.id}
+        onOpen={() => navigate(select(row))}>
         {columns.map((column, index) => <td key={column} class={`cell-${column}`} data-label={COLUMN_LABEL[column]}>
           {index === 0 && !columns.includes("prompt") && !columns.includes("id")
             ? <a class="rowlink" href={buildHash(select(row))}>{cell(row, column)}</a> : cell(row, column)}
         </td>)}
-      </tr>)}</tbody>
+      </TableRow>)}</tbody>
     </table>}
   </div>;
 }

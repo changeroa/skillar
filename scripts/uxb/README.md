@@ -1,5 +1,59 @@
 # Component visual evidence
 
+PR-4 table receipts and limits are in `GATE-STATUS.md`. `table-keyboard.mjs`
+exercises sorting, selection, paging, menus and caller keyboard behavior.
+`table-sizing.mjs` checks actual native hit areas on skills, sessions and the
+mounted hosted embed; wrapper-only measurements miss inherited Select sizing.
+Component capture, raw comparison and 20-screen matrix runners live in the
+PR-4 evidence directory named by the ledger.
+
+For the table correction, Gate 1 uses the PR-1 accepted rule: compare painted
+parts and meaningful geometry against real Demo measurements when business
+content differs. `table-parts.mjs` observes real DOM parts rather than cloning
+them. `table-states.mjs` defines required state/theme/renderer membership;
+`validate-table-parity.mjs` asserts all 108 product cases against
+54 actual Demo states, including matching viewport/theme/DPR/pointer context,
+header and cell fonts, row hover/selection, glyph geometry, density menu,
+facet labels, empty results, conditional clear actions and enabled/disabled
+column rows. Missing required parts or states fail closed. Colors use exact
+Chrome-decoded RGBA bytes; comparable geometry tolerance is 1px. Control heights
+are absolute owner values (32px mouse, 44px touch), within 0.01px, not a maximum
+of owner and upstream sizes. Paired 60px source/product mutations must fail.
+
+`tableContentExclusions` enumerates content/model-driven dimensions and owner
+native-control differences. Whole-table pixels, labels and record counts are
+not structural proxies for style parity. Original source/actual PNGs, all
+side-by-sides and raw unmasked diffs remain separate diagnostics.
+
+```sh
+node scripts/uxb/validate-table-parity.mjs \
+  /absolute/evidence/review-table-input.json \
+  /absolute/evidence/review-table-results.json
+```
+
+The input contains `cases`, `references` and the Chrome-decoded `colors` map
+recorded by the real capture runner. The report contains every assertion,
+failure and per-component count. `table-focus.mjs` separately drives keyboard
+focus on native controls and roving menu items, measuring actual painted pixels
+and both target dimensions at 32px mouse and 44px touch. Tab intentionally
+dismisses a menu, so menu auditing uses its arrow-key focus contract.
+Use `tableFocusSelector(specimenSelector)` for capture scope: an inner table
+also includes its enclosing keyboard-scroll region. Populated, empty and loading
+regions remain focus targets in both renderers/themes/profiles. The current
+216-case/profile receipt contains 864 targets, including 24 scroll regions;
+all 24 ring-removal probes must fail and pass after restoration. Diff the full
+target lists, preserving multiplicity, against both historical matrices:
+440 observations at `106b8aa` and 840 at `9e71ad6`. See `review-scroll-inventory.json`.
+`focus-paint.mjs` compares unfocused/focused PNGs, requiring two adjacent CSS
+pixels with at least 3:1 contrast. Nonempty or background-colored shadows are
+not proof of visible focus. Passing an output prefix retains both PNGs.
+Ring-only removal, conditional-clear removal and 60px control mutations must
+fail before restoring. The hosted keyboard harness waits for an interactive
+`tr[tabindex="0"]`, never the loading/empty status row. Register the ready
+signal before releasing a held request or activating the loaded row; no sleeps.
+Pin the actual viewport after navigation and assert `innerWidth`; labels
+alone do not prove a phone capture.
+
 Skillar is a Preact application. This harness captures live DOM specimens,
 computed geometry, real hover/focus/held-pointer states and optional Langfuse
 references without introducing a second renderer or a browser dependency.

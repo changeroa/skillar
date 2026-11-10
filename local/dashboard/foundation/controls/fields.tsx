@@ -1,13 +1,14 @@
-import type { JSX } from "preact";
+import type { JSX, Ref } from "preact";
 import { useId, useRef, useState } from "preact/hooks";
 import { Glyph, type ControlIcon } from "./icons";
 
 type InputAttributes = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
 type FieldLabel = { readonly label: string; readonly error?: string };
 
-export function Input({ label, error, id, prefix, valuePrefix, icon = prefix || valuePrefix ? false : "search",
+export function Input({ label, error, id, prefix, valuePrefix, inputRef, icon = prefix || valuePrefix ? false : "search",
   variant = "default", ...props }: InputAttributes & FieldLabel & {
   readonly prefix?: string; readonly valuePrefix?: string; readonly icon?: ControlIcon | false;
+  readonly inputRef?: Ref<HTMLInputElement>;
   readonly variant?: "default" | "command";
 }) {
   const generatedId = useId();
@@ -26,7 +27,11 @@ export function Input({ label, error, id, prefix, valuePrefix, icon = prefix || 
       {prefix && <span class="lf-input-prefix">{prefix}</span>}
       {valuePrefix && <span class="lf-input-value-prefix">{valuePrefix}</span>}
       {icon && <span class="lf-input-icon"><Glyph name={icon} /></span>}
-      <input {...props} ref={ref} id={inputId} class="lf-input"
+      <input {...props} ref={element => {
+        ref.current = element;
+        if (typeof inputRef === "function") inputRef(element);
+        else if (inputRef) inputRef.current = element;
+      }} id={inputId} class="lf-input"
         aria-invalid={error ? "true" : props["aria-invalid"]} aria-describedby={description} />
     </div>
     {error && <span id={`${inputId}-error`} class="lf-field-error">{error}</span>}

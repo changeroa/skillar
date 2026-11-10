@@ -1,5 +1,69 @@
 # skillar.sh
 
+## Phase B tables (PR-4)
+
+Measured-part correction: compact non-interactive row content is 28px;
+focusable rows and native checkbox targets grow to the owner's 32/44px.
+Loading bars are 16px. Loaded-row hover and selection use opaque accent;
+the loading-row source class is not the loaded-row paint reference.
+Facet tracks use control-track at 60% in light and muted in dark,
+12px/12px mode labels, a 14px checkbox indicator and 12px/18px Plex Mono
+search with 4/8/4/28px padding; text mode uses sans and 8px inline padding. Density menu
+headings are 13px/20px with a 1px separator and 4px block margins.
+Column menu checkboxes are 16px with an 8px label gap and 12px effective
+outer inset. Pagination uses 32/44px outlined icon buttons and 14px muted arrows.
+These are actual Demo measurements; row/column counts, text-driven widths,
+optional captions and known-total first/last actions remain caller content.
+
+Shared table primitives live in `local/dashboard/foundation/table/`. The real
+view-only Demo v4.77.0 table defines paint and anatomy; the pinned MIT table
+sources define supplementary states. Headers use 13px/20px strong type, 4px
+insets and the background surface, with a 1px bottom divider. Cells use
+12px/18px regular sans, 4px inline padding and the same divider. First cells
+have 8px leading padding. Table corners are square. Sort glyphs are 14px
+filled triangles; native header buttons expose `aria-sort` on their th.
+The Demo's 40px header accommodates a 32px sort button; touch headers grow
+to fit 44px buttons. Compact rows accommodate the owner's 32/44px target,
+normal rows use 96px and spacious/comfortable rows use 256px. Existing URL
+density names are retained. The table owns horizontal overflow, never an
+extra vertical scrollbar; the enclosing main/document keeps vertical scroll.
+Cold loads expose `aria-busy`, decorative per-cell placeholders and one
+status; warm loads retain rows. Loading never announces an empty result.
+
+Toolbar is a wrapping cluster with 8px gaps. Column visibility and density
+reuse PR-2 DropdownMenu, including trusted keyboard navigation and focus
+restoration; PR-1 supplies buttons, search, Select and native Checkbox.
+DropdownMenu adds optional headings and leading checks for the Demo density
+menu; its existing intrinsic 128px minimum and keyboard behavior are retained.
+Column controls preserve required columns and at least one visible column,
+except the existing local explicit-empty-columns state. Row opening keeps
+Enter/Space and ignores nested controls; selection uses neutral muted wash
+with a check glyph, never an accent stripe. Optional bulk selection uses
+labelled native checkboxes, native indeterminate select-all and scoped row
+selection, distinct from opening a peek. Sorting never mutates input rows.
+
+Facet groups use 12px/18px text, 8px inline insets, 6px corners and native
+checkbox choices. Disclosure, Select/Text modes and clear controls are
+labelled buttons with visible focus; text mode filters choices without
+changing the selected values. Counts retain zero-value choices. All
+interactive facet parts use 32px mouse / 44px touch boxes.
+Pagination uses the named StyleGallery
+[pagination](https://github.com/changeroa/StyleGallery/blob/main/patterns/in-line-grouping/pagination.md)
+wrapping-row contract, no internal scroll. It composes PR-1 Select and
+buttons with 16px group gaps, 8px control gaps and 13px strong labels.
+It is opt-in over the supplied range, never a claim of server-wide totals.
+Existing received-range product tables keep every row and their keyboard
+behavior; pagination's first/middle/last/empty/loading states ship in the
+shared showcase for later screen adoption.
+
+Table focus uses a painted 2px inset ring on every focusable part, including
+the scroll region and row opener. PR-1/PR-2 rings remain their own contract.
+No decorative motion is added; sorting and filtering show their changed
+state immediately, consistent with the restrained beui table mechanism.
+The owner-approved native and WAI-ARIA adaptations override Demo behavior.
+No new accessibility debt is accepted. Evidence records measured paint,
+raw pixel differences and non-equivalent product content separately.
+
 ## Phase B shell (PR-3)
 
 Shared Preact shell primitives live in `local/dashboard/foundation/shell/`.

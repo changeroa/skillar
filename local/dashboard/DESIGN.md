@@ -1,5 +1,19 @@
 # skillar Dashboard Design System
 
+## Phase B tables (PR-4)
+
+The complete shared table contract is the PR-4 section in `site/DESIGN.md`.
+`foundation/table/` owns table paint, sortable headers, row/checkbox selection,
+column visibility, density, toolbar, facets and opt-in received-range pagination.
+Local URL sort, columns, density and filters keep their existing names and
+owners; the trace session-picker keyboard contract is unchanged. Existing
+local all-columns-hidden state remains explicit. Local rows retain their
+native peek links, while selected rows use neutral wash and a check glyph.
+Phone rows keep the existing stacked presentation; document owns vertical
+scroll. Shared controls are 32px mouse / 44px coarse-pointer or phone.
+PR-1 native controls and PR-2 DropdownMenu own input and menu semantics.
+No new accessibility debt or decorative motion is accepted.
+
 ## Phase B shell (PR-3)
 
 The complete shared shell contract is the PR-3 section in `site/DESIGN.md`.

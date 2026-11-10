@@ -78,3 +78,5 @@ body { margin: 0; }
 @media (max-width: 768px) {
   .lf-gallery { padding: var(--lf-space-6) var(--lf-space-4); }
 }
+.lf-tables-gallery { display: grid; grid-template-columns: minmax(0, 224px) minmax(0, 1fr); gap: var(--lf-space-4); }
+@media (max-width: 768px) { .lf-tables-gallery { grid-template-columns: minmax(0, 1fr); } }

@@ -92,6 +92,18 @@ class FakeElement extends FakeNode {
     for (let current = node; current; current = current.parentNode) if (current === this) return true;
     return false;
   }
+  matches(selector) {
+    return selector.split(",").some(part => {
+      const value = part.trim();
+      const attribute = /^\[([\w-]+)=([\w-]+)\]$/.exec(value);
+      return attribute ? this.getAttribute(attribute[1]) === attribute[2] : this.localName === value;
+    });
+  }
+  closest(selector) {
+    for (let node = this; node?.nodeType === 1; node = node.parentNode)
+      if (node.matches(selector)) return node;
+    return null;
+  }
   insertBefore(node, reference) {
     if (node.parentNode) node.parentNode.removeChild(node);
     const index = reference ? this.childNodes.indexOf(reference) : -1;
@@ -201,6 +213,7 @@ class FakeDocument {
 export function installFakeDom() {
   const document = new FakeDocument();
   globalThis.document = document;
+  globalThis.Element = FakeElement;
   return document;
 }
 

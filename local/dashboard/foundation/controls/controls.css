@@ -92,6 +92,7 @@
 .lf-search[data-disabled="true"] input { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
 .lf-select-wrap { appearance: button; position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--lf-space-1); min-width: 0; }
 .lf-select { appearance: none; position: absolute; inset: calc(-1 * var(--lf-border-width)); width: calc(100% + 2 * var(--lf-border-width)); height: calc(100% + 2 * var(--lf-border-width)); opacity: 0; cursor: inherit; }
+.lf-select-wrap > .lf-select { min-height: 0; }
 .lf-select-value { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
 .lf-select-wrap > svg { flex-shrink: 0; pointer-events: none; color: var(--lf-foreground-tertiary); }
 .lf-select-wrap[data-invalid="true"] > svg { color: var(--lf-destructive); }

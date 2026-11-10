@@ -5,6 +5,8 @@ import { parsePrivateSkillUri } from "../../../shared/dist/private-skills.js";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, searchSkills, technicalDetail } from "./api.ts";
 import type { SearchCandidate, SearchResult } from "./api.ts";
+import { Input } from "../../../local/dashboard/foundation/controls/fields";
+import { Button } from "../../../local/dashboard/foundation/controls/buttons";
 
 export function skillIdOf(candidate: SearchCandidate): PrivateSkillId | null {
   try {
@@ -90,17 +92,22 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, qu
       }
     }
   };
-  return h("form", { class: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-labelledby": "search-title" },
+  const searchProps = { id: "skill-search", type: "search", autocomplete: "off", value: query, disabled: busy,
+    placeholder: "이름·설명·문서에서 검색",
+    role: "combobox", "aria-label": "내 스킬 검색", "aria-autocomplete": "list",
+    "aria-expanded": (result?.candidates.length ?? 0) > 0, "aria-controls": "skill-search-results",
+    "aria-activedescendant": active >= 0 ? `search-result-${active}` : undefined,
+    onKeyDown: navigate, onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+      setQuery(event.currentTarget.value); setActive(-1);
+    },
+  } satisfies JSX.InputHTMLAttributes<HTMLInputElement>;
+  return h("form", { class: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-label": "내 스킬 검색" },
     h("div", { class: "search__row" },
-      h("label", { id: "search-title", class: "field-label", for: "skill-search" }, "내 스킬 검색",
-        h("input", { id: "skill-search", ref: input, class: "text-field", type: "search", autocomplete: "off", value: query, disabled: busy,
-          placeholder: "이름·설명·문서에서 검색",
-          role: "combobox", "aria-autocomplete": "list", "aria-expanded": (result?.candidates.length ?? 0) > 0,
-          "aria-controls": "skill-search-results", "aria-activedescendant": active >= 0 ? `search-result-${active}` : undefined,
-          onKeyDown: navigate, onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
-            setQuery(event.currentTarget.value); setActive(-1);
-          } })),
-      h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
+      compact ? h(Input, { ...searchProps, inputRef: input, label: "내 스킬 검색" })
+        : h("label", { id: "search-title", class: "field-label", for: "skill-search" }, "내 스킬 검색",
+          h("input", { ...searchProps, ref: input, class: "text-field" })),
+      compact ? h(Button, { text: failed ? "다시 시도" : "검색", variant: "outline", type: "submit", disabled: busy })
+        : h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
       children),
     (!compact || result !== null) && h("p", { class: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
     h("p", { class: "note", role: "status", "aria-live": "polite" }, message),
