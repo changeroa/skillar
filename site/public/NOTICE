@@ -23,6 +23,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Langfuse semantic theme tokens
 -----------------------------
+Shell anatomy is reimplemented from MIT files at the pinned commit below:
+web/src/components/design-system/Tabs/Tabs.tsx,
+web/src/components/ui/{sidebar,breadcrumb,command}.tsx,
+web/src/components/layouts/page-header.tsx.
+Destination: local/dashboard/foundation/shell/ and site/src/shell.css.
+Preact, native dialogs and anchors own behavior. No React, Radix or cmdk
+runtime is imported; owner target sizes and WAI-ARIA behavior override upstream.
+
 PR-2 reimplements MIT overlay visual anatomy from this same commit:
 web/src/components/design-system/Dialog/Dialog.tsx,
 web/src/components/ui/{dialog,alert-dialog,sheet,dropdown-menu}.tsx.

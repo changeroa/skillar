@@ -23,6 +23,11 @@ await build({
 await copyFile(new URL("dashboard/index.html", root), new URL("index.html", out));
 await copyFile(new URL("dashboard/styles.css", root), new URL("assets/styles.css", out));
 await copyFile(new URL("dashboard/foundation/tokens.css", root), new URL("assets/tokens.css", out));
+for (const [source, name] of [
+  ["shell/shell.css", "shell.css"],
+  ["controls/controls.css", "controls.css"],
+  ["overlays/overlays.css", "overlays.css"],
+]) await copyFile(new URL(`dashboard/foundation/${source}`, root), new URL(`assets/${name}`, out));
 await copyFile(new URL("NOTICE", root), new URL("NOTICE", out));
 // tsc does not copy non-TS assets; the store reads schema.sql and migrations/*.sql next to db.js.
 await mkdir(new URL("dist/store/migrations/", root), { recursive: true });

@@ -11,7 +11,7 @@ const keys = { k: ["KeyK", 75], ArrowDown: ["ArrowDown", 40], ArrowUp: ["ArrowUp
 async function ready(page) {
   await page.evaluate(() => new Promise((resolve, reject) => {
     const check = () => {
-      if (!document.querySelector("#app-command") || !document.body.classList.contains("app-shell")) return;
+      if (!document.querySelector("[data-command-mount]") || !document.body.classList.contains("app-shell")) return;
       observer.disconnect(); clearTimeout(timer); resolve();
     };
     const observer = new MutationObserver(check);
@@ -67,36 +67,36 @@ export async function runPaletteInteractions(page, startURL) {
   try {
     // This must change dashboard -> skills, not merely close the dialog.
     await reset(); await open();
-    await press("ArrowDown"); await selected("jump-sessions");
-    await press("ArrowDown"); await selected("jump-skills");
+    await press("ArrowDown"); await selected("app-command-option-sessions");
+    await press("ArrowDown"); await selected("app-command-option-skills");
     await navigate(page, `${origin}/skills/`, () => press("Enter"));
     evidence.push({ case: "Meta+K, ArrowDown x2, Enter", url: `${origin}/skills/`, trusted: true });
 
     await reset(); await open();
-    for (const [key, expected] of [["ArrowUp", "jump-account"], ["ArrowDown", "jump-dashboard"],
-      ["End", "jump-account"], ["Home", "jump-dashboard"]]) {
+    for (const [key, expected] of [["ArrowUp", "app-command-option-account"], ["ArrowDown", "app-command-option-dashboard"],
+      ["End", "app-command-option-account"], ["Home", "app-command-option-dashboard"]]) {
       await press(key); await selected(expected);
     }
     await press("Escape");
     assert.deepEqual(await page.evaluate(() => ({
-      open: document.querySelector("#app-command").open, focus: document.activeElement.id,
+      open: document.querySelector("#app-command")?.open ?? false, focus: document.activeElement.id,
     })), { open: false, focus: "app-jump" });
     evidence.push({ case: "wrap, Home/End, Escape focus return", trusted: true });
 
     await reset(); await open();
     await input.focus();
     await page._sendToTarget("Input.insertText", { text: "연결" });
-    await selected("jump-connections");
+    await selected("app-command-option-connections");
     await navigate(page, `${origin}/connections/`, () => press("Enter"));
     evidence.push({ case: "type-filter + Enter", url: `${origin}/connections/`, trusted: true });
 
     await reset(); await open(2);
     const point = await page.evaluate(() => {
-      const option = document.querySelector("#jump-skills"), rect = option.getBoundingClientRect();
+      const option = document.querySelector("#app-command-option-skills"), rect = option.getBoundingClientRect();
       const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
-      return { x, y, hit: document.elementFromPoint(x, y)?.closest("a")?.id };
+      return { x, y, hit: document.elementFromPoint(x, y)?.closest("button")?.id };
     });
-    assert.equal(point.hit, "jump-skills");
+    assert.equal(point.hit, "app-command-option-skills");
     await input.focus();
     await navigate(page, `${origin}/skills/`, async () => {
       await page._sendToTarget("Input.dispatchMouseEvent", { type: "mouseMoved", x: point.x, y: point.y });

@@ -13,6 +13,7 @@ export async function loadViews(exports, instrument = {}) {
   const result = await build({
     stdin: { contents: exports, resolveDir: root, loader: "ts" },
     bundle: true, write: false, format: "esm", platform: "node", target: "es2022",
+    banner: { js: `import { createRequire as testCreateRequire } from "node:module"; const require = testCreateRequire(${JSON.stringify(`${root}/site/package.json`)});` },
     jsx: "automatic", jsxImportSource: "preact", logLevel: "silent",
     loader: { ".css": "empty" },
     plugins: [{

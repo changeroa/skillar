@@ -1,6 +1,9 @@
 import type { ComponentChildren } from "preact";
 
 const paths = {
+  sessions: <><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></>,
+  tree: <path d="M4 4v12a2 2 0 0 0 2 2h6M4 10h8M12 4h8M12 10h8M12 18h8" />,
+  columns: <><rect x="3" y="3" width="18" height="18" /><path d="M9 3v18M15 3v18" /></>,
   check: <path d="m20 6-11 11-5-5" />,
   close: <><path d="m18 6-12 12" /><path d="m6 6 12 12" /></>,
   search: <><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></>,

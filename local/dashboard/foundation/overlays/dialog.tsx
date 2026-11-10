@@ -13,7 +13,7 @@ export type DialogProps = {
   readonly initialFocusId?: string;
   readonly kind?: "dialog" | "alertdialog";
   readonly placement?: "center" | "side" | "bottom";
-  readonly size?: "default" | "comparison" | "confirm";
+  readonly size?: "default" | "comparison" | "confirm" | "command";
   readonly subtitle?: string;
 };
 
@@ -49,7 +49,7 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
       if (event.key !== "Tab") return;
       const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
         "button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex='0']",
-      )).filter(node => node.checkVisibility() && !node.closest("[inert]"));
+      )).filter(node => node.tabIndex >= 0 && node.checkVisibility() && !node.closest("[inert]"));
       const first = nodes[0], last = nodes.at(-1);
       if (!first) { event.preventDefault(); event.currentTarget.focus(); }
       else if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) {

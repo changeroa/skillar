@@ -1,3 +1,5 @@
+import { mountCommandPalette } from "./command-palette";
+
 export function syncDashboardTabs(nav: HTMLElement, panel: HTMLElement | null, hash: string): void {
   const tabs = Array.from(nav.querySelectorAll<HTMLAnchorElement>('a'));
   const view = hash.replace(/\?.*$/, '').replace(/^#\/?/, '').split('/')[0];
@@ -98,103 +100,35 @@ if (navigation && drawer && menu && closeButton) {
   }
 }
 
-export function bindCommandPalette(
-  opener: HTMLButtonElement, dialog: HTMLDialogElement,
-  input: HTMLInputElement, options: readonly HTMLAnchorElement[], close: HTMLButtonElement,
-): () => void {
-  let active = 0;
-  let visible = [...options];
-  const select = (index: number) => {
-    active = visible.length ? (index + visible.length) % visible.length : 0;
-    for (const option of options) option.setAttribute('aria-selected', String(option === visible[active]));
-    const selected = visible[active];
-    if (selected) input.setAttribute('aria-activedescendant', selected.id);
-    else input.removeAttribute('aria-activedescendant');
-  };
-  const filter = () => {
-    const query = input.value.trim().toLocaleLowerCase('ko');
-    visible = options.filter(option => {
-      option.hidden = !option.textContent?.toLocaleLowerCase('ko').includes(query);
-      return !option.hidden;
-    });
-    select(0);
-    const empty = dialog.querySelector<HTMLElement>('[data-command-empty]');
-    if (empty) empty.hidden = visible.length !== 0;
-  };
-  const dismiss = () => { dialog.close(); opener.focus(); };
-  const activate = (option: HTMLAnchorElement) => {
-    dialog.close();
-    window.location.assign(option.href);
-  };
-  const open = () => {
-    if (!document.body.classList.contains('app-shell')) return;
-    if (drawer?.open) {
-      drawer.close();
-      menu?.setAttribute('aria-expanded', 'false');
-    }
-    input.value = '';
-    filter();
-    if (!dialog.open) dialog.showModal();
-    input.focus();
-  };
-  const shortcut = (event: KeyboardEvent) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' &&
-        document.body.classList.contains('app-shell')) {
-      event.preventDefault();
-      if (dialog.open) dismiss();
-      else open();
-    }
-  };
-  opener.addEventListener('click', open);
-  close.addEventListener('click', dismiss);
-  dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
-  input.addEventListener('input', filter);
-  input.addEventListener('keydown', event => {
-    if (event.isComposing) return;
-    switch (event.key) {
-      case 'ArrowDown': select(active + 1); break;
-      case 'ArrowUp': select(active - 1); break;
-      case 'Home': select(0); break;
-      case 'End': select(visible.length - 1); break;
-      case 'Enter': {
-        const option = visible[active];
-        if (option) activate(option);
-        break;
-      }
-      default: return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-  }, { capture: true });
-  for (const option of options) option.addEventListener('click', event => {
-    if (event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    activate(option);
-  });
-  window.addEventListener('keydown', shortcut);
-  return () => window.removeEventListener('keydown', shortcut);
-}
-
 const jump = document.querySelector<HTMLButtonElement>('#app-jump');
+const crumb = document.querySelector<HTMLElement>('.app-breadcrumb');
+if (crumb) {
+  crumb.classList.add('lf-breadcrumb');
+  crumb.setAttribute('role', 'navigation');
+  crumb.setAttribute('aria-label', '현재 위치');
+  const list = document.createElement('ol');
+  let separator: Element | undefined;
+  const children = Array.from(crumb.children);
+  for (const [index, child] of children.entries()) {
+    if (child.tagName === 'SPAN' && child.textContent?.trim() === '/') {
+      child.setAttribute('aria-hidden', 'true');
+      child.classList.add('lf-breadcrumb__separator');
+      separator = child;
+      continue;
+    }
+    const item = document.createElement('li');
+    if (separator) { item.append(separator); separator = undefined; }
+    if (index === children.length - 1) child.setAttribute('aria-current', 'page');
+    item.append(child); list.append(item);
+  }
+  crumb.append(list);
+}
 if (jump) {
-  const command = document.createElement('dialog');
-  command.id = 'app-command';
-  command.className = 'app-command';
-  command.setAttribute('aria-labelledby', 'app-command-title');
-  command.innerHTML = `<div class="app-command-head"><h2 id="app-command-title">화면 이동</h2><button class="button secondary" type="button" data-command-close>닫기 · Esc</button></div>
-    <label class="app-command-input">이동할 화면<input type="search" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-controls="app-command-options" autocomplete="off" placeholder="화면 이름 검색"></label>
-    <div id="app-command-options" role="listbox" aria-label="이동할 화면">
-      <a id="jump-dashboard" href="/dashboard/" role="option" tabindex="-1">대시보드</a>
-      <a id="jump-sessions" href="/dashboard/#/sessions" role="option" tabindex="-1">세션</a>
-      <a id="jump-skills" href="/skills/" role="option" tabindex="-1">스킬</a>
-      <a id="jump-connections" href="/connections/" role="option" tabindex="-1">연결</a>
-      <a id="jump-account" href="/login/" role="option" tabindex="-1">계정</a>
-    </div><p data-command-empty hidden>일치하는 화면이 없습니다.</p>
-    <p class="note app-command-help">화면 이동 전용 · ↑ ↓ 선택 · Enter 이동 · Esc 닫기</p>`;
-  document.body.append(command);
-  const input = command.querySelector('input');
-  const close = command.querySelector<HTMLButtonElement>('[data-command-close]');
-  if (input && close) bindCommandPalette(jump, command, input, Array.from(command.querySelectorAll('a')), close);
+  let dispose: (() => void) | undefined;
+  const mount = () => { dispose?.(); dispose = mountCommandPalette(jump); };
+  window.addEventListener('pagehide', () => { dispose?.(); dispose = undefined; });
+  window.addEventListener('pageshow', event => { if (event.persisted) mount(); });
+  mount();
 }
 
 const breadcrumb = document.querySelector<HTMLElement>('#skill-breadcrumb');

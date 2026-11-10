@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { useState } from "preact/hooks";
-import { DataTable, sortRows, FacetPanel, Pill, KeyValueGrid, NumberTile, Toast, Skeleton,
-  SegmentedTabs, BarChart, LineChart, chartLayout, peekUrl, usePeekSelection, PeekPanel } from "../src/ui/index.ts";
-import { act, all, byTag, FakeEvent, h, mount, input } from "./helpers/t10-dom.mjs";
+import { act, all, byTag, FakeEvent, h, mount, input, loadViews } from "./helpers/t10-dom.mjs";
+const { DataTable, sortRows, FacetPanel, Pill, KeyValueGrid, NumberTile, Toast, Skeleton,
+  SegmentedTabs, BarChart, LineChart, chartLayout, peekUrl, usePeekSelection, PeekPanel } =
+  await loadViews('export * from "./site/src/ui/index.ts";');
 
 const columns = [
   { id: "name", label: "이름", value: row => row.name },

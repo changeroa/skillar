@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { installFakeDom, FakeEvent } from "./helpers/fake-dom.mjs";
+import { act, byTag, loadViews } from "./helpers/t10-dom.mjs";
 
 // The module also initializes page chrome. These absent mounts model a page without that chrome.
 globalThis.document = { querySelector: () => null };
 globalThis.window = { matchMedia: () => ({ matches: true }) };
-const { syncDashboardTabs, bindCommandPalette } = await import("../src/shell.ts");
+const { syncDashboardTabs } = await loadViews('export { syncDashboardTabs } from "./site/src/shell.ts";');
+const { mountCommandPalette } = await loadViews('export { mountCommandPalette } from "./site/src/command-palette.tsx";');
 delete globalThis.window;
 delete globalThis.document;
 
@@ -81,104 +83,114 @@ test("tab semantics also apply while the embedded view panel is not mounted", ()
   assert.ok(tabs.every(tab => !tab.hasAttribute("aria-current")));
 });
 
-function palette(t) {
+async function palette(t, visible = true) {
     const document = installFakeDom();
+    const prototype = Object.getPrototypeOf(document.body);
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, "textContent");
+    if (!descriptor.set) Object.defineProperty(prototype, "textContent", {
+      get: descriptor.get,
+      set(value) {
+        for (const child of [...this.childNodes]) this.removeChild(child);
+        this.appendChild(this.ownerDocument.createTextNode(value));
+      },
+      configurable: true,
+    });
+    document.body.append = child => document.body.appendChild(child);
+    const previousHTMLElement = globalThis.HTMLElement;
+    globalThis.HTMLElement = document.body.constructor;
+    const create = document.createElement.bind(document);
+    document.createElement = name => {
+      const node = create(name);
+      node.append = child => node.appendChild(child);
+      node.scrollIntoView = () => {};
+      node.querySelector = selector => selector === "input" ? byTag(node, "input")[0] : null;
+      node.matches = selector => selector === ":disabled" && node.disabled;
+      if (name === "dialog") {
+        node.oncancel = null;
+        node.showModal = () => { node.open = true; };
+        node.close = () => { node.open = false; };
+      }
+      return node;
+    };
+    document.createElementNS = (_namespace, name) => document.createElement(name);
+    document.querySelector = () => null;
     document.body.classList = { contains: value => value === "app-shell" };
     const window = new EventTarget();
     const navigations = [];
     window.location = { assign: href => navigations.push(href) };
     globalThis.window = window;
-    const opener = document.createElement("button"), dialog = document.createElement("dialog");
-    const field = document.createElement("input"), close = document.createElement("button");
-    const options = ["dashboard", "sessions", "skills", "connections", "account"].map(id => {
-      const option = document.createElement("a");
-      option.id = id;
-      option.href = `https://skillar.sh/${id}/`;
-      // Model the browser's uncancelled anchor default action, not just the
-      // callback. Both native activation and explicit navigation must work.
-      option.click = () => {
-        const event = new FakeEvent("click");
-        option.dispatchEvent(event);
-        if (!event.defaultPrevented) window.location.assign(option.href);
-      };
-      option.appendChild(document.createTextNode(id));
-      dialog.appendChild(option);
-      return option;
-    });
-    dialog.querySelector = () => null;
-    dialog.showModal = () => { dialog.open = true; };
-    dialog.close = () => { dialog.open = false; };
+    const opener = document.createElement("button");
     document.body.appendChild(opener);
-    document.body.appendChild(dialog);
-    dialog.appendChild(field);
-    dialog.appendChild(close);
-    const cleanup = bindCommandPalette(opener, dialog, field, options, close);
-    t.after(() => { cleanup(); delete globalThis.window; });
+    let cleanup;
+    await act(() => { cleanup = mountCommandPalette(opener); });
+    opener.focus();
+    if (visible) await act(() => opener.click());
+    const dialog = byTag(document.body, "dialog")[0], field = dialog ? byTag(dialog, "input")[0] : undefined;
+    const options = dialog ? byTag(dialog, "button").filter(node => node.getAttribute("role") === "option") : [];
+    t.after(async () => { await act(() => cleanup()); delete globalThis.window; globalThis.HTMLElement = previousHTMLElement; });
     return { document, window, opener, dialog, field, options, navigations };
 }
 
 for (const modifier of ["metaKey", "ctrlKey"]) {
-  test(`command jump opens with ${modifier} and Escape restores the opener`, t => {
+  test(`command jump opens with ${modifier} and Escape restores the opener`, async t => {
     // Given
-    const { document, window, opener, dialog, field } = palette(t);
+    const { document, window, opener } = await palette(t, false);
     // When
     const shortcut = new Event("keydown", { cancelable: true });
     Object.assign(shortcut, { key: "k", [modifier]: true });
-    window.dispatchEvent(shortcut);
+    await act(() => window.dispatchEvent(shortcut));
+    assert.equal(shortcut.defaultPrevented, true);
+    const dialog = byTag(document.body, "dialog")[0];
     // Then
     assert.equal(dialog.open, true);
-    assert.equal(document.activeElement, field);
-    assert.equal(field.getAttribute("aria-activedescendant"), "dashboard");
-    dialog.dispatchEvent(new FakeEvent("cancel"));
+    assert.equal(document.activeElement, byTag(dialog, "input")[0]);
+    assert.equal(byTag(dialog, "input")[0].getAttribute("aria-activedescendant"), "app-command-option-dashboard");
+    await act(() => dialog.dispatchEvent(new FakeEvent("cancel")));
     assert.equal(dialog.open, false);
     assert.equal(document.activeElement, opener);
   });
 }
 
-test("two ArrowDown presses and Enter navigate to the third destination", t => {
-  const { opener, field, navigations, dialog } = palette(t);
-  opener.click();
-  field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
-  field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" }));
-  assert.equal(field.getAttribute("aria-activedescendant"), "skills");
-  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
-  assert.deepEqual(navigations, ["https://skillar.sh/skills/"]);
+test("two ArrowDown presses and Enter navigate to the third destination", async t => {
+  const { field, navigations, dialog } = await palette(t);
+  await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
+  await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
+  assert.equal(field.getAttribute("aria-activedescendant"), "app-command-option-skills");
+  await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
+  assert.deepEqual(navigations, ["/skills/"]);
   assert.equal(dialog.open, false);
 });
 
-test("arrows wrap and Home and End select the visible endpoints", t => {
-  const { opener, field, options } = palette(t);
-  opener.click();
+test("arrows wrap and Home and End select the visible endpoints", async t => {
+  const { field, options } = await palette(t);
   for (const [key, expected] of [
     ["ArrowUp", "account"], ["ArrowDown", "dashboard"], ["End", "account"],
     ["Home", "dashboard"], ["ArrowDown", "sessions"],
   ]) {
-    field.dispatchEvent(new FakeEvent("keydown", { key }));
-    assert.equal(field.getAttribute("aria-activedescendant"), expected);
-    assert.deepEqual(options.filter(option => option.getAttribute("aria-selected") === "true").map(option => option.id), [expected]);
+    await act(() => field.dispatchEvent(new FakeEvent("keydown", { key })));
+    assert.equal(field.getAttribute("aria-activedescendant"), `app-command-option-${expected}`);
+    assert.deepEqual(options.filter(option => option.getAttribute("aria-selected") === "true").map(option => option.id), [`app-command-option-${expected}`]);
   }
 });
 
-test("filtered Enter and option clicks use the destination URL", t => {
-  const { opener, field, options, navigations } = palette(t);
-  opener.click();
-  field.value = "skills";
-  field.dispatchEvent(new FakeEvent("input"));
-  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
-  opener.click();
-  options[3].click();
-  assert.deepEqual(navigations, ["https://skillar.sh/skills/", "https://skillar.sh/connections/"]);
+test("filtered Enter and option clicks use the destination URL", async t => {
+  const { document, opener, field, navigations } = await palette(t);
+  field.value = "스킬";
+  await act(() => field.dispatchEvent(new FakeEvent("input")));
+  await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
+  await act(() => opener.click());
+  await act(() => document.getElementById("app-command-option-connections").click());
+  assert.deepEqual(navigations, ["/skills/", "/connections/"]);
 });
 
-test("Enter with no match or an active IME composition does not navigate", t => {
-  const { opener, field, navigations } = palette(t);
-  opener.click();
+test("Enter with no match or an active IME composition does not navigate", async t => {
+  const { field, navigations } = await palette(t);
   const composition = new FakeEvent("keydown", { key: "Enter" });
   composition.isComposing = true;
-  field.dispatchEvent(composition);
+  await act(() => field.dispatchEvent(composition));
   field.value = "no-match";
-  field.dispatchEvent(new FakeEvent("input"));
-  field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" }));
+  await act(() => field.dispatchEvent(new FakeEvent("input")));
+  await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
   assert.deepEqual(navigations, []);
   assert.equal(field.getAttribute("aria-activedescendant"), null);
 });

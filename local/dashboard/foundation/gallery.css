@@ -1,3 +1,4 @@
+@import "./shell/shell.css";
 /* Shared dev-only foundation specimens, not the product component migration. */
 html { background: var(--lf-background); color: var(--lf-foreground); }
 body { margin: 0; }

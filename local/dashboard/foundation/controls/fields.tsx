@@ -5,14 +5,16 @@ import { Glyph, type ControlIcon } from "./icons";
 type InputAttributes = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
 type FieldLabel = { readonly label: string; readonly error?: string };
 
-export function Input({ label, error, id, prefix, valuePrefix, icon = prefix || valuePrefix ? false : "search", ...props }: InputAttributes & FieldLabel & {
+export function Input({ label, error, id, prefix, valuePrefix, icon = prefix || valuePrefix ? false : "search",
+  variant = "default", ...props }: InputAttributes & FieldLabel & {
   readonly prefix?: string; readonly valuePrefix?: string; readonly icon?: ControlIcon | false;
+  readonly variant?: "default" | "command";
 }) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const ref = useRef<HTMLInputElement>(null);
   const description = [props["aria-describedby"], error ? `${inputId}-error` : undefined].filter(Boolean).join(" ") || undefined;
-  return <div class="lf-field">
+  return <div class={`lf-field${variant === "command" ? " lf-command-field" : ""}`}>
     <label for={inputId}>{label}</label>
     <div class="lf-input-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}
       data-prefixed={Boolean(prefix || valuePrefix)} data-value-prefixed={Boolean(valuePrefix)} data-icon={Boolean(icon)}
