@@ -153,11 +153,12 @@ test("event navigation keeps one tab stop and preserves rows between tree and gr
     kind: "prompt", ts, summary: String(ts), detail: { kind: "prompt", text: String(ts) },
   })));
   const route = { view: "trace", filter: {}, event: source[0].key };
-  const props = { source, bounds: { startedAt: 100, endedAt: 200 }, route, navigate() {} };
+  const props = { source, bounds: { startedAt: 100, endedAt: 200 }, route, prefix: "roving", navigate() {} };
   const { container, show } = await mount(t, ui.EventConsole, props);
   const rows = all(container, node => node.getAttribute("role") === "treeitem");
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map(node => node.getAttribute("tabindex")), ["0", "-1"]);
+  assert.equal(all(container, node => node.getAttribute("role") === "tabpanel")[0].getAttribute("id"), `${props.prefix}-tree-panel`);
   // When the same console switches representation.
   await show({ ...props, route: { ...route, traceTab: "timeline" } });
   // Then the live row identities and single entry point survive.

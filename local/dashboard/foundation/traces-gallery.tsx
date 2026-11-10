@@ -18,7 +18,7 @@ const source = createTimelineKeys("gallery-session")(steps);
 export function TracesGallery() {
   installStyles("pr7-trace-specimen", TRACE_CSS);
   traceConsoleStyles();
-  const [route, navigate] = useState<Route>({ view: "trace", filter: {}, event: source[1]?.key });
+  const [route, navigate] = useState<Route>({ view: "trace", filter: {} });
   return <main id="gallery" class="lf-gallery" data-ready="true">
     <h1>세션 이벤트 컴포넌트</h1>
     <p>합성 데이터 · 트리, 타임라인, 원본 JSON · 방향키로 이벤트 이동</p>
@@ -27,7 +27,7 @@ export function TracesGallery() {
         route={route} navigate={navigate} embedded />
     </div>
     <div class="trace pe-console" data-specimen="empty-trace">
-      <EventConsole source={[]} bounds={{}} route={{ view: "trace", filter: {} }} navigate={() => undefined} embedded />
+      <EventConsole source={[]} bounds={{}} route={{ view: "trace", filter: {} }} navigate={() => undefined} prefix="empty" embedded />
     </div>
   </main>;
 }

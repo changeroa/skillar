@@ -199,6 +199,39 @@ The existing shell's wrapping breadcrumb/version controls remain unchanged.
   on duplicating account information in unrelated main views remains intact.
 
 ## Historical PR-5 record (not the current PR's gate verdict)
+# PR-7 local screens — current implementer status
+
+Draft PR: https://github.com/changeroa/skillar/pull/106
+Branch: `uxb/pr-7-local`; base: `ba64d91bfd000add5553aadf2640be077678e2f1`.
+Implementation head: `e5517057e8567b60ce201cae9f82ee316ba8be9f`.
+Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-7/`.
+Exact published head and terminal CI: `publication.json` and `final-ci.json`.
+This is implementer evidence, not independent approval. No merge or production deployment.
+
+| Gate | Verdict | Evidence / remaining cases |
+|---|---|---|
+| 1. Component visual diff | **FAIL** | 32 real Demo/local captures, 16 raw comparisons; 12 eligible paint/type cases pass and reject mutations. Full matched-data default/active/disabled/loading/error/empty and painted icon/mark-channel coverage remains unverified. Raw differences are retained, not masked or called zero-pixel parity. |
+| 2. Screen comparison | **FAIL** | 252 cases / 504 PNGs across 21 standalone/real-embed page states, 390/1440/1920, both themes, top/end. No after-page overflow; standard controls measure 32/44px. Complete paired Langfuse/before/after screen and wireframe-fidelity certification remains unverified. |
+| 3. Keyboard / ARIA | **PASS** | Four trusted tree/grid/identity cases; 88 desktop + 56 phone trace targets pass focus/size checks. Rings: 4.40:1 light, 4.83:1 dark. Ring-removal and measured 60px mutations fail; four phone Escape/trigger-restoration cases pass. Real hosted embed is mounted, not substituted. |
+| 4. R1–R7 structure | **PASS** | Original eight-case full/empty desktop/phone light/dark assertions pass (R4 N.A. on home). Thirteen API/route/data/chart-geometry files are byte-identical. Keyed-body and JSON-disclosure regressions pass. |
+| 5. Build / tests | **FAIL** | Site tests/build, local typecheck/build and 67 focused regressions pass. Local full suite: 986 tests, 985 pass; known `cli-init.test.mjs` ENOTDIR from the pre-existing `/tmp/h` file. Nothing is skipped, weakened or deleted. Exact final-head CI is in the receipt. |
+| 6. License | **PASS** | No new dependencies. npm dry-run pack includes NOTICE; all public/local/built NOTICE copies match. Source provenance and exact pinned MIT SHA are recorded. |
+| 7. Deployment | **PASS** | **not deployed; deploy gated on owner** for production. Only authorized `uxb-pr-7` preview, recorded in `publication.json`; no local deployment. |
+
+Full ledger, ownership differences and artifact index: `gate.md` in the evidence root.
+Standalone analysis has no hosted embed tab; the real embed's four supported tabs
+and their detail/peek states were exercised. KST, zero baselines, APIs, data,
+routes, hosted screens, server and worker implementations are unchanged.
+
+All three new inventory components have read-only Demo captures. No whole-component
+zero-capture exception was used. Account footers are hidden and asserted hidden.
+No Demo writes, settings changes or induced failures were performed.
+Independent review is lead-owned; nested reviewers are disabled in this lane.
+Gates 1/2 remain visual-review gaps, not self-certified passes. Do not merge this draft.
+
+## Historical PR-5 ledger (not current PR-7 certification)
+
+### PR-5 widgets and charts: paint-review correction
 
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Merged PR-4 base: `431fb9b0351c6f82eaacb16e36b32f7c7c658f32`.

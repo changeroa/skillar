@@ -75,8 +75,8 @@ function reportOnlyArguments(source: readonly KeyedStep[], spans: readonly Extra
   }).map(event => event.id))]));
 }
 
-export function EventConsole({ source, report, bounds, route, navigate, embedded = false }: Pick<ViewProps, "route" | "navigate" | "embedded"> & {
-  readonly source: readonly KeyedStep[]; readonly report?: SessionSkillReportDto; readonly bounds: ReturnType<typeof sessionBounds>;
+export function EventConsole({ source, report, bounds, route, navigate, embedded = false, prefix = "event" }: Pick<ViewProps, "route" | "navigate" | "embedded"> & {
+  readonly source: readonly KeyedStep[]; readonly report?: SessionSkillReportDto; readonly bounds: ReturnType<typeof sessionBounds>; readonly prefix?: string;
 }) {
   const narrow = useNarrow();
   const triggers = useRef(new Map<string, RefObject<HTMLButtonElement>>());
@@ -102,12 +102,12 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
   const Heading = embedded ? "h3" : "h2";
   const TreeRoot = embedded ? "div" : "main";
   return <section class="event-console" data-component="linked-event-console">
-    <EventViewTabs route={route} navigate={navigate} />
+    <EventViewTabs route={route} navigate={navigate} prefix={prefix} />
     {route.event !== undefined && selected === undefined && <p role="status">선택한 이벤트를 찾을 수 없습니다. 목록에서 다시 선택하세요.</p>}
     {tab === "timeline" && graph?.points.some(point => point.outside) && <p class="pe-muted event-range-note" role="status">세션 시간 범위 밖의 보고서 구간은 축에 표시하지 않습니다.</p>}
     <div class="event-console__split">
       <TreeRoot class="event-console__tree" aria-label="세션 이벤트" tabIndex={-1} data-component="event-tree">
-       <div id="event-tree-panel" role="tabpanel" aria-labelledby={`event-${tab}-tab`}>
+       <div id={`${prefix}-tree-panel`} role="tabpanel" aria-labelledby={`${prefix}-${tab}-tab`}>
         <div class="event-console__heading"><Heading>이벤트 순서</Heading><span class="pe-muted">{source.length}개{spans.length ? ` · 구간 ${spans.length}개` : ""}</span></div>
         {tab === "timeline" && graph && <GanttControls graph={graph} window={window} />}
         <ol aria-label="세션 이벤트 순서" role={tab === "timeline" ? "grid" : "tree"}
