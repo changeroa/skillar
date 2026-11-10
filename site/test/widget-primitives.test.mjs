@@ -170,3 +170,13 @@ test("status messages preserve recorded newlines and severity", async t => {
   assert.equal(container.children[0].getAttribute("data-level"), "WARNING");
   assert.equal(container.children[0].textContent, "first\nsecond");
 });
+
+test("status announcements follow severity only when enabled", async t => {
+  for (const level of ["DEFAULT", "DEBUG", "WARNING", "ERROR"]) {
+    const props = { level, message: "Recorded observation" };
+    const api = await mount(t, StatusMessage, props);
+    assert.equal(api.container.children[0].getAttribute("role"), null);
+    await api.show({ ...props, announce: true });
+    assert.equal(api.container.children[0].getAttribute("role"), level === "ERROR" ? "alert" : "status");
+  }
+});

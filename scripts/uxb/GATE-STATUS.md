@@ -125,6 +125,41 @@ authentication remain unverified.
 
 # PR-5 widgets and charts gate ledger
 
+## Review-fix increment; final rebased certification pending
+
+The owner requested rebasing onto merged PR-4 main
+`431fb9b0351c6f82eaacb16e36b32f7c7c658f32` after pushing these fixes.
+All seven PR-5 gates and PR-4's merged table validators will be rerun at the
+rebased candidate. The older table below is a historical snapshot, not the
+current combined-head verdict.
+
+The expanded state diagnostic passed 296 paired cases, 9,716 unique part/field
+assertions, 296 geometry mutations and 200 conditional-control paint mutations.
+It now inventories 54 base specimens and 74 default/interactive/dismissed states.
+Conditional parts are checked by identity and presence/absence, not counts alone.
+
+Actual composited focus crops exposed 2.56:1 light-theme indicators and weak
+caller-owned restoration controls. Widget and gallery-caller focus policies now
+paint contrasting indicators. The raster predicate requires at least 3:1 contrast
+and a nontrivial indicator area; removing the ring must fail that same predicate.
+Both invisible white-on-white offset shadows are rejected despite the old CSS
+predicate accepting them. Ten nominal pixel probes pass. Eight coupled 60px
+mutations are rejected against absolute 32px mouse/44px touch values.
+
+New coverage also revealed and fixed Callout link-action paint/padding/type and
+the icon-without-title Alert's 3px alignment. Loading/no-data, no-action,
+disabled, internal/external-link, announcement and dismissed/restored states
+are explicit. Native Tab now starts from an adjacent temporary origin rather
+than reverse-tabbing out of the document. Independent focus/tooltip signals
+are registered before input; held-catalog placeholders cannot satisfy loaded-row
+readiness. Two held-request and independent-signal scenarios pass without sleeps.
+
+Site 408/408, both builds, local typecheck, performance, notices/package and
+script syntax checks pass. Local 984/985 retains only the untouched `/tmp/h`
+ENOTDIR baseline. These are pre-rebase checks, not final-head certification.
+
+## Historical 7c92544 snapshot (superseded for the combined rerun)
+
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Baseline: `abee112ac78e3ebc97dc0b0fcb401b15539be7f2`.
 Evidence root: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-5/`.

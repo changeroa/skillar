@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import { Button, Select } from "./controls";
+import { Button, IconButton, Select } from "./controls";
 import { Card, Widget, MetricStrip, Metric, BarChart, LineChart, Histogram, EmptyState, Alert, StatusMessage, Callout } from "./widgets";
 import type { ChartData, WidgetState } from "./widgets";
 
@@ -62,5 +62,29 @@ export function WidgetsGallery() {
     }))}
     <Specimen name="Metric-zero"><Metric label="측정값" value={0} /></Specimen>
     <Specimen name="Metric-unmeasured"><Metric label="측정값" value={null} /></Specimen>
+    <Specimen name="Card-minimal"><Card title="기록">기록된 사용량입니다.</Card></Specimen>
+    <Specimen name="Metric-affixes"><Metric label="비용" value={7} prefix="₩" suffix="원" note="기록된 값" /></Specimen>
+    <Specimen name="Metric-strip-empty"><MetricStrip label="빈 측정 범위" metrics={[]} /></Specimen>
+    <Specimen name="Empty-minimal"><EmptyState title="표시할 데이터가 없습니다" /></Specimen>
+    <Specimen name="Alert-body-only"><Alert>기록된 관찰 메시지입니다.</Alert></Specimen>
+    <Specimen name="Alert-icon-only"><Alert icon="dashboard">기록된 관찰 메시지입니다.</Alert></Specimen>
+    <Specimen name="Alert-action"><Alert title="기록 확인" action={<Button text="다시 읽기" variant="outline" />}>연결을 확인하세요.</Alert></Specimen>
+    <Specimen name="Alert-dismissible">{dismissed.includes("Alert-dismissible") ?
+      <Button text="안내 다시 표시" variant="outline" onClick={() => setDismissed(previous => previous.filter(value => value !== "Alert-dismissible"))} /> :
+      <Alert title="기록 확인" action={<IconButton label="안내 닫기" icon="close" onClick={() => setDismissed(previous => [...previous,"Alert-dismissible"])} />}>연결을 확인하세요.</Alert>}</Specimen>
+    {(["no-actions","links","disabled"] as const).map(mode => {
+      const name=`Callout-${mode}`;
+      return <Specimen key={name} name={name}>{dismissed.includes(name) ?
+        <Button text="안내 다시 표시" variant="outline" onClick={() => setDismissed(previous => previous.filter(value => value !== name))} /> :
+        <Callout variant="info" onDismiss={() => setDismissed(previous => [...previous,name])}
+          actions={mode==="links" ? [{type:"link",label:"기록 위치",href:"#gallery"},{type:"link",label:"Skillar",href:"https://skillar.sh"}] :
+            mode==="disabled" ? [{type:"button",label:"연결 확인",disabled:true,onClick:()=>{}}] : []}>
+          <p>업로드 동의와 출처를 확인하면 기록을 볼 수 있습니다.</p>
+        </Callout>}</Specimen>;
+    })}
+    <Specimen name="Widget-empty-no-action"><Widget title="기록" state={{kind:"empty",message:"다른 기간을 선택해 주세요."}}>기록</Widget></Specimen>
+    <Specimen name="Widget-error-no-action"><Widget title="기록" state={{kind:"error",message:"연결을 확인해 주세요."}}>기록</Widget></Specimen>
+    <Specimen name="StatusMessage-announced-status"><StatusMessage level="DEFAULT" message="기록을 갱신했습니다." announce /></Specimen>
+    <Specimen name="StatusMessage-announced-error"><StatusMessage level="ERROR" message="연결을 확인해 주세요." announce /></Specimen>
   </main>;
 }

@@ -2,15 +2,18 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { captureCrop, diffImages } from "./image-diff.mjs";
 import { ready, arm, signal, press } from "./trusted-keys.mjs";
 import { applyViewport } from "./viewport.mjs";
+import { measureWidgetFocus, ownerControlHeight,focusWidgetControl } from "./widget-visual-guards.mjs";
+import { assertWidgetStates, conditionalParts } from "./widget-states.mjs";
 const output = process.argv[2];
 if (!output || !process.env.OMOWRIGHT_HELPER) throw Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs node scripts/uxb/widgets-qa.mjs evidence-directory");
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
 await mkdir(`${output}/matrix`, { recursive: true });
 await mkdir(`${output}/parity`, { recursive: true });
+await mkdir(`${output}/focus-pixels`, { recursive: true });
 const { omowright } = await loadOmowright();
 const browser = await omowright.connect("http://127.0.0.1:9333"), tabs = omowright.createAgentTabs(browser);
 const tab = await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } }), page = tab.page;
-const matrix = [], assertions = [], comparisons = [];
+const matrix = [], assertions = [], comparisons = [], conditionalStates=[];
 const fields = ["paddingTop","paddingRight","paddingBottom","paddingLeft","fontSize","lineHeight","fontWeight","fontFamily",
   "borderRadius","borderTopWidth","borderTopColor","backgroundColor","color","boxShadow","outlineWidth","outlineStyle","outlineColor"];
 const check = (name, pass, evidence) => assertions.push({ name, pass, evidence });
@@ -36,6 +39,15 @@ try {
     check(`${prefix} document fits`, !viewport.overflow, viewport);
     await page.screenshot({ path: `${output}/matrix/${prefix}-top.png` });
     const names = await page.evaluate(() => [...document.querySelectorAll("[data-specimen]")].map(n => n.dataset.specimen));
+    assertWidgetStates(names);
+    for(const [name,parts]of Object.entries(conditionalParts)){
+      const observed=await page.evaluate(({name,parts})=>{
+        const root=document.querySelector(`[data-specimen="${name}"]`);
+        return {present:parts.present.map(selector=>({selector,found:Boolean(root.querySelector(selector))})),
+          absent:parts.absent.map(selector=>({selector,found:Boolean(root.querySelector(selector))}))};
+      },{name,parts});
+      check(`${prefix} conditional ${name}`,observed.present.every(p=>p.found)&&observed.absent.every(p=>!p.found),observed);
+    }
     for (const name of names) {
       const selector = `[data-specimen="${name}"]`;
       await page.evaluate(selector => document.querySelector(selector).scrollIntoView({ block: "center", behavior: "instant" }), selector);
@@ -86,17 +98,20 @@ try {
     });
     check(`${prefix} missing measurements remain distinct from zero`,distinct.zero==="0"&&distinct.zeroMeasured==="true"&&
       distinct.missing!=="0"&&distinct.missingMeasured==="false"&&distinct.cells.includes("0")&&distinct.cells.includes(distinct.missing),distinct);
-    const controls = await page.evaluate(() => [...document.querySelectorAll(".lf-button,.lf-icon-button,select,.lf-chart summary")]
+    const controls = await page.evaluate(() => [...document.querySelectorAll(".lf-button,.lf-icon-button,select,.lf-chart summary,.lf-callout .lf-message-actions a")]
       .map(n => ({ h: n.getBoundingClientRect().height, visible: Boolean(n.getClientRects().length) })));
-    check(`${prefix} owner target heights`, controls.filter(n => n.visible).every(n => Math.abs(n.h - (mobile ? 44 : 32)) < 1), controls);
-    const targetMutation=await page.evaluate(expected=>{
+    const ownerContext={width,coarse:viewport.coarse};
+    check(`${prefix} owner target heights`, controls.some(n=>n.visible)&&controls.filter(n => n.visible).every(n => ownerControlHeight(n.h,ownerContext).pass), controls);
+    const targetMutation=await page.evaluate(()=>{
       const n=document.querySelector(".lf-button"),old=n.getAttribute("style");
-      const read=()=>Math.abs(n.getBoundingClientRect().height-expected)<1;
-      const before=read();n.style.setProperty("height",`${expected-2}px`,"important");n.style.setProperty("min-height","0","important");
-      const rejected=!read();if(old===null)n.removeAttribute("style");else n.setAttribute("style",old);
-      return{before,rejected,restored:read()};
-    },mobile?44:32);
-    check(`${prefix} owner target geometry mutation is rejected`,targetMutation.before&&targetMutation.rejected&&targetMutation.restored,targetMutation);
+      const before=n.getBoundingClientRect().height;
+      n.style.setProperty("height","60px","important");n.style.setProperty("min-height","60px","important");
+      const mutated=n.getBoundingClientRect().height;
+      if(old===null)n.removeAttribute("style");else n.setAttribute("style",old);
+      return{before,mutated,upstreamMutationHeight:60,restored:n.getBoundingClientRect().height};
+    });
+    check(`${prefix} coupled upstream and product 60px mutation is rejected`,ownerControlHeight(targetMutation.before,ownerContext).pass&&
+      targetMutation.mutated===60&&!ownerControlHeight(targetMutation.mutated,ownerContext).pass&&ownerControlHeight(targetMutation.restored,ownerContext).pass,targetMutation);
     const glyphs = await page.evaluate(() => [...document.querySelectorAll(".lf-chart__legend button svg")]
       .map(n => ({ width: n.getBoundingClientRect().width, height: n.getBoundingClientRect().height })));
     check(`${prefix} plot sizing does not leak into control glyphs`, glyphs.length > 0 &&
@@ -106,41 +121,38 @@ try {
     })));
     check(`${prefix} series markers map plotted colors to controls`,swatches.length===glyphs.length&&
       swatches.every(n=>n.width===8&&n.height===8&&!["transparent","rgba(0, 0, 0, 0)"].includes(n.color)),swatches);
-    const focusables = await page.evaluate(() => [...document.querySelectorAll("button,select,summary,[data-chart-point]")]
+    const focusables = await page.evaluate(() => [...document.querySelectorAll("button,select,summary,a[href],[data-chart-point]")]
       .filter(n => !n.disabled && n.tabIndex >= 0 && n.getClientRects().length).map((n,i) => { n.dataset.qaFocus = String(i); return `[data-qa-focus="${i}"]`; }));
     for (const selector of focusables) {
-      await page.evaluate(selector => { const n = document.querySelector(selector); n.scrollIntoView({ block: "center", behavior: "instant" }); n.focus(); }, selector);
-      await press(page, "Tab", 8);
-      const restShadow = await page.evaluate(selector => getComputedStyle(document.querySelector(selector)).boxShadow, selector);
-      await arm(page, { kind: "focus", selector }); await press(page, "Tab"); await signal(page);
-      const focus = await page.evaluate(({selector,restShadow}) => {
-        const n=document.querySelector(selector),old=n.getAttribute("style");
-        const read=()=>{
-          const s=getComputedStyle(n),colors=s.boxShadow.match(/rgba?\([^)]*\)/g)??[];
-          const shadowPainted=s.boxShadow!==restShadow&&colors.some(color=>!color.startsWith("rgba(")||
-            Number(color.slice(color.lastIndexOf(",")+1,-1))>0)&&
-            (s.boxShadow.match(/-?[\d.]+px/g)??[]).some(length=>parseFloat(length)!==0);
-          return {visible:n.matches(":focus-visible"),ring:s.outlineStyle!=="none"&&parseFloat(s.outlineWidth)>0&&
-            !["transparent","rgba(0, 0, 0, 0)"].includes(s.outlineColor)||shadowPainted};
-        };
-        const painted=read();
-        n.style.setProperty("outline","none","important");n.style.setProperty("box-shadow","none","important");
-        const mutationRejected=!read().ring;
-        if(old===null)n.removeAttribute("style");else n.setAttribute("style",old);
-        return {painted,mutationRejected};
-      },{selector,restShadow});
-      check(`${prefix} focus ${selector}`,focus.painted.visible&&focus.painted.ring,focus.painted);
+      await focusWidgetControl(page,selector);
+      const index=focusables.indexOf(selector);
+      const focus=await measureWidgetFocus(page,selector,`${output}/focus-pixels/${prefix}-${index}`);
+      check(`${prefix} focus ${selector}`,focus.pass,focus);
       check(`${prefix} removing focus ring fails ${selector}`,focus.mutationRejected,selector);
     }
+    for(const name of names.filter(name=>name.startsWith("Callout-")||name==="Alert-dismissible")){
+      const selector=`[data-specimen="${name}"]`,restore=`${selector} > button`;
+      await focusWidgetControl(page,`${selector} .lf-icon-button`);
+      const surface=name==="Alert-dismissible"?".lf-alert":".lf-callout";
+      await arm(page,{kind:"present",selector:`${selector}:has(> button):not(:has(${surface}))`});await press(page,"Enter");await signal(page);
+      await focusWidgetControl(page,restore);
+      const focus=await measureWidgetFocus(page,restore,`${output}/focus-pixels/${prefix}-${name}-restore`);
+      const height=await page.evaluate(selector=>document.querySelector(selector).getBoundingClientRect().height,restore);
+      check(`${prefix} conditional restore focus ${name}`,focus.pass&&focus.mutationRejected&&ownerControlHeight(height,ownerContext).pass,focus);
+      await page.screenshot({path:`${output}/matrix/${prefix}-${name}-dismissed.png`});
+      await arm(page,{kind:"present",selector:`${selector}:has(${surface}):not(:has(> button))`});await press(page,"Enter");await signal(page);
+      await page.screenshot({path:`${output}/matrix/${prefix}-${name}-restored.png`});
+      conditionalStates.push({app,width,theme,name,focus,dismissedPath:`${output}/matrix/${prefix}-${name}-dismissed.png`,restoredPath:`${output}/matrix/${prefix}-${name}-restored.png`});
+    }
     const point = '[data-specimen="Bar"] [data-chart-point]';
-    await page.evaluate(selector => { document.querySelector(selector).focus(); }, point);
-    await press(page, "Tab", 8); await arm(page,{kind:"focus",selector:point}); await press(page,"Tab"); await signal(page);
+    await arm(page,{kind:"attribute",selector:'[data-specimen="Bar"] [role=tooltip]',attribute:"role",value:"tooltip",key:"__tooltipSignal"});
+    await focusWidgetControl(page,point);await signal(page,"__tooltipSignal");
     check(`${prefix} keyboard tooltip`, await page.evaluate(() => Boolean(document.querySelector('[data-specimen="Bar"] [role=tooltip]'))), point);
     await page.screenshot({ path:`${output}/matrix/${prefix}-chart-focus.png` });
-    await press(page,"Escape");
+    await arm(page,{kind:"absent",selector:'[data-specimen="Bar"] [role=tooltip]'});await press(page,"Escape");await signal(page);
     check(`${prefix} tooltip Escape`, await page.evaluate(() => !document.querySelector('[data-specimen="Bar"] [role=tooltip]')), point);
     const details='[data-specimen="Bar"] details';
-    await page.evaluate(selector=>document.querySelector(`${selector} summary`).focus(),details);
+    await focusWidgetControl(page,`${details} summary`);
     await arm(page,{kind:"attribute",selector:details,attribute:"open",value:""}); await press(page,"Enter"); await signal(page);
     check(`${prefix} data table reachable`,await page.evaluate(selector=>document.querySelector(selector).open&&document.querySelectorAll(`${selector} tbody tr`).length===3,details),details);
     await page.screenshot({path:`${output}/matrix/${prefix}-data-table.png`});
@@ -176,7 +188,7 @@ try {
     comparisons.push({name,kind,source:source.path,actual:path,provenance:source.provenance??"real public Demo",differences,pixels});
   }
 } finally {
-  await writeFile(`${output}/widgets-qa.json`,JSON.stringify({capturedAt:new Date().toISOString(),matrix,assertions,comparisons},null,2));
+  await writeFile(`${output}/widgets-qa.json`,JSON.stringify({capturedAt:new Date().toISOString(),matrix,assertions,comparisons,conditionalStates},null,2));
   await tabs.closeAll();await browser.close();
 }
 console.log(`WIDGET_QA captures=${matrix.length} assertions=${assertions.length} failed=${assertions.filter(x=>!x.pass).length} comparisons=${comparisons.length} styleFailures=${comparisons.filter(x=>x.differences.length).length}`);
