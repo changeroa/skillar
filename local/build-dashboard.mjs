@@ -1,11 +1,12 @@
 import { build } from "esbuild";
-import { copyFile, mkdir, readdir } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const root = new URL("./", import.meta.url);
 const out = new URL("dist/dashboard/", root);
+await rm(out, { recursive: true, force: true });
 await mkdir(new URL("assets/", out), { recursive: true });
-await build({
+export const dashboardBuild = await build({
   entryPoints: [fileURLToPath(new URL("dashboard/main.tsx", root))],
   outdir: fileURLToPath(new URL("assets/", out)),
   entryNames: "app",
@@ -18,6 +19,8 @@ await build({
   jsx: "automatic",
   jsxImportSource: "preact",
   minify: true,
+  define: { "process.env.NODE_ENV": '"production"' },
+  metafile: true,
   logLevel: "warning",
 });
 await copyFile(new URL("dashboard/index.html", root), new URL("index.html", out));
