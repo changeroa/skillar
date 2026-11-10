@@ -145,7 +145,7 @@ The local failure is `test/cli-init.test.mjs:159`, lstat of
 was not edited or deleted. No assertion or validator threshold was weakened.
 
 Preview: `https://uxb-pr-5.skillar-site.pages.dev/__gallery.html?widgets=1`,
-deployment URL `https://8d28af60.skillar-site.pages.dev`.
+deployment URL `https://56264bed.skillar-site.pages.dev`.
 The artifact adds the existing development gallery only to the preview;
 normal production build/routes are unchanged. Its 34 states render with zero
 runtime errors and 32px mouse/44px touch targets. The production deployment
