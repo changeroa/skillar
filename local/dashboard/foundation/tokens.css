@@ -160,7 +160,7 @@ html {
   --lf-chart-fill-6: light-dark(hsl(212 100% 72%), hsl(213 57% 50%));
   --lf-chart-fill-7: light-dark(hsl(115 38% 56%), hsl(115 46% 35%));
   --lf-chart-fill-8: light-dark(hsl(325 61% 68%), hsl(323 39% 47%));
-  --lf-chart-grid: light-dark(var(--lf-muted-gray), var(--lf-muted-gray));
+  --lf-chart-grid: light-dark(hsl(240 5.9% 90%), hsl(0 0% 16.1%));
   --lf-color-1: light-dark(oklch(66.2% 0.225 25.9), oklch(66.2% 0.225 25.9));
   --lf-color-2: light-dark(oklch(60.4% 0.26 302), oklch(60.4% 0.26 302));
   --lf-color-3: light-dark(oklch(69.6% 0.165 251), oklch(69.6% 0.165 251));

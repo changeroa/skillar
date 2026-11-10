@@ -98,7 +98,7 @@ try {
     });
     check(`${prefix} missing measurements remain distinct from zero`,distinct.zero==="0"&&distinct.zeroMeasured==="true"&&
       distinct.missing!=="0"&&distinct.missingMeasured==="false"&&distinct.cells.includes("0")&&distinct.cells.includes(distinct.missing),distinct);
-    const controls = await page.evaluate(() => [...document.querySelectorAll(".lf-button,.lf-icon-button,select,.lf-chart summary,.lf-callout .lf-message-actions a")]
+    const controls = await page.evaluate(() => [...document.querySelectorAll(".lf-button,.lf-icon-button,.lf-callout__dismiss,select,.lf-chart summary,.lf-callout .lf-message-actions a")]
       .map(n => ({ h: n.getBoundingClientRect().height, visible: Boolean(n.getClientRects().length) })));
     const ownerContext={width,coarse:viewport.coarse};
     check(`${prefix} owner target heights`, controls.some(n=>n.visible)&&controls.filter(n => n.visible).every(n => ownerControlHeight(n.h,ownerContext).pass), controls);
@@ -132,7 +132,7 @@ try {
     }
     for(const name of names.filter(name=>name.startsWith("Callout-")||name==="Alert-dismissible")){
       const selector=`[data-specimen="${name}"]`,restore=`${selector} > button`;
-      await focusWidgetControl(page,`${selector} .lf-icon-button`);
+      await focusWidgetControl(page,`${selector} ${name==="Alert-dismissible"?".lf-icon-button":".lf-callout__dismiss"}`);
       const surface=name==="Alert-dismissible"?".lf-alert":".lf-callout";
       await arm(page,{kind:"present",selector:`${selector}:has(> button):not(:has(${surface}))`});await press(page,"Enter");await signal(page);
       await focusWidgetControl(page,restore);

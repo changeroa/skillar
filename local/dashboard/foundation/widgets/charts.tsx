@@ -69,7 +69,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
                   aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                   onFocus={() => setFocused({ label, series: series.label })} onBlur={() => setFocused(null)}
                   onMouseEnter={() => setHovered({ label, series: series.label })}>
-                  <circle cx={x(layout.left + (index + .5) * layout.groupWidth)} cy={layout.y(value)} r="3" />
+                  <circle cx={x(layout.left + (index + .5) * layout.groupWidth)} cy={layout.y(value)} r="6" />
                   <text x={x(layout.left + (index + .5) * layout.groupWidth)} y={layout.y(value) - 8} text-anchor="middle">{value}</text>
                 </g>;
               })}

@@ -34,9 +34,9 @@ export const conditionalParts={
  "Alert-icon-only":{present:[".lf-alert__icon",".lf-alert__description"],absent:[".lf-alert__title",".lf-message-actions"]},
  "Alert-action":{present:[".lf-message-actions .lf-button"],absent:[]},
  "Alert-dismissible":{present:[".lf-message-actions .lf-icon-button"],absent:[]},
- "Callout-no-actions":{present:[".lf-icon-button"],absent:[".lf-message-actions"]},
+ "Callout-no-actions":{present:[".lf-callout__dismiss"],absent:[".lf-message-actions"]},
  "Callout-links":{present:['a[href="#gallery"]','a[target="_blank"][rel="noopener noreferrer"]'],absent:[".lf-message-actions button"]},
- "Callout-disabled":{present:[".lf-message-actions button:disabled",".lf-icon-button"],absent:[]},
+ "Callout-disabled":{present:[".lf-message-actions button:disabled",".lf-callout__dismiss"],absent:[]},
  "Widget-empty-no-action":{present:[".lf-empty"],absent:[".lf-empty__action"]},
  "Widget-error-no-action":{present:[".lf-alert"],absent:[".lf-message-actions"]},
  "StatusMessage-announced-status":{present:['.lf-status-message[role="status"]'],absent:[]},
@@ -44,5 +44,5 @@ export const conditionalParts={
  ...Object.fromEntries(["Chart-unmeasured","Chart-empty","Line-unmeasured","Histogram-unmeasured","Bar-empty","Histogram-empty"]
   .map(state=>[state,{present:[".lf-empty","table","summary"],absent:[".lf-chart__scroll","[data-chart-point]"]}])),
  ...Object.fromEntries(["info","warning"].flatMap(variant=>["top","middle"].map(align=>
-  [`Callout-${variant}-${align}`,{present:[".lf-message-actions .lf-button",".lf-icon-button"],absent:[]}]))),
+  [`Callout-${variant}-${align}`,{present:[".lf-message-actions .lf-button",".lf-callout__dismiss"],absent:[]}]))),
 };

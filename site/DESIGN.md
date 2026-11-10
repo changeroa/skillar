@@ -109,7 +109,16 @@ top/middle alignment, wrapping action cluster and explicit dismissal.
 Korean consumers group auxiliary phrases with a non-wrapping inline span;
 the showcase keeps "기록을 볼 수 있습니다." together instead of orphaning
 the auxiliary ending at phone width. Rich children retain that control.
-All actions reuse PR-1 controls at 32px mouse/44px touch, with painted focus.
+Actions reuse PR-1 controls at 32px mouse/44px touch, with painted focus.
+Callout dismissal uses a native button with that same target and focus contract.
+Its 14px X inherits the Callout foreground (39/39/42 light, 179/179/179 dark);
+hover uses black at 5% or white at 10%, matching the pinned MIT Callout.
+Chart paint follows measured Demo channels: solid 1px grid/baseline strokes
+(240/5.9%/90% HSL light, 0/0%/16.1% dark), palette fills for bars and palette
+2px strokes for lines. Histogram bins use chart-4 at 80% opacity. Line hit
+circles are transparent at rest with radius 6; active circles use series ink
+and radius 4. The expanded fallback table and legend swatches retain their
+painted-part inventory; transparent hit regions are not counted as painted marks.
 Static information is not an assertive live announcement; dynamic failures can
 explicitly request alert semantics. No decorative motion or new focus debt.
 

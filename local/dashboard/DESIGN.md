@@ -1,5 +1,12 @@
 # skillar Dashboard Design System
 
+## Phase B widgets (PR-5)
+
+The shared widget contract is the PR-5 section in `site/DESIGN.md`, including
+measured chart fill/stroke channels and Callout dismissal paint. Local and
+hosted galleries render the same `foundation/widgets/` primitives, preserving
+32px mouse / 44px touch targets and visible keyboard focus.
+
 ## Phase B tables (PR-4)
 
 The complete shared table contract is the PR-4 section in `site/DESIGN.md`.

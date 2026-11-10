@@ -4,13 +4,17 @@
 .lf-chart__scroll, .lf-chart__data-scroll { max-width: 100%; overflow-x: auto; }
 .lf-chart__scroll svg { display: block; min-width: 280px; overflow: visible; font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
 .lf-chart text { font-family: var(--lf-font-sans); font-size: var(--lf-text-xs); fill: var(--lf-muted-foreground); stroke: none; }
-.lf-chart[data-kind=histogram] .lf-chart__label { font-size: var(--lf-chart-histogram-label-size); fill: color-mix(in oklab,var(--lf-muted-foreground) 80%,transparent); }
-.lf-chart__axis { stroke: var(--lf-border); }
-.lf-chart__grid { stroke: var(--lf-chart-grid); stroke-dasharray: 3 3; }
-.lf-chart__series { fill: var(--series-fill); stroke: var(--series-color); }
+.lf-chart[data-kind=histogram] text { font-size: var(--lf-chart-histogram-label-size); fill: color-mix(in oklab,var(--lf-muted-foreground) 80%,transparent); }
+.lf-chart__axis { stroke: var(--lf-chart-grid); }
+.lf-chart__grid { stroke: var(--lf-chart-grid); }
+.lf-chart__series { fill: black; stroke: none; }
 .lf-chart__series[hidden] { display: none; }
-.lf-chart__series path { stroke-width: 2; vector-effect: non-scaling-stroke; }
-.lf-chart__series rect { stroke: none; }
+.lf-chart__series path { stroke: var(--series-color); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.lf-chart__series rect { fill: var(--series-fill); stroke: none; }
+.lf-chart__series circle { fill: transparent; stroke: none; }
+.lf-chart__series [data-chart-point]:is(:hover,:focus-visible) circle { fill: var(--series-color); r: 4; }
+.lf-chart[data-kind=histogram] .lf-chart__series rect { fill: var(--lf-chart-4); opacity: .8; }
+.lf-chart[data-kind=histogram] .lf-chart__swatch { background: var(--lf-chart-4); }
 .lf-chart__series--1 { --series-color: var(--lf-chart-1); --series-fill: var(--lf-chart-fill-1); }
 .lf-chart__series--2 { --series-color: var(--lf-chart-2); --series-fill: var(--lf-chart-fill-2); }
 .lf-chart__series--3 { --series-color: var(--lf-chart-3); --series-fill: var(--lf-chart-fill-3); }
@@ -20,9 +24,9 @@
 .lf-chart__series--7 { --series-color: var(--lf-chart-7); --series-fill: var(--lf-chart-fill-7); }
 .lf-chart__series--8 { --series-color: var(--lf-chart-8); --series-fill: var(--lf-chart-fill-8); }
 .lf-chart [data-chart-point]:focus-visible { outline: var(--lf-focus-width) solid var(--lf-ring); outline-offset: var(--lf-focus-offset); }
-.lf-chart [data-chart-point]:hover { opacity: .8; }
 .lf-chart__legend { display: flex; gap: var(--lf-space-1); flex-wrap: wrap; margin-block: var(--lf-space-2); }
 .lf-chart__legend-item { display: inline-flex; align-items: center; gap: var(--lf-space-1); }
+.lf-chart__legend .lf-button svg { color: var(--lf-icon-foreground); }
 .lf-chart__swatch { flex: 0 0 var(--lf-space-2); width: var(--lf-space-2); height: var(--lf-space-2);
   border-radius: 50%; background: var(--series-color); }
 .lf-chart__legend-item[data-hidden=true] .lf-chart__swatch { opacity: .4; }

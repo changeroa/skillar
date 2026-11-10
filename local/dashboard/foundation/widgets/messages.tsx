@@ -63,7 +63,7 @@ export function Callout({ variant, align = "top", children, actions = [], onDism
           })}
         </div>}
       </div>
-      <IconButton label={dismissLabel} icon="close" onClick={onDismiss} />
+      <button type="button" class="lf-callout__dismiss" aria-label={dismissLabel} onClick={onDismiss}><Glyph name="close" /></button>
     </div>
   </div>;
 }

@@ -1,4 +1,4 @@
-# PR-5 widgets and charts: rebased certification
+# PR-5 widgets and charts: paint-review correction
 
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Merged PR-4 base: `431fb9b0351c6f82eaacb16e36b32f7c7c658f32`.
@@ -9,17 +9,60 @@ All current product receipts were regenerated after the rebase; immutable source
 `combined-audit.json` verifies fresh receipt timestamps, complete membership and zero unexpected failures.
 The historical PR-4 ledger is retained unchanged at the end, not presented as fresh certification.
 
+## Correction of independent review at 9f09a38
+
+That head failed B1/B2. Its 10,028 frame/type assertions were real but did not establish
+plot or conditional-icon paint parity. They remain a separate, limited contract below.
+`widgets-state-qa.mjs` now also requires the fixed-inventory paint gate; it cannot certify
+using the original matrix alone.
+
+Final normal mode: 520 app/theme/pose cases, 40,860 assertions, zero failures; all 21,372
+mutations rejected. The committed inventory has 130 views and 59 deduplicated templates.
+The 2,496 plot observations include explicitly unpainted hit areas and null-slot metadata;
+they are not claimed as 2,496 visible painted marks. All 480 icon observations are checked.
+Thirty-six non-interactive icon focus views are explicitly N.A., not synthetic focus passes.
+
+Live read-only Demo measurements cover series, grid, axis, bars, paths, points, bins,
+tick/value labels and legend palette. Comparisons include fill, stroke, stroke width,
+both channel opacities, effective ancestor opacity and dash. Active point paint is measured
+separately. Caller data/orientation remain owner adaptations; palette ordinals use the
+actual computed Demo palette, not invented source geometry.
+
+Actual pinned MIT references cover every Alert icon, Check/Minus and dismiss glyph plus
+interactive default/hover/native-focus states, including conditional hidden-series Minus.
+Callout now uses its reference's inherited 39/39/42 and 179/179/179 foreground, 14px X,
+black/5 and white/10 hover paint, retaining exact 32/44px targets and contrasting focus.
+
+The fixed part inventory also requires conditional text, skeletons, legend swatches,
+expanded fallback cells, all four border sides, shadows and native disclosure markers.
+It rejects missing parts, hidden icons and each declared channel independently:
+7,736 whole-part removals, 480 hidden-icon probes, 204 native-marker removals and the
+remaining per-channel/primitive corruptions. Empty metric strips must actually remain
+unpainted; deselected series must have no paint. Existing null-slot behavior/tests are
+preserved.
+
+Receipts: `paint-review/sources.json`, `paint-review/results.json` and retained PNGs under
+the evidence root. Portable source-derived fixtures and 33 paint regression tests live in
+`site/test/widget-paint.test.mjs`. This is implementer evidence, not independent approval.
+
+The takeover reran the normal paint gate and all mutation probes, then the mandatory
+combined state/paint entry point. `takeover-audit.md` records the direct coverage audit;
+no weakened thresholds or masks were found. All 60 triptychs were regenerated with the
+verified `431fb9b` baseline label. All 2,368 current product PNG signatures and freshness
+checks pass in `audit-final.mjs`. A new independent review was not run in this depth-limited lane;
+the lead-owned re-review remains separate. `.debug-journal.md` is excluded from the commit.
+
 ## Seven gates
 
-| Gate | Result | Fresh rebased evidence |
+| Gate | Result | Correction evidence |
 | --- | --- | --- |
-| 1. Component parity | PASS, measured-part contract | 74 states / 296 paired cases; 10,028 assertions, zero failures. 4,992 painted, 4,056 geometry and 980 non-painted checks remain separate. All 296 geometry and 200 control-paint corruptions are rejected. |
+| 1. Component parity | PASS, expanded measured-part contract | Original 296 cases / 10,028 frame/type assertions, plus mandatory 520 paint views / 40,860 assertions. Zero failures; 21,372 paint/part/channel mutations rejected, separately from 296 geometry and 200 original control-paint mutations. |
 | 2. Screen comparison | PASS | 30 before/after comparisons against merged main; 120 top/end captures, 36 retained genuine Demo screens and 60 refreshed triptychs. Zero overflow, wrong viewport or runtime errors. |
 | 3. Keyboard and ARIA | PASS for tested matrix | 648 base captures, 1,860 assertions and 72 interaction checks. 708 gallery and 720 real-page painted focus targets pass ring-removal probes; 636 real-page SVG points receive native Tab. All 96 dismissed/restored states pass. |
 | 4. R1-R7 structure | PASS | Eight populated/empty cases. Exact and painted R7 baselines and corruption probes pass. R3 still expects zero/five data rows; PR-4 status rows are excluded. R4 remains inherited N.A. |
-| 5. Build and tests | FAIL: known local environment only | Site 417/417; both builds, local typecheck, performance, syntax and whitespace checks pass. Local 984/985 has only the known /tmp/h ENOTDIR. Clean-environment final-head CI is reported separately, without erasing this local result. |
+| 5. Build and tests | FAIL: known local environment only | Site 450/450; both builds, local typecheck, performance, syntax and whitespace checks pass. Local 984/985 has only the known /tmp/h ENOTDIR. Clean-environment final-head CI is reported separately, without erasing this local result. |
 | 6. License and package | PASS | Five byte-identical notices, 12,817 bytes; final dry-run package includes NOTICE among 177 files. 29 actual pinned-MIT renderer inputs; zero EE inputs. Both PR-4 and PR-5 attributions retained. |
-| 7. Deployment verification | PASS: preview only | Production: "not deployed; deploy gated on owner". Preview e7d512fc-e6f0-4554-8a95-f6cd32c075ff: four desktop/phone and light/dark cases, 54 specimens, zero errors/overflow, 32/44px controls. Production unchanged. |
+| 7. Deployment verification | Not deployed; deploy gated on owner | No deployment of this correction. The retained e7d512fc preview and its four passing browser cases belong to 9f09a38, not the corrected head. They are historical evidence only. |
 
 ## Component and state membership
 
@@ -58,7 +101,7 @@ comparisons and 32 non-painted serialization/unused-font deltas; it is not added
 Controls are exactly 32px with mouse, 44px with coarse pointers or width <=768px, tolerance 0.01px.
 This absolute predicate takes precedence even when upstream and product both incorrectly measure 60px.
 Eight real 60px mutations cover desktop/phone and fine/coarse pointer combinations in both themes.
-Two invisible white offset shadows on white are rejected with zero contrasting pixels and 1:1 contrast.
+Two invisible white offset shadows on white are rejected with zero qualifying indicator pixels.
 Focus uses actual PNG pairs, a >=3:1 changed indicator band and a perimeter-sized pixel requirement.
 The minimum observed gallery maximum contrast is 3.91075:1. All 708 gallery and 720 real-page
 rings pass normally and fail after removal; the 96 restored controls are included in the 708.

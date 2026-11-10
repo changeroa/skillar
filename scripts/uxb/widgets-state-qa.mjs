@@ -4,6 +4,8 @@ import { ready, arm, signal, press } from "./trusted-keys.mjs";
 import { applyViewport } from "./viewport.mjs";
 import { assertWidgetStates, conditionalParts, widgetStates } from "./widget-states.mjs";
 import {focusWidgetControl,ownerControlHeight} from "./widget-visual-guards.mjs";
+import {runWidgetPaintQA} from "./widgets-paint-qa.mjs";
+import {observePaint} from "./widget-paint.mjs";
 
 const output=process.argv[2];
 if(!output||!process.env.OMOWRIGHT_HELPER)throw new Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs node scripts/uxb/widgets-state-qa.mjs evidence-directory");
@@ -54,6 +56,8 @@ function rulesFor(name){
   if(name.startsWith("Widget-error"))alert("destructive","default",true);
  }else if(name.startsWith("Metric"))metric();
  else if(["Bar","Line","Histogram"].includes(name)){
+  // Frame/type comparisons are not plot-paint evidence. The mandatory
+  // runWidgetPaintQA gate below compares every primitive and glyph state.
   add(".lf-chart__scroll > svg",name,frame);
   add(".lf-chart__label",`${name}-text`,["fontSize","fontWeight","fontFamily","fill"]);
   add("figcaption","Card-title",[...type,"letterSpacing"]);
@@ -94,9 +98,11 @@ const tab=await tabs.create("about:blank",{viewport:{width:1440,height:900}}),pa
 const cases=[],assertions=[],mutations=[],paintMutations=[];
 await mkdir(`${output}/state-parity`,{recursive:true});
 async function styles(selector,fields){
- return page.evaluate(({selector,fields})=>[...document.querySelectorAll(selector)].map(n=>{
-  const s=getComputedStyle(n);return Object.fromEntries(fields.map(field=>[field,s[field]]));
- }),{selector,fields});
+ return page.evaluate(({selector,fields,observer})=>[...document.querySelectorAll(selector)].map(n=>{
+  const s=getComputedStyle(n),observe=(0,eval)(`(${observer})`);
+  return {...Object.fromEntries(fields.map(field=>[field,s[field]])),
+   svgPaint:[...(n instanceof SVGElement?[n]:[]),...n.querySelectorAll("svg,svg path,svg rect,svg circle,svg line,svg text")].map(observe)};
+ }),{selector,fields,observer:observePaint.toString()});
 }
 async function compare(reference,actual,field){
  let expected=reference.styles[field],value=actual[field],painted=true,reason;
@@ -139,7 +145,7 @@ try{
    }
    if(view==="dismissed"){
     const restore=`${selector} > button`;
-    await focusWidgetControl(page,`${selector} .lf-icon-button`);
+    await focusWidgetControl(page,`${selector} ${name==="Alert-dismissible"?".lf-icon-button":".lf-callout__dismiss"}`);
     const surface=name==="Alert-dismissible"?".lf-alert":".lf-callout";
     await arm(page,{kind:"present",selector:`${selector}:has(> button):not(:has(${surface}))`});await press(page,"Enter");await signal(page);
     mapped.splice(0,mapped.length,{selector:"> button",id:"Button-outline",fields:[...frame,...type]});
@@ -244,3 +250,4 @@ try{
  console.log(`STATE_PARITY ${JSON.stringify(summary)}`);if(summary.failures||summary.geometryMutationFailures||summary.controlPaintMutationFailures||summary.cases!==expectedCases)process.exitCode=1;
  await tabs.closeAll();await browser.close();
 }
+if(!process.exitCode)await runWidgetPaintQA(output);

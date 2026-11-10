@@ -1,0 +1,328 @@
+{
+  "sourceSHA": "69181812b87169df157841fce1314ec96ecd2c5a",
+  "sourceReceipt": "pr-5/paint-review/sources.json",
+  "themes": {
+    "light": {
+      "bar": {
+        "visible": true,
+        "fill": [
+          144,
+          154,
+          249,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "line": {
+        "visible": true,
+        "fill": "none",
+        "stroke": [
+          96,
+          102,
+          215,
+          255
+        ],
+        "strokeWidth": "2px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "grid": {
+        "visible": true,
+        "fill": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "stroke": [
+          228,
+          228,
+          231,
+          255
+        ],
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "histogram": {
+        "visible": true,
+        "fill": [
+          142,
+          85,
+          195,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "0.8",
+        "effectiveOpacity": 0.8,
+        "dash": "none"
+      },
+      "point": {
+        "visible": true,
+        "fill": [
+          96,
+          102,
+          215,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "icon": {
+        "visible": true,
+        "fill": "none",
+        "stroke": [
+          39,
+          39,
+          42,
+          255
+        ],
+        "strokeWidth": "2px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none",
+        "color": [
+          39,
+          39,
+          42,
+          255
+        ],
+        "width": 14,
+        "height": 14,
+        "shape": [
+          {
+            "tag": "path",
+            "attributes": {
+              "d": "M18 6 6 18"
+            },
+            "paint": {
+              "fill": "none",
+              "stroke": [
+                39,
+                39,
+                42,
+                255
+              ],
+              "strokeWidth": "2px",
+              "opacity": "1",
+              "fillOpacity": "1",
+              "strokeOpacity": "1",
+              "dash": "none",
+              "visibility": "visible",
+              "display": "inline",
+              "linecap": "round",
+              "linejoin": "round"
+            }
+          },
+          {
+            "tag": "path",
+            "attributes": {
+              "d": "m6 6 12 12"
+            },
+            "paint": {
+              "fill": "none",
+              "stroke": [
+                39,
+                39,
+                42,
+                255
+              ],
+              "strokeWidth": "2px",
+              "opacity": "1",
+              "fillOpacity": "1",
+              "strokeOpacity": "1",
+              "dash": "none",
+              "visibility": "visible",
+              "display": "inline",
+              "linecap": "round",
+              "linejoin": "round"
+            }
+          }
+        ]
+      }
+    },
+    "dark": {
+      "bar": {
+        "visible": true,
+        "fill": [
+          93,
+          102,
+          192,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "line": {
+        "visible": true,
+        "fill": "none",
+        "stroke": [
+          112,
+          120,
+          235,
+          255
+        ],
+        "strokeWidth": "2px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "grid": {
+        "visible": true,
+        "fill": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "stroke": [
+          41,
+          41,
+          41,
+          255
+        ],
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "histogram": {
+        "visible": true,
+        "fill": [
+          158,
+          101,
+          215,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "0.8",
+        "effectiveOpacity": 0.8,
+        "dash": "none"
+      },
+      "point": {
+        "visible": true,
+        "fill": [
+          112,
+          120,
+          235,
+          255
+        ],
+        "stroke": "none",
+        "strokeWidth": "1px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none"
+      },
+      "icon": {
+        "visible": true,
+        "fill": "none",
+        "stroke": [
+          179,
+          179,
+          179,
+          255
+        ],
+        "strokeWidth": "2px",
+        "fillOpacity": "1",
+        "strokeOpacity": "1",
+        "opacity": "1",
+        "effectiveOpacity": 1,
+        "dash": "none",
+        "color": [
+          179,
+          179,
+          179,
+          255
+        ],
+        "width": 14,
+        "height": 14,
+        "shape": [
+          {
+            "tag": "path",
+            "attributes": {
+              "d": "M18 6 6 18"
+            },
+            "paint": {
+              "fill": "none",
+              "stroke": [
+                179,
+                179,
+                179,
+                255
+              ],
+              "strokeWidth": "2px",
+              "opacity": "1",
+              "fillOpacity": "1",
+              "strokeOpacity": "1",
+              "dash": "none",
+              "visibility": "visible",
+              "display": "inline",
+              "linecap": "round",
+              "linejoin": "round"
+            }
+          },
+          {
+            "tag": "path",
+            "attributes": {
+              "d": "m6 6 12 12"
+            },
+            "paint": {
+              "fill": "none",
+              "stroke": [
+                179,
+                179,
+                179,
+                255
+              ],
+              "strokeWidth": "2px",
+              "opacity": "1",
+              "fillOpacity": "1",
+              "strokeOpacity": "1",
+              "dash": "none",
+              "visibility": "visible",
+              "display": "inline",
+              "linecap": "round",
+              "linejoin": "round"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
