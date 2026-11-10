@@ -23,6 +23,16 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Langfuse semantic theme tokens
 -----------------------------
+PR-4 reimplements table anatomy from these MIT files at the pinned commit below:
+web/src/components/table/{data-table,data-table-row-height-switch,
+DataTableColumnVisibilityFilter,DataTablePagination,data-table-toolbar,
+data-table-controls,FacetHeader,ColumnVisibilityHeader}.tsx,
+web/src/components/ui/table.tsx.
+Destination: local/dashboard/foundation/table/. Current public Demo v4.77.0
+supplies measured paint. Native Preact tables and PR-1/PR-2 controls own behavior;
+no React, TanStack, Radix or cmdk runtime is included. The rows-3 icon is a
+Lucide path, under the ISC notice above.
+
 Shell anatomy is reimplemented from MIT files at the pinned commit below:
 web/src/components/design-system/Tabs/Tabs.tsx,
 web/src/components/ui/{sidebar,breadcrumb,command}.tsx,

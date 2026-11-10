@@ -46,8 +46,7 @@ test("required identity columns cannot be hidden by controlled URL state", async
   });
   // Then
   assert.equal(byTag(container, "th").length, 2);
-  assert.equal(byTag(container, "input")[0].checked, true);
-  assert.equal(byTag(container, "input")[0].disabled, true);
+  assert.equal(byTag(container, "th")[0].getAttribute("data-column"), "name");
 });
 
 test("descending numeric sorting keeps missing values last", () => {
@@ -59,12 +58,11 @@ test("descending numeric sorting keeps missing values last", () => {
 
 test("controlled sorting updates without remounting column and density controls", async t => {
   // Given
-  const { container, show } = await mount(t, DataTable, { ...tableProps, sort: { column: "count", direction: "ascending" } });
-  await input(byTag(container, "select")[0], "spacious", "change");
-  await act(() => byTag(container, "input")[1].dispatchEvent(new FakeEvent("change")));
+  const view = { ...tableProps, hidden: ["count"], density: "spacious" };
+  const { container, show } = await mount(t, DataTable, { ...view, sort: { column: "count", direction: "ascending" } });
   const firstHeader = byTag(container, "th")[0];
   // When
-  await show({ ...tableProps, sort: { column: "name", direction: "descending" } });
+  await show({ ...view, sort: { column: "name", direction: "descending" } });
   // Then
   assert.equal(byTag(container, "th")[0], firstHeader);
   assert.equal(byTag(container, "th").length, 1);
@@ -85,22 +83,22 @@ test("summary tables can omit view controls while retaining sortable semantic co
   assert.deepEqual(byTag(container, "tbody")[0].children.map(row => row.children[0].textContent), ["나", "가", "다"]);
 });
 
-test("column visibility updates headers and cells but preserves one visible column", async t => {
+test("controlled column visibility updates headers and cells together", async t => {
   // Given
-  const { container } = await mount(t, DataTable, tableProps);
+  const { container, show } = await mount(t, DataTable, tableProps);
   // When
-  await act(() => byTag(container, "input")[1].dispatchEvent(new FakeEvent("change")));
+  await show({ ...tableProps, hidden: ["count"] });
   // Then
   assert.equal(byTag(container, "th").length, 1);
   assert.equal(byTag(container, "td").length, rows.length);
-  assert.equal(byTag(container, "input")[0].disabled, true);
+  assert.equal(byTag(container, "th")[0].getAttribute("data-column"), "name");
 });
 
 test("density changes presentation without changing the supplied rows", async t => {
   // Given
-  const { container } = await mount(t, DataTable, tableProps);
+  const { container, show } = await mount(t, DataTable, tableProps);
   // When
-  await input(byTag(container, "select")[0], "spacious", "change");
+  await show({ ...tableProps, density: "spacious" });
   // Then
   assert.equal(container.children[0].getAttribute("data-density"), "spacious");
   assert.equal(byTag(container, "tbody")[0].children.length, rows.length);
@@ -114,9 +112,9 @@ test("facet selection reports its group and value without dropping zero-count op
     groups: [{ id: "runtime", label: "런타임", values: [{ id: "empty", label: "예시", count: 0 }] }],
     onChange: (...value) => { change = value; },
   });
-  const checkbox = byTag(container, "input")[0];
+  const checkbox = byTag(container, "input").find(field => field.type === "checkbox");
   // When
-  await act(() => checkbox.dispatchEvent(new FakeEvent("change")));
+  await act(() => { checkbox.checked = true; checkbox.dispatchEvent(new FakeEvent("change")); });
   // Then
   assert.deepEqual(change, ["runtime", ["empty"]]);
   assert.equal(checkbox.disabled, false);

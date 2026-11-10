@@ -5,6 +5,7 @@ import { DemoControls } from "./demo-controls";
 import { OverlaysGallery } from "./overlays-gallery";
 import { DemoOverlays } from "./demo-overlays";
 import { ShellGallery } from "./shell-gallery";
+import { TablesGallery } from "./tables-gallery";
 
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
@@ -41,6 +42,7 @@ function Gallery() {
       </label>
     </header>
 
+    <TablesGallery />
     <ShellGallery />
     <OverlaysGallery />
     <ControlsGallery />

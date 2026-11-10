@@ -14,11 +14,12 @@ export type MenuItem = {
   readonly onSelect: () => void;
 };
 
-export function DropdownMenu({ id, label, items, disabled = false, icon,
+export function DropdownMenu({ id, label, items, disabled = false, icon, heading, checkPosition = "end",
   width = "content", align = "start", variant = "outline", buttonIcon }: {
   readonly id: string; readonly label: string; readonly items: readonly MenuItem[]; readonly disabled?: boolean;
   readonly icon?: ControlIcon; readonly width?: "content" | "wide"; readonly align?: "start" | "end";
   readonly variant?: ButtonProps["variant"]; readonly buttonIcon?: ControlIcon;
+  readonly heading?: string; readonly checkPosition?: "start" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -96,7 +97,9 @@ export function DropdownMenu({ id, label, items, disabled = false, icon,
         const ordered = [...enabled.slice(index + 1), ...enabled.slice(0, index + 1)];
         ordered.find(node => node.textContent?.trim().toLocaleLowerCase().startsWith(text))?.focus();
       }}>
-      <div class="lf-menu__body">{items.map(item => <Fragment key={item.id}>
+      <div class="lf-menu__body" data-check-position={checkPosition}>
+        {heading && <div class="lf-menu__heading">{heading}</div>}
+        {items.map(item => <Fragment key={item.id}>
         {item.separatorBefore && <div role="separator" class="lf-menu__separator" />}
         <button id={`${id}-${item.id}`} type="button"
         role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}

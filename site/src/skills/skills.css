@@ -174,11 +174,7 @@ body:has(#skills-app) #skill-breadcrumb { display: none; }
 .skills-table-main .ui-table th:nth-child(2) { width: 16%; }
 .skills-table-main .ui-table th:nth-child(3) { width: 26%; }
 .skills-table-main .ui-table th:nth-child(4) { width: 18%; }
-.skills-table-main .ui-table :is(th,td) { line-height: 1.3; }
-.skills-table-main .ui-table :is(th,td) { padding-block: 4px; }
 .skills-table-main .ui-table tbody tr { cursor: pointer; }
-.skills-table-main .ui-table tbody tr:is(:hover,[data-selected="true"]) { background: var(--surface); }
-.skills-table-main .ui-table tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .skill-table-name { min-width: 0; }
 .skill-table-name > :is(strong,.skill-table-description) { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .skill-table-name strong { font-weight: 500; }

@@ -64,6 +64,9 @@
 .lf-menu[data-width="wide"] { width: var(--lf-menu-width); padding: var(--lf-space-1); }
 .lf-menu[data-width="wide"] > .lf-menu__body { padding: 0; }
 .lf-menu__body { padding: var(--lf-space-1); }
+.lf-menu__heading { padding: var(--lf-space-1h) var(--lf-space-2); font: var(--lf-weight-strong) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans); }
+.lf-menu__body[data-check-position="start"] .lf-menu__item { position: relative; padding-inline-start: var(--lf-space-8); }
+.lf-menu__body[data-check-position="start"] .lf-menu__item > span { position: absolute; inset-inline-start: var(--lf-space-2); margin: 0; }
 .lf-menu__item {
   display: flex; gap: normal; align-items: center; width: 100%; min-height: var(--lf-control-height);
   padding: var(--lf-space-1h) var(--lf-space-2); border: 0; border-radius: var(--lf-radius-sm);
