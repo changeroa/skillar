@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { getEventListeners } from "node:events";
 import { installFakeDom, FakeEvent } from "./helpers/fake-dom.mjs";
 import { act, byTag, loadViews } from "./helpers/t10-dom.mjs";
 
@@ -113,7 +114,7 @@ async function palette(t, visible = true) {
       return node;
     };
     document.createElementNS = (_namespace, name) => document.createElement(name);
-    document.querySelector = () => null;
+    document.querySelector = selector => selector === "#app-command" ? document.getElementById("app-command") : null;
     document.body.classList = { contains: value => value === "app-shell" };
     const window = new EventTarget();
     const navigations = [];
@@ -128,8 +129,19 @@ async function palette(t, visible = true) {
     const dialog = byTag(document.body, "dialog")[0], field = dialog ? byTag(dialog, "input")[0] : undefined;
     const options = dialog ? byTag(dialog, "button").filter(node => node.getAttribute("role") === "option") : [];
     t.after(async () => { await act(() => cleanup()); delete globalThis.window; globalThis.HTMLElement = previousHTMLElement; });
-    return { document, window, opener, dialog, field, options, navigations };
+    return { document, window, opener, dialog, field, options, navigations,
+      remount: () => { cleanup = mountCommandPalette(opener); } };
 }
+
+test("remounting retains one renderer and one shortcut subscription", async t => {
+  // Given
+  const { document,window,remount }=await palette(t,false);
+  // When
+  await act(()=>remount());
+  // Then
+  assert.equal(getEventListeners(window,"keydown").length,1);
+  assert.equal(document.body.childNodes.filter(node=>node.nodeType===1&&node.getAttribute("data-command-mount")).length,1);
+});
 
 for (const modifier of ["metaKey", "ctrlKey"]) {
   test(`command jump opens with ${modifier} and Escape restores the opener`, async t => {

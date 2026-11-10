@@ -61,7 +61,7 @@
   .app-menu svg { width:var(--lf-space-5); height:var(--lf-space-5); }
   .app-shell .app-navigation { position:static; width:100%; height:auto; min-height:calc(100% - var(--lf-topbar-height)); padding:0; border:0; overflow:visible; }
   .app-shell .app-navigation .theme-label { margin:var(--lf-space-4) var(--lf-space-2); }
-  .app-drawer { inset:0 auto 0 0; width:min(320px,calc(100% - var(--lf-space-6))); height:100dvh; max-height:100dvh; }
+  .app-drawer { inset:0 auto 0 0; width:min(var(--lf-sidebar-mobile-width),100vw); height:100dvh; max-height:100dvh; }
   .app-navigation__title { display:flex; align-items:center; justify-content:space-between; gap:var(--lf-space-3); margin-bottom:var(--lf-space-2); }
   .app-shell .app-breadcrumb { flex-wrap:wrap; gap:0 var(--lf-space-1h); }
   .app-shell .app-breadcrumb > span { overflow-wrap:anywhere; }

@@ -27,12 +27,15 @@ export function mountCommandPalette(opener: HTMLButtonElement): () => void {
           drawer.close();
           document.querySelector("#app-menu")?.setAttribute("aria-expanded", "false");
         }
+        opener.focus();
         setOpen(true);
       };
       const shortcut = (event: KeyboardEvent) => {
         if (event.isComposing || !(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k" ||
           !document.body.classList.contains("app-shell")) return;
-        event.preventDefault(); setOpen(value => !value);
+        event.preventDefault();
+        if (document.querySelector<HTMLDialogElement>("#app-command")?.open) setOpen(false);
+        else show();
       };
       opener.addEventListener("click", show);
       window.addEventListener("keydown", shortcut);

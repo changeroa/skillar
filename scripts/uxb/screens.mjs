@@ -115,11 +115,18 @@ try {
             background: style.backgroundColor, font: style.font, border: style.borderColor }];
         }),
       }));
+      if(details[variant].width!==width||details[variant].height!==height)
+        throw Error(`Viewport mismatch: requested ${width}x${height}, got ${details[variant].width}x${details[variant].height}`);
       const shot = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       frames[variant] = Buffer.from(shot.data, "base64");
       await writeFile(join(output, `${id}-${variant}.png`), frames[variant]);
       if (target.end) {
-        await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+        await page.evaluate(() => {
+          const main=document.querySelector("body.app-shell > main");
+          const owner=main&&/auto|scroll/.test(getComputedStyle(main).overflowY)?main:document.scrollingElement;
+          owner.scrollTo({top:owner.scrollHeight,behavior:"instant"});
+          return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        });
         const end = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
         await writeFile(join(output, `${id}-${variant}-end.png`), Buffer.from(end.data, "base64"));
       }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { act, byTag, FakeEvent, loadViews, mount } from "./helpers/t10-dom.mjs";
 import { shellMetric } from "../../scripts/uxb/shell-metrics.mjs";
+import { applyViewport } from "../../scripts/uxb/viewport.mjs";
 
 const { Tabs, Breadcrumb } = await loadViews(`
   export { Tabs } from "./local/dashboard/foundation/shell/tabs.ts";
@@ -76,4 +77,34 @@ test("desktop metrics accept the owner target instead of upstream's smaller geom
   assert.equal(result.pass,true);
   assert.equal(result.source,24);
   assert.equal(result.expected,32);
+});
+test("touch track metrics reject unchanged upstream height around undersized tabs",()=>{
+  // Given
+  const source={tag:"DIV",box:{height:28},styles:{paddingTop:"2px",paddingBottom:"2px",borderTopWidth:"0px",borderBottomWidth:"0px"}};
+  // When
+  const result=shellMetric({source,actual:source,field:"height",context:{family:"Tabs",part:"surface",coarse:true,viewport:[1440,900]}});
+  // Then
+  assert.equal(result.pass,false);assert.equal(result.expected,48);
+});
+test("command option metrics enforce the touch inset instead of upstream padding",()=>{
+  // Given
+  const source={tag:"DIV",styles:{lineHeight:"20px",paddingTop:"6px"}};
+  // When
+  const result=shellMetric({source,actual:source,field:"paddingTop",context:{family:"CommandOption",coarse:true,viewport:[1440,900]}});
+  // Then
+  assert.equal(result.pass,false);assert.equal(result.expected,"12px");
+});
+test("a configured phone viewport survives navigation's cached-size restoration",async()=>{
+  // Given: model the observed Omowright navigation contract, not a timer.
+  let cached={width:1440,height:900},observed={...cached};
+  const page={
+    async _sendToTarget(method,value){if(method==="Emulation.setDeviceMetricsOverride")observed={width:value.width,height:value.height};},
+    setCachedViewportSize(value){cached=value;},
+    navigate(){observed={...cached};},
+  };
+  await applyViewport(page,{width:390,height:844,mobile:true,coarse:true});
+  // When
+  page.navigate();
+  // Then
+  assert.deepEqual(observed,{width:390,height:844});
 });

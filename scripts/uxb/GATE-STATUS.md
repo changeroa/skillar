@@ -2,17 +2,18 @@
 
 Base: `origin/main` at `7bc3da9`. Branch: `uxb/pr-3-shell`.
 Evidence root: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-3/`.
-This checkpoint is not a completion claim. No merge or production deployment.
+Draft PR: https://github.com/changeroa/skillar/pull/102.
+This is not an independent approval. No merge or production deployment.
 
 | Gate | Status | Evidence and limits |
 | --- | --- | --- |
-| 1. Component visual parity | FAIL: validation in progress | Real read-only Demo references in `demo/`, computed styles in `captures.json`. Raw drift is retained in `style-validation.json`; no pixel masks. |
-| 2. Page comparison | FAIL: not yet complete | Production before/after fixture servers at 53090/53091, baseline worktree pinned to `7bc3da9`. |
-| 3. Keyboard and accessibility | FAIL: browser matrix pending | 374 site tests pass. Real trusted shortcut reopening has been driven; complete browser receipts are pending. |
-| 4. Structural R1-R7 | FAIL: not yet complete | Existing assertions will run unchanged against the production fixtures. |
-| 5. Build and tests | FAIL locally; CI pending | Site 374/374 and builds/typechecks pass. Local 984/985: the known pre-existing `/tmp/h` ENOTDIR in cli-init; never changed or deleted. |
-| 6. License and provenance | FAIL: final audit pending | Three shipped notice files identify the pinned MIT shell sources; local dry-run pack passes. |
-| 7. Deployment verification | FAIL: preview and final-head CI pending | Not deployed; deploy gated on owner. Only non-production `uxb-pr-3` is authorized. |
+| 1. Component visual parity | FAIL | 3,816/3,840 computed assertions; 24 context differences remain. 192 product crops use 42 real Demo and 6 actual pinned MIT references. Raw pixel differences remain unmasked. |
+| 2. Page comparison | PASS | 64/64 before/after/reference cases, 16 routes at 1440/390 in both themes; distinct fresh documents, no document overflow or uncaught page errors. |
+| 3. Keyboard and accessibility | PASS for tested matrix | 16 trusted-key contexts; 12 genuine 390x844 DPR3/touch captures; 210 real-page states and 2,005 controls enforce 32/44px with zero failures. |
+| 4. Structural R1-R7 | PASS | 8/8 production-fixture cases. Original assertions retained; closed-palette lookup accommodates unmounting. R4 remains N.A. in the inherited probe. |
+| 5. Build and tests | PASS with baseline exception; exact-head CI in publication receipt | Site 379/379; both builds, local typecheck and pack exit 0. Local 984/985: solely the known pre-existing `/tmp/h` ENOTDIR in cli-init; never changed or deleted. |
+| 6. License and provenance | PASS | Five source/build notices are byte-identical, full MIT license/pin retained, NOTICE included in package; 126 actual pinned MIT renderer inputs, zero EE inputs. |
+| 7. Deployment verification | Publication receipt required | Production not deployed; deploy gated on owner. Only non-production `uxb-pr-3` is authorized. Final preview smoke and completed exact-head CI must be recorded in `publication.json` before handoff; absent receipts mean FAIL. |
 
 ## Owner overrides
 
@@ -31,3 +32,17 @@ it imports the original components, not translated HTML or product CSS.
 Default, hover, focus-visible, collapsed, filtered, empty and underline states
 that Demo exposes remain live-Demo comparisons. No settings, writes or errors
 were induced. Independent review is arranged by the lane lead.
+
+## Remaining visual differences and verification limits
+
+The 24 failures are 16 Sidebar heights (the 871px full-page Demo versus
+content-sized gallery specimens) and 8 Topbar background declarations
+(transparent Demo root versus explicit white/15 product surface).
+They are not excluded or self-approved. No raw pixel-identical claim is made.
+Page reference reuse for local flow/workspaces/heatmap and hosted files is
+shell-only; caller content is outside this PR's parity claim.
+
+Independent review has no verdict: the harness refused a nested child, and
+the implementer contract assigns it to the lead. `review-handoff.md` maps
+the evidence and remaining issues. Lighthouse, a full contrast audit,
+forced-colors screenshots and preview authentication are unverified.

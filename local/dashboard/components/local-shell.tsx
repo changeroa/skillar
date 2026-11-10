@@ -1,14 +1,14 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import { api } from "../api";
 import { buildHash, type LiveInfo, type Route } from "../state";
 import { consoleStyles } from "./console-style";
 import { CommandJump, DESTINATIONS, destination } from "./command-jump";
 import { Icon } from "./icons";
 import { useNarrow } from "./use-narrow";
-import { ConsoleSheet } from "./console-sheet";
+import { Sheet } from "../foundation/overlays/dialog";
 import { Sidebar, NavGroup, NavItem, Breadcrumb, Topbar } from "../foundation/shell/navigation";
-import { Button, IconButton } from "../foundation/controls/buttons";
+import { Button, IconButton, Link } from "../foundation/controls/buttons";
 import { KeyboardShortcut } from "../foundation/controls/labels";
 
 const LIVE_TEXT = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
@@ -39,11 +39,13 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
   const [drawer, setDrawer] = useState(false);
   const narrow = useNarrow();
   const close = () => setOpen(false);
-  useEffect(() => {
+  useEffect(() => { if (!narrow) setDrawer(false); }, [narrow]);
+  useLayoutEffect(() => {
     if (embedded) return;
     const key = (event: KeyboardEvent) => {
       if (!event.isComposing && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        setDrawer(false);
         setOpen(value => !value);
       }
     };
@@ -68,14 +70,14 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     <div id={narrow ? undefined : "app-navigation"} class="pe-sidebar">
     <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}
       footer={<div class="pe-sidebar__foot">{sourceInfo}
-        {automation}<a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
+        {automation}<Link href="https://skillar.sh" text="skillar.sh 열기" />
       </div>}>{links()}</Sidebar>
     </div>
     <div class="pe-body"><Topbar actions={<div class="pe-jump">
       <Button text="이동…" variant="ghost" aria-haspopup="dialog" onClick={() => setOpen(true)} />
       <KeyboardShortcut keys={["Mod", "K"]} />
     </div>}>
-      {narrow && <IconButton label="출처와 탐색 메뉴" icon="chevrons" aria-haspopup="dialog"
+      {narrow && <IconButton label="출처와 탐색 메뉴" icon="panelLeft" aria-haspopup="dialog"
         aria-expanded={drawer} aria-controls="pe-source-drawer" onClick={() => setDrawer(true)} />}
       <Breadcrumb items={crumbs} />
     </Topbar>
@@ -86,13 +88,13 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
       {children}
     </div>
     {open && <CommandJump route={route} navigate={navigate} close={close} />}
-    {narrow && drawer && <ConsoleSheet id="pe-source-drawer" title="출처와 탐색" close={() => setDrawer(false)}>
+    {narrow && drawer && <Sheet id="pe-source-drawer" open title="출처와 탐색" side="left" size="navigation" onClose={() => setDrawer(false)}>
       {sourceInfo}
       {automation}
-      <a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
+      <Link href="https://skillar.sh" text="skillar.sh 열기" />
       <div onClick={event => {
         if (event.target instanceof Element && event.target.closest("a")) setDrawer(false);
       }}><Sidebar label="메뉴 화면">{links()}</Sidebar></div>
-    </ConsoleSheet>}
+    </Sheet>}
   </div>;
 }

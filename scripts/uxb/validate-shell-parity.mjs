@@ -15,7 +15,7 @@ export function validateShell(records) {
     if(!source){missing.push(id);continue;}
     const add=(part,a,b)=>{
       if(!a||!b){missing.push(`${id}/${part}`);return;}
-      for(const field of fields)checks.push({id,part,...shellMetric({source:a,actual:b,field,context:actual})});
+      for(const field of fields)checks.push({id,part,...shellMetric({source:a,actual:b,field,context:{...actual,part,reference:source}})});
     };
     add("surface",source.surface,actual.surface);
     for(const part of Object.keys(source.parts))add(part,source.parts[part],actual.parts[part]);

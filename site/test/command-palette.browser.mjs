@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createTrustedInput } from "./helpers/trusted-input.mjs";
+import { applyViewport } from "../../scripts/uxb/viewport.mjs";
 
 const keys = { k: ["KeyK", 75], ArrowDown: ["ArrowDown", 40], ArrowUp: ["ArrowUp", 38],
   Home: ["Home", 36], End: ["End", 35], Enter: ["Enter", 13], Escape: ["Escape", 27] };
@@ -42,7 +43,7 @@ export async function navigate(page, expected, activate) {
 }
 
 /** Shared by the standalone browser regression and vqa's interaction script. */
-export async function runPaletteInteractions(page, startURL) {
+export async function runPaletteInteractions(page, startURL, profile) {
   const origin = new URL(startURL).origin, evidence = [];
   const input = await createTrustedInput(page);
   const press = async (key, modifiers = 0) => {
@@ -51,6 +52,7 @@ export async function runPaletteInteractions(page, startURL) {
   };
   const reset = async () => {
     await page.goto(`${origin}/dashboard/`, { waitUntil: "domcontentloaded" });
+    if(profile)await applyViewport(page,profile);
     await ready(page);
   };
   const open = async (modifiers = 4) => {
@@ -131,7 +133,8 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
       try {
         await tab.page._sendToTarget("Emulation.setDeviceMetricsOverride", { ...viewport, deviceScaleFactor: 1, mobile: width === 390 });
         await tab.page._sendToTarget("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme }] });
-        const result = await runPaletteInteractions(tab.page, new URL("/dashboard/", PALETTE_TEST_URL).href);
+        const result = await runPaletteInteractions(tab.page, new URL("/dashboard/", PALETTE_TEST_URL).href,
+          {...viewport,mobile:width===390,coarse:width===390});
         console.log(`${width} ${theme}: PASS ${JSON.stringify(result)}`);
       } finally { await tabs.close(tab); }
     }

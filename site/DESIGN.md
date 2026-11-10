@@ -32,6 +32,10 @@ account node. The local embed does not install its standalone shortcut.
 Scroll ownership remains main for hosted and document for standalone local;
 mobile navigation uses the existing drawer contract. Named spatial model:
 fixed-sidenav-shell, with zero-minimum main and separately scrolling nav.
+Standalone navigation reuses the PR-2 Sheet with left placement and the named
+`navigation` size (192px, zero body inset); the hosted drawer keeps relocating
+the existing DOM node and uses the same 192px mobile token. Its visible close
+control remains a 32/44px owner adaptation. The brand link is also 32/44px.
 All paint uses existing `--lf-*` tokens; new shell geometry tokens are
 `--lf-sidebar-width`, `--lf-sidebar-collapsed-width`, `--lf-sidebar-mobile-width`,
 `--lf-topbar-height`, `--lf-command-list-height` and `--lf-command-top`.

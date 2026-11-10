@@ -1,6 +1,7 @@
 import type { ComponentChildren } from "preact";
 
 const paths = {
+  panelLeft: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></>,
   sessions: <><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></>,
   tree: <path d="M4 4v12a2 2 0 0 0 2 2h6M4 10h8M12 4h8M12 10h8M12 18h8" />,
   columns: <><rect x="3" y="3" width="18" height="18" /><path d="M9 3v18M15 3v18" /></>,
