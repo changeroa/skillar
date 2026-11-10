@@ -45,9 +45,9 @@ export function Breadcrumb({ items, label = "현재 위치" }: {
 export function Topbar({ children, actions }: {
   readonly children: ComponentChildren; readonly actions?: ComponentChildren;
 }) {
-  return <header class="lf-topbar"><div class="lf-topbar__inner">
+  return <header class="lf-topbar-surface"><div class="lf-topbar"><div class="lf-topbar__inner">
     <div class="lf-topbar__leading">{children}</div>
-    {actions && <div class="lf-topbar__actions">{actions}</div>}</div></header>;
+    {actions && <div class="lf-topbar__actions">{actions}</div>}</div></div></header>;
 }
 
 export function PageHeader({ title, children, actions }: {

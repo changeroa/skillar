@@ -3,10 +3,11 @@ import test from "node:test";
 import { act, byTag, FakeEvent, loadViews, mount } from "./helpers/t10-dom.mjs";
 import { shellMetric } from "../../scripts/uxb/shell-metrics.mjs";
 import { applyViewport } from "../../scripts/uxb/viewport.mjs";
+import { sidebarContext } from "../../scripts/uxb/shell-context.mjs";
 
-const { Tabs, Breadcrumb } = await loadViews(`
+const { Tabs, Breadcrumb, Topbar } = await loadViews(`
   export { Tabs } from "./local/dashboard/foundation/shell/tabs.ts";
-  export { Breadcrumb } from "./local/dashboard/foundation/shell/navigation.tsx";
+  export { Breadcrumb, Topbar } from "./local/dashboard/foundation/shell/navigation.tsx";
 `);
 const tabs = [
   { id:"table",label:"Table",content:"rows" },
@@ -107,4 +108,26 @@ test("a configured phone viewport survives navigation's cached-size restoration"
   page.navigate();
   // Then
   assert.deepEqual(observed,{width:390,height:844});
+});
+test("topbar keeps its chrome row inside the independently painted header",async t=>{
+  const {container}=await mount(t,Topbar,{children:"Location"});
+  const header=byTag(container,"header")[0];
+  assert.equal(header.getAttribute("class"),"lf-topbar-surface");
+  assert.equal(header.childNodes[0].getAttribute("class"),"lf-topbar");
+  assert.equal(header.childNodes[0].childNodes[0].getAttribute("class"),"lf-topbar__inner");
+});
+test("sidebar fixture derives its bounded parent from source context, not component height",()=>{
+  const source={viewport:[1440,900],parent:{position:"fixed",box:{top:29,bottom:900,height:871}}};
+  assert.equal(sidebarContext(source).height,"calc(100dvh - 29px)");
+  assert.equal(sidebarContext(source).alignItems,"stretch");
+  assert.throws(()=>sidebarContext({...source,viewport:[390,844]}),RangeError);
+  const short={tag:"ASIDE",box:{height:156}},reference={tag:"DIV",box:{height:871}};
+  assert.equal(shellMetric({source:reference,actual:short,field:"height",
+    context:{family:"Sidebar",part:"surface",viewport:[1440,900],coarse:false}}).pass,false);
+});
+test("topbar parity still rejects paint applied to the chrome row",()=>{
+  const source={tag:"DIV",styles:{backgroundColor:"rgba(0, 0, 0, 0)"}};
+  const actual={tag:"DIV",styles:{backgroundColor:"rgb(255, 255, 255)"}};
+  assert.equal(shellMetric({source,actual,field:"backgroundColor",
+    context:{family:"Topbar",part:"surface",viewport:[1440,900],coarse:false}}).pass,false);
 });

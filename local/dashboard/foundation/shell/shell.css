@@ -20,7 +20,8 @@
 .lf-sidebar[data-collapsed="true"] { width:max(var(--lf-sidebar-collapsed-width),calc(var(--lf-control-height) + var(--lf-space-4))); }
 .lf-sidebar[data-collapsed="true"] .lf-nav-group__label,.lf-sidebar[data-collapsed="true"] .lf-nav-item > span { display:none; }
 .lf-sidebar[data-collapsed="true"] .lf-nav-item { justify-content:center; padding:0; }
-.lf-topbar { min-height:var(--lf-topbar-height); display:flex; flex-direction:column; justify-content:center; background:var(--lf-background); border-bottom:var(--lf-border-width) solid var(--lf-border); }
+.lf-topbar-surface { background:var(--lf-background); }
+.lf-topbar { min-height:var(--lf-topbar-height); display:flex; flex-direction:column; justify-content:center; background:transparent; border-bottom:var(--lf-border-width) solid var(--lf-border); }
 .lf-topbar__inner { display:flex; align-items:center; justify-content:space-between; min-height:calc(var(--lf-topbar-height) - var(--lf-border-width)); gap:var(--lf-space-2); padding-inline:var(--lf-space-3); }
 .lf-topbar__leading,.lf-topbar__actions { display:flex; align-items:center; gap:var(--lf-space-2); min-width:0; }
 .lf-topbar__actions { flex:none; }

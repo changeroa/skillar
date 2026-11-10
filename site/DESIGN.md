@@ -9,8 +9,9 @@ Sidebar width is 204px, collapsed width 48px (60px with touch targets), mobile w
 Groups use 32px labels with 8px inline padding, 12px/18px strong type;
 items use 8px padding/gap, 4px corners and 13px/20px type. Current links
 use sidebar accent wash, strong ink and a check glyph, never an accent edge.
-Topbar is a 44px minimum chrome row with a 12px-inset inner row and 8px gap,
-background surface and a 1px bottom divider. PageHeader uses 16px inline
+Topbar is a 44px minimum transparent chrome row with a 12px-inset inner row
+and 8px gap. Its enclosing header owns the background surface, as in the live
+Demo; the row owns its 1px bottom divider. PageHeader uses 16px inline
 padding, 4px block padding, a 40px minimum row and a 16px/24px strong title. Breadcrumb uses ordered list
 semantics, 6px gaps, 13px/20px type and decorative slash separators.
 Interactive breadcrumb links, nav items, tabs, command input/options and all
