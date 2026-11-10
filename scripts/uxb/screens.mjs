@@ -3,12 +3,14 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { z } from "../../site/node_modules/zod/index.js";
 import { ready } from "./trusted-keys.mjs";
+import { mountHostedEmbed } from "./mount-hosted-embed.mjs";
 
 const schema = z.object({
   hosted: z.url(), local: z.url(), referenceDirectory: z.string(),
   cases: z.array(z.object({
     id: z.string(), app: z.enum(["hosted", "local"]), path: z.string(),
     reference: z.string(), signedOut: z.boolean().default(false), end: z.boolean().default(false),
+    setup:z.enum(["hosted-embed"]).optional(),
   })),
 });
 const [configPath, output, mode] = process.argv.slice(2);
@@ -74,6 +76,7 @@ try {
       await page.goto(config[target.app] + target.path, { waitUntil: "domcontentloaded" });
       await page._sendToTarget("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width === 390 });
       await ready(page, "h1");
+      const embedded=target.setup==="hosted-embed"?await mountHostedEmbed(page):null;
       await page.evaluate(() => new Promise((resolve, reject) => {
         const observer = new MutationObserver(check);
         const timer = setTimeout(() => finish(Error("Screen did not leave its loading state")), 12000);
@@ -115,11 +118,19 @@ try {
             background: style.backgroundColor, font: style.font, border: style.borderColor }];
         }),
       }));
+      details[variant].embedded=embedded;
+      if(details[variant].width!==width||details[variant].height!==height)
+        throw Error(`Viewport mismatch: requested ${width}x${height}, got ${details[variant].width}x${details[variant].height}`);
       const shot = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       frames[variant] = Buffer.from(shot.data, "base64");
       await writeFile(join(output, `${id}-${variant}.png`), frames[variant]);
       if (target.end) {
-        await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+        await page.evaluate(() => {
+          const main=document.querySelector("body.app-shell > main");
+          const owner=main&&/auto|scroll/.test(getComputedStyle(main).overflowY)?main:document.scrollingElement;
+          owner.scrollTo({top:owner.scrollHeight,behavior:"instant"});
+          return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        });
         const end = await page._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
         await writeFile(join(output, `${id}-${variant}-end.png`), Buffer.from(end.data, "base64"));
       }

@@ -5,9 +5,9 @@ import { createPrivateSkillPackage } from "../../shared/dist/private-skill-packa
 import { routes } from "../src/skills/api.ts";
 import { DraftEditor } from "../src/skills/editor.ts";
 import { PublishPanel } from "../src/skills/publish.ts";
-import { SkillPanel } from "../src/skills/skill.ts";
 import { emptyDraft } from "../src/skills/model.ts";
-import { act, all, byTag, buttonNamed, h, input, mount, render, submit, waitFor } from "./helpers/t10-dom.mjs";
+import { act, all, byTag, buttonNamed, h, input, mount, render, submit, waitFor, loadViews } from "./helpers/t10-dom.mjs";
+const { SkillPanel } = await loadViews('export { SkillPanel } from "./site/src/skills/skill.ts";');
 
 const skillId = "11223344-1122-4122-8122-112233445566";
 const document = "---\nname: fixture\ndescription: fixture\n---\noriginal";

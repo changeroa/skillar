@@ -1,5 +1,16 @@
 # skillar Dashboard Design System
 
+## Phase B shell (PR-3)
+
+The complete shared shell contract is the PR-3 section in `site/DESIGN.md`.
+`foundation/shell/` owns Sidebar/NavGroup/NavItem, Topbar/PageHeader,
+Breadcrumb, CommandPalette and Tabs. All interactive boxes are exactly
+32px with mouse, 44px under coarse pointers or widths <=768px, overriding
+Demo dimensions. Standalone local keeps document scroll ownership and its
+source/status footer; embedded local installs no second shell or shortcut.
+Hidden persistent tab panels retain disclosure state and URL ownership.
+Native links remain links, not ARIA tabs. Existing brand artwork is unchanged.
+
 ## Phase B overlays (PR-2)
 
 The complete overlay contract is the PR-2 section in `site/DESIGN.md`.

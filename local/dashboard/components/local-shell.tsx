@@ -1,12 +1,15 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import { api } from "../api";
 import { buildHash, type LiveInfo, type Route } from "../state";
 import { consoleStyles } from "./console-style";
 import { CommandJump, DESTINATIONS, destination } from "./command-jump";
 import { Icon } from "./icons";
 import { useNarrow } from "./use-narrow";
-import { ConsoleSheet } from "./console-sheet";
+import { Sheet } from "../foundation/overlays/dialog";
+import { Sidebar, NavGroup, NavItem, Breadcrumb, Topbar } from "../foundation/shell/navigation";
+import { Button, IconButton, Link } from "../foundation/controls/buttons";
+import { KeyboardShortcut } from "../foundation/controls/labels";
 
 const LIVE_TEXT = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
 function Wordmark({ href }: { readonly href: string }) {
@@ -35,13 +38,14 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
   const [open, setOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const narrow = useNarrow();
-  const trigger = useRef<HTMLButtonElement>(null), returnFocus = useRef<HTMLElement | null>(null);
-  const close = () => { setOpen(false); returnFocus.current?.focus(); };
-  useEffect(() => {
+  const close = () => setOpen(false);
+  useEffect(() => { if (!narrow) setDrawer(false); }, [narrow]);
+  useLayoutEffect(() => {
     if (embedded) return;
     const key = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault(); returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : trigger.current;
+      if (!event.isComposing && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setDrawer(false);
         setOpen(value => !value);
       }
     };
@@ -54,42 +58,43 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
   const source = api.mode === "fixtures" ? "예시 기록" : "이 기기";
   const sourceInfo = <div class="pe-source"><strong>{source}</strong>
     <span class={`live live--${live.state}`} role="status"><span class="live__dot" aria-hidden="true" />{LIVE_TEXT[live.state]}</span></div>;
-  const links = (mobile: boolean, inDrawer = false) => DESTINATIONS.map((item, index) => <span key={item.view}>
-    {!mobile && (index === 0 || index === 1) && <p class="pe-nav__group">{item.group}</p>}
-    <a id={mobile || inDrawer ? undefined : `skillar-local-tab-${item.view}`} class="tab"
-      href={buildHash(destination(route, item.view))} aria-current={active === item.view ? "page" : undefined}>
-      <Icon name={item.icon} />{item.label}</a>
-  </span>);
+  const links = () => ["관찰", "분석"].map(group => <NavGroup key={group} label={group}>
+    {DESTINATIONS.filter(item => item.group === group).map(item => <NavItem key={item.view}
+      href={buildHash(destination(route, item.view))} label={item.label} current={active === item.view}
+      icon={<Icon name={item.icon} />} />)}
+  </NavGroup>);
+  const crumbs = [{ label: source, href: buildHash(destination(route, "sessions")) },
+    { label, href: buildHash(destination(route, active)) },
+    ...((route.sessionId || route.flowId) ? [{ label: route.sessionId ?? route.flowId ?? "" }] : [])];
   return <div class="pe-shell">
-    <aside id={narrow ? undefined : "app-navigation"} class="pe-sidebar" aria-label="로컬 대시보드">
-      <Wordmark href={buildHash(destination(route, "sessions"))} />
-      <nav class="pe-nav tabs local-tabs" aria-label="주요 화면">{links(false)}</nav>
-      <div class="pe-sidebar__foot">{sourceInfo}
-        {automation}<a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
-      </div>
-    </aside>
-    <div class="pe-body"><header class="pe-topbar app-topbar">
-      <button class="pe-button pe-source-toggle" aria-label="출처와 탐색 메뉴" aria-haspopup="dialog"
-        aria-expanded={drawer} aria-controls="pe-source-drawer" onClick={() => setDrawer(true)}><Icon name="columns" /></button>
-      <nav class="pe-breadcrumb" aria-label="경로"><a href={buildHash(destination(route, "sessions"))}>{source}</a>
-        <Icon name="chevron" /><a href={buildHash(destination(route, active))}>{label}</a>
-        {(route.sessionId || route.flowId) && <><Icon name="chevron" /><code title={route.sessionId ?? route.flowId}>{route.sessionId ?? route.flowId}</code></>}
+    <div id={narrow ? undefined : "app-navigation"} class="pe-sidebar">
+    <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}
+      footer={<div class="pe-sidebar__foot">{sourceInfo}
+        {automation}<Link href="https://skillar.sh" text="skillar.sh 열기" />
+      </div>}>{links()}</Sidebar>
+    </div>
+    <div class="pe-body"><Topbar actions={<div class="pe-jump">
+      <Button text="이동…" variant="ghost" aria-haspopup="dialog" onClick={() => setOpen(true)} />
+      <KeyboardShortcut keys={["Mod", "K"]} />
+    </div>}>
+      {narrow && <IconButton label="출처와 탐색 메뉴" icon="panelLeft" aria-haspopup="dialog"
+        aria-expanded={drawer} aria-controls="pe-source-drawer" onClick={() => setDrawer(true)} />}
+      <Breadcrumb items={crumbs} />
+    </Topbar>
+      <nav id={narrow ? "app-navigation" : undefined} class="pe-mobile-nav local-tabs lf-sidebar" aria-label="주요 화면">
+        {DESTINATIONS.map(item => <NavItem key={item.view} href={buildHash(destination(route, item.view))}
+          label={item.label} current={active === item.view} icon={<Icon name={item.icon} />} />)}
       </nav>
-      <button class="pe-button pe-jump" ref={trigger} aria-haspopup="dialog" onClick={() => {
-        returnFocus.current = trigger.current; setOpen(true);
-      }}><Icon name="search" />이동… <kbd>⌘K</kbd></button>
-    </header>
-      <nav id={narrow ? "app-navigation" : undefined} class="pe-mobile-nav tabs local-tabs" aria-label="주요 화면">{links(true)}</nav>
       {children}
     </div>
     {open && <CommandJump route={route} navigate={navigate} close={close} />}
-    {narrow && drawer && <ConsoleSheet id="pe-source-drawer" title="출처와 탐색" close={() => setDrawer(false)}>
+    {narrow && drawer && <Sheet id="pe-source-drawer" open title="출처와 탐색" side="left" size="navigation" onClose={() => setDrawer(false)}>
       {sourceInfo}
       {automation}
-      <a class="pe-button" href="https://skillar.sh">skillar.sh 열기<Icon name="external" /></a>
-      <nav class="pe-nav" aria-label="메뉴 화면" onClick={event => {
+      <Link href="https://skillar.sh" text="skillar.sh 열기" />
+      <div onClick={event => {
         if (event.target instanceof Element && event.target.closest("a")) setDrawer(false);
-      }}>{links(false, true)}</nav>
-    </ConsoleSheet>}
+      }}><Sidebar label="메뉴 화면">{links()}</Sidebar></div>
+    </Sheet>}
   </div>;
 }

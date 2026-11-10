@@ -4,8 +4,10 @@ import { h, render } from "preact";
 import { act } from "preact/test-utils";
 import { createPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
 import { routes } from "../src/skills/api.ts";
-import { confirmationText, confirmsDeletion, SkillPanel } from "../src/skills/skill.ts";
+import { loadViews } from "./helpers/t10-dom.mjs";
 import { all, buttonNamed, byTag, classed, FakeEvent, installFakeDom, waitFor } from "./helpers/fake-dom.mjs";
+const { confirmationText, confirmsDeletion, SkillPanel } =
+  await loadViews('export { confirmationText, confirmsDeletion, SkillPanel } from "./site/src/skills/skill.ts";');
 
 const text = new TextEncoder();
 const skillId = "11223344-1122-4122-8122-112233445566";

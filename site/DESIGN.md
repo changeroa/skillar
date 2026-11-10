@@ -1,5 +1,70 @@
 # skillar.sh
 
+## Phase B shell (PR-3)
+
+Shared Preact shell primitives live in `local/dashboard/foundation/shell/`.
+The view-only Demo v4.77.0 is the visual reference; pinned MIT sources supply
+anatomy, never React, Radix or cmdk runtime dependencies.
+Sidebar width is 204px, collapsed width 48px (60px with touch targets), mobile width 192px.
+Groups use 32px labels with 8px inline padding, 12px/18px strong type;
+items use 8px padding/gap, 4px corners and 13px/20px type. Collapsed items
+retain 8px padding and the Demo's 10px gap. Current links
+use sidebar accent wash, strong ink and a check glyph, never an accent edge.
+Topbar is a 44px minimum transparent chrome row with a 12px-inset inner row
+and 8px gap. Its enclosing header owns the background surface, as in the live
+Demo; the row owns its 1px bottom divider. PageHeader uses 16px inline
+padding, 4px block padding, a 40px minimum row without a second bottom divider,
+and a 16px/24px strong title. Breadcrumb uses ordered list
+semantics, 6px gaps, 13px/20px type and decorative slash separators.
+Interactive breadcrumb links, nav items, tabs, command input/options and all
+shell controls are exactly 32px with mouse and 44px on coarse pointers or
+widths <=768px. This owner override wins over every upstream height.
+The source-selected hosted embed keeps its native route tabs, but their real
+hosted cascade must obey the same 32px/44px target rather than the old 44px
+desktop minimum. Embed QA selects a source and requires actual session rows.
+Focus paint is required in every keyboard-focused control state: nav, breadcrumb
+and tabs use a 2px ring-coloured inset outline; PR-1 action buttons use a 2px
+inset shadow; the PR-2 close uses a 2px outer ring with a 2px surface offset;
+the PR-1 command field uses its approved 2px accent ring and 2px surface offset.
+Navigation retains the measured dedicated sidebar-ring colour; other shell
+outlines use the ordinary ring token.
+Inactive controls must not paint focus. Unpainted outline-style:none widths,
+colours and offsets are canonicalized, but visible shadow/outline paint and
+actual :focus-visible are asserted independently against measured Demo parts.
+Tabs offer inset and underline variants, controlled/uncontrolled selection,
+disabled skipping, automatic/manual activation, one roving tab stop and
+hidden persistent panels. The inset track has 2px padding and 6px corners,
+16px trigger insets, strong 13px type and a 4px neutral selected surface.
+Underline tabs retain a neutral bottom rule, not a coloured side stripe.
+CommandPalette reuses PR-2 Dialog modality and PR-1 Input, with a named
+command size: 512px maximum width, top clamp(64px,20dvh,192px), popover fill,
+8px corners, 4px input inset, 8px list inset, 4px option corners and 13px type.
+Its list alone scrolls (maximum 384px); Escape and toggle restore the opener,
+IME never commits, pointer and keyboard share one active option/ARIA value.
+Parity covers nine states: initial capped list, cleared query, grouped matches,
+keyboard selection, filtered match, hover, no matches, disabled-only matches
+and close focus. Source parts must be visible, not a hidden cmdk group.
+The reference-only gallery fixture leaves production destinations unchanged.
+The hosted adapter owns one dedicated mount and one disposed shortcut listener.
+It never renders identity or sign-out: `main.ts` keeps relocating the existing
+account node. The local embed does not install its standalone shortcut.
+Scroll ownership remains main for hosted and document for standalone local;
+mobile navigation uses the existing drawer contract. Named spatial model:
+fixed-sidenav-shell, with zero-minimum main and separately scrolling nav.
+Standalone navigation reuses the PR-2 Sheet with left placement and the named
+`navigation` size (192px, zero body inset); the hosted drawer keeps relocating
+the existing DOM node and uses the same 192px mobile token. Its visible close
+control remains a 32/44px owner adaptation. The brand link is also 32/44px.
+All paint uses existing `--lf-*` tokens; new shell geometry tokens are
+`--lf-sidebar-width`, `--lf-sidebar-collapsed-width`, `--lf-sidebar-mobile-width`,
+`--lf-topbar-height`, `--lf-command-list-height` and `--lf-command-top`.
+Command input has its PR-1 `command` variant: 16px/21.6px sans, transparent
+borderless fill, 34px leading inset, and block padding capped at 12px but
+reduced to fit the owner height. Command elevation uses `--lf-shadow-command`,
+the Demo's light 2xl shadow and two dark near-black ambient layers.
+No decorative motion. Visible focus, semantic current location and 32/44px
+controls are approved differences; no new accessibility debt is accepted.
+
 ## Phase B overlays (PR-2)
 
 Real Demo follow-up: DropdownMenu supports content-sized (128px minimum) and

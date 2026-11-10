@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createTrustedInput } from "./helpers/trusted-input.mjs";
+import { applyViewport } from "../../scripts/uxb/viewport.mjs";
 
 const keys = { k: ["KeyK", 75], ArrowDown: ["ArrowDown", 40], ArrowUp: ["ArrowUp", 38],
   Home: ["Home", 36], End: ["End", 35], Enter: ["Enter", 13], Escape: ["Escape", 27] };
@@ -11,7 +12,7 @@ const keys = { k: ["KeyK", 75], ArrowDown: ["ArrowDown", 40], ArrowUp: ["ArrowUp
 async function ready(page) {
   await page.evaluate(() => new Promise((resolve, reject) => {
     const check = () => {
-      if (!document.querySelector("#app-command") || !document.body.classList.contains("app-shell")) return;
+      if (!document.querySelector("[data-command-mount]") || !document.body.classList.contains("app-shell")) return;
       observer.disconnect(); clearTimeout(timer); resolve();
     };
     const observer = new MutationObserver(check);
@@ -42,7 +43,7 @@ export async function navigate(page, expected, activate) {
 }
 
 /** Shared by the standalone browser regression and vqa's interaction script. */
-export async function runPaletteInteractions(page, startURL) {
+export async function runPaletteInteractions(page, startURL, profile) {
   const origin = new URL(startURL).origin, evidence = [];
   const input = await createTrustedInput(page);
   const press = async (key, modifiers = 0) => {
@@ -51,6 +52,7 @@ export async function runPaletteInteractions(page, startURL) {
   };
   const reset = async () => {
     await page.goto(`${origin}/dashboard/`, { waitUntil: "domcontentloaded" });
+    if(profile)await applyViewport(page,profile);
     await ready(page);
   };
   const open = async (modifiers = 4) => {
@@ -67,36 +69,36 @@ export async function runPaletteInteractions(page, startURL) {
   try {
     // This must change dashboard -> skills, not merely close the dialog.
     await reset(); await open();
-    await press("ArrowDown"); await selected("jump-sessions");
-    await press("ArrowDown"); await selected("jump-skills");
+    await press("ArrowDown"); await selected("app-command-option-sessions");
+    await press("ArrowDown"); await selected("app-command-option-skills");
     await navigate(page, `${origin}/skills/`, () => press("Enter"));
     evidence.push({ case: "Meta+K, ArrowDown x2, Enter", url: `${origin}/skills/`, trusted: true });
 
     await reset(); await open();
-    for (const [key, expected] of [["ArrowUp", "jump-account"], ["ArrowDown", "jump-dashboard"],
-      ["End", "jump-account"], ["Home", "jump-dashboard"]]) {
+    for (const [key, expected] of [["ArrowUp", "app-command-option-account"], ["ArrowDown", "app-command-option-dashboard"],
+      ["End", "app-command-option-account"], ["Home", "app-command-option-dashboard"]]) {
       await press(key); await selected(expected);
     }
     await press("Escape");
     assert.deepEqual(await page.evaluate(() => ({
-      open: document.querySelector("#app-command").open, focus: document.activeElement.id,
+      open: document.querySelector("#app-command")?.open ?? false, focus: document.activeElement.id,
     })), { open: false, focus: "app-jump" });
     evidence.push({ case: "wrap, Home/End, Escape focus return", trusted: true });
 
     await reset(); await open();
     await input.focus();
     await page._sendToTarget("Input.insertText", { text: "연결" });
-    await selected("jump-connections");
+    await selected("app-command-option-connections");
     await navigate(page, `${origin}/connections/`, () => press("Enter"));
     evidence.push({ case: "type-filter + Enter", url: `${origin}/connections/`, trusted: true });
 
     await reset(); await open(2);
     const point = await page.evaluate(() => {
-      const option = document.querySelector("#jump-skills"), rect = option.getBoundingClientRect();
+      const option = document.querySelector("#app-command-option-skills"), rect = option.getBoundingClientRect();
       const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
-      return { x, y, hit: document.elementFromPoint(x, y)?.closest("a")?.id };
+      return { x, y, hit: document.elementFromPoint(x, y)?.closest("button")?.id };
     });
-    assert.equal(point.hit, "jump-skills");
+    assert.equal(point.hit, "app-command-option-skills");
     await input.focus();
     await navigate(page, `${origin}/skills/`, async () => {
       await page._sendToTarget("Input.dispatchMouseEvent", { type: "mouseMoved", x: point.x, y: point.y });
@@ -131,7 +133,8 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
       try {
         await tab.page._sendToTarget("Emulation.setDeviceMetricsOverride", { ...viewport, deviceScaleFactor: 1, mobile: width === 390 });
         await tab.page._sendToTarget("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme }] });
-        const result = await runPaletteInteractions(tab.page, new URL("/dashboard/", PALETTE_TEST_URL).href);
+        const result = await runPaletteInteractions(tab.page, new URL("/dashboard/", PALETTE_TEST_URL).href,
+          {...viewport,mobile:width===390,coarse:width===390});
         console.log(`${width} ${theme}: PASS ${JSON.stringify(result)}`);
       } finally { await tabs.close(tab); }
     }

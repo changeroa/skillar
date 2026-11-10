@@ -4,6 +4,7 @@ import { ControlsGallery } from "./controls-gallery";
 import { DemoControls } from "./demo-controls";
 import { OverlaysGallery } from "./overlays-gallery";
 import { DemoOverlays } from "./demo-overlays";
+import { ShellGallery } from "./shell-gallery";
 
 const sizes = ["xs", "sm", "base", "lg", "xl", "2xl"] as const;
 const surfaces = ["header", "sidebar-background", "background", "card", "modal", "popover", "surface-code"] as const;
@@ -40,6 +41,7 @@ function Gallery() {
       </label>
     </header>
 
+    <ShellGallery />
     <OverlaysGallery />
     <ControlsGallery />
     <section aria-labelledby="surface-title" data-component="surfaces">
