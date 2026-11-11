@@ -6,6 +6,7 @@
   --muted: var(--lf-muted-foreground); --border: var(--lf-border-contrast); --rule: var(--lf-border);
   --code-bg: var(--lf-surface-code); --code-ink: var(--lf-foreground); --code-muted: var(--lf-muted-foreground);
   --accent: var(--lf-primary-accent); --on-accent: var(--lf-primary-foreground);
+  --lf-hosted-skeleton-ink: light-dark(var(--lf-foreground), rgb(136 136 137));
   --body: var(--lf-text-sm); --ui: var(--lf-text-sm); --small: var(--lf-text-sm);
   --subhead: var(--lf-text-base); --heading: var(--lf-text-2xl); --radius: var(--lf-radius-md);
   color: var(--lf-foreground); background: var(--lf-background);
@@ -84,6 +85,7 @@
   border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg);
   background: var(--lf-card); padding: var(--lf-space-4); margin-block: var(--lf-space-4);
   box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading);
 }
 .hosted-screen .ui-pill {
   min-height: 0; padding: var(--lf-space-0h) var(--lf-space-1h); gap: var(--lf-space-1);
@@ -94,10 +96,10 @@
 .hosted-screen .ui-kv > div { padding-block: var(--lf-space-2); gap: var(--lf-space-3); font-size: var(--lf-text-sm); }
 .hosted-screen .document-field { border-radius: var(--lf-radius-md); font-size: var(--lf-text-sm); }
 .hosted-screen .field-label { font-size: var(--lf-text-sm); }
-.hosted-screen .ui-toast { border-color: var(--lf-border); border-radius: var(--lf-radius-md); padding: var(--lf-space-2); }
+.hosted-screen .ui-toast { border-color: var(--lf-border); border-radius: var(--lf-radius-md); padding: var(--lf-space-2); line-height: var(--lf-leading-sm); }
 .hosted-screen .ui-toast-empty { border: 0; padding: 0; }
 .hosted-screen .ui-skeleton { gap: var(--lf-space-2); }
-.hosted-screen .ui-skeleton > div { height: var(--lf-space-4); background: var(--lf-muted); border: 0 solid var(--lf-border); border-radius: var(--lf-radius-md); }
+.hosted-screen .ui-skeleton > div { height: var(--lf-space-4); background: var(--lf-muted); color: var(--lf-hosted-skeleton-ink); border: 0 solid var(--lf-border); border-radius: var(--lf-radius-md); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
 .hosted-screen .connections-steps { border-color: var(--lf-border); border-radius: var(--lf-radius-lg); margin-block: var(--lf-space-4); }
 .hosted-screen .connections-steps > * { padding: var(--lf-space-3); }
 .hosted-screen .connections-steps > * + * { border-color: var(--lf-border); }

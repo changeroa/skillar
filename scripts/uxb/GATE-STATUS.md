@@ -8,13 +8,85 @@ in that directory's `publication-strict-controls.json` and
 `ci-strict-controls.json`. Older publication receipts remain historical.
 This is implementer evidence, not approval.
 
+## Reference-blocker correction after d63716e
+
+The reference audit at
+`.omo/evidence/skillar-pr-105-d63716e-reference-gate-review.md` rejected 68
+unsupported pinned-only references. All 56 previously unproved variant/state
+cases are reachable read-only and now have real captures at both widths/themes.
+No new unreachable exception was needed. The verified inventory is 128 real
+references and four labelled pinned-MIT Alert/sm exceptions.
+`pr-6/hosted-controls-real-demo-verified/results.json` passes 132/132 cases,
+4,092 field comparisons, 264 rejected style mutations and 36 rejected
+focus-removal mutations. The first real-reference run rejected 14 cases;
+its failures are retained separately in `hosted-controls-real-demo/`.
+Card inherited type is now 16px/24px, Skeleton type is 12px/18px with exact
+recorded ink, and StatusMessage retains its 20px line box.
+
+Fresh site validation passes 458/458 tests and the production build. Local
+typecheck/build pass; its full suite remains 986/987 because of the documented
+pre-existing `/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist` ENOTDIR
+failure. No test or `/tmp/h` was edited. LSP diagnostics were unavailable
+(workspace TypeScript initialization and missing Biome); actual typechecks
+and builds are the executed compiler checks.
+
+Fresh source evidence:
+`pr-6/demo-reference-correction/records.json` and its 80 PNGs. Every capture
+records all 31 style fields, expected hover/held-active/trusted-Tab state,
+nonblank pixel acceptance and a hidden account footer. Two PR-1 Skeleton
+captures supply the remaining four width/theme cases; the 60 already-live
+outline/select/checkbox cases now use real fields and PNGs as the
+primary reference, rather than a concordant local render.
+
+All routes below are under
+`https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`.
+The fresh Demo is v4.78.0; retained PR-1/PR-5 captures are v4.77.0.
+
+| Cases | Exact route and read-only method |
+| --- | --- |
+| primary default/hover/active/focus-visible, 16 cases | `/evals`: enabled New evaluator button, never activated. Phone: More actions reveals the same button. |
+| danger default/hover/active/focus-visible, 16 cases | `/evals`: first Evaluator actions menu, Delete opens the confirmation only; enabled Delete evaluators button is measured but never clicked. Source `EvaluatorsPage.tsx` sets `deleteIds` on opening; only `onConfirm` calls the mutation. |
+| input default/hover/focus-visible, 12 cases | `/skills`: Use skill menu, Install with CLI, Configure install command, Tag. The genuine plain `input[placeholder="my-tag"]` only controls displayed command text. No typing, copy, install or network write. |
+| summary default/hover/focus-visible, 12 cases | `/skills`: actual secondary Use skill button; phone More actions reveals it. |
+| disabled, 4 cases | `/skills`: actual disabled primary New skill button, not a fabricated disabled state. Existing PR-1 disabled ghost remains historical; this real primary caller matches the shipped primary-disabled case. |
+| ready panel, 4 cases | Root: ready Traces Card plus CardHeader insets, refreshed from the same real composition already recorded by PR-5. No source DOM/content/style substitution. |
+| skeleton, 4 cases | `/sessions`: existing PR-1 `34-skeleton-row` real 96x16 primitive, pulse paused at recorded 0ms. |
+| outline and quiet-danger, 32 cases | Root: actual Filters button at desktop; phone More actions reveals it. Fresh width-specific states replace historical desktop hover/active paint, which must not define coarse-pointer paint. Quiet-danger keeps only its existing approved destructive-ink adaptation. |
+
+Additional checked routes: `/datasets` has disabled row-delete buttons;
+`/traces` with local row selection opens Delete Traces with a disabled Confirm;
+`/experiments`, `/annotation-queues`, `/prompts`, `/dashboards` have
+permission-disabled creation actions. `/evals` is the reachable destructive
+confirmation counterexample, so none of these observations is used to claim
+destructive unreachability. Active captures hold the pointer and release
+outside; keyboard captures use trusted Tab. No confirm, sign-in, create, edit,
+settings, execution or data mutation was performed.
+
+### Remaining pinned-MIT cases, individually enumerated
+
+These are the four pre-existing approved standing-rule exceptions, not new
+exceptions inferred from missing captures. Pinned source:
+`69181812b87169df157841fce1314ec96ecd2c5a`, actual `Alert/default/sm`.
+
+| Exact case | Exact checked routes | Why real read-only capture is unavailable |
+| --- | --- | --- |
+| status-default-light-1440 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Retained PR-5 route proof: `/skills` exposes only default/default Alerts, with no size selector. Root/traces expose no small Alert; recorded session exposes a different StatusMessage/ERROR/compact; `/topics` is unavailable. No read-only control selects Alert/sm. |
+| status-default-dark-1440 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for dark Alert/default/sm: only default-size Alerts are exposed; other routes do not offer this component/size. Theme changes do not expose a size selector. |
+| status-default-light-390 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for phone light Alert/default/sm: responsive layout does not expose the small size; no read-only size selector exists. |
+| status-default-dark-390 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for phone dark Alert/default/sm: responsive/theme changes do not expose the small size; other checked routes supply different components or are unavailable. |
+
+Retained proof: `pr-5/read-only-state-routes.json` and
+`pr-5/state-sources.json`; accepted explicitly by the d63716e reference audit.
+Every other missing source now fails before product comparison. The old
+strict-control provenance explanation below is historical and superseded here.
+
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| 1 Component visual/style comparisons | PASS | 86 shared-control comparisons pass under the hosted cascade. `hosted-controls-strict/results.json` contains 132/132 passing native cases, 4,092 exact metric comparisons, 264 rejected style mutations and 36 rejected focus-removal mutations. All four paddings, font size/line height/weight, all four radii/border widths/border colours, height and focus paint are assertions, not observations. See the strict contract below. |
+| 1 Component visual/style comparisons | PASS | `hosted-controls-real-demo-verified/results.json`: 132/132 native cases, 128 real Demo references and four documented MIT Alert/sm exceptions; 4,092 exact field comparisons, 264 rejected style mutations and 36 rejected focus-removal mutations. The prior 86 shared-control comparisons are historical. Every padding, typography, corner, border, height and focus field is asserted. |
 | 2 Complete screen/state comparison | PASS (prior verified coverage) | The reviewed b38461e run contains 176 default captures plus 376 before/after state captures. 47 route/state cases produce 188 paired boards: 44 reachable cases and three explicitly N/A static-404 cases, each at both widths/themes. Those 552 captures were not rerun or relabelled as the strict-control revision. Source references distinguish live Demo primitives from pinned MIT loading references. |
 | 3 Keyboard/ARIA and real-page measurements | PASS | The checked-in `pr6-runtime.mjs` fails on every bad baseline and invokes the real 32/44px predicate for all 142 size mutations. 36/36 scenarios, 146 passing painted-focus measurements and 146 rejected focus-removal mutations; four native publisher-checkbox crops each contain 64 contrasting pairs. Native checkboxes are not falsely counted as 32/44px inputs. Six fresh peek profiles pass 819 assertions and 24 native confirmations. |
 | 4 R1–R7 | PASS | Real grouped shell, sidebar identity/logout, command palette, URL state, peak/full navigation, dirty drafts, default list rows (15 desktop / 7 phone), empty states and common chart baseline preserved. Native pagehide/pageshow and listener cleanup passed; this Chrome run did not restore bfcache, so an actual cache hit remains unverified. |
-| 5 Builds, tests and release contents | PASS | Strict-control revision: site build and 456/456 tests, including three new metric/policy/source-concordance regressions and the isolated real release-content gate. The previously reviewed local build/typecheck, 15 adapter/state tests and development-fixture rejection are historical, not claimed as fresh runs. Exact-head CI is recorded separately. The historical full-local `/tmp/h` ENOTDIR exception was not hidden or edited. |
+| 5 Builds, tests and release contents | PASS with existing local exception | Reference correction: site build and 458/458 tests, local typecheck/build and 986/987 local tests. The sole local failure is the unchanged `/tmp/h` ENOTDIR exception. Source-eligibility and Card-content-height regressions are added; the release-content gate remains in the site suite. Exact-head CI is recorded separately. |
 | 6 License/NOTICE | PASS | No new dependencies, upstream source copies or EE reads. Existing MIT NOTICE remains in the clean production output. The earlier package NOTICE inspection is historical, not a rerun claimed by these fixes. |
 | 7 Deployment boundary | PASS | No production deployment, merge or self-approval. The existing `uxb-pr-6` Pages preview predates the strict-control revision and is not final-head evidence. |
 
@@ -82,7 +154,8 @@ Reproduce with the actual pinned reference server and QA browser running:
 OMOWRIGHT_HELPER=/absolute/path/to/omowright.mjs \
 node scripts/uxb/hosted-controls.mjs \
   http://localhost:5182 http://127.0.0.1:57588 /absolute/output \
-  /absolute/path/to/pr-1/demo-captures/records.json
+  /absolute/path/to/pr-1/demo-captures/records.json \
+  /absolute/path/to/pr-6/demo-reference-correction/records.json
 node --test site/test/hosted-control-style.test.mjs
 ```
 

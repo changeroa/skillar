@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertHostedStyle, assertDemoConcordance, expectedHostedStyle, metricFields, numericFields, colorFields } from "../../scripts/uxb/hosted-control-style.mjs";
+import { assertHostedStyle, assertDemoConcordance, hostedDemoRecord, expectedHostedStyle, metricFields, numericFields, colorFields } from "../../scripts/uxb/hosted-control-style.mjs";
 
 const source = {
   height: 32, ...Object.fromEntries(numericFields.map(key => [key, 4])),
@@ -56,4 +56,28 @@ test("pinned fallback cannot drift from available live Demo metrics", () => {
     // Then the source audit rejects the fallback before it can define a passing target.
     assert.throws(() => assertDemoConcordance({ ...source, ...changed }, record, { width: 1440, control: "secondary" }), assert.AssertionError);
   }
+});
+
+test("only the documented Alert state may omit a real Demo reference", () => {
+  for (const control of ["primary", "danger", "disabled", "input", "summary", "panel", "skeleton",
+    "secondary", "danger-quiet", "select", "checkbox"]) {
+    const spec = { control, state: "default", width: 1440, theme: "light" };
+    assert.throws(() => hostedDemoRecord(spec, [], []), assert.AssertionError);
+    const record = { id: `${control}-default-light-1440`, reference: source };
+    assert.equal(hostedDemoRecord(spec, [], [record]), record);
+  }
+  assert.equal(hostedDemoRecord({ control: "status", state: "default", width: 390, theme: "dark" }, [], []), null);
+  assert.throws(() => hostedDemoRecord({ control: "status", state: "hover", width: 390, theme: "dark" }, [], []),
+    assert.AssertionError);
+  const old = { id: "34-skeleton-row", theme: "light" };
+  assert.equal(hostedDemoRecord({ control: "skeleton", state: "default", width: 390, theme: "light" }, [old], []), old);
+});
+
+test("one-line native Card height derives from real source chrome and line box", () => {
+  const card = { ...source, height: 338, paddingTop: 16, paddingBottom: 16,
+    borderTopWidth: 1, borderBottomWidth: 1, fontSize: 16, lineHeight: 24 };
+  const { expected } = expectedHostedStyle(card, { control: "panel", interactive: false });
+  assert.equal(expected.height, 58);
+  for (const key of metricFields.filter(key => key !== "height")) assert.deepEqual(expected[key], card[key], key);
+  assert.throws(() => assertHostedStyle({ ...expected, height: 338 }, expected), assert.AssertionError);
 });

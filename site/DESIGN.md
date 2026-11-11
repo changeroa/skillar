@@ -27,6 +27,19 @@ a named 44px choice, with control-border/control-fill tokens and 4px corners.
 Shared select, chart disclosure and shell breadcrumb styles remain component-owned.
 The strict hosted-control gate asserts 31 computed fields for every case;
 padding, typography, radii and border colours have no owner exemption.
+The reference correction uses real read-only Demo Button/primary, destructive
+confirmation, secondary action and plain Input states at both widths/themes.
+Ready native panels retain the real Card's inherited 16px/24px type
+(`--lf-text-lg` / `--lf-menu-leading`) and 16px CardHeader insets. Their one-line
+height derives from those insets, the source line box and both borders; the
+Demo's chart/content-slot height is caller content, not a primitive token.
+Skeleton bars inherit the real table primitive's 12px/18px type even though
+the bars contain no text. Their retained real dark capture has inherited
+`rgb(136 136 137)` ink; the hosted-only `--lf-hosted-skeleton-ink` token keeps
+that exact value and the light foreground. Status messages keep their own
+13px/20px line box rather than inheriting the Card's 24px line box.
+Only Alert/default/sm retains its documented
+read-only-unreachable pinned-MIT exception.
 The existing fixed-sidenav-shell keeps main as vertical scroll owner; table
 overflow and peek body retain their separate named responsibilities.
 

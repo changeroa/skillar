@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { ready, press } from "./trusted-keys.mjs";
 import { applyViewport } from "./viewport.mjs";
 import { focusPaint, proveFocusMutation } from "./table-keyboard.mjs";
 import { captureCrop } from "./image-diff.mjs";
-import { measureHostedStyle, expectedHostedStyle, assertHostedStyle, assertDemoConcordance, metricFields } from "./hosted-control-style.mjs";
+import { measureHostedStyle, demoHostedStyle, hostedDemoRecord, expectedHostedStyle, assertHostedStyle, metricFields } from "./hosted-control-style.mjs";
+import { inspectReferenceImage } from "./reference-pixels.mjs";
 
-const [base, reference, out, demoFile] = process.argv.slice(2);
-if (!base || !reference || !out || !demoFile || [base, reference].some(url => !["localhost", "127.0.0.1"].includes(new URL(url).hostname)))
-  throw Error("Usage: hosted-controls.mjs localhost-app localhost-pinned-reference output-directory live-demo-records.json");
+const [base, reference, out, demoFile, freshFile] = process.argv.slice(2);
+if (!base || !reference || !out || !demoFile || !freshFile || [base, reference].some(url => !["localhost", "127.0.0.1"].includes(new URL(url).hostname)))
+  throw Error("Usage: hosted-controls.mjs localhost-app localhost-pinned-reference output-directory pr1-demo-records.json hosted-demo-records.json");
 const demoRecords = JSON.parse(await readFile(demoFile, "utf8"));
+const freshRecords = JSON.parse(await readFile(freshFile, "utf8"));
 if (!process.env.OMOWRIGHT_HELPER) throw Error("OMOWRIGHT_HELPER required");
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
 const { omowright } = await loadOmowright();
@@ -110,26 +112,30 @@ try {
     });
     for (const spec of specs) {
       const id = `${spec.control}-${spec.caseName ?? spec.state}-${theme}-${width}`, selector = `#native-${spec.control}`, target = sourceTarget(spec);
-      const row = { id, ...spec, width, theme, source: { ...target, url: reference,
-        provenance: "ACTUAL-PINNED-MIT 69181812b87169df157841fce1314ec96ecd2c5a; unavailable live caller/variant states are not labelled Demo screenshots" } };
+      const row = { id, ...spec, width, theme };
       try {
-        await prepare(sourcePage, target.selector, spec);
-        row.reference = await measureHostedStyle(sourcePage, target);
-        assert.equal(row.reference.focusVisible, spec.state === "focus-visible", `${id}: source focus state`);
+        const demo = hostedDemoRecord({ ...spec, width, theme }, demoRecords, freshRecords);
+        if (demo) {
+          assert.equal(demo.accountFooterHidden, true, `${id}: source account footer hidden`);
+          const acceptance = await inspectReferenceImage(sourcePage, demo);
+          assert.equal(acceptance.pass, true, `${id}: nonblank real reference`);
+          row.reference = demo.reference ?? await demoHostedStyle(sourcePage, demo);
+          row.source = { recipe: target.recipe, provenance: "REAL-DEMO", url: demo.url, path: demo.path,
+            liveDemo: { id: demo.id, url: demo.url, path: demo.path, acceptance, requiredMetricConcordance: true } };
+          if (spec.control === "checkbox" && spec.state === "focus-visible" && !spec.checked)
+            row.source.liveDemo.condition = "Live unchecked paint with the exact owner keyboard-focus override; no pinned style substitutes for Demo fields.";
+          await copyFile(demo.path, `${out}/${id}-source.png`);
+        } else {
+          assert.equal(spec.control, "status", `${id}: no standing-rule exception; real Demo evidence required`);
+          await prepare(sourcePage, target.selector, spec);
+          row.reference = await measureHostedStyle(sourcePage, target);
+          row.source = { ...target, url: reference,
+            provenance: "ACTUAL-PINNED-MIT 69181812b87169df157841fce1314ec96ecd2c5a",
+            exception: "Alert/sm: /skills exposes default/default Alerts with no size selector; exact per-case routes in GATE-STATUS.md" };
+          await writeFile(`${out}/${id}-source.png`, Buffer.from((await captureCrop(sourcePage, target.selector, { align: false })).data, "base64"));
+        }
         assert.equal(row.reference.disabled, spec.control === "disabled", `${id}: source disabled state`);
         if (spec.control === "checkbox") assert.equal(row.reference.checked, spec.state === "checked" || Boolean(spec.checked), `${id}: source checked state`);
-        const demoId = ["secondary", "danger-quiet"].includes(spec.control) ? `01-button-${spec.state}` :
-          spec.control === "select" ? `05-select-native-equivalent-${spec.state}` :
-          spec.control === "checkbox" ? `06-checkbox-${spec.state === "focus-visible" && !spec.checked ? "unchecked" : spec.state}` : null;
-        if (demoId) {
-          const demo = demoRecords.find(record => record.id === demoId && record.theme === theme);
-          assert.ok(demo, `${id}: required live Demo reference`);
-          assertDemoConcordance(row.reference, demo, { ...spec, width });
-          row.source.liveDemo = { id: demo.id, url: demo.url, path: demo.path, requiredMetricConcordance: true };
-          if (spec.control === "checkbox" && spec.state === "focus-visible" && !spec.checked)
-            row.source.liveDemo.condition = "Live focused checkbox is checked; unchecked focus keeps the live unchecked geometry/type/palette and uses the genuinely focused pinned component plus the exact owner ring.";
-        }
-        await writeFile(`${out}/${id}-source.png`, Buffer.from((await captureCrop(sourcePage, target.selector, { align: false })).data, "base64"));
       } finally { if (spec.state === "active") await sourcePage.mouse.up(); }
       try {
         await prepare(page, selector, spec);
@@ -162,6 +168,8 @@ try {
 } finally {
   await writeFile(`${out}/results.json`, JSON.stringify({ records, failures, count: records.length, expected: specs.length * 4,
     metricFields, metricComparisons: records.length * metricFields.length,
+    realReferences: records.filter(row => row.source?.provenance === "REAL-DEMO").length,
+    mitReferences: records.filter(row => row.source?.exception).length,
     styleMutationRejections: records.reduce((sum, row) => sum + (row.mutations?.filter(probe => probe.rejected).length ?? 0), 0),
     ringRemovalRejections: records.filter(row => row.ringRemovalRejected).length }, null, 2));
   await tabs.closeAll();
