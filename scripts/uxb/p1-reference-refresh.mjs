@@ -4,6 +4,7 @@ import { applyViewport } from "./viewport.mjs";
 import { ready } from "./trusted-keys.mjs";
 import { readP1Style } from "./p1-style.mjs";
 import { captureP1 } from "./p1-capture.mjs";
+import { captureLiveStates } from "./p1-live-states.mjs";
 
 const [out] = process.argv.slice(2);
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
@@ -19,7 +20,7 @@ try {
       { waitUntil: "domcontentloaded" });
     await applyViewport(page, { width, height: width === 390 ? 844 : 900,
       deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 });
-    await ready(page, "main button");
+    await ready(page, "tbody tr");
     await page.evaluate(async theme => {
       document.documentElement.classList.toggle("dark", theme === "dark");
       document.documentElement.classList.toggle("light", theme === "light");
@@ -31,7 +32,8 @@ try {
       if (!button) throw new RangeError("Missing live period control");
       button.dataset.pr8Period = "";
       for (const animation of document.getAnimations()) {
-        if (Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
+        if (typeof animation.currentTime !== "number") animation.pause();
+        else if (Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
         else { animation.pause(); animation.currentTime = 0; }
       }
     }, theme);
@@ -45,8 +47,9 @@ try {
       return { width: rect.width, height: rect.height, text: node.textContent };
     }, selector);
     const capture = await captureP1(page, selector, file);
+    const states = await captureLiveStates(page, { selector, file });
     rows.push({ component: "TimePeriodSelect", state: "default", theme, width, geometry,
-      style, file, capture, accountFooterHidden: footerHidden, provenance: "REAL-DEMO",
+      style, file, capture, states, accountFooterHidden: footerHidden, provenance: "REAL-DEMO",
       url: await page.evaluate(() => location.href), selector });
   }
 } finally {

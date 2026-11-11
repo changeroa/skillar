@@ -210,6 +210,20 @@ test("DiffViewer retains line identity and renders hostile text without markup",
   assert.equal(byTag(container, "img").length, 0);
 });
 
+test("DiffViewer marks changed words while retaining the caller line text", async t => {
+  // Given
+  const rows = [
+    { kind: "removed", text: "keep old tail", before: 1, after: null },
+    { kind: "added", text: "keep new tail", before: null, after: 1 },
+  ];
+  // When
+  const { container } = await mount(t, DiffViewer, { rows });
+  // Then
+  assert.deepEqual(byTag(container, "code").map(code => code.textContent), ["keep old tail", "keep new tail"]);
+  assert.equal(all(container, node => node.getAttribute("data-word-change") === "removed").map(node => node.textContent).join(""), "old");
+  assert.equal(all(container, node => node.getAttribute("data-word-change") === "added").map(node => node.textContent).join(""), "new");
+});
+
 test("DiffViewer pairs changed runs without losing unequal sides or unchanged lines", async t => {
   // Given
   const rows = [

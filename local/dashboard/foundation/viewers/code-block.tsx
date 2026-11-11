@@ -1,7 +1,7 @@
 import { CopyButton } from "../controls/copy-button";
 import { SyntaxText } from "./syntax";
 const languageNames: Readonly<Record<string, string>> = {
-  text: "Text", javascript: "JavaScript", typescript: "TypeScript", python: "Python",
+  text: "text", javascript: "JavaScript", typescript: "TypeScript", python: "Python",
   json: "JSON", markdown: "Markdown", css: "CSS", markup: "HTML", bash: "Bash", toml: "TOML",
 };
 

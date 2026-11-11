@@ -11,7 +11,7 @@ const results = [];
 await mkdir(`${out}/diffs`, { recursive: true });
 try {
   for (const row of report.results) {
-    const name = `${row.surface}-${row.component}-${row.state}-${row.width}-${row.theme}`;
+    const name = `${row.surface}-${row.component}-${row.state}-${row.width}-${row.theme}${row.interaction && row.interaction !== "rest" ? `-${row.interaction}` : ""}`;
     try {
       const paths = { reference: row.reference.screenshot, actual: row.capture,
         sideBySide: `${out}/diffs/${name}-side.png`, diff: `${out}/diffs/${name}-raw.png` };

@@ -5,7 +5,7 @@ const [out, gateFile] = process.argv.slice(2);
 const matrix = JSON.parse(await readFile(`${out}/surface-matrix.json`, "utf8"));
 const demo = JSON.parse(await readFile(`${out}/demo-context.json`, "utf8"));
 const gate = JSON.parse(await readFile(`${out}/${gateFile}`, "utf8"));
-assert.equal(gate.results.length, Object.values(gate.expected).reduce((sum, count) => sum + count, 0) * 8);
+assert.equal(gate.results.length, Object.values(gate.expected).reduce((sum, count) => sum + count, 0) * 8 * gate.interactions.length);
 assert.equal(gate.errors.length, 0);
 assert.ok(gate.results.every(row => row.status === "PASS"));
 assert.equal(matrix.rows.length, matrix.specs.length * 8);
@@ -55,7 +55,7 @@ for (const spec of matrix.specs) for (const width of [1440, 390]) for (const the
   const context = demo.find(row => row.name.startsWith(mapping?.[2] ?? "home") && row.width === width && row.theme === theme);
   assert.ok(context, `${spec.name} ${width} ${theme}: missing Demo context`);
   const reference = mapping ? gate.results.find(row => row.surface === (spec.surface === "local" ? "local" : "site") &&
-    row.width === width && row.theme === theme && row.component === mapping[0] && row.state === mapping[1])?.reference : null;
+    row.width === width && row.theme === theme && row.component === mapping[0] && row.state === mapping[1] && row.interaction === "rest")?.reference : null;
   if (mapping) {
     assert.ok(reference, `${spec.name}: missing atomic reference`);
     assert.ok(after.metrics.components[mapping[0]] > 0 ||

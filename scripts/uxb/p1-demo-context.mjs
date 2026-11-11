@@ -31,8 +31,6 @@ try {
           observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true }); check();
         }), name);
         await page.evaluate(async theme => {
-          localStorage.setItem("theme", theme);
-          dispatchEvent(new StorageEvent("storage", { key: "theme", newValue: theme, storageArea: localStorage }));
           document.documentElement.classList.toggle("dark", theme === "dark");
           document.documentElement.classList.toggle("light", theme === "light");
           const hide = document.createElement("style");

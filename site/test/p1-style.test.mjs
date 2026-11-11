@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { compareP1Style, P1_STYLE_FIELDS } from "../../scripts/uxb/p1-style.mjs";
+import { P1_PAINT_FIELDS, p1Inventory } from "../../scripts/uxb/p1-inventory.mjs";
+import { P1_TEXT_FIELDS, compareTextPaint } from "../../scripts/uxb/p1-text-paint.mjs";
 const values = Object.fromEntries(P1_STYLE_FIELDS.map(key => [key, "0px"]));
 values.height = "32px";
 const reference = { values, glyphs: [] };
@@ -97,4 +99,47 @@ test("P1 parity ignores only unpainted zero-area shadow entries", () => {
   assert.deepEqual(compareP1Style(source, { values: { ...values, boxShadow: shadow }, glyphs: [] }), []);
   const shifted = { values: { ...values, boxShadow: `rgb(39, 39, 42) 2px 0px 0px 0px, ${shadow}` }, glyphs: [] };
   assert.ok(compareP1Style(source, shifted).some(row => row.field === "boxShadow"));
+});
+
+test("P1 parity rejects absent paint fields even when both records omit them", () => {
+  // Given
+  const glyph = Object.fromEntries(P1_PAINT_FIELDS.map(field => [field, null]));
+  const source = { values, glyphs: [{ ...glyph, tag: "path" }] };
+  for (const field of P1_PAINT_FIELDS) {
+    const incomplete = structuredClone(source);
+    delete incomplete.glyphs[0][field];
+    // When
+    const failures = compareP1Style(incomplete, incomplete);
+    // Then
+    assert.ok(failures.some(row => row.field === `glyphs.0.${field}`), field);
+  }
+});
+
+test("P1 parity rejects symmetrically missing descendants against fixed anatomy", () => {
+  // Given
+  const empty = { values, glyphs: [], parts: [] };
+  for (const [component, state] of [["Switch", "default-default-checked-enabled"],
+    ["Radio", "unchecked-enabled"], ["Avatar", "image"], ["CodeBlock", "default"],
+    ["Spinner", "md-inherit"], ["Toast", "loading"]]) {
+    // When
+    const failures = compareP1Style(empty, empty, { inventory: p1Inventory(component, state) });
+    // Then
+    assert.ok(failures.some(row => row.field.endsWith(".inventory")), component);
+  }
+});
+
+test("P1 text paint checks every required channel across different token boundaries", () => {
+  // Given
+  const values = Object.fromEntries(P1_TEXT_FIELDS.map(field => [field, "original"]));
+  const source = [{ text: "abcd", values }];
+  const product = [{ text: "ab", values }, { text: "cd", values }];
+  assert.deepEqual(compareTextPaint(source, product), []);
+  for (const field of P1_TEXT_FIELDS) {
+    const mutant = structuredClone(product);
+    mutant[1].values[field] = "changed";
+    // When
+    const failures = compareTextPaint(source, mutant);
+    // Then
+    assert.ok(failures.some(row => row.field.endsWith(`.${field}`)), field);
+  }
 });

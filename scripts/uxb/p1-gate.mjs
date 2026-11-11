@@ -7,6 +7,9 @@ import { compareP1Style, readP1Style } from "./p1-style.mjs";
 import { p1Keyboard } from "./p1-keyboard.mjs";
 import { p1Focus } from "./p1-focus.mjs";
 import { p1Mutations } from "./p1-mutations.mjs";
+import { p1Inventory } from "./p1-inventory.mjs";
+import { p1Pointer, releaseP1Pointer } from "./p1-pointer.mjs";
+import { p1OwnerPolicy } from "./p1-policy.mjs";
 const [site, local, out] = process.argv.slice(2);
 if (!site || !local || !out || !process.env.OMOWRIGHT_HELPER) throw Error("site local evidence and OMOWRIGHT_HELPER required");
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
@@ -59,9 +62,12 @@ async function mountSource(theme) {
   }, { js, css, fontCss });
   await ready(source, "#mit-ready");
 }
-async function reference(component, state, theme, width) {
+async function reference({ component, state, interaction, theme, width }) {
   const audited = extra.find(row => row.component === component && row.state === state && row.theme === theme);
-  if (audited) return { ...audited, screenshot: audited.file };
+  if (audited) {
+    assert.ok(audited.states?.[interaction], `Missing live ${component} ${interaction}`);
+    return { ...audited, ...audited.states[interaction] };
+  }
   const live = !mitSelectors[component] ||
     component === "MarkdownViewer" && state === "formatted" && width === 1440 ||
     component === "CodeBlock" && state === "default" && width === 1440 ||
@@ -71,8 +77,10 @@ async function reference(component, state, theme, width) {
       demo.find(row => row.component === component && row.theme === theme);
     if (!source) return null;
     const sourceWidth = source.geometry?.width ?? (component === "DiffViewer" ? 1242 : 596);
-    return { ...source, screenshot: source.file, style: { ...source.style,
-      values: { ...source.style.values, width: `${sourceWidth}px` } } };
+    assert.ok(source.states?.[interaction], `Missing live ${component} ${interaction}`);
+    const measured = source.states[interaction];
+    return { ...source, ...measured, style: { ...measured.style,
+      values: { ...measured.style.values, width: `${sourceWidth}px` } } };
   }
   const sourceState = component === "Radio" && state === "group" ? "checked-enabled" : state;
   await source.evaluate(settings => window.renderReference(settings), { state: sourceState, theme, examples });
@@ -101,8 +109,9 @@ async function reference(component, state, theme, width) {
   });
   const selector = component === "DiffViewer" && state === "empty"
     ? '[data-component="DiffViewer"] > .text-muted-foreground' : mitSelectors[component];
-  const style = await readP1Style(source, selector);
-  const screenshot = `${out}/mit-captures/${component}-${state}-${width}-${theme}.png`;
+  const pointer = await p1Pointer(source, selector, interaction);
+  const style = await readP1Style(source, selector, { component, state });
+  const screenshot = `${out}/mit-captures/${component}-${state}-${width}-${theme}-${interaction}.png`;
   await source.evaluate(selector => {
     const node = document.querySelector(selector);
     node.scrollIntoView({ block: "center", inline: "nearest" });
@@ -112,13 +121,15 @@ async function reference(component, state, theme, width) {
     document.body.append(label);
   }, selector);
   await captureP1(source, selector, screenshot);
+  if (interaction === "active") await releaseP1Pointer(source);
   await source.evaluate(() => document.querySelector("#mit-evidence-label").remove());
   return { provenance: "ACTUAL-PINNED-MIT", sourceSHA: "69181812b87169df157841fce1314ec96ecd2c5a",
-    component, state, theme, style, screenshot };
+    component, state, theme, style, screenshot, pointer };
 }
 try {
   for (const [surface, base] of [["site", site], ["local", local]]) {
     for (const width of [390, 1440]) for (const theme of ["light", "dark"]) {
+      if (process.env.P1_PROFILE && process.env.P1_PROFILE !== `${surface}:${width}:${theme}`) continue;
       const viewport = { width, height: 900, deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 };
       await applyViewport(product, viewport); await applyViewport(source, viewport);
       await mountSource(theme);
@@ -147,39 +158,40 @@ try {
         status: owner.width === width && owner.coarse === (width === 390) &&
           owner.scrollWidth <= width && owner.manualPrism ? "PASS" : "FAIL" });
       for (const item of cases.filter(item => !process.env.P1_COMPONENTS ||
-        process.env.P1_COMPONENTS.split(",").includes(item.component))) {
+        process.env.P1_COMPONENTS.split(",").includes(item.component))) for (const interaction of ["rest", "hover", "active"]) {
         const root = `[data-component="${item.component}"][data-state="${item.state}"]`;
         const selector = `${root} ${selectors[item.component]}`;
         try {
-          const sourceRecord = await reference(item.component, item.state, theme, width);
+          const sourceRecord = await reference({ ...item, interaction, theme, width });
           const comparableWidth = item.component === "TimePeriodSelect" ? sourceRecord.geometry.width
             : width === 1440 && (
             item.component === "CodeBlock" && item.state === "default" ||
-            item.component === "MarkdownViewer" && item.state === "formatted") ? 596
-            : width === 1440 && item.component === "DiffViewer" && item.state === "changed" ? 1242 : null;
+            item.component === "MarkdownViewer" && item.state === "formatted") ? parseFloat(sourceRecord.style.values.width)
+            : width === 1440 && item.component === "DiffViewer" && item.state === "changed" ? parseFloat(sourceRecord.style.values.width) : null;
           if (comparableWidth) await product.evaluate(({ root, width }) => {
             document.querySelector(`${root} [data-probe]`).style.width = `${width}px`;
           }, { root, width: comparableWidth });
-          const actual = await readP1Style(product, selector);
+          const pointer = await p1Pointer(product, selector, interaction);
+          const actual = await readP1Style(product, selector, item);
           const referenceStyle = sourceRecord?.style ?? null;
-          const policy = item.component === "CodeBlock" && item.state !== "read-only" && referenceStyle
-            ? { height: `${parseFloat(referenceStyle.values.height) + (owner.coarse ? 18 : 6)}px` }
-            : ["Combobox", "MultiSelect", "DateRangeInput", "TimePeriodSelect"].includes(item.component)
-              ? { height: `${owner.coarse ? 44 : 32}px` }
-            : item.component === "Toast" && owner.coarse && item.state !== "loading" && referenceStyle
-              ? { height: `${Math.max(parseFloat(referenceStyle.values.height),
-                parseFloat(referenceStyle.values.paddingTop) + parseFloat(referenceStyle.values.paddingBottom) +
-                parseFloat(referenceStyle.values.borderTopWidth) + parseFloat(referenceStyle.values.borderBottomWidth) + 44)}px` } : {};
-          const differences = compareP1Style(referenceStyle, actual, policy);
+          const policy = await p1OwnerPolicy(product,
+            { ...item, reference: referenceStyle, actual, coarse: owner.coarse });
+          const differences = compareP1Style(referenceStyle, actual,
+            { ...policy, inventory: p1Inventory(item.component, item.state) });
+          const painted = actual.geometry.width > 0 && actual.geometry.height > 0;
+          if (interaction !== "rest" && painted && !pointer.hover)
+            differences.push({ field: "pointer.hover", expected: true, actual: pointer });
+          if (!pointer.trustedPointer || interaction === "active" && painted && !pointer.disabled && !pointer.nativePicker && !pointer.active)
+            differences.push({ field: "pointer.active/trusted", expected: "trusted real state", actual: pointer });
           if (item.component === "DiffViewer" && item.state === "changed" && width === 390) {
             const expectedText = referenceStyle.text.replace(/\s+/g, " ").trim();
             const actualText = actual.text.replace(/\s+/g, " ").trim();
             if (expectedText !== actualText) differences.push({ field: "visibleContent", expected: expectedText, actual: actualText });
           }
-          const path = `${out}/matrix/${surface}-${item.component}-${item.state}-${width}-${theme}.png`;
+          const path = `${out}/matrix/${surface}-${item.component}-${item.state}-${width}-${theme}${interaction === "rest" ? "" : `-${interaction}`}.png`;
           const capture = await captureP1(product, selector, path);
           captures.push({ surface, width, theme, ...item, ...capture });
-          results.push({ surface, width, theme, ...item, reference: sourceRecord, actual, policy, differences,
+          results.push({ surface, width, theme, ...item, interaction, pointer, painted, reference: sourceRecord, actual, policy, differences,
             status: differences.length ? "FAIL" : "PASS", capture: path });
           if (comparableWidth) await product.evaluate(root => {
             document.querySelector(`${root} [data-probe]`).style.removeProperty("width");
@@ -188,7 +200,9 @@ try {
           await product.evaluate(root => {
             document.querySelector(`${root} [data-probe]`)?.style.removeProperty("width");
           }, root);
-          errors.push({ surface, width, theme, ...item, error: String(error) });
+          errors.push({ surface, width, theme, ...item, interaction, error: String(error) });
+        } finally {
+          if (interaction === "active") await releaseP1Pointer(product);
         }
       }
       await product.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
@@ -203,7 +217,8 @@ try {
   }
 } finally {
   await writeFile(`${out}/${process.env.P1_REPORT ?? "p1-gate"}.json`, JSON.stringify({
-    expected, selectedComponents: process.env.P1_COMPONENTS ?? "all", results, captures, structure, keyboard, focus, mutations, errors,
+    expected, interactions: ["rest", "hover", "active"], selectedProfile: process.env.P1_PROFILE ?? "all",
+    selectedComponents: process.env.P1_COMPONENTS ?? "all", results, captures, structure, keyboard, focus, mutations, errors,
   }, null, 2));
   await tabs.closeAll(); await browser.close();
 }

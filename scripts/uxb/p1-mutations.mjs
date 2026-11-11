@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { readP1Style, compareP1Style } from "./p1-style.mjs";
+import { p1Pointer, releaseP1Pointer } from "./p1-pointer.mjs";
+import { p1Inventory } from "./p1-inventory.mjs";
 
 /** Mutate the real painted control, not just a manufactured style object. */
 export async function p1Mutations(page, { coarse }) {
@@ -66,6 +68,57 @@ export async function p1Mutations(page, { coarse }) {
           document.querySelector(selector).querySelector(leaf).style.removeProperty(property),
         { selector, leaf, property });
       }
+    }
+  }
+  for (const interaction of ["hover", "active"]) {
+    const selector = '[data-component="Switch"][data-state="default-default-checked-enabled"] .lf-switch__track';
+    await p1Pointer(page, selector, interaction);
+    try {
+      const original = await readP1Style(page, selector);
+      for (const [property, value] of [["color", "rgb(255, 0, 255)"],
+        ["background-color", "rgb(255, 0, 255)"], ["opacity", "0"]]) {
+        await page.evaluate(({ selector, property, value }) =>
+          document.querySelector(selector).style.setProperty(property, value, "important"), { selector, property, value });
+        try {
+          const failures = compareP1Style(original, await readP1Style(page, selector),
+            { inventory: p1Inventory("Switch", "default-default-checked-enabled") });
+          const field = property === "background-color" ? "backgroundColor" : property;
+          assert.ok(failures.some(row => row.field === field), `${interaction} ${field} must fail`);
+          rows.push({ name: `${interaction}-${field}-mutation-rejected`, status: "PASS", failures });
+        } finally {
+          await page.evaluate(({ selector, property }) => document.querySelector(selector).style.removeProperty(property),
+            { selector, property });
+        }
+      }
+    } finally { if (interaction === "active") await releaseP1Pointer(page); }
+  }
+  const codeSelector = '[data-component="CodeBlock"][data-state="default"] .lf-codeblock';
+  const code = await readP1Style(page, codeSelector, { component: "CodeBlock", state: "default" });
+  await page.evaluate(selector => document.querySelector(`${selector} [data-token]`).style.opacity = "0", codeSelector);
+  try {
+    const failures = compareP1Style(code, await readP1Style(page, codeSelector, { component: "CodeBlock", state: "default" }));
+    assert.ok(failures.some(row => row.field.includes("textPaint") && row.field.endsWith(".opacity")));
+    rows.push({ name: "hidden-syntax-token-paint-rejected", status: "PASS", failures });
+  } finally {
+    await page.evaluate(selector => document.querySelector(`${selector} [data-token]`).style.removeProperty("opacity"), codeSelector);
+  }
+  const missing = structuredClone(code);
+  missing.descendants = [];
+  assert.ok(compareP1Style(missing, missing, { inventory: p1Inventory("CodeBlock", "default") })
+    .some(row => row.field.endsWith("descendants.inventory")));
+  rows.push({ name: "symmetrically-missing-descendants-rejected", status: "PASS" });
+  for (const property of ["opacity", "visibility"]) {
+    await page.evaluate(({ selector, property }) =>
+      document.querySelector(selector).querySelector("pre").style.setProperty(property, property === "opacity" ? "0" : "hidden"),
+    { selector: codeSelector, property });
+    try {
+      const mutant = await readP1Style(page, codeSelector, { component: "CodeBlock", state: "default" });
+      const failures = compareP1Style(code, mutant, { inventory: p1Inventory("CodeBlock", "default") });
+      assert.ok(failures.some(row => row.field.startsWith("descendants.code.")));
+      rows.push({ name: `code-descendant-${property}-rejected`, status: "PASS", failures });
+    } finally {
+      await page.evaluate(({ selector, property }) =>
+        document.querySelector(selector).querySelector("pre").style.removeProperty(property), { selector: codeSelector, property });
     }
   }
   return rows;

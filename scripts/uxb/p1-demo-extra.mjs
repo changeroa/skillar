@@ -4,6 +4,7 @@ import { applyViewport } from "./viewport.mjs";
 import { ready } from "./trusted-keys.mjs";
 import { readP1Style } from "./p1-style.mjs";
 import { captureP1 } from "./p1-capture.mjs";
+import { captureLiveStates } from "./p1-live-states.mjs";
 const [out] = process.argv.slice(2);
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
 const { omowright } = await loadOmowright();
@@ -17,8 +18,6 @@ async function prepare(theme) {
   await tabs.repin(tab, { width: 390, height: 844 });
   await applyViewport(page, { width: 390, height: 844, mobile: true, coarse: true, deviceScaleFactor: 3 });
   await page.evaluate(async theme => {
-    localStorage.setItem("theme", theme);
-    dispatchEvent(new StorageEvent("storage", { key: "theme", newValue: theme, storageArea: localStorage }));
     document.documentElement.classList.toggle("dark", theme === "dark");
     document.documentElement.classList.toggle("light", theme === "light");
     const style = document.createElement("style");
@@ -46,9 +45,10 @@ async function capture(component, state, theme, selector, interaction) {
   const style = await readP1Style(page, selector), file = `${out}/demo-extra/${component}-${state}-${theme}.png`;
   assert.equal(style.visible, true);
   const image = await captureP1(page, selector, file);
+  const states = await captureLiveStates(page, { selector, file });
   assert.ok(image.varied > 0);
   rows.push({ component, state, theme, width: 390, viewportWidth: 390, provenance: "REAL-DEMO",
-    url: origin, selector, style, geometry: style.geometry, file, accountFooterHidden: true, interaction, metrics });
+    url: origin, selector, style, states, geometry: style.geometry, file, accountFooterHidden: true, interaction, metrics });
   console.log(`P1_DEMO_EXTRA ${component} ${state} ${theme}`);
 }
 async function release() {

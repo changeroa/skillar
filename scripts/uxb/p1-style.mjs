@@ -1,3 +1,6 @@
+import { P1_PAINT_FIELDS, P1_LOADER_FIELDS, checkP1Inventory } from "./p1-inventory.mjs";
+import { p1Descendants } from "./p1-descendants.mjs";
+import { P1_TEXT_FIELDS, compareTextPaint } from "./p1-text-paint.mjs";
 /** Fields required by the Phase B contract, including every independent edge. */
 export const P1_STYLE_FIELDS = Object.freeze([
   "height", "width", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
@@ -11,11 +14,19 @@ const geometry = new Set(["height", "width", "paddingTop", "paddingRight", "padd
   "fontSize", "lineHeight", "borderRadius", "borderTopWidth", "borderRightWidth", "borderBottomWidth",
   "borderLeftWidth", "outlineWidth", "outlineOffset"]);
 
-export async function readP1Style(page, selector) {
-  return page.evaluate(({ selector, fields }) => {
+export async function readP1Style(page, selector, specimen) {
+  const descriptors = specimen ? p1Descendants(specimen.component, specimen.state) : [];
+  return page.evaluate(({ selector, fields, descriptors, textFields }) => {
     const node = document.querySelector(selector);
     if (!node) throw new RangeError(`Missing style target: ${selector}`);
     const css = getComputedStyle(node);
+    const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const paintBackground = value => {
+      if (!/^oklab\(/.test(value)) return value;
+      context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1);
+      return `rgba8(${[...context.getImageData(0, 0, 1, 1).data].join(",")})`;
+    };
     const opacityOf = part => {
       let opacity = 1;
       for (let ancestor = part; ancestor; ancestor = ancestor.parentElement) opacity *= Number(getComputedStyle(ancestor).opacity);
@@ -23,7 +34,8 @@ export async function readP1Style(page, selector) {
     };
     const measure = part => {
       const paint = getComputedStyle(part), box = part.getBoundingClientRect();
-      return { values: { ...Object.fromEntries(fields.map(field => [field, paint[field]])), opacity: opacityOf(part) },
+      return { values: { ...Object.fromEntries(fields.map(field => [field, paint[field]])),
+        backgroundColor: paintBackground(paint.backgroundColor), opacity: opacityOf(part) },
         geometry: { width: box.width, height: box.height }, glyphs: [],
         visible: part.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
     };
@@ -47,24 +59,55 @@ export async function readP1Style(page, selector) {
     const kind = node.matches("[role=switch],.lf-switch__track") ? "thumb"
       : node.matches(".lf-radio__ring") || family === "Radio" ? "dot"
       : node.matches(".lf-avatar") || family === "Avatar" || node.parentElement?.matches("[role=img]") ? "avatar" : null;
-    const parts = kind ? [...node.children].filter(part => part.matches("span,img") &&
-      part.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && part.getBoundingClientRect().width > 0).map(part => {
+    const parts = kind ? [...node.children].filter(part => part.matches("span,img")).map(part => {
       const box = part.getBoundingClientRect();
       return { role: kind === "avatar" ? part.matches("img") ? "image" : "fallback" : kind,
         x: box.x - rect.x, y: box.y - rect.y, style: measure(part) };
     }) : [];
-    return { values, text: node.textContent, geometry: { width: rect.width, height: rect.height },
-      rawOpacity: css.opacity, glyphs, parts, focusVisible: node.matches(":focus-visible"),
+    const descendants = descriptors.map(descriptor => {
+      const product = node.matches(".lf-markdown,.lf-codeblock,.lf-toast,.lf-diff-scroll");
+      const selector = product ? descriptor.actual : descriptor.source;
+      const nodes = [...node.querySelectorAll(selector)];
+      return { role: descriptor.role, expectedCount: descriptor.count, styles: nodes.map(part => {
+        const style = measure(part);
+        const textRoot = product && descriptor.actualText ? part.querySelector(descriptor.actualText) : part;
+        const walker = document.createTreeWalker(textRoot ?? part, NodeFilter.SHOW_TEXT);
+        const textPaint = [];
+        for (let textNode = descriptor.textPaint === false ? null : walker.nextNode(); textNode; textNode = walker.nextNode()) {
+          const text = textNode.textContent.replace(/\s+/g, "");
+          if (!text) continue;
+          const parent = textNode.parentElement, css = getComputedStyle(parent);
+          textPaint.push({ text, values: { ...Object.fromEntries(textFields.map(field => [field, css[field]])),
+            backgroundColor: paintBackground(css.backgroundColor), opacity: opacityOf(parent) } });
+        }
+        // The labelled MIT narrow fixture includes the owner's line-number/sign
+        // prefix as input. Product metadata is separately painted outside code.
+        if (!product && descriptor.actualText && node.closest("#mit-ready")) {
+          const prefix = textPaint.map(run => run.text).join("").match(/^1[−+]/)?.[0] ?? "";
+          let remaining = prefix.length;
+          for (const run of textPaint) {
+            const skip = Math.min(remaining, run.text.length); run.text = run.text.slice(skip); remaining -= skip;
+          }
+        }
+        return { ...style, textPaint: textPaint.filter(run => run.text.length > 0) };
+      }) };
+    });
+    return { values, rawValues: Object.fromEntries(fields.map(field => [field, css[field]])),
+      text: node.textContent, geometry: { width: rect.width, height: rect.height },
+      rawOpacity: css.opacity, glyphs, parts, descendants, focusVisible: node.matches(":focus-visible"),
+      focusWithin: node.matches(":focus-visible") || !!node.querySelector(":focus-visible"),
       visible: node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
-  }, { selector, fields: P1_STYLE_FIELDS });
+  }, { selector, fields: P1_STYLE_FIELDS, descriptors, textFields: P1_TEXT_FIELDS });
 }
 
 /** Explicit owner adaptations are passed as measured-property replacements, never blanket exemptions. */
 export function compareP1Style(reference, actual, policy = {}) {
   const failures = [];
   if (!reference) return [{ field: "reference", expected: "REAL-DEMO or ACTUAL-PINNED-MIT", actual: null }];
-  if (reference.visible !== false && actual.visible === false)
-    failures.push({ field: "visible", expected: true, actual: false });
+  if (policy.inventory) for (const [side, style] of [["reference", reference], ["actual", actual]])
+    failures.push(...checkP1Inventory(style, policy.inventory).map(failure => ({ ...failure, field: `${side}.${failure.field}` })));
+  if (reference.visible !== actual.visible)
+    failures.push({ field: "visible", expected: reference.visible, actual: actual.visible });
   for (const field of P1_STYLE_FIELDS) {
     const expected = policy[field] ?? reference.values[field], received = actual.values[field];
     if (expected === undefined || received === undefined) { failures.push({ field, expected, actual: received }); continue; }
@@ -80,9 +123,10 @@ export function compareP1Style(reference, actual, policy = {}) {
   for (const [index, glyph] of reference.glyphs.entries()) {
     const painted = actual.glyphs[index];
     if (!painted) continue;
-    for (const key of Object.keys(glyph)) {
+    for (const key of [...P1_PAINT_FIELDS, ...(glyph.tag === "loader-bar" ? P1_LOADER_FIELDS : [])]) {
       const expected = glyph[key], received = painted[key];
-      const match = typeof expected === "number" ? Math.abs(expected - received) <= 1 : expected === received;
+      const match = expected !== undefined && received !== undefined &&
+        (typeof expected === "number" ? Math.abs(expected - received) <= 1 : expected === received);
       if (!match) failures.push({ field: `glyphs.${index}.${key}`, expected, actual: received });
     }
   }
@@ -97,6 +141,24 @@ export function compareP1Style(reference, actual, policy = {}) {
       if (!match) failures.push({ field: `parts.${index}.${key}`, expected: part[key], actual: measured[key] });
     }
     failures.push(...compareP1Style(part.style, measured.style).map(failure => ({ ...failure, field: `parts.${index}.${failure.field}` })));
+  }
+  const expectedDescendants = reference.descendants ?? [], receivedDescendants = actual.descendants ?? [];
+  failures.push(...compareTextPaint(reference.textPaint, actual.textPaint));
+  if (expectedDescendants.length !== receivedDescendants.length)
+    failures.push({ field: "descendants.length", expected: expectedDescendants.length, actual: receivedDescendants.length });
+  for (const [index, part] of expectedDescendants.entries()) {
+    const received = receivedDescendants[index];
+    for (const [side, record] of [["reference", part], ["actual", received]]) {
+      if (record?.styles.length !== part.expectedCount)
+        failures.push({ field: `descendants.${part.role}.${side}.count`, expected: part.expectedCount, actual: record?.styles.length });
+    }
+    if (!received) continue;
+    for (const [position, style] of part.styles.entries()) {
+      if (!received.styles[position]) continue;
+      const overrides = policy.descendants?.[part.role] ?? {};
+      failures.push(...compareP1Style(style, received.styles[position], overrides)
+        .map(failure => ({ ...failure, field: `descendants.${part.role}.${position}.${failure.field}` })));
+    }
   }
   return failures;
 }

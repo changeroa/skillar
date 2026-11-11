@@ -15,7 +15,9 @@ existing line-diff algorithm; 12px/18px mono, 16px/4px cell padding and
 semantic green/destructive 10% washes mark additions/removals with signs.
 Contiguous additions/removals are paired visually without changing the caller's
 LCS algorithm or losing line numbers. Diff-added uses Tailwind green-500
-oklch(72.3% .219 149.579); removed uses the existing destructive token.
+oklch(72.3% .219 149.579); removed uses the existing destructive
+token. Changed-line word marks use muted for unchanged words, added green at
+30%, and destructive at 60%, preserving the caller's line diff and metadata.
 Code syntax tokens are Prism's lexical tokens rendered as escaped Preact spans,
 never Prism's HTML output. GitHub light and VS Dark colors follow the pinned
 MIT SyntaxHighlight. Plain/unsupported languages remain exact escaped text.
@@ -89,6 +91,17 @@ Raw HTML blocks remain escaped text nodes with the source renderer's plain
 text flow; they never become DOM elements or acquire paragraph spacing.
 No decorative transitions or new dependency are needed. Native date surfaces
 are an explicit owner-native adaptation. No new accessibility debt is accepted.
+
+Descendant parity uses the same border token on paragraphs, toolbar labels,
+code surfaces and diff cells. Markdown paragraphs fill their available measure;
+legacy page prose widths do not constrain a viewer. Code toolbar leading is
+20px, captions retain muted ink, Copy has 4px corners, and plain-text captions
+keep the source's `text` label. Diff headings use the 600 strong weight.
+Toast content is intrinsic-width with a trailing action; the action is 12px/18px
+medium and 32/44px high. Toast description ink is #3f3f3f/#e8e8e8.
+Native text/date focus keeps a 2px primary-accent outline with a 2px offset
+and the existing field shadow in both hosts. Native period focus retains its
+2px foreground outline; hover uses the shared accent wash.
 
 ## Phase B hosted screens (PR-6)
 
