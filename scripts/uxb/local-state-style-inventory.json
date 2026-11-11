@@ -1,0 +1,940 @@
+{
+  "cases": {
+    "local-after-sessions-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1
+    },
+    "local-after-sessions-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1
+    },
+    "local-after-sessions-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1
+    },
+    "local-after-sessions-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1
+    },
+    "local-after-sessions-peek-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-peek-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-peek-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-peek-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-sessions-peek-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-peek-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-peek-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-peek-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-sessions-peek-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-sessions-peek-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-sessions-peek-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-sessions-peek-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-session-detail-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-detail-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-detail-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-detail-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-detail-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-detail-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-detail-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-detail-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-detail-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-session-detail-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-session-detail-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-session-detail-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-session-timeline-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-timeline-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-timeline-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-timeline-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-timeline-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-timeline-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-timeline-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-timeline-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-timeline-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-session-timeline-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-session-timeline-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-session-timeline-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-session-json-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-json-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-json-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-json-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-session-json-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-json-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-json-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-json-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-session-json-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-session-json-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-session-json-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-session-json-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-analysis-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-analysis-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-analysis-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-analysis-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-analysis-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-analysis-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-analysis-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-analysis-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-analysis-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-analysis-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-analysis-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-analysis-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-flow-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-flow-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-flow-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-flow-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-flow-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-flow-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-flow-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-flow-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-flow-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-flow-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-flow-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-flow-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-heatmap-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-heatmap-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-heatmap-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-heatmap-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-heatmap-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-heatmap-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-heatmap-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-heatmap-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-heatmap-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-heatmap-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-heatmap-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-heatmap-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "local-after-workspaces-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspaces-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspaces-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspaces-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspaces-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspaces-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspaces-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspaces-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspaces-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-workspaces-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-workspaces-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-workspaces-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-workspace-peek-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-peek-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-peek-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-peek-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-peek-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-peek-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-peek-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-peek-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-peek-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-workspace-peek-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-workspace-peek-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-workspace-peek-empty-390-dark": {
+      ":scope": 1
+    },
+    "local-after-workspace-detail-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-detail-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-detail-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-detail-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "local-after-workspace-detail-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-detail-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-detail-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-detail-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "local-after-workspace-detail-empty-1440-light": {
+      ":scope": 1
+    },
+    "local-after-workspace-detail-empty-1440-dark": {
+      ":scope": 1
+    },
+    "local-after-workspace-detail-empty-390-light": {
+      ":scope": 1
+    },
+    "local-after-workspace-detail-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-sessions-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-sessions-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-sessions-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-sessions-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-sessions-peek-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-peek-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-peek-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-peek-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-sessions-peek-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-peek-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-peek-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-peek-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-sessions-peek-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-sessions-peek-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-sessions-peek-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-sessions-peek-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-detail-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-detail-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-detail-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-detail-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-detail-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-detail-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-detail-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-detail-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-detail-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-detail-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-detail-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-detail-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-timeline-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-timeline-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-timeline-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-timeline-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-timeline-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-timeline-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-timeline-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-timeline-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-timeline-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-timeline-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-timeline-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-timeline-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-json-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-json-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-json-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-json-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-session-json-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-json-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-json-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-json-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-session-json-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-json-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-session-json-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-session-json-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-flow-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-flow-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-flow-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-flow-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-flow-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-flow-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-flow-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-flow-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-flow-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-flow-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-flow-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-flow-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-heatmap-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-heatmap-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-heatmap-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-heatmap-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-heatmap-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-heatmap-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-heatmap-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-heatmap-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-heatmap-empty-1440-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-heatmap-empty-1440-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-heatmap-empty-390-light": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-heatmap-empty-390-dark": {
+      ".lf-empty": 1,
+      ".lf-empty__title": 1,
+      ".lf-empty__description": 1
+    },
+    "hosted-after-workspaces-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspaces-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspaces-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspaces-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspaces-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspaces-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspaces-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspaces-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspaces-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspaces-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-workspaces-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspaces-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-peek-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-peek-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-peek-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-peek-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-peek-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-peek-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-peek-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-peek-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-peek-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-peek-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-peek-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-peek-empty-390-dark": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-detail-loading-1440-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-detail-loading-1440-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-detail-loading-390-light": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-detail-loading-390-dark": {
+      ".lf-status-message[data-level=DEFAULT]": 1
+    },
+    "hosted-after-workspace-detail-error-1440-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-detail-error-1440-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-detail-error-390-light": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-detail-error-390-dark": {
+      ".lf-alert": 1,
+      ".lf-alert__title": 1,
+      ".lf-alert__description": 1
+    },
+    "hosted-after-workspace-detail-empty-1440-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-detail-empty-1440-dark": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-detail-empty-390-light": {
+      ":scope": 1
+    },
+    "hosted-after-workspace-detail-empty-390-dark": {
+      ":scope": 1
+    }
+  }
+}

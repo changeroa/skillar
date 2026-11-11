@@ -49,7 +49,9 @@ export function sessionsStyles() {
 .session-table-frame.lf-table-surface .session-table{table-layout:fixed}
 .session-table-frame.lf-table-surface .rowlink{height:var(--lf-control-height);min-height:var(--lf-control-height);font:inherit;color:inherit}
 .session-table-frame.lf-table-surface .session-table :is(th,td){padding:0 var(--lf-space-2)}
-.session-table-frame.lf-table-surface .session-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));font:var(--lf-weight-strong) var(--lf-text-sm)/1.5 var(--lf-font-sans)}
+.session-table-frame.lf-table-surface .session-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);border-color:var(--lf-border);font:var(--lf-weight-strong) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
+.sessions-console .page-title :is(h1,h2){border-color:var(--lf-border)}
+.session-table-frame.lf-table-surface .session-table th:first-child{padding-left:var(--lf-space-2)}
 .session-table-frame.lf-table-surface .lf-sort{line-height:1.5}
 .session-table-frame.lf-table-surface .session-table td{font:var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans)}
 .session-table-frame.lf-table-surface .rowlink>span{-webkit-line-clamp:1}

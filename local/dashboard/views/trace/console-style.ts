@@ -103,7 +103,7 @@ export function traceConsoleStyles() {
 .trace .json-line:not(summary){min-height:var(--lf-leading-xs);padding-block:0}
 .trace.pe-console summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding-block:calc((var(--lf-control-height) - var(--lf-leading-xs))/2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trace summary.json-line code{white-space:nowrap;overflow-wrap:normal}
-.trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
+.trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
 .trace :is(.json-value,.json-value-preview)[data-json-type=string]{color:var(--trace-json-string)}
 .trace .event-gantt-track{border-color:var(--lf-border)}
 .trace .trace-event-row{--trace-kind:var(--lf-observation-event);--trace-kind-line:var(--lf-observation-event-line)}

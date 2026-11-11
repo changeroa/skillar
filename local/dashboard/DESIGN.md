@@ -184,6 +184,11 @@ PR-7 complete-field parity correction: event row containers inherit the Demo's
 time/summary labels retain 12px/18px. Event rows and JSON parts use the shared
 border token even on zero-width sides. The owner 32/44px row height and visible
 keyboard ring remain the absolute sizing and focus contracts.
+Table headers use the Demo's 4px inset and 13px/20px strong text. Native single-box
+flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type with
+CardHeader's 16px inset; their height remains content-driven. Analysis segments
+use the measured Tree tab's 16px inline inset, 13px line box, 600 weight and 4px
+radius. Zero-width border sides still use the border token.
 
 The analysis screens reuse the P-E shell, controls, sheet and typography.
 The document owns vertical scrolling; charts and dense tables own labelled
