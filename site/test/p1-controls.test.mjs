@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { useState } from "preact/hooks";
 import { act, all, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
-const { Textarea, Avatar, Spinner, Toast, Combobox, MultiSelect, DateRangeInput, parseKstDateTime, formatKstDateTime,
+const { Textarea, Avatar, Spinner, Toast, Combobox, MultiSelect, DateRangeFields, DateRangeInput, parseKstDateTime, formatKstDateTime,
   MarkdownViewer, DiffViewer } = await loadViews(`
 export * from "./local/dashboard/foundation/controls/index.ts";
 export {parseKstDateTime,formatKstDateTime} from "./local/dashboard/foundation/controls/date-range.tsx";
@@ -65,6 +65,23 @@ test("DateRange retains an incomplete native edit until the user applies it", as
   await input(field, "");
   // Then
   assert.equal(field.value, "");
+});
+
+test("standalone date fields retain their style hook and exact text fallback", async t => {
+  // Given
+  const changes = [];
+  const { container } = await mount(t, DateRangeFields, {
+    value: { from: "2026-11-11T00:00:00.123", to: "" }, fromType: "text",
+    onChange: patch => changes.push(patch),
+  });
+  const fields = byTag(container, "input");
+  assert.equal(byTag(container, "fieldset").length, 0);
+  assert.ok(fields.every(field => field.getAttribute("data-date-range-field") === ""));
+  assert.equal(fields[0].value, "2026-11-11T00:00:00.123");
+  // When
+  await input(fields[1], "2026-11-12T00:00");
+  // Then
+  assert.deepEqual(changes, [{ to: "2026-11-12T00:00" }]);
 });
 
 test("DateRange rejects reversed endpoints without changing the caller range", async t => {

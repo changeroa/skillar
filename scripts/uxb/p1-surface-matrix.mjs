@@ -175,8 +175,8 @@ try {
           code: document.querySelectorAll(".lf-codeblock").length,
           nativeDates: document.querySelectorAll('input[type="datetime-local"]').length,
           dateBoxes: [...document.querySelectorAll('input[type="datetime-local"]')].map(node => {
-            const box = node.getBoundingClientRect();
-            return { top: box.top, bottom: box.bottom };
+            const box = node.getBoundingClientRect(), css = getComputedStyle(node);
+            return { top: box.top, bottom: box.bottom, fontSize: css.fontSize, padding: [css.paddingLeft, css.paddingRight] };
           }),
           url: location.href, assets: [...document.scripts].map(n => n.src).filter(Boolean),
           embedResources: performance.getEntriesByType("resource").map(n => n.name)
@@ -204,6 +204,9 @@ try {
         if (spec.action === "consent-backfill") {
           assert.equal(row.metrics.dateBoxes.length, 2);
           assert.ok(row.metrics.dateBoxes.every(box => box.top >= 44 && box.bottom <= row.metrics.height));
+          if (version === "after") for (const box of row.metrics.dateBoxes) {
+            assert.equal(box.fontSize, "13px"); assert.deepEqual(box.padding, ["12px", "12px"]);
+          }
         }
         if (version === "after") for (const target of row.metrics.owned) {
           const expected = width === 390 ? 44 : 32;

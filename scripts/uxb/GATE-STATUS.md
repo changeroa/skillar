@@ -13,7 +13,7 @@ Exact publication head, final-head CI and preview receipts: `publication.json`, 
 | 2 Screen comparison | PASS; independent review pending | 37 real hosted/local/hosted-embed surfaces, 296 before/after frames plus 296 actual scrolled-end frames; 148 Demo / before / after review rows and 12 genuine Demo contexts. PNG dimensions, freshness, actual end offsets and component presence are asserted. |
 | 3 Keyboard/ARIA | PASS | 14 trusted-key checks, 360 positive painted-focus checks plus 360 rejected missing-ring controls, 88 mutation/safety checks, and unchanged real-page runtime 36/36. Development gallery has its own origin; production gallery returns 404. |
 | 4 R1-R7 structure | PASS | 28 real-page structure profiles in `final-runtime/runtime/runtime.json`; all 296 surface rows check viewport, overflow and SVG namespaces. Real embeds assert four actual tabs, one selected source, mounted panel and no standalone palette. |
-| 5 Tests and builds | PASS with existing local exception | Site 488/488 and production build; local typecheck/build pass. Local suite 986/987: pre-existing immutable-baseline /tmp/h ENOTDIR only. Final-head clean CI is authoritative and recorded separately. |
+| 5 Tests and builds | PASS with existing local exception | Site 489/489 and production build; local typecheck/build pass. Local suite 986/987: pre-existing immutable-baseline /tmp/h ENOTDIR only. Final-head clean CI is authoritative and recorded separately. |
 | 6 License/release safety | PASS | `release-final/release.json`: matching root/site/local NOTICE, NOTICE in npm pack; 52 production artifacts and 181 package files exclude gallery/QA modules. |
 | 7 Deployment | PASS, preview only | Not deployed; deploy gated on owner. Only the `uxb-pr-8` Pages preview is authorized; exact head/URL/QA receipt is `preview.json`. No production deployment or merge. |
 
@@ -24,6 +24,8 @@ The draft is not independently approved or merge-ready. Lane-lead review and rec
 `p1-baseline-632.json` preserves the original 632 comparisons with 152 strict failures. `failure-classification.json` enumerates every component/state/surface/viewport/theme and original field difference: Textarea 8, Combobox 32, MultiSelect 24, MarkdownViewer 24, CodeBlock 24, DiffViewer 16, DateRangeInput 16 and TimePeriodSelect 8. All 152 had setup mismatches; 124 also had real product differences. No mismatch is waived.
 
 References now have equivalent props, content, closed-control anatomy and available widths. Product fixes include selection wrappers and states, native date typography, closed period indicator, copy toolbar/corner placement, escaped HTML flow, the actual empty-diff state and legacy viewer CSS leakage. Additional leaf-paint audit corrected Switch thumbs, Radio dots, Avatar fallback/image border tokens and loaded-image fallback removal. Spinner defaults inherit foreground, matching the actual omitted source variant; all eight sizes, three tones and both block/inline displays are covered (48 states).
+
+Final real-screen review found standalone DateRangeFields missed the DateRangeInput wrapper's typography/inset rule: consent inherited generic 24px insets and 12px monospace, clipping the native time placeholder. The shared style is now attached to each date field's own marker, preserving the same 13px sans/12px insets both inside and outside DateRangeInput. Caller nesting, parsing, values and exact-millisecond fallback are unchanged; the actual backfill consumer asserts this style in all four profiles.
 
 The style reader checks 27 independent fields, every edge border, root/SVG descendant paint, effective ancestor opacity, visibility and Switch/Radio/Avatar leaf style/relative geometry. Upstream geometry tolerance is unchanged; owner width/height policy is absolute to 0.01px. Raw pixel diffs have no masks or scaling. Transparent or zero-area shadows are normalized only when they paint nothing; nonzero shadow offsets remain failures.
 
@@ -170,10 +172,10 @@ Mock-only grant creation/download controls and consent selections never issue re
 
 ## Verification commands and remaining scope
 
-- `cd site && npm test && npm run build`: 488 tests and build pass.
+- `cd site && npm test && npm run build`: 489 tests and build pass.
 - `cd local && npm run typecheck` and `npm run build`: pass.
 - `cd local && npm test`: 986/987; unchanged `test/cli-init.test.mjs:159` fails with `ENOTDIR: /tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist`, reproduced on immutable baseline. Neither test nor /tmp/h was modified.
-- Targeted control/style regression tests: 27/27. Previously run sync-performance 1/1 and changed trace regressions 15/15 are retained, not rerun as new evidence.
+- Control/style regressions are included in the full site run. Standalone DateRangeFields retain their machine-consumed style hook outside DateRangeInput and preserve exact text fallbacks; real consumer checks assert 13px type and 12px horizontal insets. Previously run sync-performance 1/1 and changed trace regressions 15/15 are retained, not rerun as new evidence.
 - `p1-runtime.mjs` runs the unchanged PR-6 36-check driver with only out/base/file-URL import configuration, and a separate development gallery. Template SHA256: `834ea84a1823e2f40d63c835d5fa8cc147a614b932d8b69d9284f08c0181967f`.
 - TSX LSP diagnostics are clean; MJS TypeScript initialization and CSS Biome tooling are unavailable. Actual compilers, script syntax checks and CI are the executed evidence.
 

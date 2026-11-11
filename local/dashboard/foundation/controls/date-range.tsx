@@ -36,9 +36,9 @@ export function DateRangeFields({ value, onChange, disabled, fromLabel = "시작
   const id = useId();
   const precision = step === undefined ? {} : { step };
   return <>
-    <Input id={`${id}-from`} label={fromLabel} type={fromType} icon={false} disabled={disabled} {...precision}
+    <Input id={`${id}-from`} label={fromLabel} type={fromType} data-date-range-field="" icon={false} disabled={disabled} {...precision}
       value={value.from} onInput={event => onChange({ from: event.currentTarget.value })} />
-    <Input id={`${id}-to`} label={toLabel} type={toType} icon={false} disabled={disabled} {...precision}
+    <Input id={`${id}-to`} label={toLabel} type={toType} data-date-range-field="" icon={false} disabled={disabled} {...precision}
       value={value.to} onInput={event => onChange({ to: event.currentTarget.value })} />
   </>;
 }
