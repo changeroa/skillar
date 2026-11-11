@@ -189,6 +189,10 @@ flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type wit
 CardHeader's 16px inset; their height remains content-driven. Analysis segments
 use the measured Tree tab's 16px inline inset, 13px line box, 600 weight and 4px
 radius. Zero-width border sides still use the border token.
+Analysis segments retain the native 2px outward keyboard outline. Shared outline
+buttons retain their source inset 2px shadow, with console muted-foreground ink
+for contrast. The console suppresses the hosted site's additional global button
+outline, so local and embedded buttons have the same single indicator.
 Trace Tree/Timeline choices use the measured segmented Tabs primitive, including
 the existing disabled Graph choice; no graph or parentage data is invented.
 Timeline rows share Tree's zero-border container recipe. Native JSON summaries

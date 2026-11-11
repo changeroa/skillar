@@ -14,7 +14,29 @@ const source = JSON.parse(await readFile(`${root}/cert-source.json`, "utf8")).re
 const stateSource = JSON.parse(await readFile(`${root}/state-references.json`, "utf8")).results;
 const tabSource = JSON.parse(await readFile(`${root}/tab-style-source.json`, "utf8"));
 const graphSource = JSON.parse(await readFile(`${root}/graph-disabled-source.json`, "utf8"));
+const sortSource = JSON.parse(await readFile(`${root}/sort-style-source.json`, "utf8"));
+const buttonSource = JSON.parse(await readFile(process.argv[3], "utf8"));
+function buttonReference(theme, width, state) {
+  const record = buttonSource.find(r => r.id === `secondary-${state}-${theme}-${width}`);
+  assert.ok(record?.reference, "Missing real Demo outline button state");
+  const styles = {};
+  for (const field of componentStyleFields) {
+    const value = field === "borderRadius" ? record.reference.borderTopLeftRadius : record.reference[field];
+    styles[field] = Array.isArray(value) ? `rgba(${value.slice(0, 3).join(",")},${value[3] / 255})` :
+      typeof value === "number" ? `${value}${field === "fontWeight" ? "" : "px"}` : value;
+  }
+  styles.boxShadow = "none";
+  return { styles, provenance: record.provenance, url: record.url };
+}
 const specs = [
+  { component: "AnalysisSegments", screen: "flow", selector: ':is(.seg__btn,.seg__b)[aria-pressed=false]',
+    source: "tab", states: ["default", "hover", "focus-visible", "active"] },
+  { component: "AnalysisSegments", screen: "flow", selector: ':is(.seg__btn,.seg__b)[aria-pressed=true]',
+    source: "tab", states: ["selected"] },
+  { component: "AnalysisToolbar", screen: "flow", selector: ".analysis-toolbar .lf-button--outline",
+    source: "button", states: ["default", "hover", "focus-visible", "active"] },
+  { component: "SessionSort", screen: "sessions", selector: ".session-table .lf-table-sort",
+    source: "sort", desktop: true, states: ["default", "hover", "focus-visible", "active"] },
   { component: "Tree", screen: "session-detail", selector: '[role=treeitem][aria-selected=false]', source: "tree-default",
     states: ["default", "hover", "focus-visible", "active"] },
   { component: "Tree", screen: "session-detail", selector: '[role=treeitem][aria-selected=true]', source: "tree-selected", states: ["selected"] },
@@ -69,10 +91,12 @@ try {
   for (const theme of ["light", "dark"])
   for (const spec of specs)
   for (const state of spec.states) {
+    if (spec.desktop && width === 390) continue;
     const id = `${kind}-${spec.component}-${state}-${width}-${theme}`;
     expectedCases.push(id);
-    await loadSurface(page, { kind, screen: screens.find(s => s.name === spec.screen), width, theme });
-    await ready(page, `.trace :is(${spec.selector})`);
+    const screen = screens.find(s => s.name === spec.screen);
+    await loadSurface(page, { kind, screen, width, theme });
+    await ready(page, `${screen.scope} :is(${spec.selector})`);
     const selector = `[data-full-style-target]`;
     const point = await page.evaluate(selector => {
       const node = [...document.querySelectorAll(selector)].find(n => n.checkVisibility());
@@ -85,7 +109,7 @@ try {
       document.head.append(css);
       const r = node.getBoundingClientRect();
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-    }, `.trace :is(${spec.selector})`);
+    }, `${screen.scope} :is(${spec.selector})`);
     await page.mouse.move(0, 0);
     await page.evaluate(() => document.activeElement?.blur());
     if (state === "focus-visible") {
@@ -103,7 +127,10 @@ try {
       await page.evaluate(() => document.activeElement?.blur());
     }
     const refs = Object.assign({}, ...source.filter(r => r.width === width && r.theme === theme && r.position === "top").map(r => r.parts));
-    const record = spec.component === "EventViewTabs" ? (state === "selected" ? tabSource : graphSource).find(r => r.theme === theme) :
+    const record = spec.source === "button" ? buttonReference(theme, width, state) :
+      spec.source === "sort" ? sortSource.find(r => r.theme === theme && r.width === width) :
+      spec.component === "AnalysisSegments" ? tabSource.find(r => r.theme === theme) :
+      spec.component === "EventViewTabs" ? (state === "selected" ? tabSource : graphSource).find(r => r.theme === theme) :
       state === "hover" && spec.component !== "JsonViewer" ?
       stateSource.find(r => r.id === `tree-hover-${width}-${theme}`)?.parts[0] : refs[spec.source];
     assert.ok(record, `${id}: missing source`);
@@ -117,9 +144,13 @@ try {
             paddingBottom: `${((width === 390 ? 44 : 32) - 18) / 2}px` });
         }
         const focus = state === "focus-visible";
-        if (focus) {
+        if (focus && component === "AnalysisToolbar") {
+          expected.boxShadow = [{ color: theme === "light" ? [113,113,122,255] : [138,138,138,255],
+            lengths: [0,0,0,2], inset: true }];
+        } else if (focus) {
           const ink = normalize({ ...reference.styles, outlineStyle: "solid", outlineWidth: "2px",
-            outlineOffset: "-2px", outlineColor: theme === "light" ? "rgb(113,113,122)" : "rgb(138,138,138)" }, expected.height);
+            outlineOffset: component === "AnalysisSegments" ? "2px" : "-2px",
+            outlineColor: theme === "light" ? "rgb(113,113,122)" : "rgb(138,138,138)" }, expected.height);
           for (const field of fields.filter(f => f.startsWith("outline"))) expected[field] = ink[field];
         }
         const read = () => normalize(getComputedStyle(node), node.computedStyleMap().get("height").toString());
@@ -180,6 +211,7 @@ try {
   await tabs.closeAll(); await browser.close();
 }
 assert.deepEqual(records.map(r => r.id), expectedCases);
+assert.equal(records.length, 264);
 console.log(`INTERACTION_STYLE_COMPLETE cases=${records.length} failures=${records.filter(r => !r.passed).length}`);
 assert.ok(records.every(r => r.passed), JSON.stringify(records.filter(r => !r.passed).map(r => ({ id: r.id,
   differences: r.measurements.filter(m => !m.pass), state: r.stateObserved, painted: r.painted }))));

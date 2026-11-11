@@ -242,7 +242,7 @@ With the production local/hosted surface harness running on 5184:
 ```sh
 node scripts/uxb/local-full-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
 node scripts/uxb/local-nonready-style.mjs "$PR7_EVIDENCE"
-node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE"
+node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
 ```
 
 These commands require `OMOWRIGHT_HELPER` and the source records/real-surface
@@ -257,6 +257,9 @@ non-paint, not tolerated painted differences.
 
 Tree, Timeline, JSON disclosure and view-tab states are driven through real
 hover, keyboard focus, pointer press, selection, disablement and collapse/expand.
+The fixed 264-case interaction matrix also checks analysis segments, analysis
+toolbar outline buttons and desktop session sorting controls. Phone session
+lists ship cards rather than sortable table headers; their absence is explicit.
 Loading/error/empty use the real product API boundary. Every field has a
 corruption probe, and removal uses the same missing-observation predicate.
 Focus raster probes cover fractional origins at DPR 1 and 3 and reject both
