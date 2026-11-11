@@ -1,3 +1,36 @@
+@import "../../local/dashboard/foundation/controls/controls.css";
+
+.landing-route {
+  --bg: var(--lf-background); --surface: var(--lf-muted);
+  --ink: var(--lf-foreground); --muted: var(--lf-foreground-secondary);
+  --border: var(--lf-border-contrast); --rule: var(--lf-border);
+  --code-bg: var(--lf-surface-code); --code-ink: var(--lf-foreground);
+  --code-muted: var(--lf-muted-foreground); --radius: var(--lf-radius-lg);
+  --ui: var(--lf-text-lg); --small: var(--lf-text-base); --subhead: var(--lf-text-2xl);
+  --s1: var(--lf-space-2); --s2: var(--lf-space-3); --s3: var(--lf-space-4);
+  --s4: var(--lf-space-6); --s5: var(--lf-space-8);
+  --s6: var(--lf-space-12); --s7: var(--lf-space-16);
+  --lf-primary: var(--accent); --lf-primary-foreground: var(--on-accent);
+  color: var(--ink); background: var(--bg);
+}
+.landing-route .lf-button { text-decoration: none; }
+.landing-route nav {
+  min-height: calc(var(--small) * 1.65 + var(--s2) * 2); align-items: center;
+}
+.landing-route .lf-button--primary:active {
+  background: color-mix(in oklab, var(--lf-primary) 80%, transparent);
+}
+.landing-route .lf-link {
+  display: inline-flex; align-items: center;
+  height: var(--lf-control-height); min-height: var(--lf-control-height);
+  padding: 0; text-underline-offset: var(--lf-space-1);
+}
+.landing-route .lf-link:hover { text-decoration-thickness: auto; }
+.docs-links { --lf-muted-foreground: var(--lf-foreground-secondary); }
+.landing-route .lf-button:focus-visible, .landing-route .lf-link:focus-visible {
+  outline: var(--lf-focus-width) solid var(--accent);
+  outline-offset: var(--lf-focus-offset); box-shadow: none;
+}
 .trace-hero { display: grid; gap: var(--s5); padding-block: var(--s6) var(--s7); }
 .trace-hero__copy { max-width: 1100px; }
 .trace-category { color: var(--muted); font-size: var(--small); margin-bottom: var(--s3); }
