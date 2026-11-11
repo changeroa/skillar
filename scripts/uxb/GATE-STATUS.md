@@ -1,3 +1,73 @@
+# PR-7 takeover verification after the 6bf20ff review
+
+PR: https://github.com/changeroa/skillar/pull/106
+
+Rebased onto merged PR-6 `b8b1d62100b7fcdf552494bb97ca5910f9475a18`.
+The checkpoint `557c42d` contains the verified product and validator corrections.
+The historical ledgers below are preserved; their old PR-7 counts are not current approvals.
+
+Completed machine evidence:
+
+- Ready source fields: 84 cases, 46,464 exact field comparisons and 46,464 rejected field corruptions, with every visible required target counted.
+- Interaction source fields: 264 cases, 5,808 comparisons and 5,808 rejected field corruptions; 264 actual target removals fail; eight fractional-origin/DPR/scroll focus corruptions fail.
+- Ready fixed paint/source comparisons: 84 cases, 32,980 normal measurements and 119,250 rejected real DOM paint/type corruptions.
+- Loading/error/empty: 504 before/after cases; 252 after cases provide 10,368 source-style comparisons, 9,504 rejected style corruptions, 6,720 fixed painted parts and 46,150 rejected paint corruptions. All 1,008 state frames contain visible native text.
+- Local typecheck and both production builds pass. Site tests pass 497/497. Local tests pass 997/998 with the unchanged pre-existing `/tmp/h` ENOTDIR; standalone performance passes 1/1.
+- Release scan: local dist 134 files, hosted dist 52, dry-run pack 174; 94 local and 290 hosted contributing modules, zero forbidden fixture/gallery/reference imports, equal NOTICE copies.
+
+The remaining final screen/keyboard/focus/structural/widget/JSON/board and exact-head CI receipts are recorded by the final takeover audit, not inferred from these completed milestones. Independent review remains lead-owned.
+
+## Conflict decisions
+
+- `api.ts`: retain the merged `configureApi` disposal contract and guard fixture imports themselves against production emission; exactly one exported API binding.
+- `focus-paint.mjs`: retain native Select wrapper ownership and the real checkbox proxy only when present; preserve merged sizing/focus contracts. Fractional-pixel capture is corrected using document clip coordinates, actual viewport capture and CSS-pixel centres. The unchanged predicate rejects 1px and white rings at DPR 1/3 and scroll 0/53.
+- `GATE-STATUS.md`: preserve the complete merged PR-6 ledger and historical PR-7 evidence; the takeover section supersedes failed old counts.
+
+## Individually bounded pinned-MIT states
+
+Source: `69181812b87169df157841fce1314ec96ecd2c5a`. All entries are actual pinned MIT renders, not Demo captures or hand-built substitutes. Read-only route evidence is in `source-state-reachability.md`, `cert-source.json`, `state-references.json` and `source-loading.json`. Available Demo components remain the primary reference. The unused ghost-capture exploration is not included in passing evidence.
+
+| Exact state ID | Checked read-only routes | Reason for isolated reference |
+| --- | --- | --- |
+| `mit-Alert-error-1440-light` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-1440-light` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-1440-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-1440-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-1440-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Button-disabled-1440-light` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
+| `mit-Alert-error-1440-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-1440-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-1440-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-1440-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-1440-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Button-disabled-1440-dark` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
+| `mit-Alert-error-390-light` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-390-light` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-390-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-390-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-390-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Button-disabled-390-light` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
+| `mit-Alert-error-390-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-390-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-390-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-390-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-390-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Button-disabled-390-dark` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
+
+## Environment findings
+
+The local suite has one pre-existing ENOTDIR because `/tmp/h` is a regular file. Neither that file nor the failing test was changed. The standalone performance test passes separately.
+
+The evidence proxy previously left upstream SSE fetches open after page navigation. Its 256-request fetch pool became saturated (518 TCP descriptors including both sides), while a direct internal backend still returned HTTP 200. Propagating the downstream request abort signal cancels abandoned upstream streams. This was a fixture-server failure, not a frozen Chrome session or a product failure.
+
+Independent gate review remains lead-owned; this lane provides implementer evidence and does not self-approve the PR.
+
+
+---
 # PR-6 hosted screens
 
 Draft PR: https://github.com/changeroa/skillar/pull/105
