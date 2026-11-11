@@ -24,6 +24,10 @@ inactive ink; selection uses foreground ink and the existing check indicator.
 Desktop selected/held triggers use the source primary dark ink; phone triggers
 use the source underline variant's muted inactive and foreground selected ink.
 Native analysis table headers retain the source background token.
+Native analysis segments and event tabs retain manual keyboard activation.
+Focus keeps the real inactive ink/background and the owner's neutral focus
+indicator; pointer-active and selected paint use their separately measured
+source states. Source records retain the actual focus/activation observations.
 Native event tabs retain the inset selected indicator on phones. Its real
 desktop selected-state reference supplies the background and shadow:
 `--trace-tab-indicator-shadow` is `0 1px 3px 0 rgb(0 0 0 / 10%)`,
