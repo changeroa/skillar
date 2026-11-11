@@ -41,7 +41,7 @@ The 32px mouse/44px touch owner policy, WAI-ARIA behavior and visible painted fo
 Pinned source SHA: `69181812b87169df157841fce1314ec96ecd2c5a`.
 `mit-entry.tsx`, `build-mit.mjs`, `mit-provenance.json` render actual MIT components, not product components. The 3,088-input build excludes enterprise paths. Sonner 2.0.7 supplies the actual Toaster runtime; product code contains only attributed status SVG/loading mechanisms and a Preact implementation. Reference font bytes are original retained IBM Plex Mono, with provenance/hash in the reference metadata, not product CSS used as expected values.
 
-The owner-approved PR-8 amendment replaces the former whole-component stop. Textarea, Radio, Spinner, Toast and Avatar have no whole-family read-only capture in the inspected routes; actual pinned-MIT renders are labelled. No error, write, create/edit, settings or account action was induced on the Demo. A copy-success check glyph was not relabelled as Toast.
+The owner-approved PR-8 amendment replaces the former whole-component stop. Textarea, Radio and Toast have no whole-family read-only capture in the inspected routes; actual pinned-MIT renders are labelled. Fresh mobile contexts show a profile avatar, and the loaded Home context includes a chart loading glyph. Their equivalence to the pinned Avatar/Spinner components has not been audited, so those families are not certified as unreachable and their reference reconciliation remains part of G1 FAIL. No error, write, create/edit, settings or account action was induced on the Demo. A copy-success check glyph was not relabelled as Toast.
 
 Routes inspected under `https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`:
 
