@@ -28,7 +28,8 @@ export function Avatar({ displayName, email, src, size = "lg", shape = "circle",
   readonly displayName: string; readonly email?: string; readonly src?: string;
   readonly size?: "sm" | "md" | "lg"; readonly shape?: "circle" | "rounded"; readonly tone?: "muted" | "tinted";
 }) {
-  const [failedSource, setFailedSource] = useState<string>();
+  const [image, setImage] = useState<{ readonly src: string; readonly status: "loaded" | "failed" }>();
+  const status = image && image.src === src ? image.status : "loading";
   const tooltipId = useId();
   const name = displayName.trim() || email?.trim() || "User";
   const initials = name.split(/\s+/).slice(0, 2).map(word => word.charAt(0)).join("").toUpperCase();
@@ -38,7 +39,8 @@ export function Avatar({ displayName, email, src, size = "lg", shape = "circle",
   const color = (["blue", "green", "yellow", "violet"] as const)[hash % 4] ?? "blue";
   return <Tooltip id={tooltipId} content={email && email.toLowerCase() !== name.toLowerCase() ? `${name}\n${email}` : name} size="content"><span role="img" aria-label={accessible}
     class={`lf-avatar lf-avatar--${size} lf-avatar--${shape}`} data-tone={tone === "tinted" ? color : "muted"}>
-    <span aria-hidden="true">{initials}</span>
-    {src && src !== failedSource && <img src={src} alt="" referrerpolicy="no-referrer" onError={() => setFailedSource(src)} />}
+    {status !== "loaded" && <span aria-hidden="true">{initials}</span>}
+    {src && status !== "failed" && <img src={src} alt="" referrerpolicy="no-referrer"
+      onLoad={() => setImage({ src, status: "loaded" })} onError={() => setImage({ src, status: "failed" })} />}
   </span></Tooltip>;
 }

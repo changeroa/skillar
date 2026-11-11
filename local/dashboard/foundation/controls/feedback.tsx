@@ -1,7 +1,7 @@
 import { Button } from "./buttons";
 import { ToastIcon, ToastLoading } from "./toast-icon";
 
-export function Spinner({ label = "불러오는 중", size = "sm", variant = "primary", display = "block", decorative = false }: {
+export function Spinner({ label = "불러오는 중", size = "sm", variant = "inherit", display = "block", decorative = false }: {
   readonly label?: string; readonly size?: "xxs" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl" | "full";
   readonly variant?: "primary" | "muted" | "inherit"; readonly display?: "block" | "inline"; readonly decorative?: boolean;
 }) {

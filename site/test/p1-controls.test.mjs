@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { useState } from "preact/hooks";
 import { act, all, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
-const { Textarea, Avatar, Toast, Combobox, MultiSelect, DateRangeInput, parseKstDateTime, formatKstDateTime,
+const { Textarea, Avatar, Spinner, Toast, Combobox, MultiSelect, DateRangeInput, parseKstDateTime, formatKstDateTime,
   MarkdownViewer, DiffViewer } = await loadViews(`
 export * from "./local/dashboard/foundation/controls/index.ts";
 export {parseKstDateTime,formatKstDateTime} from "./local/dashboard/foundation/controls/date-range.tsx";
@@ -118,6 +118,24 @@ test("Toast updates its persistent polite region without moving focus", async t 
   assert.equal(region.getAttribute("aria-live"), "polite");
   assert.equal(region.getAttribute("aria-atomic"), "true");
   assert.equal(api.dom.activeElement, focused);
+});
+
+test("Spinner inherits its caller foreground and supports inline layout", async t => {
+  const { container } = await mount(t, Spinner, { display: "inline" });
+  const status = all(container, node => node.getAttribute("role") === "status")[0];
+  assert.ok(status.getAttribute("class").includes("lf-loading--inherit"));
+  assert.ok(status.getAttribute("class").includes("lf-loading--inline"));
+});
+
+test("Avatar removes the fallback when the image loads", async t => {
+  const { container } = await mount(t, Avatar, { displayName: "Demo User", src: "/avatar.png" });
+  const image = byTag(container, "img")[0];
+  const eventType = image.listeners.find(listener => listener.type.toLowerCase() === "load").type;
+  await act(() => image.dispatchEvent(new FakeEvent(eventType)));
+  const avatar = all(container, node => node.getAttribute("role") === "img")[0];
+  assert.equal(avatar.textContent, "");
+  assert.equal(avatar.getAttribute("aria-label"), "Demo User");
+  assert.equal(byTag(container, "img").length, 1);
 });
 
 test("Avatar shows initials again when an image fails", async t => {
