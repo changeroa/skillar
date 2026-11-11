@@ -16,10 +16,16 @@ for (const field of metricFields) test(`landing comparator rejects a changed ${f
   // Given a source-aligned control with one independently corrupted metric.
   const actual = structuredClone(reference);
   const value = actual[field];
-  actual[field] = typeof value === "number" ? value + 2 : typeof value === "boolean" ? !value :
-    typeof value === "string" ? `${value}-corrupt` : field === "outlineColor" ? [1, 2, 3, 255] : [1];
+  const colorMutation = colorFields.includes(field) || field === "outlineColor";
+  actual[field] = colorMutation ? [1, 2, 3, 255] :
+    typeof value === "number" ? value + 2 : typeof value === "boolean" ? !value :
+      typeof value === "string" ? `${value}-corrupt` : [1];
   // When / Then the real acceptance predicate must reject the corruption.
-  assert.throws(() => assertLandingControl(actual, reference, policy));
+  assert.throws(() => assertLandingControl(actual, reference, policy), colorMutation ? {
+    name: "AssertionError",
+    actual: [{ property: field, expected: value, actual: [1, 2, 3, 255] }],
+    expected: [],
+  } : undefined);
 });
 
 test("upstream and product agreement cannot override absolute touch height", () => {
