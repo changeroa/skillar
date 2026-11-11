@@ -27,7 +27,9 @@ export function MarkdownViewer({ text }: { readonly text: string }) {
     }
     const paragraph = [line];
     while (index < lines.length && lines[index]?.trim() && !/^(?:#{1,6}\s|```|[-*]\s|\d+\.\s)/.test(lines[index] ?? "")) paragraph.push(lines[index++] ?? "");
-    blocks.push(h("p", { key }, paragraph.join("\n")));
+    // Match the upstream renderer's literal HTML text without creating an HTML
+    // parser or giving its source tags paragraph semantics.
+    blocks.push(line.trimStart().startsWith("<") ? `${paragraph.join("\n")}\n` : h("p", { key }, paragraph.join("\n")));
   }
   return <div class="lf-markdown">{blocks}</div>;
 }

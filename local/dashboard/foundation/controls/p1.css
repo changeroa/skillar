@@ -2,7 +2,7 @@
 @import "../viewers/viewers.css";
 .lf-time-period .lf-select-wrap:has(select:focus-visible) { outline: var(--lf-focus-width) solid var(--lf-foreground); outline-offset: var(--lf-focus-offset); box-shadow: none; }
 .lf-time-period .lf-select-wrap { padding: var(--lf-space-1) var(--lf-space-2); border-color: var(--lf-border-contrast); }
-.lf-time-period .lf-select-wrap > .lf-control-icon { width: var(--lf-text-xs); height: var(--lf-text-xs); }
+.lf-time-period .lf-select-wrap > svg { width: var(--lf-text-xs); height: var(--lf-text-xs); }
 .lf-textarea, .lf-combobox__control { box-sizing: border-box; width: 100%; min-width: 0; border: var(--lf-border-width) solid var(--lf-input); border-radius: var(--lf-radius-md); padding: var(--lf-space-2) var(--lf-space-3); color: var(--lf-foreground); background: var(--lf-background); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-textarea { min-height: 80px; resize: vertical; }
 .lf-textarea--code { font-family: var(--lf-font-mono); }

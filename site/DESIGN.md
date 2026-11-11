@@ -79,6 +79,14 @@ Every focusable part retains a contrasting painted 2px primary-accent ring.
 Native date fields use the same 13px/20px sans and 8px/12px insets as the
 pinned time fields. Read-only code puts Copy at the upper trailing corner
 with 40px trailing content inset, keeping its immutable-field surface.
+Code toolbar Copy targets are 32/44px; compared with the source's 26px
+language label and 24px action, the resulting toolbar grows by 6/18px.
+Diffs retain Skillar's line numbers and change signs in normal text flow.
+The narrow MIT comparison receives the same visible line-number/sign prefix
+as input so its text and wrapping geometry are equivalent.
+An empty diff uses the pinned plain 13px/20px muted empty message.
+Raw HTML blocks remain escaped text nodes with the source renderer's plain
+text flow; they never become DOM elements or acquire paragraph spacing.
 No decorative transitions or new dependency are needed. Native date surfaces
 are an explicit owner-native adaptation. No new accessibility debt is accepted.
 

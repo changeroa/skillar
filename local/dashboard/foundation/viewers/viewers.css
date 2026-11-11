@@ -32,7 +32,7 @@
 .lf-codeblock pre:focus-visible, .lf-diff-scroll:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--lf-focus-width) var(--lf-primary-accent); }
 .lf-diff-scroll { overflow-x: auto; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg); background: var(--lf-card); color: var(--lf-card-foreground); box-shadow: var(--lf-widget-shadow); font-size: var(--lf-text-lg); line-height: var(--lf-icon-leading); }
 .lf-diff-scroll .lf-diff { list-style: none; margin: 0; padding: 0; border: 0; border-radius: 0; }
-.lf-diff-scroll .lf-diff > li { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); padding: 0; border: 0; color: var(--lf-card-foreground); background: transparent; font: var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-mono); }
+.lf-diff-scroll .lf-diff > li { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0; padding: 0; border: 0; color: var(--lf-card-foreground); background: transparent; font: var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-mono); }
 .lf-diff > li > div, .lf-diff__head > span { min-width: 0; padding: var(--lf-space-1) var(--lf-space-4); }
 .lf-diff > li > div:first-child, .lf-diff__head > span:first-child { border-right: var(--lf-border-width) solid var(--lf-border); }
 .lf-diff__head { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); background: var(--lf-muted); font: var(--lf-weight-bold) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans); }
@@ -40,6 +40,6 @@
 .lf-diff-scroll .lf-diff > li > [data-change="added"] { background: color-mix(in oklab, var(--lf-diff-added) 10%, transparent); }
 .lf-diff-scroll .lf-diff > li > [data-change="removed"] { background: color-mix(in oklab, var(--lf-destructive) 10%, transparent); }
 .lf-diff code { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; background: transparent; border: 0; color: inherit; }
-.lf-diff .diff-line-number { padding-inline-end: var(--lf-space-1); color: var(--lf-muted-foreground); }
-.lf-diff > li > div { position: relative; }
-.lf-diff__sign { position: absolute; inset-inline-start: var(--lf-space-1); }
+.lf-diff .diff-line-number { color: var(--lf-muted-foreground); }
+.lf-diff-scroll.lf-diff-empty { border: 0 solid var(--lf-border); border-radius: 0; background: transparent; box-shadow: none; color: var(--lf-icon-foreground); font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
+.lf-diff-empty:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--lf-focus-width) var(--lf-primary-accent); }

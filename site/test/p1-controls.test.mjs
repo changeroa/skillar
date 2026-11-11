@@ -18,6 +18,16 @@ test("Markdown preserves hostile HTML and URLs as literal text", async t => {
   assert.ok(container.textContent.includes(text.split("\n\n")[0]));
 });
 
+test("empty diffs expose a named region without fabricated comparison rows", async t => {
+  // Given
+  const rows = [];
+  // When
+  const { container } = await mount(t, DiffViewer, { rows });
+  // Then
+  assert.equal(byTag(container, "ol").length, 0);
+  assert.equal(all(container, node => node.getAttribute("role") === "region").length, 1);
+});
+
 test("fenced Markdown code retains exact escaped content", async t => {
   // Given
   const value = '<script>alert("x")</script>\n  indented';

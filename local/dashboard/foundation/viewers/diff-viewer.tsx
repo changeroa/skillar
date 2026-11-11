@@ -29,17 +29,18 @@ function pairedRows(rows: readonly DiffRow[]) {
 export function DiffViewer({ rows, label = "SKILL.md 줄별 변경점" }: {
   readonly rows: readonly DiffRow[]; readonly label?: string;
 }) {
+  if (rows.length === 0) return <div class="lf-diff-scroll lf-diff-empty" tabIndex={0} role="region" aria-label={label}>변경 없음</div>;
   return <div class="lf-diff-scroll" tabIndex={0} role="region" aria-label={label}>
     <div class="lf-diff__head"><span>이전 내용</span><span>이후 내용</span></div>
     <ol class="diff-lines lf-diff" aria-label={label}>{pairedRows(rows).map((pair, index) =>
       <li key={index} data-change={pair.before?.kind === "same" ? "same" : pair.before && pair.after ? "changed" : pair.before ? "removed" : "added"}>
         <div data-side="before" data-change={pair.before?.kind}>
-          <span class="diff-line-number">{pair.before?.before ?? "\u00b7"}</span>
-          {pair.before && <><span class="lf-diff__sign" aria-label={labels[pair.before.kind]}>{signs[pair.before.kind]}</span><code>{pair.before.text}</code></>}
+          <span class="diff-line-number">{pair.before?.before ?? "\u00b7"}</span>{" "}
+          {pair.before && <><span aria-label={labels[pair.before.kind]}>{signs[pair.before.kind]}</span>{" "}<code>{pair.before.text}</code></>}
         </div>
         <div data-side="after" data-change={pair.after?.kind}>
-          <span class="diff-line-number">{pair.after?.after ?? "\u00b7"}</span>
-          {pair.after && <><span class="lf-diff__sign" aria-label={labels[pair.after.kind]}>{signs[pair.after.kind]}</span><code>{pair.after.text}</code></>}
+          <span class="diff-line-number">{pair.after?.after ?? "\u00b7"}</span>{" "}
+          {pair.after && <><span aria-label={labels[pair.after.kind]}>{signs[pair.after.kind]}</span>{" "}<code>{pair.after.text}</code></>}
         </div>
       </li>)}</ol>
   </div>;
