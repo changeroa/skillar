@@ -82,15 +82,20 @@ export function traceConsoleStyles() {
 .trace .tl__args summary{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0}
 .trace-summary__reads .pe-pill{border-radius:var(--lf-radius-sm);border-color:var(--lf-border);background:var(--lf-muted);color:var(--lf-foreground)}
 .trace .trace-event-row{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0;gap:var(--lf-space-2);background:var(--lf-background);border-color:var(--lf-border);font:var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-space-6) var(--lf-font-sans);color:var(--lf-foreground)}
-.trace .trace-event-row:hover{background:var(--lf-accent)}
+@media(hover:hover){.trace .trace-event-row:hover{background:var(--lf-accent)}}
 .trace .trace-event-row__kind{font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
 .trace .trace-event-row>.pe-icon{width:var(--trace-icon-size);height:var(--trace-icon-size);color:var(--trace-kind-line)}
 .trace :is([role=treeitem],[role=gridcell]){border:0;border-color:var(--lf-border)}
 .trace .event-console__tabs>[role=tab]{border-color:var(--lf-border)}
+.trace .event-console__tabs>[aria-selected=true]::before{box-shadow:var(--trace-tab-indicator-shadow)}
+.trace .event-console__tabs>[role=tab]:active{color:light-dark(var(--lf-foreground),var(--lf-primary))}
+@media(max-width:768px){.trace .event-console__tabs>[role=tab][aria-selected=false]:not(:active){color:var(--lf-muted-foreground)}.trace .event-console__tabs>[role=tab]:is(:active,[aria-selected=true]){color:var(--lf-foreground)}}
 .trace :is(.trace-event-row__kind,.trace-event-row__summary,.trace-event-row time,.json-line code,.json-value,.json-value-preview){border-color:var(--lf-border)}
 .trace :is(.trace-event-row__summary,.trace-event-row time){font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs)}
-.trace [role=treeitem][aria-selected=false]:not(:hover){background:transparent}
-.trace [role=treeitem][aria-selected=false]{color:light-dark(var(--lf-foreground),var(--lf-muted-foreground))}
+.trace.pe-console{--trace-tab-indicator-shadow:0 1px 3px 0 light-dark(rgb(0 0 0 / 10%),transparent),0 1px 2px -1px light-dark(rgb(0 0 0 / 10%),transparent)}
+.trace .trace-event-row__summary{color:var(--lf-muted-foreground)}
+.trace :is([role=treeitem],[role=gridcell])[aria-selected=false]{background:transparent;color:light-dark(var(--lf-foreground),var(--lf-muted-foreground))}
+@media(hover:hover){.trace :is([role=treeitem],[role=gridcell])[aria-selected=false]:hover{background:var(--lf-accent)}}
 .trace .trace-event-row[aria-selected=true]{background:var(--lf-muted)}
 .trace .trace-event-row[aria-selected=true]::after{content:"";flex:none;width:var(--lf-space-4);height:var(--lf-space-4);background:currentColor;mask:var(--lf-selection-check) center/contain no-repeat}
 .trace :is(.trace-event-row,.pe-button,summary):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:calc(-1 * var(--lf-focus-width))}
@@ -102,7 +107,7 @@ export function traceConsoleStyles() {
 .trace .json-viewer__tree{--trace-json-property:light-dark(#005cc5,#79b8ff);--trace-json-string:light-dark(#032f62,#9ecbff);padding:var(--lf-space-2);background:var(--lf-muted);border-radius:var(--lf-radius-md);font-family:var(--lf-font-mono)}
 .trace .json-line{min-height:var(--lf-control-height);padding-block:var(--lf-space-1);line-height:var(--lf-leading-xs)}
 .trace .json-line:not(summary){min-height:var(--lf-leading-xs);padding-block:0}
-.trace.pe-console .json-viewer summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:calc((var(--lf-control-height) - var(--lf-leading-xs))/2) 0;border:0;border-color:var(--lf-border);border-radius:0;font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace.pe-console .json-viewer summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:calc((var(--lf-control-height) - var(--lf-leading-xs))/2) 0;border:0;border-color:var(--lf-border);border-radius:0;font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:transparent;color:var(--trace-json-property);text-decoration:none}
 .trace summary.json-line code{white-space:nowrap;overflow-wrap:normal}
 .trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
 .trace :is(.json-value,.json-value-preview)[data-json-type=string]{color:var(--trace-json-string)}

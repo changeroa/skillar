@@ -166,11 +166,13 @@ installStyles("analysis", `
 .analysis.pe-console .analysis-tile>.pe-muted{padding:0 var(--lf-space-4) var(--lf-space-4);font-size:var(--lf-text-xs)}
 .analysis-widget-shell{min-width:0;display:flex}.analysis-widget-shell>.lf-card{width:100%}
 .analysis.pe-console :is(.analysis-table th,.analysis-table td){height:var(--lf-control-height);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm);border-color:var(--lf-border)}
-.analysis.pe-console .analysis-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);font-weight:var(--lf-weight-strong);line-height:var(--lf-leading-sm)}
+.analysis.pe-console .analysis-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);font-weight:var(--lf-weight-strong);line-height:var(--lf-leading-sm);background:var(--lf-background)}
 .analysis.pe-console .analysis-table th:first-child{padding-left:var(--lf-space-2)}
 .analysis.pe-console :is(.analysis-table th button,.analysis-table td>button,.analysis-table a,.paths__skill,.ws__back,.sess__link,.pane__sum,.turn__sum){min-height:var(--lf-control-height);min-width:var(--lf-control-height)}
 .analysis.pe-console .workspace-table .wsrow__title{display:block;width:100%;height:var(--lf-control-height);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.analysis.pe-console :is(.seg__btn,.seg__b){height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding:0 var(--lf-space-4);border:0;border-color:var(--lf-border);border-radius:var(--lf-radius-sm);font-size:var(--lf-text-sm);line-height:var(--lf-text-sm);font-weight:var(--lf-weight-strong)}
+.analysis.pe-console :is(.seg__btn,.seg__b){height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding:0 var(--lf-space-4);border:0;border-color:var(--lf-border);border-radius:var(--lf-radius-sm);font-size:var(--lf-text-sm);line-height:var(--lf-text-sm);font-weight:var(--lf-weight-strong);background:transparent;color:var(--lf-foreground-tertiary)}
+.analysis.pe-console :is(.seg__btn,.seg__b):is(:active,[aria-pressed=true]){background:transparent;color:light-dark(var(--lf-foreground),var(--lf-primary))}
+@media(max-width:768px){.analysis.pe-console :is(.seg__btn,.seg__b){color:var(--lf-muted-foreground)}.analysis.pe-console :is(.seg__btn,.seg__b):is(:active,[aria-pressed=true]){color:var(--lf-foreground)}}
 .analysis.pe-console :is(.hmc,.flow__paths,.flow__chart){border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
 .analysis.pe-console .hmc__title{font-size:var(--lf-text-base);line-height:var(--lf-leading-base);font-weight:var(--lf-weight-strong)}
 .hm-stack.analysis.pe-console{--hm-l1:color-mix(in srgb,var(--lf-chart-1) 24%,transparent);--hm-l2:color-mix(in srgb,var(--lf-chart-1) 46%,transparent);--hm-l3:color-mix(in srgb,var(--lf-chart-1) 70%,transparent);--hm-l4:var(--lf-chart-1)}

@@ -12,13 +12,14 @@ const sources = JSON.parse(await readFile(`${root}/cert-source.json`, "utf8")).r
 const buttonSources = JSON.parse(await readFile(process.argv[3], "utf8"));
 const tabSources = JSON.parse(await readFile(`${root}/tab-style-source.json`, "utf8"));
 const sortSources = JSON.parse(await readFile(`${root}/sort-style-source.json`, "utf8"));
+const interactionSources = JSON.parse(await readFile(`${root}/interaction-source.json`, "utf8")).records;
 function controlPart(record) {
   assert.ok(record?.reference, "Missing real control reference");
   const reference = record.reference, styles = {};
   for (const field of componentStyleFields) {
     const value = field === "borderRadius" ? reference.borderTopLeftRadius : reference[field];
     styles[field] = Array.isArray(value) ? `rgba(${value.slice(0, 3).join(",")},${value[3] / 255})` :
-      typeof value === "number" ? `${value}${field === "fontWeight" ? "" : "px"}` : value;
+      typeof value === "number" ? `${value}${["fontWeight", "opacity"].includes(field) ? "" : "px"}` : value;
   }
   assert.deepEqual(reference.shadows, [], "Default outline reference has no painted shadow");
   styles.boxShadow = "none";
@@ -65,11 +66,21 @@ try {
     referenceParts.button = controlPart(buttonSources.find(r => r.id === `secondary-default-${theme}-${width}`));
     referenceParts.tab = tabSources.find(r => r.theme === theme);
     referenceParts["table-sort"] = sortSources.find(r => r.width === width && r.theme === theme);
+    for (const [part, source] of [["button", "button"], ["tab", "tab"], ["table-sort", "sort"]]) {
+      const fresh = interactionSources.find(r => r.id === `${source}-default-${width}-${theme}`);
+      assert.ok(fresh, `Missing fresh ${source} reference`);
+      referenceParts[part] = { ...referenceParts[part], styles: { ...referenceParts[part].styles,
+        ...Object.fromEntries(["color", "backgroundColor", "opacity", "textDecorationLine",
+          "textDecorationColor", "textDecorationStyle", "textDecorationThickness", "strokeDasharray"]
+          .map(field => [field, fresh.styles[field]])) } };
+    }
     const profiles = inventory.cases[id].map(selector => {
       const source = mappings[selector];
       const part = referenceParts[source === "heading" ? "tree-label" : source];
       assert.ok(part, `${id}: missing independent source ${source}`);
-      return { selector, source, part, count: inventory.counts[id][selector] };
+      return { selector, source, part, count: inventory.counts[id][selector],
+        inactivePart: referenceParts["tree-label-default"],
+        selectedTab: interactionSources.find(r => r.id === `tab-selected-${width}-${theme}`) };
     });
     const observed = await page.evaluate(({ scope, profiles, normalizer, fields, width }) => {
       const normalize = (0, eval)(`(${normalizer})`), root = document.querySelector(scope), values = [], mutations = [];
@@ -85,7 +96,12 @@ try {
             if (!node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
               throw Error(`Hidden required full-style target ${profile.selector}`);
             const css = getComputedStyle(node);
-            const expected = normalize(profile.part.styles, profile.part.styles.typedHeight ?? "auto");
+            const part = profile.selector === "[role=gridcell] .trace-event-row__kind" &&
+              node.closest("[aria-selected=false]") ? profile.inactivePart : profile.part;
+            const expected = normalize(part.styles, part.styles.typedHeight ?? "auto");
+            if (profile.source === "tab" && node.matches("[aria-pressed=true]"))
+              for (const field of ["color", "textDecorationColor"])
+                expected[field] = normalize(profile.selectedTab.styles, expected.height)[field];
             const owner = [];
             if (node.matches('[role=treeitem],button,summary,.seg__btn,.seg__b')) {
               expected.height = `${width === 390 ? 44 : 32}px`;
@@ -110,11 +126,13 @@ try {
               owner.push("Native single-box Card combines actual Card root and CardHeader inset");
             }
             const actual = normalize(css, node.computedStyleMap().get("height").toString());
-            values.push({ ...profile, part: undefined, index, actual, expected, owner });
+            values.push({ selector: profile.selector, source: profile.source, index, actual, expected, owner });
             for (const field of fields) {
               const old = node.getAttribute("style");
               const property = field.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
-              const value = field.includes("Color") ? "rgb(1, 2, 3)" : field === "fontWeight" ? "900" :
+              const value = field === "color" || field.includes("Color") ? "rgb(1, 2, 3)" :
+                field === "opacity" ? "0.123" : field === "textDecorationLine" ? "underline" :
+                field === "textDecorationStyle" ? "wavy" : field === "strokeDasharray" ? "3px, 7px" : field === "fontWeight" ? "900" :
                 field === "outlineStyle" ? "dashed" : field === "boxShadow" ? "0 0 0 7px rgb(1,2,3)" : "111px";
               try {
                 if (field.startsWith("border") && field.endsWith("Width")) node.style.setProperty(property.replace("-width", "-style"), "solid", "important");
@@ -131,7 +149,8 @@ try {
       return { values, mutations };
     }, { scope: screen.scope, profiles, normalizer: normalizeComponentStyle.toString(), fields: componentStyleFields, width });
     const measurements = observed.values.flatMap(v => compareComponentStyle(v.actual, v.expected).map(m => ({ selector: v.selector, index: v.index, ...m })));
-    const mutations = observed.mutations.map(m => ({ ...m, rejected: m.applied && compareComponentStyle(m.actual, m.expected).some(v => !v.pass) }));
+    const mutations = observed.mutations.map(m => ({ ...m, rejected: m.applied &&
+      compareComponentStyle(m.actual, m.expected).some(v => v.field === m.field && !v.pass) }));
     records.push({ id, measurements, mutations, overrides: observed.values.filter(v => v.owner.length).map(v => ({ selector: v.selector, owner: v.owner })) });
     console.log(`FULL_STYLE_CASE ${id} failures=${measurements.filter(m => !m.pass).length}`);
   }

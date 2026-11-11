@@ -121,6 +121,7 @@ export function availablePaint(actual,expected) {
     if(channel==="boxShadow")return actual.shadowPainted;
     if(channel==="backgroundImage")return actual.backgroundImage!=="none";
     const value=actual[channel];
+    if(expected.unpainted?.includes(channel))return Boolean(expected.paint)&&Array.isArray(value)&&value[3]===0;
     return Array.isArray(value)&&value[3]>0&&
       (channel!=="stroke"||Number(actual.strokeOpacity)>0&&parseFloat(actual.strokeWidth)>0)&&
       (channel!=="fill"||Number(actual.fillOpacity)>0)&&

@@ -9,6 +9,7 @@ import { focusWidgetControl } from "./widget-visual-guards.mjs";
 import { paintedFocus } from "./focus-paint.mjs";
 import { press, ready } from "./trusted-keys.mjs";
 import { applyViewport } from "./viewport.mjs";
+import { measureInteractionPaint, interactionPaintCases } from "./local-interaction-paint.mjs";
 const { loadSurface, screens } = await import(pathToFileURL(`${root}/cert-surfaces.mjs`).href);
 const source = JSON.parse(await readFile(`${root}/cert-source.json`, "utf8")).records;
 const stateSource = JSON.parse(await readFile(`${root}/state-references.json`, "utf8")).results;
@@ -16,6 +17,7 @@ const tabSource = JSON.parse(await readFile(`${root}/tab-style-source.json`, "ut
 const graphSource = JSON.parse(await readFile(`${root}/graph-disabled-source.json`, "utf8"));
 const sortSource = JSON.parse(await readFile(`${root}/sort-style-source.json`, "utf8"));
 const buttonSource = JSON.parse(await readFile(process.argv[3], "utf8"));
+const interactionSource = JSON.parse(await readFile(`${root}/interaction-source.json`, "utf8")).records;
 function buttonReference(theme, width, state) {
   const record = buttonSource.find(r => r.id === `secondary-${state}-${theme}-${width}`);
   assert.ok(record?.reference, "Missing real Demo outline button state");
@@ -23,7 +25,7 @@ function buttonReference(theme, width, state) {
   for (const field of componentStyleFields) {
     const value = field === "borderRadius" ? record.reference.borderTopLeftRadius : record.reference[field];
     styles[field] = Array.isArray(value) ? `rgba(${value.slice(0, 3).join(",")},${value[3] / 255})` :
-      typeof value === "number" ? `${value}${field === "fontWeight" ? "" : "px"}` : value;
+      typeof value === "number" ? `${value}${["fontWeight", "opacity"].includes(field) ? "" : "px"}` : value;
   }
   styles.boxShadow = "none";
   return { styles, provenance: record.provenance, url: record.url };
@@ -134,6 +136,13 @@ try {
       state === "hover" && spec.component !== "JsonViewer" ?
       stateSource.find(r => r.id === `tree-hover-${width}-${theme}`)?.parts[0] : refs[spec.source];
     assert.ok(record, `${id}: missing source`);
+    const paintSource = spec.component === "EventViewTabs" && state !== "selected" ? "graph" : spec.source;
+    const paintReference = interactionSource.find(r => r.id === `${paintSource}-${state}-${width}-${theme}`);
+    assert.ok(paintReference, `${id}: missing interaction paint reference`);
+    const paintFields = ["color", "backgroundColor", "opacity", "textDecorationLine",
+      "textDecorationColor", "textDecorationStyle", "textDecorationThickness", "strokeDasharray"];
+    const reference = { ...record, styles: { ...record.styles,
+      ...Object.fromEntries(paintFields.map(field => [field, paintReference.styles[field]])) } };
     let result;
     try {
       result = await page.evaluate(({ selector, reference, normalizer, width, theme, state, component, fields }) => {
@@ -160,7 +169,9 @@ try {
           try {
             if (field.startsWith("outline")) node.style.setProperty("outline", "7px dashed rgb(1,2,3)", "important");
             if (/^border.*Width$/.test(field)) node.style.setProperty("border-style", "solid", "important");
-            const value = field.endsWith("Color") ? "rgb(1,2,3)" : field === "fontWeight" ? "900" :
+            const value = field === "color" || field.endsWith("Color") ? "rgb(1,2,3)" :
+              field === "opacity" ? "0.123" : field === "textDecorationLine" ? "underline" :
+              field === "textDecorationStyle" ? "wavy" : field === "strokeDasharray" ? "3px, 7px" : field === "fontWeight" ? "900" :
               field === "boxShadow" ? "0 0 0 7px rgb(1,2,3)" : field === "outlineStyle" ? "dotted" : "111px";
             node.style.setProperty(field.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`), value, "important");
             mutations.push({ field, applied: node.getAttribute("style") !== old, actual: read() });
@@ -169,11 +180,17 @@ try {
         return { actual, expected, mutations, focusVisible: node.matches(":focus-visible"),
           hover: node.matches(":hover"), active: node.matches(":active"), disabled: node.matches(":disabled"),
           expanded: component === "JsonViewer" ? node.parentElement.open : undefined };
-      }, { selector, reference: record, normalizer: normalizeComponentStyle.toString(), width, theme, state,
+      }, { selector, reference, normalizer: normalizeComponentStyle.toString(), width, theme, state,
         component: spec.component, fields: componentStyleFields });
       const measurements = compareComponentStyle(result.actual, result.expected);
+      assert.ok(measurements.every(m => m.pass), `${id}: root source mismatch ${JSON.stringify(measurements.filter(m => !m.pass))}`);
+      const parts = await measureInteractionPaint(page, { id, selector, component: spec.component, state,
+        expected: result.expected, reference: paintReference, sources: refs,
+        indicator: interactionSource.find(r => r.id === `tab-selected-1440-${theme}`)?.indicator,
+        palette: source.find(r => r.name === "tree" && r.width === width && r.theme === theme).palette });
       const mutations = result.mutations.map(m => ({ field: m.field, applied: m.applied,
-        rejected: m.applied && measurements.every(m => m.pass) && compareComponentStyle(m.actual, result.expected).some(v => !v.pass) }));
+        rejected: m.applied && measurements.every(m => m.pass) &&
+          compareComponentStyle(m.actual, result.expected).some(v => v.field === m.field && !v.pass) }));
       const painted = state === "focus-visible" ? await paintedFocus(page, selector, `${root}/interaction-styles/${id}`) : null;
       await page.screenshot({ path: `${root}/interaction-styles/${id}.png` });
       const missing = await page.evaluate(selector => {
@@ -183,10 +200,10 @@ try {
       }, selector);
       const removedRejected = missing && measurements.every(m => m.pass) &&
         compareComponentStyle(null, result.expected).every(m => !m.pass);
-      records.push({ id, component: spec.component, state, measurements, mutations, removedRejected,
+      records.push({ id, component: spec.component, state, measurements, mutations, removedRejected, parts,
         painted, stateObserved: { hover: result.hover, focusVisible: result.focusVisible, active: result.active,
           disabled: result.disabled, expanded: result.expanded },
-        passed: measurements.every(m => m.pass) && mutations.every(m => m.rejected) && removedRejected &&
+        passed: parts.pass && measurements.every(m => m.pass) && mutations.every(m => m.rejected) && removedRejected &&
           (!painted || painted.pass) && (state !== "hover" || result.hover) && (state !== "active" || result.active) &&
           (state !== "focus-visible" || result.focusVisible) && (state !== "disabled" || result.disabled) &&
           (!["expanded", "collapsed"].includes(state) || result.expanded === (state === "expanded")) });
@@ -212,6 +229,18 @@ try {
 }
 assert.deepEqual(records.map(r => r.id), expectedCases);
 assert.equal(records.length, 264);
+if (process.env.INTERACTION_PAINT_DRAFT) {
+  const templates = {}, cases = {}, keys = new Map();
+  for (const record of records) {
+    const key = JSON.stringify(record.parts.required);
+    if (!keys.has(key)) { const id = `parts-${keys.size}`; keys.set(key, id); templates[id] = record.parts.required; }
+    cases[record.id] = keys.get(key);
+  }
+  await writeFile(`${root}/interaction-paint-draft.json`, JSON.stringify({ cases, templates }, null, 2));
+  console.log(`INTERACTION_PAINT_DRAFT_COMPLETE cases=${records.length} templates=${keys.size}; not a certification`);
+  process.exit(42);
+}
+assert.deepEqual([...interactionPaintCases].sort(), [...expectedCases].sort());
 console.log(`INTERACTION_STYLE_COMPLETE cases=${records.length} failures=${records.filter(r => !r.passed).length}`);
 assert.ok(records.every(r => r.passed), JSON.stringify(records.filter(r => !r.passed).map(r => ({ id: r.id,
   differences: r.measurements.filter(m => !m.pass), state: r.stateObserved, painted: r.painted }))));

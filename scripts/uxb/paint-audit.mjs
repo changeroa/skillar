@@ -70,7 +70,8 @@ export function auditPaint(root, { observe, available, required }) {
             css.textContent = `[data-cert-paint="${index}"]::${channel.slice(7)}{content:none!important;display:none!important}`;
             document.head.append(css);
           } else node.style.setProperty(channel.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`),
-            ["backgroundImage", "boxShadow"].includes(channel) ? "none" : ["stroke", "fill"].includes(channel) ? "none" : "transparent", "important");
+            expected.unpainted?.includes(channel) ? "rgb(1,2,3)" :
+              ["backgroundImage", "boxShadow"].includes(channel) ? "none" : ["stroke", "fill"].includes(channel) ? "none" : "transparent", "important");
           probes.push({ index, channel, baseline, mutated: { pass: available(observe(node), expected) },
             applied: channel.startsWith("pseudo:") ? css.isConnected : node.getAttribute("style") !== old });
         } finally {

@@ -64,7 +64,9 @@ export async function measureStateStyles(page, context) {
             try {
               if (/^border.*Width$/.test(field)) node.style.setProperty("border-style", "solid", "important");
               if (field.startsWith("outline")) node.style.setProperty("outline", "7px solid rgb(1,2,3)", "important");
-              const value = field.endsWith("Color") ? "rgb(1,2,3)" : field === "fontWeight" ? "900" :
+              const value = field === "color" || field.endsWith("Color") ? "rgb(1,2,3)" :
+                field === "opacity" ? "0.123" : field === "textDecorationLine" ? "underline" :
+                field === "textDecorationStyle" ? "wavy" : field === "strokeDasharray" ? "3px, 7px" : field === "fontWeight" ? "900" :
                 field === "boxShadow" ? "0 0 0 7px rgb(1,2,3)" : field === "outlineStyle" ? "dashed" : "111px";
               node.style.setProperty(field.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`), value, "important");
               const mutated = read();
@@ -85,6 +87,6 @@ export async function measureStateStyles(page, context) {
     measurements: observed.values.map(v => ({ ...v, ...measurement(v.actual, v.expected) })),
     mutations: observed.probes.map(p => ({ selector: p.selector, index: p.index, field: p.field,
       ...mutationVerdict({ pass: componentStyleFields.every(f => measurement(p.before[f], p.expected[f]).pass) },
-        { pass: componentStyleFields.every(f => measurement(p.actual[f], p.expected[f]).pass) }, p.applied) })),
+        { pass: measurement(p.actual[p.field], p.expected[p.field]).pass }, p.applied) })),
   };
 }

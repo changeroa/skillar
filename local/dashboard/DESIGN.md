@@ -17,6 +17,25 @@ Focus-visible uses the shared contrasting 2px ring and 2px clearance.
 Local screen focus overrides `--lf-ring` to `--lf-muted-foreground`: the
 source ring measured only 2.33:1 against selected rows. This owner accessibility
 override keeps the source hue while clearing the required 3:1 in both themes.
+Interaction paint is asserted independently of geometry: foreground, background,
+four border colours, opacity, outline/shadow ink and extent, text decoration and
+stroke dash. Segmented triggers retain transparent backgrounds and tertiary
+inactive ink; selection uses foreground ink and the existing check indicator.
+Desktop selected/held triggers use the source primary dark ink; phone triggers
+use the source underline variant's muted inactive and foreground selected ink.
+Native analysis table headers retain the source background token.
+Native event tabs retain the inset selected indicator on phones. Its real
+desktop selected-state reference supplies the background and shadow:
+`--trace-tab-indicator-shadow` is `0 1px 3px 0 rgb(0 0 0 / 10%)`,
+`0 1px 2px -1px rgb(0 0 0 / 10%)` in light, with transparent ink in dark.
+Native filled sort carets use the measured header ink. Timeline tracks use
+the source border token and shared 1px frame stroke; interval/point fills use
+their actual observation palette, and selected marks retain the measured
+1px, 80%-foreground source ring.
+Tree and Timeline unselected containers share transparent paint and muted dark
+ink; their hover wash applies only to hover-capable pointers. JSON disclosure
+triggers retain the property syntax ink, transparent fill and no underline in
+standalone and hosted views. Native disabled tabs retain the shared .5 opacity.
 
 Trace tree exposes chronological root-level leaves: the source has no causal
 parent/child edges. It has one roving Tab stop; Up/Down, Home/End move focus,

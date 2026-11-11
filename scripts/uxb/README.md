@@ -246,9 +246,10 @@ node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS
 ```
 
 These commands require `OMOWRIGHT_HELPER` and the source records/real-surface
-loader in the evidence directory. They compare all 22 required fields: height,
+loader in the evidence directory. They compare all 30 required fields: height,
 four paddings, font size/line height/weight, radius, four border colours/widths,
-outline colour/style/width/offset and painted shadow. CSS Typed OM preserves
+outline colour/style/width/offset, painted shadow, ink/background/opacity,
+four text-decoration fields and dash. CSS Typed OM preserves
 intrinsic `auto` height instead of comparing unrelated fixture content heights.
 The owner 32/44px controls, native panel geometry and named source compositions
 are explicit in `local/dashboard/DESIGN.md`; no observed value becomes its own
@@ -264,6 +265,22 @@ Loading/error/empty use the real product API boundary. Every field has a
 corruption probe, and removal uses the same missing-observation predicate.
 Focus raster probes cover fractional origins at DPR 1 and 3 and reject both
 1px and white indicators.
+
+`local-interaction-paint-inventory.json` fixes descendant membership and paint
+for every one of those 264 states, separately from the ready inventory.
+Missing, hidden, transparent, recoloured, resized-stroke, changed-opacity and
+changed-dash parts fail the same checker. Every hover SVG-path removal records
+that the row remains hovered and its computed parent fields stay unchanged.
+Native pseudo glyphs, counters and the inset tab indicator are also asserted;
+the selected indicator uses the real selected-state background and shadow.
+`INTERACTION_PAINT_DRAFT=1` is an explicit authoring mode: it independently
+checks source root/descendant recipes, writes an external review draft and
+exits 42. It never certifies or rewrites the committed inventory.
+
+`node scripts/uxb/local-disabled-style.mjs "$PR7_EVIDENCE"` compares both native
+renderers against the four real Demo disabled outline pagination captures.
+Border, background and opacity come from that live control. Text-button padding
+is a labelled pinned-MIT supplement; the absolute 32/44px owner target remains.
 
 `local-paint-inventory.json` separately freezes DOM counts, part indices/classes,
 channels and exact paint values (including ancestor opacity, channel opacities

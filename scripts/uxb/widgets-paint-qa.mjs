@@ -23,7 +23,8 @@ export async function runWidgetPaintQA(out,{bootstrap=false}={}){
  }
  try{
   for(const app of ["site","local"])for(const theme of ["light","dark"]){
-   await page.goto(`http://127.0.0.1:${app==="site"?5183:5184}/__gallery.html?widgets=1&theme=${theme}`,{waitUntil:"domcontentloaded"});await ready(page,'[data-specimen="Callout-info-top"]');
+   const origin=process.env[app==="site"?"WIDGET_SITE_ORIGIN":"WIDGET_LOCAL_ORIGIN"]??`http://127.0.0.1:${app==="site"?5183:5184}`;
+   await page.goto(`${origin}/__gallery.html?widgets=1&theme=${theme}`,{waitUntil:"domcontentloaded"});await ready(page,'[data-specimen="Callout-info-top"]');
    await page.evaluate(({observe,channels})=>{
     globalThis.__observePaint=(0,eval)(`(${observe})`);globalThis.__paintChannels=(0,eval)(`(${channels})`);
     const s=document.createElement("style");s.textContent="*,*::before,*::after{transition:none!important;animation:none!important}";document.head.append(s);
