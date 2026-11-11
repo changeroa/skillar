@@ -7,6 +7,8 @@ import {
   CONTENT_KINDS, CONTENT_KIND_COPY, DEFAULT_RETENTION_DAYS, MAX_BACKUP_DAYS, buildConsent, draftFromConsent, isExactMilliseconds, projectIdFor,
 } from "./consent";
 import type { BackfillDraft, ConsentDraft, ConsentMode } from "./consent";
+import { Radio } from "../../../local/dashboard/foundation/controls/choices";
+import { DateRangeFields } from "../../../local/dashboard/foundation/controls/date-range";
 
 type Props = {
   readonly deviceId: string;
@@ -81,11 +83,11 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
       <fieldset class="consent__group" disabled={busy}>
         <legend>이 기기가 업로드할 수 있는 것</legend>
         {MODES.map(mode => (
-          <label class="choice" key={mode.value}>
-            <input type="radio" name={id("mode")} value={mode.value} checked={draft.mode === mode.value}
-              onChange={() => patch({ mode: mode.value })} />
-            <span><strong>{mode.label}</strong><span class="choice__detail">{mode.detail}</span></span>
-          </label>
+          <div key={mode.value}>
+            <Radio label={mode.label} name={id("mode")} value={mode.value} checked={draft.mode === mode.value}
+              aria-describedby={id(`mode-${mode.value}-detail`)} onChange={() => patch({ mode: mode.value })} />
+            <p class="choice__detail" id={id(`mode-${mode.value}-detail`)}>{mode.detail}</p>
+          </div>
         ))}
       </fieldset>
       {draft.mode === "managed-content" && (
@@ -147,14 +149,10 @@ export function ConsentForm({ deviceId, version, consent, signal, onSaved, onUna
                 </span>
               </label>
               {!draft.backfill.allHistory && <div class="consent__fields">
-              <label class="field-label">과거 기록 시작
-                <input class="text-field" disabled={busy} type={isExactMilliseconds(draft.backfill.from) ? "text" : "datetime-local"} value={draft.backfill.from}
-                  onInput={event => patchBackfill({ from: event.currentTarget.value })} />
-              </label>
-              <label class="field-label">과거 기록 끝
-                <input class="text-field" disabled={busy} type={isExactMilliseconds(draft.backfill.to) ? "text" : "datetime-local"} value={draft.backfill.to}
-                  onInput={event => patchBackfill({ to: event.currentTarget.value })} />
-              </label>
+              <DateRangeFields value={{ from: draft.backfill.from, to: draft.backfill.to }} onChange={patchBackfill}
+                disabled={busy} fromLabel="과거 기록 시작" toLabel="과거 기록 끝"
+                fromType={isExactMilliseconds(draft.backfill.from) ? "text" : "datetime-local"}
+                toType={isExactMilliseconds(draft.backfill.to) ? "text" : "datetime-local"} />
               </div>}
             </>
           )}

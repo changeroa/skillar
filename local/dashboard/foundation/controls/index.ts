@@ -6,3 +6,8 @@ export type { SelectOption } from "./fields";
 export { Badge, StatusBadge, Tag, KeyboardShortcut, Skeleton } from "./labels";
 export type { BadgeColor } from "./labels";
 export { CopyButton } from "./copy-button";
+export { Textarea, Radio, Switch, Avatar } from "./choices";
+export { Combobox, MultiSelect } from "./combobox";
+export { DateRangeFields, DateRangeInput, TimePeriodSelect } from "./date-range";
+export type { DateRange } from "./date-range";
+export { Spinner, Toast } from "./feedback";

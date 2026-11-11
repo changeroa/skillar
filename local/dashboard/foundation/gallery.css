@@ -80,3 +80,8 @@ body { margin: 0; }
 }
 .lf-tables-gallery { display: grid; grid-template-columns: minmax(0, 224px) minmax(0, 1fr); gap: var(--lf-space-4); }
 @media (max-width: 768px) { .lf-tables-gallery { grid-template-columns: minmax(0, 1fr); } }
+.lf-gallery--atomic { box-sizing: border-box; width: 100%; max-width: none; margin: 0; padding: var(--lf-space-4); }
+.lf-gallery--atomic .lf-gallery__grid { display: grid; grid-template-columns: minmax(0,356px); }
+.lf-gallery--atomic .lf-gallery__specimen { padding: 0; border: 0; grid-column: 1; }
+.lf-gallery:not(.lf-gallery--atomic) .lf-gallery__specimen[data-component="Toast"] { grid-column: span 2; }
+@media (max-width: 540px) { .lf-gallery:not(.lf-gallery--atomic) .lf-gallery__specimen[data-component="Toast"] { grid-column: auto; } }

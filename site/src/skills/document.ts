@@ -5,6 +5,7 @@ import { BarChart, Pill, SegmentedTabs, Skeleton } from "../ui/index.ts";
 import { describeFailure, isUnauthorized, readExport } from "./api.ts";
 import { draftFromExport, formatBytes } from "./model.ts";
 import type { DraftState, Resources } from "./skill-state.ts";
+import { MarkdownViewer, CodeBlock } from "../../../local/dashboard/foundation/viewers";
 
 type Preview =
   | { readonly kind: "loading" }
@@ -13,33 +14,7 @@ type Preview =
 
 /** Markdown's structural subset, built only with escaped Preact text nodes. HTML is always literal. */
 export function FormattedDocument({ text }: { readonly text: string }) {
-  const lines = text.replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "").split(/\r?\n/);
-  const blocks = [];
-  for (let index = 0; index < lines.length;) {
-    const line = lines[index] ?? "";
-    const key = index++;
-    if (line.trim() === "") continue;
-    const heading = /^(#{1,6})\s+(.+)$/.exec(line);
-    if (heading) { blocks.push(h("h3", { key }, heading[2])); continue; }
-    if (line.startsWith("```")) {
-      const code = [];
-      while (index < lines.length && !lines[index]?.startsWith("```")) code.push(lines[index++]);
-      index++;
-      blocks.push(h("pre", { key }, h("code", null, code.join("\n"))));
-      continue;
-    }
-    if (/^(?:[-*]|\d+\.)\s+/.test(line)) {
-      const items = [line];
-      while (index < lines.length && /^(?:[-*]|\d+\.)\s+/.test(lines[index] ?? "")) items.push(lines[index++] ?? "");
-      blocks.push(h(/^\d/.test(line) ? "ol" : "ul", { key },
-        items.map((item, row) => h("li", { key: row }, item.replace(/^(?:[-*]|\d+\.)\s+/, "")))));
-      continue;
-    }
-    const paragraph = [line];
-    while (index < lines.length && lines[index]?.trim() && !/^(?:#{1,6}\s|```|[-*]\s|\d+\.\s)/.test(lines[index] ?? "")) paragraph.push(lines[index++] ?? "");
-    blocks.push(h("p", { key }, paragraph.join("\n")));
-  }
-  return h("div", { class: "skill-markdown" }, blocks);
+  return h(MarkdownViewer, { text });
 }
 
 export function useVersionPreview({ detail, digest, draftState, signal, onUnauthorized, retryHead }: {
@@ -87,7 +62,7 @@ export function VersionDocument({ preview, retry, digest }: {
     h(SegmentedTabs, { id: "document-format", label: "문서 표시",
       tabs: [
         { id: "formatted", label: "Formatted", content: h(FormattedDocument, { text: preview.document }) },
-        { id: "raw", label: "Raw", content: h("pre", { class: "skill-document-raw" }, h("code", null, preview.document)) },
+        { id: "raw", label: "Raw", content: h(CodeBlock, { value: preview.document, language: "markdown", label: "SKILL.md" }) },
       ] }));
 }
 

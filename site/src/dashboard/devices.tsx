@@ -76,7 +76,7 @@ export function ConnectDevice({ origin, signal, onChanged, onUnauthorized }: Com
         {connectSteps(fileName, origin).map(step => (
           <li key={step.text}>
             <p>{step.text}</p>
-            {step.command !== undefined && <pre class="command"><code>{step.command}</code></pre>}
+            {step.command !== undefined && <CodeBlock value={step.command} language="bash" label="기기 연결 명령" />}
           </li>
         ))}
       </ol>
@@ -184,3 +184,4 @@ export function DevicesSection({ devices, ingestEnabled, origin, settled, messag
     </section>
   );
 }
+import { CodeBlock } from "../../../local/dashboard/foundation/viewers";

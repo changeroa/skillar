@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ko">
   <head>
+    <link rel="stylesheet" href="/src/account-controls.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Google로 skillar에 로그인하고 동의해 업로드한 활동 기록을 확인하세요. OAuth 또는 읽기 전용 토큰으로 MCP 클라이언트를 연결할 수 있습니다.">
@@ -80,7 +81,7 @@
             <h2>프로필</h2>
             <dl class="account-profile-facts"><dt>이름</dt><dd data-profile-name></dd><dt>이메일</dt><dd data-profile-email></dd><dt>로그인 방식</dt><dd>Google</dd></dl>
             <div class="account-user">
-              <img id="user-picture" alt="" width="48" height="48" referrerpolicy="no-referrer" hidden>
+              <span id="user-avatar"></span>
               <div>
                 <p class="note">로그인한 계정</p>
                 <p class="account-name" id="user-name"></p>

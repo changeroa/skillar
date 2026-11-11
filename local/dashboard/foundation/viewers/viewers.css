@@ -1,0 +1,42 @@
+.lf-markdown, .lf-codeblock, .lf-diff-scroll { min-width: 0; box-sizing: border-box; color: var(--lf-foreground); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); overflow-wrap: anywhere; }
+.lf-markdown p { margin: 0; white-space: pre-wrap; }
+.lf-markdown { display: flex; flex-direction: column; gap: var(--lf-space-2); color: var(--lf-foreground-secondary); border-color: var(--lf-border); }
+.lf-markdown h3 { margin: 0; font-size: var(--lf-viewer-heading-3); line-height: var(--lf-viewer-leading-3); font-weight: var(--lf-weight-bold); }
+.lf-markdown h3[data-level="1"] { font-size: var(--lf-viewer-heading-1); line-height: var(--lf-viewer-leading-1); }
+.lf-markdown h3[data-level="2"] { font-size: var(--lf-viewer-heading-2); line-height: var(--lf-viewer-leading-2); }
+.lf-markdown ul, .lf-markdown ol { margin: 0; padding-inline-start: var(--lf-space-6); }
+.lf-markdown li { margin-top: var(--lf-space-1); }
+.lf-codeblock { overflow: hidden; width: 100%; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-md); background: color-mix(in oklab, var(--lf-muted) 30%, transparent); }
+.lf-codeblock header { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--lf-space-2); padding: var(--lf-space-1) var(--lf-space-2); border-bottom: var(--lf-border-width) solid var(--lf-border); color: var(--lf-muted-foreground); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.lf-codeblock pre { margin: 0; padding: var(--lf-space-3); overflow: auto; min-width: 0; background: transparent; border: 0; border-radius: 0; color: inherit; font: var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-mono); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; }
+.lf-codeblock code { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; }
+.lf-codeblock pre { color: light-dark(#393a34, #9cdcfe); }
+.lf-codeblock { color: var(--lf-foreground-secondary); }
+.lf-codeblock [data-token="keyword"] { color: light-dark(#00009f, #569cd6); }
+.lf-codeblock [data-token="string"], .lf-codeblock [data-token="char"], .lf-codeblock [data-token="attr-value"] { color: light-dark(#e3116c, #ce9178); }
+.lf-codeblock [data-token="number"], .lf-codeblock [data-token="boolean"] { color: light-dark(#36acaa, #b5cea8); }
+.lf-codeblock [data-token="comment"] { color: light-dark(#999988, #6a9955); font-style: italic; }
+.lf-codeblock [data-token="function"] { color: light-dark(#393a34, #dcdcaa); }
+.lf-codeblock[data-language="json"] [data-token="property"] { color: var(--lf-muted-foreground); }
+.lf-codeblock[data-language="json"] [data-token="string"] { color: var(--lf-json-value-string); }
+.lf-codeblock[data-language="json"] [data-token="number"] { color: var(--lf-json-value-number); }
+.lf-codeblock[data-language="json"] [data-token="boolean"] { color: var(--lf-json-value-boolean); }
+.lf-codeblock[data-language="json"] [data-token="null"], .lf-codeblock[data-language="json"] [data-token="keyword"] { color: var(--lf-json-value-nullish); }
+.lf-codeblock:is([data-language="bash"],[data-language="sh"],[data-language="shell"]) pre { color: var(--lf-foreground); }
+.lf-codeblock:is([data-language="bash"],[data-language="sh"],[data-language="shell"]) :is([data-token="comment"],[data-token="shebang"],[data-token="punctuation"],[data-token="operator"],[data-token="file-descriptor"]) { color: var(--lf-muted-foreground); font-style: normal; }
+.lf-codeblock:is([data-language="bash"],[data-language="sh"],[data-language="shell"]) :is([data-token="string"],[data-token="char"],[data-token="number"],[data-token="boolean"]) { color: var(--lf-json-value-string); }
+.lf-codeblock:is([data-language="bash"],[data-language="sh"],[data-language="shell"]) :is([data-token="function"],[data-token="builtin"],[data-token="keyword"]) { color: var(--lf-qlang-keyword); }
+.lf-codeblock--read-only { background: var(--lf-muted); }
+.lf-codeblock--read-only pre { white-space: pre; }
+.lf-codeblock pre:focus-visible, .lf-diff-scroll:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--lf-focus-width) var(--lf-primary-accent); }
+.lf-diff-scroll { overflow-x: auto; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg); background: var(--lf-card); color: var(--lf-card-foreground); box-shadow: var(--lf-widget-shadow); font-size: var(--lf-text-lg); line-height: var(--lf-icon-leading); }
+.lf-diff-scroll .lf-diff { list-style: none; margin: 0; padding: 0; }
+.lf-diff-scroll .lf-diff > li { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); padding: 0; border: 0; color: var(--lf-card-foreground); background: transparent; font: var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-mono); }
+.lf-diff > li > div, .lf-diff__head > span { min-width: 0; padding: var(--lf-space-1) var(--lf-space-4); }
+.lf-diff > li > div:first-child, .lf-diff__head > span:first-child { border-right: var(--lf-border-width) solid var(--lf-border); }
+.lf-diff__head { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); background: var(--lf-muted); font: var(--lf-weight-bold) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans); }
+.lf-diff__head > span { padding-block: var(--lf-space-2); border-bottom: var(--lf-border-width) solid var(--lf-border); }
+.lf-diff-scroll .lf-diff > li > [data-change="added"] { background: color-mix(in oklab, var(--lf-diff-added) 10%, transparent); }
+.lf-diff-scroll .lf-diff > li > [data-change="removed"] { background: color-mix(in oklab, var(--lf-destructive) 10%, transparent); }
+.lf-diff code { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; background: transparent; border: 0; color: inherit; }
+.lf-diff .diff-line-number { color: var(--lf-muted-foreground); }

@@ -14,6 +14,12 @@ html {
   --lf-category-amber-highlight: light-dark(oklch(0.82 0.11 70), oklch(0.45 0.11 70));
   --lf-category-neutral-tint: light-dark(oklch(0.92 0 0), oklch(0.3 0 0));
   --lf-category-neutral-highlight: light-dark(oklch(0.82 0 0), oklch(0.45 0 0));
+  --lf-toast-background: light-dark(rgb(255 255 255), rgb(0 0 0));
+  --lf-toast-foreground: light-dark(rgb(23 23 23), rgb(252 252 252));
+  --lf-toast-border: light-dark(rgb(237 237 237), rgb(51 51 51));
+  --lf-toast-shadow: 0 4px 12px rgb(0 0 0 / .1);
+  --lf-toast-loader-color: rgb(111 111 111);
+  --lf-toast-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --lf-background: light-dark(hsl(0 0% 100%), hsl(0 0% 6%));
   --lf-foreground: light-dark(hsl(240 3.7% 15.9%), hsl(0 0% 70%));
   --lf-muted: light-dark(hsl(240 4.8% 95.9%), hsl(0 0% 11.6%));
@@ -179,6 +185,14 @@ html {
   --lf-font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --lf-font-mono: var(--font-plex-mono, plexMono), "plexMono Fallback", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --lf-weight-regular: 400;
+  --lf-weight-medium: 500;
+  --lf-weight-bold: 700;
+  --lf-viewer-heading-1: 24px; --lf-viewer-leading-1: 32px;
+  --lf-viewer-heading-2: 20px; --lf-viewer-leading-2: 28px;
+  --lf-viewer-heading-3: 16px; --lf-viewer-leading-3: 24px;
+  --lf-icon-leading: 24px;
+  --lf-diff-added: oklch(72.3% .219 149.579);
+  --lf-radio-shadow: 0 1px 3px rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1);
   --lf-weight-strong: 600;
   --lf-radius-lg: 8px;
   --lf-radius-md: 6px;

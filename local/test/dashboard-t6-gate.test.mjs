@@ -70,7 +70,7 @@ test("captured tool arguments remain accessible when a skill report groups the c
   // Then
   assert.ok(container.textContent.includes("Bash"), "the grouped call itself renders");
   assert.ok(container.textContent.includes(args), "all captured arguments must remain available in a disclosure or full-content path");
-  assert.equal(all(container, n => n.localName === "pre")[0].parentNode.localName, "details");
+  assert.equal(all(container, n => n.localName === "pre")[0].closest("details")?.localName, "details");
 });
 
 test("ungrouped captured tool arguments remain accessible as a control", async t => {
@@ -111,7 +111,7 @@ test("every grouped tool call retains a disclosure beyond the metadata list fold
   // Then
   const payloads = all(container, n => n.localName === "pre");
   assert.deepEqual(payloads.map(node => node.textContent), events.map(event => event.text));
-  assert.ok(payloads.every(node => node.parentNode.localName === "details"));
+  assert.ok(payloads.every(node => node.closest("details") !== null));
 });
 
 test("grouped calls preserve captured data arguments when event text is absent", async t => {

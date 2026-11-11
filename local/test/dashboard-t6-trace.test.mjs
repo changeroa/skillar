@@ -41,7 +41,7 @@ test("tool arguments preserve the complete captured text behind a disclosure", a
   // Then
   const pre = all(container, node => node.localName === "pre")[0];
   assert.equal(pre.textContent, args);
-  assert.equal(pre.parentNode.localName, "details");
+  assert.equal(pre.closest("details")?.localName, "details");
 });
 
 test("candidate disclosure retains long names descriptions and all matched terms", async t => {
