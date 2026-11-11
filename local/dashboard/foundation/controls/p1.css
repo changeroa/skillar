@@ -39,7 +39,7 @@
 .lf-switch--sm input:checked + .lf-switch__track > span { transform: translateX(var(--lf-space-3)); }
 .lf-avatar { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--lf-space-8); height: var(--lf-space-8); overflow: hidden; font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); border: 0 solid var(--lf-border); border-radius: calc(infinity * 1px); color: var(--lf-foreground); background: transparent; }
 .lf-avatar > span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--lf-muted); border-radius: inherit; }
-.lf-avatar--sm { width: var(--lf-space-6); height: var(--lf-space-6); font-size: var(--lf-text-xs); }
+.lf-avatar--sm { width: var(--lf-space-6); height: var(--lf-space-6); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
 .lf-avatar--md { width: 28px; height: 28px; }
 .lf-avatar--rounded { border-radius: var(--lf-radius-lg); }
 .lf-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

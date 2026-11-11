@@ -14,14 +14,15 @@ const skill = "11223344-1122-4122-8122-000000000002";
 const routes = [
   ["home", "/dashboard/", ".home-changes rect"],
   ["skills", "/skills/", "tr[id^=skill-row-]"],
-  ["document", `/skills/?skill=${skill}&view=full&tab=document`, ".detail"],
+  ["document", `/skills/?skill=${skill}&view=full&tab=document`, ".skill-document-preview"],
   ["versions", `/skills/?skill=${skill}&view=full&tab=versions`, ".version-list .version"],
   ["connections", "/connections/", ".connections-grid tbody tr"],
   ["account", "/login/?auth=signed-in", "#signed-in:not([hidden])"],
 ];
 await mkdir(`${out}/screens`, { recursive: true });
 try {
-  for (const [name, route, selector] of routes) for (const width of [1440, 390]) for (const theme of ["light", "dark"]) {
+  for (const [name, route, selector] of routes.filter(row => !process.env.P1_SCREEN || row[0] === process.env.P1_SCREEN))
+    for (const width of [1440, 390]) for (const theme of ["light", "dark"]) {
     const pair = {};
     for (const version of ["before", "after"]) {
       try {

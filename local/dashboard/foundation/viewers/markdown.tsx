@@ -29,5 +29,5 @@ export function MarkdownViewer({ text }: { readonly text: string }) {
     while (index < lines.length && lines[index]?.trim() && !/^(?:#{1,6}\s|```|[-*]\s|\d+\.\s)/.test(lines[index] ?? "")) paragraph.push(lines[index++] ?? "");
     blocks.push(h("p", { key }, paragraph.join("\n")));
   }
-  return <div class="skill-markdown lf-markdown">{blocks}</div>;
+  return <div class="lf-markdown">{blocks}</div>;
 }

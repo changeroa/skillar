@@ -121,7 +121,8 @@ try {
       structure.push({ surface, requestedWidth: width, theme, ...owner,
         status: owner.width === width && owner.coarse === (width === 390) &&
           owner.scrollWidth <= width && owner.manualPrism ? "PASS" : "FAIL" });
-      for (const item of cases) {
+      for (const item of cases.filter(item => !process.env.P1_COMPONENTS ||
+        process.env.P1_COMPONENTS.split(",").includes(item.component))) {
         const root = `[data-component="${item.component}"][data-state="${item.state}"]`;
         const selector = `${root} ${selectors[item.component]}`;
         try {
@@ -154,7 +155,9 @@ try {
     focus.push(...await p1Focus(product, { base, out: `${out}/focus`, surface }));
   }
 } finally {
-  await writeFile(`${out}/p1-gate.json`, JSON.stringify({ expected, results, captures, structure, keyboard, focus, errors }, null, 2));
+  await writeFile(`${out}/${process.env.P1_REPORT ?? "p1-gate"}.json`, JSON.stringify({
+    expected, selectedComponents: process.env.P1_COMPONENTS ?? "all", results, captures, structure, keyboard, focus, errors,
+  }, null, 2));
   await tabs.closeAll(); await browser.close();
 }
 const passed = results.filter(row => row.status === "PASS").length;
