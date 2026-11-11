@@ -1,6 +1,16 @@
-# PR-7 takeover verification after the 6bf20ff review
+# PR-7 interaction paint correction
 
 PR: https://github.com/changeroa/skillar/pull/106
+
+Current correction checkpoint:
+
+- 264 normal interaction cases pass 7,920 source-field comparisons and field corruptions, 808 fixed painted descendants and 6,216 rejected descendant corruptions.
+- All 16 Tree/Timeline hover cases reject hidden child paths while the row stays hovered and every computed parent field remains unchanged.
+- Four real Demo disabled-outline references replace the four MIT state exceptions. Both native renderers pass all 8 cases and 240 style comparisons; the owner's 32/44px target remains absolute.
+- All 84 ready source contexts pass 63,360 field comparisons. Newly exposed native differences include the actual selected tab-indicator shadow and Oklab selected-interval ring ink.
+- Fixed ready/non-ready paint, release checks and final-head publication remain in progress. The older receipts below are historical, not approval of this correction.
+
+## Historical takeover verification after the 6bf20ff review
 
 Rebased onto merged PR-6 `b8b1d62100b7fcdf552494bb97ca5910f9475a18`.
 Verified corrections were pushed at each milestone through `82a5ca4`.

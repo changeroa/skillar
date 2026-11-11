@@ -31,7 +31,7 @@ desktop selected-state reference supplies the background and shadow:
 Native filled sort carets use the measured header ink. Timeline tracks use
 the source border token and shared 1px frame stroke; interval/point fills use
 their actual observation palette, and selected marks retain the measured
-1px, 80%-foreground source ring.
+1px, 80%-foreground source ring in Oklab (the source mixing space).
 Tree and Timeline unselected containers share transparent paint and muted dark
 ink; their hover wash applies only to hover-capable pointers. JSON disclosure
 triggers retain the property syntax ink, transparent fill and no underline in

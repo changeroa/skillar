@@ -121,7 +121,7 @@ export function traceConsoleStyles() {
 .trace [data-event-kind=error]{--trace-kind:var(--lf-observation-guardrail);--trace-kind-line:var(--lf-observation-guardrail-line)}
 .trace :is(.event-gantt-bar,.event-gantt-point){background:var(--trace-kind)}
 .trace .event-gantt-bar{height:var(--trace-interval-height);top:calc((24px - var(--trace-interval-height))/2);border-radius:var(--trace-mark-radius)}
-.trace [aria-selected=true] :is(.event-gantt-bar,.event-gantt-point){box-shadow:0 0 0 var(--lf-border-width) color-mix(in srgb,var(--lf-foreground) 80%,transparent)}
+.trace [aria-selected=true] :is(.event-gantt-bar,.event-gantt-point){box-shadow:0 0 0 var(--lf-border-width) color-mix(in oklab,var(--lf-foreground) 80%,transparent)}
 .trace .event-gantt-point{width:var(--trace-point-size)!important;height:var(--trace-point-size);top:calc((24px - var(--trace-point-size))/2)}
 .trace :is(.event-gantt-controls,.event-gantt-overview){border-color:var(--lf-border)}
 @media(max-width:1023px){

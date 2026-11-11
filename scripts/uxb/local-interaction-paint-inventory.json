@@ -1,0 +1,4910 @@
+{
+  "cases": {
+    "local-AnalysisSegments-default-1440-light": "parts-0",
+    "local-AnalysisSegments-hover-1440-light": "parts-0",
+    "local-AnalysisSegments-focus-visible-1440-light": "parts-0",
+    "local-AnalysisSegments-active-1440-light": "parts-1",
+    "local-AnalysisSegments-selected-1440-light": "parts-2",
+    "local-AnalysisToolbar-default-1440-light": "parts-3",
+    "local-AnalysisToolbar-hover-1440-light": "parts-4",
+    "local-AnalysisToolbar-focus-visible-1440-light": "parts-5",
+    "local-AnalysisToolbar-active-1440-light": "parts-4",
+    "local-SessionSort-default-1440-light": "parts-6",
+    "local-SessionSort-hover-1440-light": "parts-6",
+    "local-SessionSort-focus-visible-1440-light": "parts-6",
+    "local-SessionSort-active-1440-light": "parts-6",
+    "local-Tree-default-1440-light": "parts-7",
+    "local-Tree-hover-1440-light": "parts-8",
+    "local-Tree-focus-visible-1440-light": "parts-7",
+    "local-Tree-active-1440-light": "parts-8",
+    "local-Tree-selected-1440-light": "parts-9",
+    "local-Timeline-default-1440-light": "parts-10",
+    "local-Timeline-hover-1440-light": "parts-11",
+    "local-Timeline-focus-visible-1440-light": "parts-10",
+    "local-Timeline-active-1440-light": "parts-11",
+    "local-Timeline-selected-1440-light": "parts-12",
+    "local-JsonViewer-default-1440-light": "parts-13",
+    "local-JsonViewer-hover-1440-light": "parts-13",
+    "local-JsonViewer-focus-visible-1440-light": "parts-13",
+    "local-JsonViewer-active-1440-light": "parts-13",
+    "local-JsonViewer-expanded-1440-light": "parts-13",
+    "local-JsonViewer-collapsed-1440-light": "parts-14",
+    "local-EventViewTabs-disabled-1440-light": "parts-15",
+    "local-EventViewTabs-default-1440-light": "parts-16",
+    "local-EventViewTabs-hover-1440-light": "parts-16",
+    "local-EventViewTabs-focus-visible-1440-light": "parts-16",
+    "local-EventViewTabs-active-1440-light": "parts-17",
+    "local-EventViewTabs-selected-1440-light": "parts-18",
+    "local-AnalysisSegments-default-1440-dark": "parts-19",
+    "local-AnalysisSegments-hover-1440-dark": "parts-19",
+    "local-AnalysisSegments-focus-visible-1440-dark": "parts-19",
+    "local-AnalysisSegments-active-1440-dark": "parts-20",
+    "local-AnalysisSegments-selected-1440-dark": "parts-21",
+    "local-AnalysisToolbar-default-1440-dark": "parts-22",
+    "local-AnalysisToolbar-hover-1440-dark": "parts-23",
+    "local-AnalysisToolbar-focus-visible-1440-dark": "parts-24",
+    "local-AnalysisToolbar-active-1440-dark": "parts-23",
+    "local-SessionSort-default-1440-dark": "parts-25",
+    "local-SessionSort-hover-1440-dark": "parts-25",
+    "local-SessionSort-focus-visible-1440-dark": "parts-25",
+    "local-SessionSort-active-1440-dark": "parts-25",
+    "local-Tree-default-1440-dark": "parts-26",
+    "local-Tree-hover-1440-dark": "parts-27",
+    "local-Tree-focus-visible-1440-dark": "parts-26",
+    "local-Tree-active-1440-dark": "parts-27",
+    "local-Tree-selected-1440-dark": "parts-28",
+    "local-Timeline-default-1440-dark": "parts-29",
+    "local-Timeline-hover-1440-dark": "parts-30",
+    "local-Timeline-focus-visible-1440-dark": "parts-29",
+    "local-Timeline-active-1440-dark": "parts-30",
+    "local-Timeline-selected-1440-dark": "parts-31",
+    "local-JsonViewer-default-1440-dark": "parts-32",
+    "local-JsonViewer-hover-1440-dark": "parts-32",
+    "local-JsonViewer-focus-visible-1440-dark": "parts-32",
+    "local-JsonViewer-active-1440-dark": "parts-32",
+    "local-JsonViewer-expanded-1440-dark": "parts-32",
+    "local-JsonViewer-collapsed-1440-dark": "parts-33",
+    "local-EventViewTabs-disabled-1440-dark": "parts-34",
+    "local-EventViewTabs-default-1440-dark": "parts-35",
+    "local-EventViewTabs-hover-1440-dark": "parts-35",
+    "local-EventViewTabs-focus-visible-1440-dark": "parts-35",
+    "local-EventViewTabs-active-1440-dark": "parts-36",
+    "local-EventViewTabs-selected-1440-dark": "parts-37",
+    "local-AnalysisSegments-default-390-light": "parts-38",
+    "local-AnalysisSegments-hover-390-light": "parts-38",
+    "local-AnalysisSegments-focus-visible-390-light": "parts-38",
+    "local-AnalysisSegments-active-390-light": "parts-1",
+    "local-AnalysisSegments-selected-390-light": "parts-2",
+    "local-AnalysisToolbar-default-390-light": "parts-3",
+    "local-AnalysisToolbar-hover-390-light": "parts-3",
+    "local-AnalysisToolbar-focus-visible-390-light": "parts-5",
+    "local-AnalysisToolbar-active-390-light": "parts-3",
+    "local-Tree-default-390-light": "parts-7",
+    "local-Tree-hover-390-light": "parts-7",
+    "local-Tree-focus-visible-390-light": "parts-7",
+    "local-Tree-active-390-light": "parts-7",
+    "local-Tree-selected-390-light": "parts-9",
+    "local-Timeline-default-390-light": "parts-10",
+    "local-Timeline-hover-390-light": "parts-10",
+    "local-Timeline-focus-visible-390-light": "parts-10",
+    "local-Timeline-active-390-light": "parts-10",
+    "local-Timeline-selected-390-light": "parts-12",
+    "local-JsonViewer-default-390-light": "parts-13",
+    "local-JsonViewer-hover-390-light": "parts-13",
+    "local-JsonViewer-focus-visible-390-light": "parts-13",
+    "local-JsonViewer-active-390-light": "parts-13",
+    "local-JsonViewer-expanded-390-light": "parts-13",
+    "local-JsonViewer-collapsed-390-light": "parts-14",
+    "local-EventViewTabs-disabled-390-light": "parts-39",
+    "local-EventViewTabs-default-390-light": "parts-40",
+    "local-EventViewTabs-hover-390-light": "parts-40",
+    "local-EventViewTabs-focus-visible-390-light": "parts-40",
+    "local-EventViewTabs-active-390-light": "parts-17",
+    "local-EventViewTabs-selected-390-light": "parts-18",
+    "local-AnalysisSegments-default-390-dark": "parts-41",
+    "local-AnalysisSegments-hover-390-dark": "parts-41",
+    "local-AnalysisSegments-focus-visible-390-dark": "parts-41",
+    "local-AnalysisSegments-active-390-dark": "parts-42",
+    "local-AnalysisSegments-selected-390-dark": "parts-43",
+    "local-AnalysisToolbar-default-390-dark": "parts-22",
+    "local-AnalysisToolbar-hover-390-dark": "parts-22",
+    "local-AnalysisToolbar-focus-visible-390-dark": "parts-24",
+    "local-AnalysisToolbar-active-390-dark": "parts-22",
+    "local-Tree-default-390-dark": "parts-26",
+    "local-Tree-hover-390-dark": "parts-26",
+    "local-Tree-focus-visible-390-dark": "parts-26",
+    "local-Tree-active-390-dark": "parts-26",
+    "local-Tree-selected-390-dark": "parts-28",
+    "local-Timeline-default-390-dark": "parts-29",
+    "local-Timeline-hover-390-dark": "parts-29",
+    "local-Timeline-focus-visible-390-dark": "parts-29",
+    "local-Timeline-active-390-dark": "parts-29",
+    "local-Timeline-selected-390-dark": "parts-31",
+    "local-JsonViewer-default-390-dark": "parts-32",
+    "local-JsonViewer-hover-390-dark": "parts-32",
+    "local-JsonViewer-focus-visible-390-dark": "parts-32",
+    "local-JsonViewer-active-390-dark": "parts-32",
+    "local-JsonViewer-expanded-390-dark": "parts-32",
+    "local-JsonViewer-collapsed-390-dark": "parts-33",
+    "local-EventViewTabs-disabled-390-dark": "parts-44",
+    "local-EventViewTabs-default-390-dark": "parts-45",
+    "local-EventViewTabs-hover-390-dark": "parts-45",
+    "local-EventViewTabs-focus-visible-390-dark": "parts-45",
+    "local-EventViewTabs-active-390-dark": "parts-46",
+    "local-EventViewTabs-selected-390-dark": "parts-47",
+    "hosted-AnalysisSegments-default-1440-light": "parts-0",
+    "hosted-AnalysisSegments-hover-1440-light": "parts-0",
+    "hosted-AnalysisSegments-focus-visible-1440-light": "parts-0",
+    "hosted-AnalysisSegments-active-1440-light": "parts-1",
+    "hosted-AnalysisSegments-selected-1440-light": "parts-2",
+    "hosted-AnalysisToolbar-default-1440-light": "parts-3",
+    "hosted-AnalysisToolbar-hover-1440-light": "parts-4",
+    "hosted-AnalysisToolbar-focus-visible-1440-light": "parts-5",
+    "hosted-AnalysisToolbar-active-1440-light": "parts-4",
+    "hosted-SessionSort-default-1440-light": "parts-6",
+    "hosted-SessionSort-hover-1440-light": "parts-6",
+    "hosted-SessionSort-focus-visible-1440-light": "parts-6",
+    "hosted-SessionSort-active-1440-light": "parts-6",
+    "hosted-Tree-default-1440-light": "parts-7",
+    "hosted-Tree-hover-1440-light": "parts-8",
+    "hosted-Tree-focus-visible-1440-light": "parts-7",
+    "hosted-Tree-active-1440-light": "parts-8",
+    "hosted-Tree-selected-1440-light": "parts-9",
+    "hosted-Timeline-default-1440-light": "parts-10",
+    "hosted-Timeline-hover-1440-light": "parts-11",
+    "hosted-Timeline-focus-visible-1440-light": "parts-10",
+    "hosted-Timeline-active-1440-light": "parts-11",
+    "hosted-Timeline-selected-1440-light": "parts-12",
+    "hosted-JsonViewer-default-1440-light": "parts-13",
+    "hosted-JsonViewer-hover-1440-light": "parts-13",
+    "hosted-JsonViewer-focus-visible-1440-light": "parts-13",
+    "hosted-JsonViewer-active-1440-light": "parts-13",
+    "hosted-JsonViewer-expanded-1440-light": "parts-13",
+    "hosted-JsonViewer-collapsed-1440-light": "parts-14",
+    "hosted-EventViewTabs-disabled-1440-light": "parts-15",
+    "hosted-EventViewTabs-default-1440-light": "parts-16",
+    "hosted-EventViewTabs-hover-1440-light": "parts-16",
+    "hosted-EventViewTabs-focus-visible-1440-light": "parts-16",
+    "hosted-EventViewTabs-active-1440-light": "parts-17",
+    "hosted-EventViewTabs-selected-1440-light": "parts-18",
+    "hosted-AnalysisSegments-default-1440-dark": "parts-19",
+    "hosted-AnalysisSegments-hover-1440-dark": "parts-19",
+    "hosted-AnalysisSegments-focus-visible-1440-dark": "parts-19",
+    "hosted-AnalysisSegments-active-1440-dark": "parts-20",
+    "hosted-AnalysisSegments-selected-1440-dark": "parts-21",
+    "hosted-AnalysisToolbar-default-1440-dark": "parts-22",
+    "hosted-AnalysisToolbar-hover-1440-dark": "parts-23",
+    "hosted-AnalysisToolbar-focus-visible-1440-dark": "parts-24",
+    "hosted-AnalysisToolbar-active-1440-dark": "parts-23",
+    "hosted-SessionSort-default-1440-dark": "parts-25",
+    "hosted-SessionSort-hover-1440-dark": "parts-25",
+    "hosted-SessionSort-focus-visible-1440-dark": "parts-25",
+    "hosted-SessionSort-active-1440-dark": "parts-25",
+    "hosted-Tree-default-1440-dark": "parts-26",
+    "hosted-Tree-hover-1440-dark": "parts-27",
+    "hosted-Tree-focus-visible-1440-dark": "parts-26",
+    "hosted-Tree-active-1440-dark": "parts-27",
+    "hosted-Tree-selected-1440-dark": "parts-28",
+    "hosted-Timeline-default-1440-dark": "parts-29",
+    "hosted-Timeline-hover-1440-dark": "parts-30",
+    "hosted-Timeline-focus-visible-1440-dark": "parts-29",
+    "hosted-Timeline-active-1440-dark": "parts-30",
+    "hosted-Timeline-selected-1440-dark": "parts-31",
+    "hosted-JsonViewer-default-1440-dark": "parts-32",
+    "hosted-JsonViewer-hover-1440-dark": "parts-32",
+    "hosted-JsonViewer-focus-visible-1440-dark": "parts-32",
+    "hosted-JsonViewer-active-1440-dark": "parts-32",
+    "hosted-JsonViewer-expanded-1440-dark": "parts-32",
+    "hosted-JsonViewer-collapsed-1440-dark": "parts-33",
+    "hosted-EventViewTabs-disabled-1440-dark": "parts-34",
+    "hosted-EventViewTabs-default-1440-dark": "parts-35",
+    "hosted-EventViewTabs-hover-1440-dark": "parts-35",
+    "hosted-EventViewTabs-focus-visible-1440-dark": "parts-35",
+    "hosted-EventViewTabs-active-1440-dark": "parts-36",
+    "hosted-EventViewTabs-selected-1440-dark": "parts-37",
+    "hosted-AnalysisSegments-default-390-light": "parts-38",
+    "hosted-AnalysisSegments-hover-390-light": "parts-38",
+    "hosted-AnalysisSegments-focus-visible-390-light": "parts-38",
+    "hosted-AnalysisSegments-active-390-light": "parts-1",
+    "hosted-AnalysisSegments-selected-390-light": "parts-2",
+    "hosted-AnalysisToolbar-default-390-light": "parts-3",
+    "hosted-AnalysisToolbar-hover-390-light": "parts-3",
+    "hosted-AnalysisToolbar-focus-visible-390-light": "parts-5",
+    "hosted-AnalysisToolbar-active-390-light": "parts-3",
+    "hosted-Tree-default-390-light": "parts-7",
+    "hosted-Tree-hover-390-light": "parts-7",
+    "hosted-Tree-focus-visible-390-light": "parts-7",
+    "hosted-Tree-active-390-light": "parts-7",
+    "hosted-Tree-selected-390-light": "parts-9",
+    "hosted-Timeline-default-390-light": "parts-10",
+    "hosted-Timeline-hover-390-light": "parts-10",
+    "hosted-Timeline-focus-visible-390-light": "parts-10",
+    "hosted-Timeline-active-390-light": "parts-10",
+    "hosted-Timeline-selected-390-light": "parts-12",
+    "hosted-JsonViewer-default-390-light": "parts-13",
+    "hosted-JsonViewer-hover-390-light": "parts-13",
+    "hosted-JsonViewer-focus-visible-390-light": "parts-13",
+    "hosted-JsonViewer-active-390-light": "parts-13",
+    "hosted-JsonViewer-expanded-390-light": "parts-13",
+    "hosted-JsonViewer-collapsed-390-light": "parts-14",
+    "hosted-EventViewTabs-disabled-390-light": "parts-39",
+    "hosted-EventViewTabs-default-390-light": "parts-40",
+    "hosted-EventViewTabs-hover-390-light": "parts-40",
+    "hosted-EventViewTabs-focus-visible-390-light": "parts-40",
+    "hosted-EventViewTabs-active-390-light": "parts-17",
+    "hosted-EventViewTabs-selected-390-light": "parts-18",
+    "hosted-AnalysisSegments-default-390-dark": "parts-41",
+    "hosted-AnalysisSegments-hover-390-dark": "parts-41",
+    "hosted-AnalysisSegments-focus-visible-390-dark": "parts-41",
+    "hosted-AnalysisSegments-active-390-dark": "parts-42",
+    "hosted-AnalysisSegments-selected-390-dark": "parts-43",
+    "hosted-AnalysisToolbar-default-390-dark": "parts-22",
+    "hosted-AnalysisToolbar-hover-390-dark": "parts-22",
+    "hosted-AnalysisToolbar-focus-visible-390-dark": "parts-24",
+    "hosted-AnalysisToolbar-active-390-dark": "parts-22",
+    "hosted-Tree-default-390-dark": "parts-26",
+    "hosted-Tree-hover-390-dark": "parts-26",
+    "hosted-Tree-focus-visible-390-dark": "parts-26",
+    "hosted-Tree-active-390-dark": "parts-26",
+    "hosted-Tree-selected-390-dark": "parts-28",
+    "hosted-Timeline-default-390-dark": "parts-29",
+    "hosted-Timeline-hover-390-dark": "parts-29",
+    "hosted-Timeline-focus-visible-390-dark": "parts-29",
+    "hosted-Timeline-active-390-dark": "parts-29",
+    "hosted-Timeline-selected-390-dark": "parts-31",
+    "hosted-JsonViewer-default-390-dark": "parts-32",
+    "hosted-JsonViewer-hover-390-dark": "parts-32",
+    "hosted-JsonViewer-focus-visible-390-dark": "parts-32",
+    "hosted-JsonViewer-active-390-dark": "parts-32",
+    "hosted-JsonViewer-expanded-390-dark": "parts-32",
+    "hosted-JsonViewer-collapsed-390-dark": "parts-33",
+    "hosted-EventViewTabs-disabled-390-dark": "parts-44",
+    "hosted-EventViewTabs-default-390-dark": "parts-45",
+    "hosted-EventViewTabs-hover-390-dark": "parts-45",
+    "hosted-EventViewTabs-focus-visible-390-dark": "parts-45",
+    "hosted-EventViewTabs-active-390-dark": "parts-46",
+    "hosted-EventViewTabs-selected-390-dark": "parts-47"
+  },
+  "templates": {
+    "parts-0": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              161,
+              161,
+              170,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-1": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-2": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color",
+            "pseudo:after"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\" ✓\"",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parts-3": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderLeftWidth": "1px"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-4": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              244,
+              244,
+              245,
+              255
+            ],
+            "borderColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderLeftWidth": "1px"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-5": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor",
+            "boxShadow"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "borderColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              212,
+              212,
+              216,
+              255
+            ],
+            "borderLeftWidth": "1px",
+            "boxShadow": "rgb(113, 113, 122) 0px 0px 0px 2px inset"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-6": {
+      "nodeCount": 4,
+      "parts": [
+        {
+          "index": 1,
+          "tag": "span",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "19.5px",
+            "fontWeight": "600",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "fill"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fill": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-7": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              123,
+              0,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-8": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              244,
+              244,
+              245,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              123,
+              0,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-9": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor",
+            "pseudo:after"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              244,
+              244,
+              245,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\"\"",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              51,
+              99,
+              234,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-10": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              123,
+              0,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              228,
+              228,
+              231,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              150,
+              163,
+              0,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-11": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              244,
+              244,
+              245,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              123,
+              0,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              228,
+              228,
+              231,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              150,
+              163,
+              0,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-12": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor",
+            "pseudo:after"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              244,
+              244,
+              245,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\"\"",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              51,
+              99,
+              234,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              228,
+              228,
+              231,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor",
+            "boxShadow"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              97,
+              145,
+              255,
+              255
+            ],
+            "boxShadow": "oklab(0.274119 0.00152498 -0.00525819 / 0.8) 0px 0px 0px 1px"
+          }
+        }
+      ]
+    },
+    "parts-13": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "summary",
+          "class": "json-line",
+          "channels": [
+            "pseudo:before",
+            "pseudo:marker"
+          ],
+          "text": false,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "pseudo": {
+              "before": {
+                "content": "counter(json-line)",
+                "color": [
+                  113,
+                  113,
+                  122,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  0,
+                  92,
+                  197,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  0,
+                  92,
+                  197,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 1,
+          "tag": "code",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              0,
+              92,
+              197,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "span",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-14": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "summary",
+          "class": "json-line",
+          "channels": [
+            "pseudo:before",
+            "pseudo:marker"
+          ],
+          "text": false,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "pseudo": {
+              "before": {
+                "content": "counter(json-line)",
+                "color": [
+                  113,
+                  113,
+                  122,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  0,
+                  92,
+                  197,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  0,
+                  92,
+                  197,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 1,
+          "tag": "code",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              0,
+              92,
+              197,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "span",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-15": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "0.5",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              161,
+              161,
+              170,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              161,
+              161,
+              170,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-16": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              161,
+              161,
+              170,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              161,
+              161,
+              170,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-17": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              39,
+              39,
+              42,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-18": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color",
+            "pseudo:before"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              39,
+              39,
+              42,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "\"\"",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  255,
+                  255,
+                  255,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  39,
+                  39,
+                  42,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              39,
+              39,
+              42,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-19": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              102,
+              102,
+              102,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-20": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              230,
+              230,
+              230,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-21": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color",
+            "pseudo:after"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              230,
+              230,
+              230,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\" ✓\"",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parts-22": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              15,
+              15,
+              15,
+              255
+            ],
+            "borderColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderLeftWidth": "1px"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-23": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              46,
+              46,
+              46,
+              255
+            ],
+            "borderColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderLeftWidth": "1px"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-24": {
+      "nodeCount": 2,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "lf-button lf-button--outline lf-button--default",
+          "channels": [
+            "backgroundColor",
+            "borderColor",
+            "borderRightColor",
+            "borderBottomColor",
+            "borderLeftColor",
+            "boxShadow"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              15,
+              15,
+              15,
+              255
+            ],
+            "borderColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderWidth": "1px",
+            "borderRightColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderRightWidth": "1px",
+            "borderBottomColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderBottomWidth": "1px",
+            "borderLeftColor": [
+              66,
+              66,
+              66,
+              255
+            ],
+            "borderLeftWidth": "1px",
+            "boxShadow": "rgb(138, 138, 138) 0px 0px 0px 2px inset"
+          }
+        },
+        {
+          "index": 1,
+          "tag": "span",
+          "class": "lf-button__content",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-25": {
+      "nodeCount": 4,
+      "parts": [
+        {
+          "index": 1,
+          "tag": "span",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "19.5px",
+            "fontWeight": "600",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "fill"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fill": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-26": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              175,
+              185,
+              101,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-27": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              46,
+              46,
+              46,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              175,
+              185,
+              101,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-28": {
+      "nodeCount": 6,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor",
+            "pseudo:after"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              30,
+              30,
+              30,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\"\"",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              143,
+              176,
+              248,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-29": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              175,
+              185,
+              101,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              51,
+              51,
+              51,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              172,
+              183,
+              89,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-30": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              46,
+              46,
+              46,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              175,
+              185,
+              101,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              51,
+              51,
+              51,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              172,
+              183,
+              89,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-31": {
+      "nodeCount": 8,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "trace-event-row",
+          "channels": [
+            "backgroundColor",
+            "pseudo:after"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              30,
+              30,
+              30,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\"\"",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              143,
+              176,
+              248,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        },
+        {
+          "index": 3,
+          "tag": "span",
+          "class": "trace-event-row__kind",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": "400",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "tag": "code",
+          "class": "trace-event-row__summary",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "tag": "time",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "tag": "span",
+          "class": "event-gantt-track",
+          "channels": [
+            "borderBottomColor"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "borderBottomColor": [
+              51,
+              51,
+              51,
+              255
+            ],
+            "borderBottomWidth": "1px"
+          }
+        },
+        {
+          "index": 7,
+          "tag": "span",
+          "class": "event-gantt-point",
+          "channels": [
+            "backgroundColor",
+            "boxShadow"
+          ],
+          "text": false,
+          "marker": "none",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "backgroundColor": [
+              137,
+              172,
+              250,
+              255
+            ],
+            "boxShadow": "oklab(0.765161 0.0000348985 0.0000153184 / 0.8) 0px 0px 0px 1px"
+          }
+        }
+      ]
+    },
+    "parts-32": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "summary",
+          "class": "json-line",
+          "channels": [
+            "pseudo:before",
+            "pseudo:marker"
+          ],
+          "text": false,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "pseudo": {
+              "before": {
+                "content": "counter(json-line)",
+                "color": [
+                  138,
+                  138,
+                  138,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  121,
+                  184,
+                  255,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  121,
+                  184,
+                  255,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 1,
+          "tag": "code",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              121,
+              184,
+              255,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "span",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-open",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-33": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "summary",
+          "class": "json-line",
+          "channels": [
+            "pseudo:before",
+            "pseudo:marker"
+          ],
+          "text": false,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "pseudo": {
+              "before": {
+                "content": "counter(json-line)",
+                "color": [
+                  138,
+                  138,
+                  138,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  121,
+                  184,
+                  255,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  121,
+                  184,
+                  255,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 1,
+          "tag": "code",
+          "class": null,
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              121,
+              184,
+              255,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "span",
+          "class": "pe-muted",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disclosure-closed",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": "400",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-34": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "0.5",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              102,
+              102,
+              102,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              102,
+              102,
+              102,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-35": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              102,
+              102,
+              102,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              102,
+              102,
+              102,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-36": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              230,
+              230,
+              230,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              230,
+              230,
+              230,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-37": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color",
+            "pseudo:before"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              230,
+              230,
+              230,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "\"\"",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  61,
+                  61,
+                  61,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "rgba(0, 0, 0, 0) 0px 1px 3px 0px, rgba(0, 0, 0, 0) 0px 1px 2px -1px"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  230,
+                  230,
+                  230,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              230,
+              230,
+              230,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-38": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-39": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "0.5",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              113,
+              122,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-40": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              113,
+              113,
+              122,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              113,
+              113,
+              122,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-41": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-42": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        }
+      ]
+    },
+    "parts-43": {
+      "nodeCount": 1,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "seg__btn",
+          "channels": [
+            "color",
+            "pseudo:after"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "none",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "after": {
+                "content": "\" ✓\"",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "inline-block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parts-44": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "0.5",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 0.5,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              138,
+              138,
+              138,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-45": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              138,
+              138,
+              138,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              138,
+              138,
+              138,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-46": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              179,
+              179,
+              179,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    },
+    "parts-47": {
+      "nodeCount": 3,
+      "parts": [
+        {
+          "index": 0,
+          "tag": "button",
+          "class": "pe-button",
+          "channels": [
+            "color",
+            "pseudo:before"
+          ],
+          "text": true,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "fontSize": "13px",
+            "lineHeight": "13px",
+            "fontWeight": "600",
+            "color": [
+              179,
+              179,
+              179,
+              255
+            ],
+            "pseudo": {
+              "before": {
+                "content": "\"\"",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  61,
+                  61,
+                  61,
+                  255
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "rgba(0, 0, 0, 0) 0px 1px 3px 0px, rgba(0, 0, 0, 0) 0px 1px 2px -1px"
+              },
+              "after": {
+                "content": "none",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              },
+              "marker": {
+                "content": "normal",
+                "color": [
+                  179,
+                  179,
+                  179,
+                  255
+                ],
+                "backgroundColor": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "backgroundImage": "none",
+                "opacity": "1",
+                "display": "block",
+                "visibility": "visible",
+                "boxShadow": "none"
+              }
+            }
+          }
+        },
+        {
+          "index": 2,
+          "tag": "path",
+          "class": null,
+          "channels": [
+            "stroke"
+          ],
+          "text": false,
+          "marker": "disc",
+          "paint": {
+            "opacity": "1",
+            "effectiveOpacity": 1,
+            "fillOpacity": "1",
+            "strokeOpacity": "1",
+            "dash": "none",
+            "stroke": [
+              179,
+              179,
+              179,
+              255
+            ],
+            "strokeWidth": "2px"
+          }
+        }
+      ]
+    }
+  }
+}
