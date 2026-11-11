@@ -18,6 +18,15 @@ All keyboard targets retain contrasting 2px painted focus using
 `--lf-primary-accent`, including legacy controls and shared primitives. This is
 the owner's visible-focus override, not the Demo's lower-contrast neutral ring.
 Inputs remain named.
+Legacy native inputs/selects use 8px block and 12px inline padding; buttons
+use 4px/12px. Primary/destructive buttons have no painted border, disabled
+variants keep their paint at .5 opacity, and hover paint is limited to
+hover-capable pointers. Native disclosures use secondary-button metrics while
+retaining their marker. Native choice checkboxes retain their 24px paint within
+a named 44px choice, with control-border/control-fill tokens and 4px corners.
+Shared select, chart disclosure and shell breadcrumb styles remain component-owned.
+The strict hosted-control gate asserts 31 computed fields for every case;
+padding, typography, radii and border colours have no owner exemption.
 The existing fixed-sidenav-shell keeps main as vertical scroll owner; table
 overflow and peek body retain their separate named responsibilities.
 

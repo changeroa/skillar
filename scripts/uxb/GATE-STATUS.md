@@ -3,23 +3,88 @@
 Draft PR: https://github.com/changeroa/skillar/pull/105
 Branch: `uxb/pr-6-hosted`, based on merged PR-0 through PR-5 at `ba64d91`.
 Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-6/`.
-The exact published head and terminal CI are recorded in that directory's
-`publication.json` and `ci-final.json`. This is implementer evidence, not approval.
+The strict-control revision's exact published head and terminal CI are recorded
+in that directory's `publication-strict-controls.json` and
+`ci-strict-controls.json`. Older publication receipts remain historical.
+This is implementer evidence, not approval.
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| 1 Component visual/style comparisons | PASS | Gallery now loads the actual hosted, skills, account, dashboard and UI CSS. 86 live-Demo shared-control comparisons have no unexpected style differences. `hosted-controls/` adds 128 native control/panel/skeleton state comparisons at both widths/themes, preserving raw differences and named native/owner adaptations rather than claiming pixel identity. |
-| 2 Complete screen/state comparison | PASS (coverage) | 176 default captures plus 376 before/after state captures. 47 route/state cases produce 188 paired boards: 44 reachable cases and three explicitly N/A static-404 cases, each at both widths/themes. Source references distinguish live Demo primitives from pinned MIT loading references. Independent approval is separate and remains lead-owned. |
+| 1 Component visual/style comparisons | PASS | 86 shared-control comparisons pass under the hosted cascade. `hosted-controls-strict/results.json` contains 132/132 passing native cases, 4,092 exact metric comparisons, 264 rejected style mutations and 36 rejected focus-removal mutations. All four paddings, font size/line height/weight, all four radii/border widths/border colours, height and focus paint are assertions, not observations. See the strict contract below. |
+| 2 Complete screen/state comparison | PASS (prior verified coverage) | The reviewed b38461e run contains 176 default captures plus 376 before/after state captures. 47 route/state cases produce 188 paired boards: 44 reachable cases and three explicitly N/A static-404 cases, each at both widths/themes. Those 552 captures were not rerun or relabelled as the strict-control revision. Source references distinguish live Demo primitives from pinned MIT loading references. |
 | 3 Keyboard/ARIA and real-page measurements | PASS | The checked-in `pr6-runtime.mjs` fails on every bad baseline and invokes the real 32/44px predicate for all 142 size mutations. 36/36 scenarios, 146 passing painted-focus measurements and 146 rejected focus-removal mutations; four native publisher-checkbox crops each contain 64 contrasting pairs. Native checkboxes are not falsely counted as 32/44px inputs. Six fresh peek profiles pass 819 assertions and 24 native confirmations. |
 | 4 R1–R7 | PASS | Real grouped shell, sidebar identity/logout, command palette, URL state, peak/full navigation, dirty drafts, default list rows (15 desktop / 7 phone), empty states and common chart baseline preserved. Native pagehide/pageshow and listener cleanup passed; this Chrome run did not restore bfcache, so an actual cache hit remains unverified. |
-| 5 Builds, tests and release contents | PASS | Site build and 453/453 tests; local build/typecheck and 15 related adapter/state tests pass. The new test performs an isolated real release build and rejects fixture modules, gallery and QA content. A development-mode mutation emits both fixture chunks and is rejected by that same test. Before/after release inventories contain 54/52 files. Exact-head CI is recorded separately. The historical full-local `/tmp/h` ENOTDIR exception was not hidden or edited. |
+| 5 Builds, tests and release contents | PASS | Strict-control revision: site build and 456/456 tests, including three new metric/policy/source-concordance regressions and the isolated real release-content gate. The previously reviewed local build/typecheck, 15 adapter/state tests and development-fixture rejection are historical, not claimed as fresh runs. Exact-head CI is recorded separately. The historical full-local `/tmp/h` ENOTDIR exception was not hidden or edited. |
 | 6 License/NOTICE | PASS | No new dependencies, upstream source copies or EE reads. Existing MIT NOTICE remains in the clean production output. The earlier package NOTICE inspection is historical, not a rerun claimed by these fixes. |
-| 7 Deployment boundary | PASS | Not deployed; deploy gated on owner (production). Only `uxb-pr-6` Pages preview is deployed: https://uxb-pr-6.skillar-site.pages.dev . No merge or self-approval. |
+| 7 Deployment boundary | PASS | No production deployment, merge or self-approval. The existing `uxb-pr-6` Pages preview predates the strict-control revision and is not final-head evidence. |
 
 The full per-screen wireframe deviations, source-route mappings, evidence
 pipeline corrections and residual review gaps are in `pr-6/gate.md`.
 The preview's `/__qa/pr6/` contains only synthetic/public-Demo PNG evidence;
 source account footers are hidden and asserted absent from every capture.
+
+## Strict hosted-control gate after re-review at b38461e
+
+The earlier `hosted-controls/` 128-capture run was not a style gate: padding was
+absent and recorded differences did not fail it. Its G1 claim is superseded.
+The evidence entry point `pr-6/hosted-controls.mjs` now invokes the checked-in
+`scripts/uxb/hosted-controls.mjs`, backed by `hosted-control-style.mjs`.
+Any missing, invalid or differing required metric throws; source disagreement,
+incomplete inventory, a surviving mutation or a failed painted-focus baseline
+also exits nonzero. Capture count alone cannot pass.
+
+The inventory preserves all 128 previous cases and adds checked-checkbox focus
+at four profiles: 33 cases at 1440px/390px, light/dark = 132. Every case asserts
+31 fields: height; four paddings; font size, line height and weight; four corner
+radii; four border widths and RGBA colours; background/foreground RGBA; opacity;
+focus-visible, outline width/style/offset/RGBA and painted shadows; disabled and
+checked state. Shadow normalization removes only zero-alpha/zero-extent paint.
+No typography, padding, radius or border-colour differences are whitelisted.
+
+Every passing case is mutated in the real browser and restored, then rechecked:
+132 padding-left +4px probes, 112 font-size +2px probes and 20 corner-radius +2px
+probes must fail the same baseline comparator. All 36 keyboard-focus cases must
+paint contrasting focus and reject removal of the ring. These are deliberate
+failures caught by assertions, not counts of attempted screenshots.
+
+References are rendered from actual MIT components at
+`69181812b87169df157841fce1314ec96ecd2c5a`, not hand-painted target clones:
+Button primary/outline/destructive/secondary/disabled, plain Input, SelectInput,
+Checkbox/sm, Card+CardHeader, Alert/sm and Skeleton/h-4. Sixty cases additionally
+require concordance with the available live Demo records for padding, type,
+radii, border widths/colours, opacity and height before the source can define
+expected values. The live input has prefix/icon padding and is not the plain
+input caller; the live primary link is not a primary button. Those cases use
+the genuine pinned variant and are explicitly not labelled live screenshots.
+The live focused checkbox is checked. Both checked and unchecked focus are now
+tested; unchecked focus combines live unchecked metrics with genuine pinned
+keyboard focus. Card padding belongs to CardHeader; identical one-line content
+makes its natural height comparable without imposing a fixture-only height.
+
+The exact owner adaptations are 32px mouse/44px touch control height, existing
+24px native checkbox paint inside its 44px named choice, semantic destructive
+ink for the existing quiet-danger button, and a 2px primary-accent outline with
+2px offset replacing the source neutral shadow. Expected accent/destructive
+RGBA comes from source tokens, never from the measured target. Caller text,
+width, disclosure marker and native-select caret remain native; this is not a
+claim of pixel-identical content or browser affordances.
+
+The first strict run failed 104/128 actual cases. Real fixes retain variant
+paint at disabled opacity .5, remove incorrect primary/destructive borders and
+pointer-active outlines, correct input/select padding and type, align native
+disclosure metrics, paint native checkbox border/check states, add Card shadow,
+use 16px skeleton bars and limit hover to hover-capable pointers. Shared
+selects, chart disclosures and shell breadcrumbs keep their component styles.
+
+Reproduce with the actual pinned reference server and QA browser running:
+
+```sh
+OMOWRIGHT_HELPER=/absolute/path/to/omowright.mjs \
+node scripts/uxb/hosted-controls.mjs \
+  http://localhost:5182 http://127.0.0.1:57588 /absolute/output \
+  /absolute/path/to/pr-1/demo-captures/records.json
+node --test site/test/hosted-control-style.test.mjs
+```
 
 ## Independent review corrections
 
