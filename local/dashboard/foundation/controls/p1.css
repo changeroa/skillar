@@ -49,7 +49,7 @@
 .lf-radio input:checked + .lf-radio__ring > span { opacity: 1; }
 .lf-radio input:focus-visible + .lf-radio__ring, .lf-switch input:focus-visible + .lf-switch__track { box-shadow: var(--lf-field-focus-shadow); }
 .lf-radio:has(input:disabled), .lf-switch:has(input:disabled) { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
-.lf-switch__track { box-sizing: border-box; display: flex; align-items: center; flex-shrink: 0; width: 36px; height: var(--lf-space-5); border: var(--lf-space-half) solid transparent; border-radius: calc(infinity * 1px); background: var(--lf-control-track); font-size: var(--lf-text-lg); line-height: var(--lf-icon-leading); }
+.lf-switch__track { box-sizing: border-box; display: flex; align-items: center; flex-shrink: 0; width: 36px; height: var(--lf-space-5); border: var(--lf-space-half) solid transparent; border-radius: calc(infinity * 1px); background: var(--lf-control-track); }
 .lf-switch__track > span { width: var(--lf-space-4); height: var(--lf-space-4); border-radius: calc(infinity * 1px); border: 0 solid var(--lf-border); background: light-dark(var(--lf-background), var(--lf-muted-foreground)); box-shadow: var(--lf-shadow-modal); }
 .lf-switch input:checked + .lf-switch__track { background: var(--lf-control-fill); }
 .lf-switch--green input:checked + .lf-switch__track { background: var(--lf-p1-dark-green); }
@@ -78,7 +78,7 @@
 .lf-loading--muted { color: var(--lf-muted-foreground); }
 .lf-loading--inherit { color: inherit; }
 .lf-loading--inline { display: inline-block; vertical-align: middle; }
-.lf-loading .lf-spinner { display: block; width: 100%; height: 100%; border-color: var(--lf-border); font-size: var(--lf-text-lg); line-height: var(--lf-icon-leading); }
+.lf-loading .lf-spinner { display: block; width: 100%; height: 100%; border-color: var(--lf-border); }
 .lf-loading--inline .lf-spinner { display: inline; }
 .lf-toast-region { color: var(--lf-toast-foreground); font: var(--lf-text-sm)/1.5 var(--lf-toast-font); }
 .lf-toast-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

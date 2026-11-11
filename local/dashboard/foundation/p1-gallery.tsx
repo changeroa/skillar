@@ -22,6 +22,11 @@ function Specimen({ component, state, children }: { readonly component: string; 
 
 export function P1Gallery() {
   const examples = new URLSearchParams(location.search);
+  // Caller copy of a Demo reference (its placeholder and closed selected label), like the code/markdown examples.
+  const placeholder = examples.get("placeholder");
+  const demoCopy = placeholder ? { placeholder } : {};
+  const selectedLabel = examples.get("selectedLabel");
+  const selectedOptions = selectedLabel ? options.map(option => option.value === "alpha" ? { ...option, label: selectedLabel } : option) : options;
   const [single, setSingle] = useState("");
   const [multiple, setMultiple] = useState<readonly string[]>(["alpha"]);
   const [period, setPeriod] = useState("1");
@@ -40,13 +45,13 @@ export function P1Gallery() {
             {...(state === "error" ? { error: "Required" } : {})} placeholder="Describe the skill"
             defaultValue={state === "empty" ? "" : "Recorded text"} />
         </Specimen>)}
-      <Specimen component="Combobox" state="default"><Combobox id="p1-combo" label="Skill" options={options} value={single} onChange={setSingle} /></Specimen>
+      <Specimen component="Combobox" state="default"><Combobox id="p1-combo" label="Skill" options={options} value={single} onChange={setSingle} {...demoCopy} /></Specimen>
       <Specimen component="Combobox" state="disabled"><Combobox label="Skill" options={options} value="alpha" onChange={setSingle} disabled /></Specimen>
       <Specimen component="Combobox" state="error"><Combobox label="Skill" options={options} value="" onChange={setSingle} error="Required" /></Specimen>
-      <Specimen component="Combobox" state="empty"><Combobox label="Skill" options={[]} value="" onChange={setSingle} /></Specimen>
+      <Specimen component="Combobox" state="empty"><Combobox label="Skill" options={[]} value="" onChange={setSingle} {...demoCopy} /></Specimen>
       <Specimen component="Combobox" state="open"><Combobox id="p1-combo-open" label="Skill" options={options} value="alpha" onChange={() => undefined} /></Specimen>
-      <Specimen component="MultiSelect" state="selected"><MultiSelect id="p1-multi" label="Models" options={options} value={multiple} onChange={setMultiple} /></Specimen>
-      <Specimen component="MultiSelect" state="empty"><MultiSelect label="Models" options={[]} value={[]} onChange={setMultiple} /></Specimen>
+      <Specimen component="MultiSelect" state="selected"><MultiSelect id="p1-multi" label="Models" options={selectedOptions} value={multiple} onChange={setMultiple} /></Specimen>
+      <Specimen component="MultiSelect" state="empty"><MultiSelect label="Models" options={[]} value={[]} onChange={setMultiple} {...demoCopy} /></Specimen>
       <Specimen component="MultiSelect" state="disabled"><MultiSelect label="Models" options={options} value={["alpha"]} onChange={setMultiple} disabled /></Specimen>
       <Specimen component="MultiSelect" state="open"><MultiSelect id="p1-multi-open" label="Models" options={options} value={["alpha"]} onChange={() => undefined} /></Specimen>
       {["default", "sm"].flatMap(size => ["default", "green"].flatMap(color => [false, true].flatMap(checked =>

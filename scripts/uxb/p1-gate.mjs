@@ -49,6 +49,8 @@ const structured = JSON.parse(await readFile(`${out}/demo-records-structured.jso
 assert.equal(structured.length, 4, "Live structured Markdown is required at both widths in both themes");
 examples.structured = await readFile(`${out}/demo-markdown.md`, "utf8");
 assert.equal(extra.length, 4, "Live Avatar and Spinner reconciliation is required");
+// Closed states found live on the read-only Demo (p1-demo-closed.mjs); exact-width rows win.
+const closed = JSON.parse(await readFile(`${out}/demo-records-closed.json`, "utf8"));
 const [js, css, fontCss] = await Promise.all(["mit.js", "mit.css", "reference-font.css"].map(path => readFile(`${out}/${path}`, "utf8")));
 const results = [], captures = [], structure = [], keyboard = [], focus = [], mutations = [], errors = [];
 const referenceCache = new Map();
@@ -68,11 +70,21 @@ async function mountSource(theme) {
   }, { js, css, fontCss });
   await ready(source, "#mit-ready");
 }
+async function restoreContext(selector) {
+  await product.evaluate(selector => {
+    const parent = document.querySelector(selector)?.parentElement;
+    if (parent?.dataset.p1Context === undefined) return;
+    parent.setAttribute("style", parent.dataset.p1Context);
+    if (parent.dataset.p1Context === "") parent.removeAttribute("style");
+    delete parent.dataset.p1Context;
+  }, selector);
+}
 async function reference({ component, state, interaction, theme, width }) {
   const key = [component, state, interaction, theme, width].join(":");
   if (referenceCache.has(key)) return referenceCache.get(key);
   const remember = record => { referenceCache.set(key, record); return record; };
-  const audited = extra.find(row => row.component === component && row.state === state && row.theme === theme);
+  const same = row => row.component === component && row.state === state && row.theme === theme;
+  const audited = closed.find(row => same(row) && row.width === width) ?? closed.find(same) ?? extra.find(same);
   if (audited) {
     assert.ok(audited.states?.[interaction], `Missing live ${component} ${interaction}`);
     return remember({ ...audited, ...audited.states[interaction] });
@@ -148,6 +160,8 @@ try {
       await applyViewport(product, viewport); await applyViewport(source, viewport);
       await mountSource(theme);
       const params = new URLSearchParams({ p1: "", atomic: "", theme, code: examples.code, markdown: examples.markdown,
+        placeholder: closed.find(row => row.component === "MultiSelect" && row.state === "empty").found.text,
+        selectedLabel: closed.find(row => row.component === "MultiSelect" && row.state === "selected").found.text,
         before: examples.before ?? "", after: examples.after ?? "", language: "python", structured: examples.structured });
       await product.goto(`${base}/__gallery.html?${params}`, { waitUntil: "domcontentloaded" });
       await applyViewport(product, viewport);
@@ -188,6 +202,7 @@ try {
         try {
           const sourceRecord = await reference({ ...item, interaction, theme, width });
           const comparableWidth = item.component === "TimePeriodSelect" ? sourceRecord.geometry.width
+            : sourceRecord?.provenance === "REAL-DEMO" && ["Combobox", "MultiSelect"].includes(item.component) ? sourceRecord.geometry.width
             : item.component === "MarkdownViewer" && item.state === "structured" ? parseFloat(sourceRecord.style.values.width)
             : width === 1440 && (
             item.component === "CodeBlock" && item.state === "default" ||
@@ -196,6 +211,19 @@ try {
           if (comparableWidth) await product.evaluate(({ root, width }) => {
             document.querySelector(`${root} [data-probe]`).style.width = `${width}px`;
           }, { root, width: comparableWidth });
+          // Switch and Spinner paint no text and, like the pinned source, inherit their caller's typography
+          // (the Demo shows 12-13px table/pagination callers). The product parent gets the reference's
+          // inherited typography, so a product that declares its own font still fails. A Demo Spinner
+          // also takes its parent's display (a flex parent blockifies the svg).
+          const inherited = sourceRecord?.style?.values;
+          const context = ["Switch", "Spinner"].includes(item.component) && inherited ? {
+            fontSize: inherited.fontSize, lineHeight: inherited.lineHeight, fontWeight: inherited.fontWeight,
+            ...(item.component === "Spinner" && sourceRecord.context ? { display: sourceRecord.context.display } : {}) } : null;
+          if (context) await product.evaluate(({ selector, context }) => {
+            const parent = document.querySelector(selector).parentElement;
+            parent.dataset.p1Context = parent.getAttribute("style") ?? "";
+            Object.assign(parent.style, context);
+          }, { selector, context });
           const opened = item.state === "open"
             ? await openP1Popup(product, { side: "product", root, component: item.component, interaction }) : null;
           const target = opened ? opened.selector : selector;
@@ -231,10 +259,12 @@ try {
           if (comparableWidth) await product.evaluate(root => {
             document.querySelector(`${root} [data-probe]`).style.removeProperty("width");
           }, root);
+          if (context) await restoreContext(selector);
         } catch (error) {
           await product.evaluate(root => {
             document.querySelector(`${root} [data-probe]`)?.style.removeProperty("width");
           }, root);
+          await restoreContext(selector);
           errors.push({ surface, width, theme, ...item, interaction, error: String(error) });
         } finally {
           if (interaction === "active") await releaseP1Pointer(product);
