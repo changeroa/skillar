@@ -64,14 +64,21 @@ toast-shadow (0 4px 12px black/10), and Sonner's system font stack.
 Root type is 13px/19.5px regular, title medium, description 13px/18.2px.
 Filled status glyphs are Sonner's MIT paths; loading uses its 12-bar mechanism.
 Loading bars use toast-loader-color #6f6f6f, 6px corners, 1.2s linear fade and
-the source's -1.2s to -0.1s phase offsets. Textarea/Combobox invalid states keep
-the neutral field border and expose a linked error message and aria-invalid.
+the source's -1.2s to -0.1s phase offsets. Textarea invalid states keep the
+neutral field border. Combobox invalid states use the pinned InputControl
+destructive edge and indicator, with a linked error message and aria-invalid.
+The editable combobox keeps InputControl's 8px/12px closed-control insets on
+its painted wrapper; its native input owns keyboard focus and the wrapper
+paints the focus ring.
 Toast width is bounded to 356px. Close/action retain the owner-required target
 size while the close glyph/circle keep their source visual size.
 Its close/action controls retain 32/44px targets. Avatar has 24/28/32px sizes,
 circle or 8px rounded shape, named initials fallback and load-failure fallback.
 
 Every focusable part retains a contrasting painted 2px primary-accent ring.
+Native date fields use the same 13px/20px sans and 8px/12px insets as the
+pinned time fields. Read-only code puts Copy at the upper trailing corner
+with 40px trailing content inset, keeping its immutable-field surface.
 No decorative transitions or new dependency are needed. Native date surfaces
 are an explicit owner-native adaptation. No new accessibility debt is accepted.
 

@@ -1,6 +1,8 @@
 /* Preact reimplementation of pinned MIT Langfuse P1 controls. */
 @import "../viewers/viewers.css";
 .lf-time-period .lf-select-wrap:has(select:focus-visible) { outline: var(--lf-focus-width) solid var(--lf-foreground); outline-offset: var(--lf-focus-offset); box-shadow: none; }
+.lf-time-period .lf-select-wrap { padding: var(--lf-space-1) var(--lf-space-2); border-color: var(--lf-border-contrast); }
+.lf-time-period .lf-select-wrap > .lf-control-icon { width: var(--lf-text-xs); height: var(--lf-text-xs); }
 .lf-textarea, .lf-combobox__control { box-sizing: border-box; width: 100%; min-width: 0; border: var(--lf-border-width) solid var(--lf-input); border-radius: var(--lf-radius-md); padding: var(--lf-space-2) var(--lf-space-3); color: var(--lf-foreground); background: var(--lf-background); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-textarea { min-height: 80px; resize: vertical; }
 .lf-textarea--code { font-family: var(--lf-font-mono); }
@@ -9,10 +11,15 @@
 .lf-textarea:focus-visible, .lf-combobox__control:focus-visible,
 .lf-combobox__all:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
 .lf-combobox { position: relative; }
-.lf-combobox__input { position: relative; min-width: 0; }
+.lf-combobox__input { position: relative; min-width: 0; display: flex; align-items: center; gap: var(--lf-space-1); height: var(--lf-control-height); padding: var(--lf-space-2) var(--lf-space-3); border: var(--lf-border-width) solid var(--lf-input); border-radius: var(--lf-radius-md); background: var(--lf-background); color: var(--lf-foreground); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-combobox__control { height: var(--lf-control-height); padding-block: var(--lf-space-1); padding-inline-end: var(--lf-space-8); }
-.lf-combobox__control:disabled { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
-.lf-combobox__input > span { position: absolute; inset-inline-end: var(--lf-space-3); top: 50%; transform: translateY(-50%); display: flex; color: var(--lf-foreground-tertiary); pointer-events: none; }
+.lf-combobox__input > .lf-combobox__control { position: absolute; inset: calc(-1 * var(--lf-border-width)); width: calc(100% + 2 * var(--lf-border-width)); height: calc(100% + 2 * var(--lf-border-width)); padding: var(--lf-space-2) var(--lf-space-8) var(--lf-space-2) var(--lf-space-3); border: 0; border-radius: inherit; background: transparent; color: inherit; font: inherit; outline: none; }
+.lf-combobox__input:has(input:disabled) { opacity: var(--lf-opacity-disabled); cursor: not-allowed; background: color-mix(in oklab, var(--lf-muted) 50%, transparent); }
+.lf-combobox__input:has(input[aria-invalid="true"]) { border-color: var(--lf-destructive); }
+.lf-combobox__input:has(input:focus-visible) { box-shadow: var(--lf-field-focus-shadow); }
+.lf-combobox__input > .lf-combobox__control:focus-visible { box-shadow: none; }
+.lf-combobox__input > span { display: flex; flex-shrink: 0; margin-inline-start: auto; color: var(--lf-foreground-tertiary); pointer-events: none; }
+.lf-combobox__input:has(input[aria-invalid="true"]) > span { color: var(--lf-destructive); }
 .lf-combobox__popup { position: absolute; top: calc(100% + var(--lf-space-1)); inset-inline: 0; z-index: 10; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-md); box-shadow: var(--lf-shadow-popover); background: var(--lf-popover); color: var(--lf-popover-foreground); padding: var(--lf-space-1); }
 .lf-combobox__popup ul { list-style: none; margin: 0; padding: 0; max-height: var(--lf-command-list-height); overflow-y: auto; }
 .lf-combobox__popup li, .lf-combobox__all { box-sizing: border-box; min-height: var(--lf-control-height); display: flex; align-items: center; gap: var(--lf-space-2); border: 0; border-radius: var(--lf-radius-sm); padding: var(--lf-space-1h); font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); cursor: pointer; overflow-wrap: anywhere; }
@@ -68,9 +75,11 @@
 .lf-toast__content > div { color: var(--lf-toast-foreground); font-size: var(--lf-text-sm); line-height: 1.4; }
 .lf-toast__icon { position: relative; display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: var(--lf-space-5); height: var(--lf-space-5); margin-left: -4px; margin-right: 4px; }
 .lf-toast__icon svg { flex-shrink: 0; }
-.lf-codeblock header > span { border-radius: var(--lf-radius-sm); padding: var(--lf-space-1) var(--lf-space-1h); }
+.lf-codeblock header > span:not(.lf-copy) { border-radius: var(--lf-radius-sm); padding: var(--lf-space-1) var(--lf-space-1h); }
 .lf-codeblock .lf-icon-button svg { width: var(--lf-space-3); height: var(--lf-space-3); }
 .lf-codeblock .lf-icon-button.lf-icon-button--sm { height: var(--lf-control-height); min-height: var(--lf-control-height); width: var(--lf-control-height); min-width: var(--lf-control-height); }
+.lf-codeblock .lf-icon-button:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
+.lf-codeblock .lf-copy { color: var(--lf-icon-foreground); }
 .lf-toast .lf-button { padding: 0 var(--lf-space-2); font: inherit; font-weight: var(--lf-weight-medium); background: var(--lf-toast-foreground); color: var(--lf-toast-background); border: 0; }
 .lf-toast__dismiss { position: absolute; top: 3px; left: 3px; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: var(--lf-control-height); height: var(--lf-control-height); padding: 0; border: 0; border-radius: calc(infinity * 1px); background: transparent; color: inherit; cursor: pointer; font: inherit; }
 .lf-toast__dismiss::before { position: absolute; width: var(--lf-space-5); height: var(--lf-space-5); border: var(--lf-border-width) solid var(--lf-toast-border); border-radius: calc(infinity * 1px); background: var(--lf-toast-background); content: ""; box-sizing: border-box; }
@@ -84,6 +93,9 @@
 .lf-date-range { display: flex; flex-wrap: wrap; gap: var(--lf-space-3); align-items: end; border: 0; padding: 0; margin: 0; min-width: 0; color: var(--lf-foreground); font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-date-range legend { padding: 0; margin-bottom: var(--lf-space-2); }
 .lf-date-range > .lf-field { flex: 1 1 200px; }
+.lf-date-range .lf-input { padding: var(--lf-space-2) var(--lf-space-3); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
+.lf-date-range .lf-input:disabled { background: color-mix(in oklab, var(--lf-muted) 50%, transparent); }
+.lf-date-range .lf-button:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
 @media (prefers-reduced-motion: reduce) {
   .lf-loading .lf-spinner { animation: lf-loading-progress var(--lf-spinner-duration) ease-in-out infinite alternate; }
 }
