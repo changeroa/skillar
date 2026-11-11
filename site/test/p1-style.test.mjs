@@ -12,6 +12,16 @@ test("P1 parity rejects every absent required style field", () => {
     assert.ok(compareP1Style(reference, actual).some(row => row.field === field));
   }
 });
+test("P1 parity rejects a difference in every required style field", () => {
+  // Given
+  for (const field of P1_STYLE_FIELDS) {
+    const actual = { values: { ...values, [field]: "60px" }, glyphs: [] };
+    // When
+    const failures = compareP1Style(reference, actual);
+    // Then
+    assert.ok(failures.some(row => row.field === field), field);
+  }
+});
 test("P1 parity rejects 60px even when source and product both drift", () => {
   // Given
   const wrong = { values: { ...values, height: "60px" }, glyphs: [] };
@@ -19,6 +29,16 @@ test("P1 parity rejects 60px even when source and product both drift", () => {
   const failures = compareP1Style(wrong, wrong, { height: "32px" });
   // Then
   assert.ok(failures.some(row => row.field === "height"));
+});
+test("P1 parity enforces both absolute mouse and touch heights", () => {
+  // Given
+  for (const height of ["32px", "44px"]) {
+    const wrong = { values: { ...values, height: "60px" }, glyphs: [] };
+    // When
+    const failures = compareP1Style(wrong, wrong, { height });
+    // Then
+    assert.ok(failures.some(row => row.field === "height"));
+  }
 });
 test("P1 parity cannot pass with no labelled source reference", () => {
   // Given / When

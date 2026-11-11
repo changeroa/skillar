@@ -56,7 +56,9 @@ async function openMenu(page, trigger) {
 function CSSescape(value) { return value.replace(/[^a-zA-Z0-9_-]/g, char => `\\${char}`); }
 
 export async function tableKeyboard(page, base) {
-  await page.goto(`${base}/__gallery.html?theme=light`, { waitUntil: "domcontentloaded" });
+  // Real-page runners serve production assets; the gallery has a separate dev origin.
+  const galleryBase = process.env.UXB_GALLERY_BASE ?? base;
+  await page.goto(`${galleryBase}/__gallery.html?theme=light`, { waitUntil: "domcontentloaded" });
   await ready(page, '[data-component="DataTable"] tbody tr');
   const scope = '[data-component="DataTable"]';
   const checks = [];

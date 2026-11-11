@@ -22,6 +22,8 @@ const artifacts = [];
 async function inspect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = `${directory}/${entry.name}`;
+    assert.notEqual(entry.name, "__gallery.html",
+      `Development gallery must be absent from production: ${path}`);
     if (entry.isDirectory()) await inspect(path);
     else if (/\.(?:js|css|html)$/.test(path)) {
       const bytes = await readFile(path), source = bytes.toString();
