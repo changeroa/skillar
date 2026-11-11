@@ -5,7 +5,73 @@ Branch: `uxb/pr-8-viewers`; baseline `b8b1d62` (PR-0 through PR-6).
 Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-8/`.
 Exact publication head, final-head CI and preview receipts: `publication.json`, `ci.json`, `preview.json`. These external receipts are written after publication. Executed implementer gates are not independent approval.
 
-## G1 blocker closure (current)
+## Reference eligibility follow-up (current)
+
+Product and harness head: `85f7b1e`. The review of `d8eea9a` noted that closed Combobox/MultiSelect, Textarea, Switch, Radio and Spinner rows had been searched on routes A-C only. Those states were searched again on the view-only public Demo, project `cmmnj9e9n0006ad06nyz28646`. The search used Chrome 9333 in our own tabs, at most 3 CDP sessions, no sign-in, and the account footer hidden and asserted in every capture. Every non-read Demo request was failed client-side and logged. Only the `/project/<id>/visit` beacon was ever attempted, and it was blocked. `p1-demo-closed.mjs` asserts that no other non-read request occurred during any capture.
+
+### Found live and switched to REAL-DEMO (`demo-records-closed.json`, 22 rows)
+
+| Component / state | Demo source | Widths captured | Method |
+| --- | --- | --- | --- |
+| Switch `default-green-checked-disabled` | `/evals/rules`, evaluator-rule Enabled column (view-only user, so disabled) | 1440, 390 | Pointer states only; never toggled |
+| Switch `default-green-unchecked-disabled` | same | 1440, 390 | same |
+| Spinner `xxs-muted-inline` | `/sessions` table pagination "Page 1 of ..." count | 1440, 390 | Read-only tRPC GETs held until capture, then continued |
+| Spinner `xxs-inherit` | `/prompts` Automations count (`AutomationButton`; hidden below `md` in the pinned source) | 1440 (also used for 390 rows) | Only the read-only `automations.count` GET held |
+| MultiSelect `empty`, Combobox `default`, Combobox `empty` | `/traces` filter sidebar: Add filter, Categorical Scores, Add condition, then choose the draft key. The values `MultiSelectInput` is closed with no value ("Select"). | 1440 (also used for 390 rows) | No value chosen; the asserted URL has no score filter |
+| MultiSelect `selected` | same row after choosing one value ("1 selected"), popup closed with Escape | 1440 (also used for 390 rows) | Applies only a client-side view filter (a read query); nothing is saved |
+
+Caller-context handling is in `p1-gate.mjs`, and it changes no product code:
+- **Inherited typography:** the product element's parent receives the Demo parent's inherited typography (font size, line height, weight).
+- **Spinner display:** a Spinner also receives its parent display, because the pagination's `inline-flex` blockifies the svg.
+- **Width:** the closed Combobox and MultiSelect probes take the Demo trigger width, as the existing live rows already do.
+- **Caller copy:** the Demo's placeholder ("Select") and selected label ("1 selected") reach the dev gallery as example parameters, like the code and Markdown examples. Only the three Demo-referenced closed specimens and the selected specimen use them.
+
+### Still ACTUAL-PINNED-MIT, with every route checked
+
+Routes are under `https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`. Each was inventoried for `textarea`, `[role=switch]`, `input[type=radio]`, `[role=combobox]` and `svg.animate-spin`:
+- **Cold loads:** `/`, `/traces`, `/traces/<id>` (full page), the trace peek, `/observations`, `/sessions`, `/sessions/<id>`, `/scores`, `/scores/analytics`, `/users`, `/users/<id>`, `/prompts`, `/prompts/answer%20question`, `/datasets`, `/datasets/<id>/items`, `/evals`, `/evals/<id>`, `/evals/rules`, `/evals/templates`, `/experiments`, `/annotation-queues`, `/dashboards`, `/dashboards/<id>` and `/widgets`.
+- **Held loading:** every list route above, at 1440 and 390.
+- **Popups and panels:** the dashboard environment and date filters (route D); the traces "Add filter" popover; the Categorical Scores, Boolean Scores and Metadata facets with "Add condition"; the traces "Ask AI" panel; the observations and scores filter sidebars; and the evaluator-rule row.
+- **Not opened, because the contract forbids them:** settings, playground, and create/edit dialogs.
+
+| Component / state | Why it stays MIT |
+| --- | --- |
+| Textarea `default`, `empty`, `disabled`, `error`, `code` | No `textarea` renders on any route above. The pinned consumers are create/edit dialogs, annotation scoring, the AI-filter popover (whose wand trigger is absent on v4.77) and the in-app agent composer (which opened no textarea). `error` would also need an induced validation error. |
+| Combobox `disabled`, `error` | The only disabled Demo `MultiSelectInput` is the values picker before a key is chosen, and it is empty. The product `disabled` state shows a chosen value, so the two are not equivalent. `error` needs an induced validation error. |
+| MultiSelect `disabled` | Same as Combobox `disabled`: the product state carries a value, and the Demo disabled picker is empty. |
+| Switch `default-default-*`, `sm-*`, and `default-green-*-enabled` | The only Switches on the routes above are the evaluator-rule Enabled switches: default size, green, disabled for the view-only user. The pinned `sm` consumers (IOSection toggle, header checkbox actions, session "Show corrections") render as menu items or only in edit mode. The default-colour "Edit Mode" switch is in the evaluator peek, which did not open from the rules table. |
+| Radio (all 5) | No `input[type=radio]` on any route above. The only pinned `Radio` consumer is the evaluator test panel, a create/edit surface. |
+| Spinner (all others) | Held loading on every list route at both widths showed only `xxs-muted-inline`, `xxs-inherit` and the already-real `md-inherit`. `sm-inherit` appeared once on `/experiments` during a cold load but did not reproduce with held reads, so it is not claimed. |
+| Toast, Avatar sizes, CodeBlock `read-only`/`empty`, DiffViewer `empty`, DateRangeInput, MarkdownViewer `empty`/`literal-html` | Unchanged from the section below. These were not part of this follow-up's search scope. |
+
+### Gates at product head `85f7b1e`
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1 Component visual parity | PASS | `p1-final.json`: 115 states, 2760/2760 comparisons, 2760 captures, 2760 side/raw diff pairs (`pixel-diffs.json`, 0 errors), 0 evidence errors, 1232 mutation probes rejected. 324 REAL-DEMO rows (was 132) and 2436 pinned-MIT rows (was 2628); 2736 painted, 24 empty non-painted. |
+| 3 Keyboard/ARIA | PASS | Same G1 run: keyboard PASS on site and local, and every focus check passes. |
+| 5 Tests and builds | PASS, known local exception | Site 557/557 and build; local typecheck and build; local 997/998, the unchanged `/tmp/h` ENOTDIR in `cli-init.test.mjs`; `git diff --check` clean (`pr7-validators/checks.json`). |
+| 6 License/release safety | PASS | `release-85f7b1e`: 47 production artifacts and 176 npm-pack files, with NOTICE included and no gallery/QA modules. |
+| 7 Deployment | Not deployed | Deploy is gated on the owner. No merge and no preview. |
+
+Merged-validator regressions at `85f7b1e`:
+- **PR-7:** full style 84/84, non-ready 252/252, interaction 264/264, disabled outline 8 cases / 240 comparisons, 0 failures.
+- **PR-5 paint:** 520 cases, 40,860 assertions, 0 failures, 21,372 rejected mutations, `bootstrap: false`.
+
+Product change revealed by the Demo: `.lf-switch__track` and `.lf-loading .lf-spinner` pinned `font-size`/`line-height` to 16px/24px. The pinned Switch and Spinner inherit caller typography (12-13px in the Demo table and pagination), so the pins were removed. The Radio ring keeps its pin, because no live Radio exists to show otherwise.
+
+## Markdown hostile-input safety (current)
+
+`markdown.tsx` renders Preact text nodes only. It creates no `a`, `img`, `script`, `style` or `iframe` element, and no `href`, `src` or `on*` attribute, so a link is never navigable and no protocol allowlist is needed. Raw HTML, `script`/`img onerror`, SVG `onload`, iframe `srcdoc`, `style`/`link` injection, entities, and `javascript:`, `data:` and `vbscript:` links all stay literal text. A real-browser probe of the dev gallery confirmed this: `window.__pwned` stayed 0, no handler, href, src or style attribute appeared, and the body background was unchanged.
+
+Three problems were found and fixed:
+- **Prototype-key fence crash:** ````__proto__``` threw during render (`pattern.exec is not a function`), and ````constructor``` blanked its label. Fence info strings now look up only own language entries and grammar objects.
+- **Quadratic emphasis scan:** a 90 KB line of unclosed `_a` openers took 2.6 s. Content may now hold its delimiter only intraword, so 900 KB takes 7 ms.
+- **Deep-list stack overflow:** 2000 nesting levels overflowed the stack. Nesting is capped at 16 levels, and every item is kept.
+
+`site/test/markdown-safety.test.mjs` adds six tests; three of them fail on the old code.
+
+## G1 blocker closure (previous head 9bed856)
 
 Product and harness head for every gate below: `9bed856` (on merged PR-7 `03e76038`). It closes the three G1 findings from the `1bdf61f` review. The sections further down are historical.
 
@@ -99,91 +165,91 @@ The inspected routes do not expose equivalent whole-family Textarea/Radio/Toast 
 
 ### Every component/state reference
 
-Each state has eight required site/local x width/theme comparisons. A/B/C above are the checked routes; this is not a claim of global Demo unreachability. REAL-DEMO is primary where an equivalent state is observed.
+Each state has eight required site/local x width/theme comparisons. A/B/C above and F (the full route list in the reference-eligibility follow-up) are the checked routes; this is not a claim of global Demo unreachability. REAL-DEMO is primary where an equivalent state is observed.
 
 | Component | State | Checked routes | Reference rows out of 8 |
 | --- | --- | --- | --- |
-| Textarea | `default` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Textarea | `empty` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Textarea | `disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Textarea | `error` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Textarea | `code` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Combobox | `default` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Combobox | `disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Combobox | `error` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Combobox | `empty` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| MultiSelect | `selected` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| MultiSelect | `empty` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| MultiSelect | `disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-default-unchecked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-default-unchecked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-default-checked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-default-checked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-green-unchecked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-green-unchecked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-green-checked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `default-green-checked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-default-unchecked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-default-unchecked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-default-checked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-default-checked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-green-unchecked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-green-unchecked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-green-checked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Switch | `sm-green-checked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Radio | `unchecked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Radio | `unchecked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Radio | `checked-enabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Radio | `checked-disabled` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Radio | `group` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxs-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xs-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `sm-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `md-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `md-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `md-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `md-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
+| Textarea | `default` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Textarea | `empty` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Textarea | `disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Textarea | `error` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Textarea | `code` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Combobox | `default` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| Combobox | `disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Combobox | `error` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Combobox | `empty` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| MultiSelect | `selected` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| MultiSelect | `empty` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| MultiSelect | `disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-default-unchecked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-default-unchecked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-default-checked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-default-checked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-green-unchecked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-green-unchecked-disabled` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| Switch | `default-green-checked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `default-green-checked-disabled` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| Switch | `sm-default-unchecked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-default-unchecked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-default-checked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-default-checked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-green-unchecked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-green-unchecked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-green-checked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Switch | `sm-green-checked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Radio | `unchecked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Radio | `unchecked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Radio | `checked-enabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Radio | `checked-disabled` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Radio | `group` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxs-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxs-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxs-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxs-muted-inline` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| Spinner | `xxs-inherit` | F | 8 REAL-DEMO (`demo-records-closed.json`) |
+| Spinner | `xxs-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xs-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `sm-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `md-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `md-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `md-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `md-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
 | Spinner | `md-inherit` | A, B, C | 8 REAL-DEMO |
-| Spinner | `md-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `lg-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xl-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `xxl-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-primary` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-primary-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-muted` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-muted-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-inherit` | A, B, C | 8 ACTUAL-PINNED-MIT |
-| Spinner | `full-inherit-inline` | A, B, C | 8 ACTUAL-PINNED-MIT |
+| Spinner | `md-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `lg-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xl-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `xxl-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-primary` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-primary-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-muted` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-muted-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-inherit` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
+| Spinner | `full-inherit-inline` | A, B, C, F | 8 ACTUAL-PINNED-MIT |
 | Toast | `default` | A, B, C | 8 ACTUAL-PINNED-MIT |
 | Toast | `success` | A, B, C | 8 ACTUAL-PINNED-MIT |
 | Toast | `info` | A, B, C | 8 ACTUAL-PINNED-MIT |
