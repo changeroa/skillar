@@ -1,0 +1,61 @@
+/* PR-6 composition; shared lf-* components retain their measured paint. */
+.hosted-screen:has(#skills-app) h1 { font-size: var(--lf-text-2xl); }
+.hosted-screen #skills-app .library-heading {
+  display: flex; height: auto; justify-content: flex-end; margin-bottom: var(--lf-space-3);
+}
+.hosted-screen #skills-app .library-heading .cluster { gap: var(--lf-space-2); }
+.hosted-screen #skills-app .library-heading .button { position: static; min-height: var(--lf-control-height); }
+.hosted-screen .skills-table-layout { grid-template-columns: 240px minmax(0,1fr); gap: var(--lf-space-4); }
+.hosted-screen .skills-distribution { padding: 0; background: transparent; margin-bottom: var(--lf-space-2); }
+.hosted-screen .skills-distribution > summary { color: var(--lf-muted-foreground); font-weight: var(--lf-weight-regular); }
+.hosted-screen .skills-distribution .lf-chart { margin-top: var(--lf-space-2); }
+.hosted-screen .skills-table-main .ui-toolbar { align-items: end; gap: var(--lf-space-2); }
+.hosted-screen .search--compact .search__row .lf-button { height: var(--lf-control-height); min-height: var(--lf-control-height); }
+.hosted-screen .skills-table-main .ui-table th:first-child { width: 44%; }
+.hosted-screen .skill-table-name strong { font-weight: var(--lf-weight-strong); }
+.hosted-screen #skills-app .skill .skill-title-row { margin: 0; padding: 0; border: 0; }
+.hosted-screen .skill-summary { border: 0; margin-block: var(--lf-space-3); }
+.hosted-screen .skill-summary .ui-kv { gap: var(--lf-space-3); }
+.hosted-screen .skill-summary .ui-kv > div { padding: 0; border: 0; gap: var(--lf-space-1); }
+.hosted-screen #skills-app .lf-tabs--underline [role=tab] { line-height: var(--lf-leading-sm); }
+.hosted-screen .skill-document-layout { grid-template-columns: minmax(0,1fr) 320px; gap: var(--lf-space-4); }
+.hosted-screen .skill-version-rail { border-inline-start: var(--lf-border-width) solid var(--lf-border); padding-inline-start: var(--lf-space-4); }
+.hosted-screen .skill-version-choice { min-height: var(--lf-control-height); height: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-2); border-radius: var(--lf-radius-sm); }
+.hosted-screen .skill-document-preview { border: 0; padding: 0; }
+.hosted-screen .skill-markdown { font-size: var(--lf-text-sm); line-height: var(--lf-leading-sm); }
+.hosted-screen .skill-markdown h3 { font-size: var(--lf-text-base); margin-block: var(--lf-space-4) var(--lf-space-2); }
+.hosted-screen .skill-markdown pre, .hosted-screen .skill-document-raw { background: var(--lf-surface-code); border-radius: var(--lf-radius-md); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.hosted-screen .skill__danger { border-color: var(--lf-border); padding-top: var(--lf-space-3); margin-top: var(--lf-space-4); }
+.hosted-screen .version { padding: 0; display: block; border: 0; }
+.hosted-screen .version[data-current=true] { background: var(--lf-muted); }
+.hosted-screen .version__actions { align-content: start; gap: var(--lf-space-2); }
+.hosted-screen .version__actions .button { min-height: var(--lf-control-height); }
+.hosted-screen .version-list .ui-table td { vertical-align: top; }
+.hosted-screen .version-list .ui-table [data-column=actions] { min-width: 280px; }
+.hosted-screen .version-list .ui-table [data-column=digest] { min-width: 120px; }
+.hosted-screen .version-list .ui-table [data-column=created] { min-width: 180px; }
+.hosted-screen .version-list .ui-table [data-column=version] { min-width: 128px; white-space: nowrap; }
+.hosted-screen .version-list .ui-table [data-column=status] { min-width: 96px; white-space: nowrap; }
+.hosted-screen #skills-app :is(.skill-editor-disclosure,.technical,.skill__danger) > summary { height: var(--lf-control-height); min-height: var(--lf-control-height); padding-block: var(--lf-space-1); }
+.hosted-screen .diff-controls { grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--lf-space-3); }
+.hosted-screen .diff-lines { border-radius: var(--lf-radius-md); border-color: var(--lf-border); }
+.hosted-screen .diff-lines li { padding: var(--lf-space-1) var(--lf-space-2); font-size: var(--lf-text-xs); }
+.hosted-screen .diff-lines [data-change=added] { background: var(--lf-light-green); }
+.hosted-screen .diff-lines [data-change=removed] { background: var(--lf-light-red); }
+.hosted-screen #skill-peek { top: var(--lf-topbar-height); height: calc(100dvh - var(--lf-topbar-height)); }
+.hosted-screen #skill-peek > header { padding: var(--lf-space-3) var(--lf-space-4); gap: var(--lf-space-2); }
+.hosted-screen #skill-peek > header h2 { font-size: var(--lf-text-lg); }
+.hosted-screen .skills-list-workspace--peek .skills-table-layout,
+.hosted-screen .skill--peek .skill-document-layout { grid-template-columns: minmax(0,1fr); }
+@media (max-width: 1023px) {
+  .hosted-screen .skills-table-layout, .hosted-screen .skill-document-layout { grid-template-columns: minmax(0,1fr); }
+  .hosted-screen .skill-version-rail { border: 0; padding: 0; }
+  .hosted-screen #skill-peek { top: 0; height: 100dvh; }
+}
+@media (max-width: 640px) {
+  .hosted-screen .skills-table-main .ui-table th:first-child { width: 75%; }
+  .hosted-screen .version { grid-template-columns: minmax(0,1fr); }
+  .hosted-screen .diff-controls { grid-template-columns: minmax(0,1fr); }
+  .hosted-screen .skill--peek .skill-summary .ui-kv { gap: var(--lf-space-2); }
+  .hosted-screen .skill--peek > .ui-kv { font-size: var(--lf-text-xs); }
+}

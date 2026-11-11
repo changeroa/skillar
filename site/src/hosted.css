@@ -1,0 +1,117 @@
+@import "../../local/dashboard/foundation/widgets/widgets.css";
+
+/* Hosted migration only. The marketing page and local renderer keep their contracts. */
+.hosted-screen {
+  --bg: var(--lf-background); --surface: var(--lf-muted); --ink: var(--lf-foreground);
+  --muted: var(--lf-muted-foreground); --border: var(--lf-border-contrast); --rule: var(--lf-border);
+  --code-bg: var(--lf-surface-code); --code-ink: var(--lf-foreground); --code-muted: var(--lf-muted-foreground);
+  --accent: var(--lf-primary-accent); --on-accent: var(--lf-primary-foreground);
+  --lf-hosted-skeleton-ink: light-dark(var(--lf-foreground), rgb(136 136 137));
+  --body: var(--lf-text-sm); --ui: var(--lf-text-sm); --small: var(--lf-text-sm);
+  --subhead: var(--lf-text-base); --heading: var(--lf-text-2xl); --radius: var(--lf-radius-md);
+  color: var(--lf-foreground); background: var(--lf-background);
+  font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.hosted-screen.app-shell > main.shell { padding: var(--lf-space-4); }
+.hosted-screen :is(h1, .account-main h1) { font-size: var(--lf-text-2xl); line-height: var(--lf-leading-2xl); }
+.hosted-screen .account-main :is(h2,h3) { font-size: var(--lf-text-base); line-height: var(--lf-leading-base); }
+.hosted-screen .dashboard-heading { margin-bottom: var(--lf-space-4); gap: var(--lf-space-3); }
+.hosted-screen .account-lead { margin-top: var(--lf-space-2); }
+.hosted-screen .button:not(.app-jump),
+.hosted-screen .text-field,
+.hosted-screen select {
+  box-sizing: border-box; height: var(--lf-control-height); min-height: var(--lf-control-height);
+  min-width: var(--lf-control-height); padding: var(--lf-space-1) var(--lf-space-3);
+  border: var(--lf-border-width) solid var(--lf-border-contrast); border-radius: var(--lf-radius-md);
+  background: var(--lf-background); color: var(--lf-foreground);
+  font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
+  gap: var(--lf-space-1h); text-decoration: none;
+}
+.hosted-screen .button.primary {
+  color: var(--lf-primary-foreground); background: var(--lf-primary); border: 0 solid var(--lf-border);
+}
+.hosted-screen .button:disabled { opacity: .5; cursor: not-allowed; }
+.hosted-screen .button.danger { color: var(--lf-destructive-foreground); background: var(--lf-destructive); border: 0 solid var(--lf-border); }
+.hosted-screen .button.danger-quiet { color: var(--lf-destructive); border-color: var(--lf-border-contrast); }
+.hosted-screen .button:active:not(:focus-visible) { outline: none; outline-offset: 0; }
+.hosted-screen .text-field, .hosted-screen select:not(.lf-select) {
+  padding-block: var(--lf-space-2); border-color: var(--lf-input);
+}
+.hosted-screen .text-field:focus { border-color: var(--lf-input); box-shadow: none; }
+.hosted-screen select:not(.lf-select) {
+  appearance: none; line-height: var(--lf-leading-sm);
+  background-image: linear-gradient(45deg,transparent 50%,currentColor 50%), linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position: right 6px center, right 2px center;
+  background-size: 4px 4px; background-repeat: no-repeat;
+}
+.hosted-screen :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible {
+  outline: var(--lf-focus-width) solid var(--lf-primary-accent); outline-offset: var(--lf-focus-offset);
+}
+.hosted-screen details:not(.app-breadcrumb details,.connections-filters,.ui-peek details) {
+  border-radius: var(--lf-radius-md);
+}
+.hosted-screen summary {
+  box-sizing: border-box; height: var(--lf-control-height); min-height: var(--lf-control-height);
+  font-size: var(--lf-text-sm);
+}
+.hosted-screen summary:not([class*="lf-"], .lf-chart__data summary, .app-breadcrumb summary) {
+  padding: var(--lf-space-1) var(--lf-space-3); border: 0 solid var(--lf-border); border-radius: var(--lf-radius-md);
+  background: var(--lf-secondary); color: var(--lf-secondary-foreground);
+  font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
+}
+.hosted-screen .choice input[type="checkbox"] {
+  appearance: none; display: inline-grid; place-content: center;
+  padding: 0; border: var(--lf-border-width) solid var(--lf-control-border); border-radius: var(--lf-radius-sm);
+  background: transparent; color: var(--lf-foreground);
+  font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);
+}
+.hosted-screen .choice input[type="checkbox"]:checked {
+  border-color: var(--lf-control-fill); background: var(--lf-control-fill); color: var(--lf-primary-foreground);
+}
+.hosted-screen .choice input[type="checkbox"]::after {
+  content: ""; visibility: hidden; width: 12px; height: 12px; background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.hosted-screen .choice input[type="checkbox"]:checked::after { visibility: visible; }
+.hosted-screen .choice input[type="checkbox"]:disabled { opacity: .5; cursor: not-allowed; }
+@media (hover: hover) {
+  .hosted-screen .button.secondary:not(:disabled):hover { background: var(--lf-accent); text-decoration: none; }
+  .hosted-screen .button.primary:not(:disabled):hover { background: color-mix(in oklab,var(--lf-primary) 90%,transparent); }
+  .hosted-screen .button.danger:not(:disabled):hover { background: color-mix(in oklab,var(--lf-destructive) 90%,transparent); }
+  .hosted-screen summary:not([class*="lf-"], .lf-chart__data summary, .app-breadcrumb summary):hover { background: color-mix(in oklab,var(--lf-secondary) 80%,transparent); }
+}
+.hosted-screen .panel {
+  border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg);
+  background: var(--lf-card); padding: var(--lf-space-4); margin-block: var(--lf-space-4);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  font-size: var(--lf-text-lg); line-height: var(--lf-menu-leading);
+}
+.hosted-screen .ui-pill {
+  min-height: 0; padding: var(--lf-space-0h) var(--lf-space-1h); gap: var(--lf-space-1);
+  border-color: transparent; border-radius: var(--lf-radius-sm); background: var(--lf-muted);
+  color: var(--lf-foreground); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs);
+}
+.hosted-screen .ui-pill code { font-size: inherit; }
+.hosted-screen .ui-kv > div { padding-block: var(--lf-space-2); gap: var(--lf-space-3); font-size: var(--lf-text-sm); }
+.hosted-screen .document-field { border-radius: var(--lf-radius-md); font-size: var(--lf-text-sm); }
+.hosted-screen .field-label { font-size: var(--lf-text-sm); }
+.hosted-screen .ui-toast { border-color: var(--lf-border); border-radius: var(--lf-radius-md); padding: var(--lf-space-2); line-height: var(--lf-leading-sm); }
+.hosted-screen .ui-toast-empty { border: 0; padding: 0; }
+.hosted-screen .ui-skeleton { gap: var(--lf-space-2); }
+.hosted-screen .ui-skeleton > div { height: var(--lf-space-4); background: var(--lf-muted); color: var(--lf-hosted-skeleton-ink); border: 0 solid var(--lf-border); border-radius: var(--lf-radius-md); font-size: var(--lf-text-xs); line-height: var(--lf-leading-xs); }
+.hosted-screen .connections-steps { border-color: var(--lf-border); border-radius: var(--lf-radius-lg); margin-block: var(--lf-space-4); }
+.hosted-screen .connections-steps > * { padding: var(--lf-space-3); }
+.hosted-screen .connections-steps > * + * { border-color: var(--lf-border); }
+.hosted-screen .connections-location select, .hosted-screen .connections-search input { min-height: var(--lf-control-height); }
+.hosted-screen .connections-search input { border: var(--lf-border-width) solid var(--lf-input); border-radius: var(--lf-radius-md); background: var(--lf-background); color: var(--lf-foreground); padding-inline: var(--lf-space-3); }
+.hosted-screen .connection-row { min-height: var(--lf-control-height); min-width: var(--lf-control-height); align-items: center; }
+.hosted-screen #mcp-command { padding: var(--lf-space-3); background: var(--lf-muted); border-radius: var(--lf-radius-md); }
+.hosted-screen .connections-toolbar { align-items: center; }
+.hosted-screen .connections-grid .ui-table td { line-height: var(--lf-leading-sm); }
+.hosted-screen .connections-grid .ui-table .ui-pill { line-height: var(--lf-leading-xs); }
+.hosted-screen .connections-token-form, .hosted-screen .connections-pairing { padding: 0; background: transparent; }
+.hosted-screen .not-found { min-height: calc(100dvh - var(--lf-space-16)); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-block: var(--lf-space-6); gap: var(--lf-space-3); }
+.hosted-screen .not-found :is(p,.cluster) { margin: 0; }
+.hosted-screen .not-found .cluster { justify-content: center; gap: var(--lf-space-2); }
+.hosted-screen:has(.not-found) > .header { min-height: var(--lf-space-16); padding-block: var(--lf-space-2); }

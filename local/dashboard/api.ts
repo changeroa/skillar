@@ -215,7 +215,9 @@ function fixtureApi(variant: FixtureVariant): Api {
 }
 
 const variant = fixtureVariant();
-export let api: Api = variant ? fixtureApi(variant) : httpApi;
+// Vite and esbuild replace NODE_ENV at build time, removing fixture imports
+// entirely from release artifacts. Hosted views configure their cloud API.
+export let api: Api = process.env.NODE_ENV !== "production" && variant ? fixtureApi(variant) : httpApi;
 /** Configure before importing/mounting main; unmount the old App before replacing. */
 export function configureApi(next: Api): void {
   if (api !== next) api.dispose?.();

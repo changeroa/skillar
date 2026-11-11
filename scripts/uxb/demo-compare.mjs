@@ -7,6 +7,7 @@ import { metricFailures } from "./metrics.mjs";
 import { ready, press, arm, signal } from "./trusted-keys.mjs";
 import { captureClipboardState } from "./clipboard-state.mjs";
 import { inspectReferenceImage } from "./reference-pixels.mjs";
+import { focusPaint } from "./table-keyboard.mjs";
 
 const [referencesPath, outputPath] = process.argv.slice(2);
 if (!referencesPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
@@ -179,9 +180,26 @@ try {
           }
           const differences = metricFailures(measured, expected, 1);
           const accessibleField = ["Input", "SearchInput"].includes(reference.control) && reference.state === "focus-visible";
-          const approvedDifferences = accessibleField ? differences.filter(item => item.property === "focusRing")
-            .map(item => ({ ...item, reason: "Owner requires a painted field focus ring instead of the Demo's zero-spread shadow" })) : [];
-          const failures = accessibleField ? differences.filter(item => item.property !== "focusRing") : differences;
+          const hostedFocus = process.env.HOSTED_CASCADE === "1" && app === "site" && reference.state === "focus-visible" &&
+            !["Checkbox", "Select"].includes(reference.control);
+          const approvedOutline = item => hostedFocus && ["outlineWidth", "outlineOffset", "outlineStyle", "outlineColor"].includes(item.property);
+          const approvedDifferences = differences.filter(item => (accessibleField && item.property === "focusRing") || approvedOutline(item))
+            .map(item => ({ ...item, reason: "Owner requires contrasting 2px painted focus; hosted controls use the primary-accent outline" }));
+          const failures = differences.filter(item => !(accessibleField && item.property === "focusRing") && !approvedOutline(item));
+          if (hostedFocus) {
+            const target = reference.control === "SearchInput" ? ".lf-search input" :
+              reference.control === "Select" ? "select" : reference.control === "Checkbox" ? ".lf-checkbox input" : selector;
+            const ring = await focusPaint(page, target);
+            const owner = await page.evaluate(selector => {
+              const node = document.querySelector(selector), css = getComputedStyle(node);
+              const probe = document.createElement("span");
+              probe.style.color = "var(--lf-primary-accent)"; node.parentElement.append(probe);
+              const color = getComputedStyle(probe).color; probe.remove();
+              return { color, width: css.getPropertyValue("--lf-focus-width").trim(), offset: css.getPropertyValue("--lf-focus-offset").trim(), actual: css.outlineColor };
+            }, target);
+            if (!ring.pass || owner.actual !== owner.color || actualStyles.outlineWidth !== owner.width || actualStyles.outlineOffset !== owner.offset || actualStyles.outlineStyle !== "solid")
+              failures.push({ property: "ownerPaintedFocus", expected: owner, actual: ring });
+          }
           if (accessibleField && !/ 4px/.test(actualStyles.boxShadow))
             failures.push({ property: "paintedFocusRing", expected: "visible 2px ring outside 2px gap", actual: actualStyles.boxShadow });
           const computedStyleStatus = failures.length ? "FAIL" : approvedDifferences.length ? "OWNER-APPROVED-DIFFERENCE" : "PASS";
@@ -221,3 +239,4 @@ try {
   await tabs.closeAll(); await browser.close();
 }
 console.log(`DEMO_COMPLETE comparisons=${results.length} styleFailures=${results.filter(r => r.styleStatus === "FAIL").length}`);
+process.exitCode = results.some(result => result.styleStatus === "FAIL") ? 1 : 0;

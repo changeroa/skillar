@@ -2,13 +2,14 @@ import { h } from "preact";
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
-import { BarChart, DataTable, FacetPanel, Pill, Skeleton } from "../ui/index.ts";
+import { BarChart, DataTable, FacetPanel, Pill } from "../ui/index.ts";
 import type { TableColumn } from "../ui/table.ts";
 import { formatWhen } from "../dashboard/status.ts";
 import { SearchBox } from "./search.ts";
 import { readSkillsView } from "./view-state.ts";
 import type { SkillsView, SkillSort } from "./view-state.ts";
 import { kstDay, shortKstDate } from "../time.ts";
+import { Button } from "../../../local/dashboard/foundation/controls/buttons";
 
 export type LibraryProps = {
   readonly skills: readonly PrivateSkillSummary[];
@@ -89,10 +90,14 @@ export function LibraryPanel(props: LibraryProps) {
   ];
   return h("section", { class: "library", "aria-labelledby": "library-title" },
     h("div", { class: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
-      h("button", { class: "button secondary", type: "button", disabled: status === "loading", onClick: onReload }, "새로고침")),
+      h("div", { class: "cluster" },
+        h(Button, { text: "새로고침", variant: "outline", disabled: status === "loading", onClick: onReload }),
+        h(Button, { text: "새 스킬", onClick: () => {
+          const title = document.getElementById("publish-title");
+          if (title) { title.tabIndex = -1; title.scrollIntoView({ block: "start" }); title.focus({ preventScroll: true }); }
+        } }))),
     notice !== "" && h("p", { class: "note", role: "status" }, notice),
     h("p", { class: "note library-status", role: "status", "aria-live": "polite" }, status === "loading" ? "스킬 불러오는 중…" : message),
-    status === "loading" && skills.length === 0 && h(Skeleton, { label: "스킬 불러오는 중", rows: 3 }),
     status === "failed" && h("button", { class: "button secondary", type: "button", onClick: onReload }, "다시 시도"),
     status === "ready" && skills.length === 0 && h("p", { class: "library-empty" },
       "아직 게시한 비공개 스킬이 없습니다. 아래의 ‘새 스킬 게시’에서 SKILL.md가 있는 폴더를 선택하고 업로드에 동의하세요."),
@@ -102,8 +107,13 @@ export function LibraryPanel(props: LibraryProps) {
           selected: { revision: view.revisions, day: view.days },
           onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
       h("div", { class: "skills-table-main" },
-        skills.length > 0 && selectedId === null && h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 }),
-        h(DataTable<PrivateSkillSummary>, { caption: `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`,
+        skills.length > 0 && selectedId === null && h("details", { class: "skills-distribution" },
+          h("summary", null, "최근 변경일 분포 · KST"),
+          h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 })),
+        h("div", { hidden: status === "failed" && skills.length === 0 },
+        h(DataTable<PrivateSkillSummary>, { caption: status === "ready" ? `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`
+          : status === "failed" ? "마지막으로 받은 보관함 범위" : "스킬 보관함 확인 중",
+          busy: status === "loading",
           rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },
           onSort: next => {
@@ -118,7 +128,7 @@ export function LibraryPanel(props: LibraryProps) {
           selectedId: selectedId === null ? null : `skill-row-${selectedId}`,
           onRowOpen: (skill, target) => onOpen(skill.skillId, target),
           toolbar: h(SearchBox, { skills, signal: props.signal, onOpen, onUnauthorized: props.onUnauthorized,
-            compact: true, query: view.q, onQueryChange: q => update({ ...view, q }) }) }),
+            compact: true, query: view.q, onQueryChange: q => update({ ...view, q }) }) })),
         skills.length > 0 && visibleSkills(skills, view).length === 0 && h("button", { class: "button secondary",
           type: "button", onClick: () => update({ ...view, q: "", revisions: [], days: [] }) }, "검색·필터 해제"))),
     props.detail);

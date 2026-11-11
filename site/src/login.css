@@ -4,6 +4,44 @@
 .login-route .auth-actions > details { width: 100%; }
 .login-route #auth-recovery[hidden] { display: none; }
 .login-route #auth-recovery .text-link { margin-top: var(--s2); }
+.hosted-screen.login-route:not(.app-shell) { min-height: 100dvh; display: flex; flex-direction: column; }
+.hosted-screen.login-route:not(.app-shell) > .header { min-height: var(--lf-space-16); padding-block: var(--lf-space-2); }
+.hosted-screen.login-route:not(.app-shell) > .header > .wordmark,
+.hosted-screen.login-route:not(.app-shell) .app-navigation { display: none; }
+.hosted-screen.login-route:not(.app-shell) > .header .theme-label { margin-left: auto; }
+.hosted-screen.login-route:not(.app-shell) .account-main { flex: 1; display: grid; place-items: center; padding-block: var(--lf-space-6); }
+.hosted-screen.login-route:not(.app-shell) .account-grid { width: min(360px,100%); margin: 0; }
+.hosted-screen.login-route:not(.app-shell) .account-grid > section { min-width: 0; padding: var(--lf-space-6); border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg); background: var(--lf-card); box-shadow: var(--lf-widget-shadow); }
+.hosted-screen.login-route:not(.app-shell) #account-title { text-align: center; }
+.hosted-screen.login-route:not(.app-shell) .account-aside { display: none; }
+.hosted-screen.login-route:not(.app-shell) .auth-actions { justify-items: stretch; margin-top: var(--lf-space-4); gap: var(--lf-space-3); }
+.hosted-screen.login-route:not(.app-shell) .account-lead { margin-top: var(--lf-space-3); text-align: center; }
+.hosted-screen.login-route:not(.app-shell) .account-footer { border: 0; padding-block: var(--lf-space-3); }
+.login-card-brand { display: flex; justify-content: center; margin-bottom: var(--lf-space-4); }
+.login-card-brand a { display: inline-flex; align-items: center; height: var(--lf-control-height); }
+.login-card-brand img { width: 120px; height: 24px; }
+.login-card-brand .wordmark-dark { display: none; }
+.hosted-screen.login-route.app-shell .login-card-brand { display: none; }
+.hosted-screen.login-route.app-shell .account-grid { max-width: 720px; }
+.hosted-screen.login-route.app-shell #signed-in { margin-top: var(--lf-space-4); gap: var(--lf-space-4); justify-items: stretch; }
+.hosted-screen.login-route.app-shell .account-profile,
+.hosted-screen.login-route.app-shell .account-session { border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-lg); background: var(--lf-card); padding: var(--lf-space-4); }
+.hosted-screen.login-route.app-shell .account-profile h2,
+.hosted-screen.login-route.app-shell .account-session h2 { margin-bottom: var(--lf-space-4); }
+.hosted-screen.login-route.app-shell .auth-actions > * { width: 100%; }
+.hosted-screen.login-route.app-shell .account-user { gap: var(--lf-space-3); }
+.hosted-screen.login-route.app-shell .account-name { font-size: var(--lf-text-base); }
+.hosted-screen.login-route.app-shell .account-times { margin-top: var(--lf-space-4); }
+.hosted-screen.login-route.app-shell .account-times > div { border-color: var(--lf-border); padding-block: var(--lf-space-2); }
+.hosted-screen.login-route.app-shell .account-session { display: flex; align-items: center; flex-wrap: wrap; gap: var(--lf-space-3); }
+.hosted-screen.login-route.app-shell .account-session h2 { margin: 0 auto 0 0; }
+.hosted-screen.login-route.app-shell .account-session form { width: auto; }
+.hosted-screen.login-route.app-shell .account-lead { max-width: 65ch; }
+.hosted-screen.login-route .account-profile-facts { display: grid; grid-template-columns: auto minmax(0,1fr); gap: var(--lf-space-2) var(--lf-space-4); margin: 0; }
+.hosted-screen.login-route .account-profile-facts dt { color: var(--lf-muted-foreground); }
+.hosted-screen.login-route .account-profile-facts dd { margin: 0; overflow-wrap: anywhere; }
+.hosted-screen.login-route:not(.app-shell) .account-session { display: none; }
+.hosted-screen.login-route.app-shell .account-session { margin-top: var(--lf-space-4); }
 @media (max-width: 760px) {
   .login-route .account-grid { grid-template-columns: 1fr; }
   .login-route .account-main { padding-block: var(--s5) var(--s7); }

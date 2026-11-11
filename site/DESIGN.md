@@ -1,5 +1,80 @@
 # skillar.sh
 
+## Phase B hosted screens (PR-6)
+
+The hosted wireframes-v3 define composition; merged PR-1 through PR-5 primitives
+define measured paint. This section supersedes earlier hosted screen sizing and
+palette rules, not their state, data, consent or lifecycle contracts.
+`hosted.css` adapts legacy HTML controls to the same existing semantic tokens;
+Preact screens compose the existing Card, Metric, table, tabs and overlay layer.
+No local view or hosted embed wiring changes.
+
+Hosted app bodies use 13px/20px sans, 22px/27.5px page titles, 14px/21px section
+titles, 16px main gutters and the existing 4/8/12/16/24px spacing tokens.
+Canvas/card/code/border/ink roles map to the corresponding `--lf-*` tokens.
+Buttons and selects are exactly 32px mouse or 44px phone/coarse, 6px corners,
+13px/20px type; destructive actions retain their existing confirmation.
+All keyboard targets retain contrasting 2px painted focus using
+`--lf-primary-accent`, including legacy controls and shared primitives. This is
+the owner's visible-focus override, not the Demo's lower-contrast neutral ring.
+Inputs remain named.
+Legacy native inputs/selects use 8px block and 12px inline padding; buttons
+use 4px/12px. Primary/destructive buttons have no painted border, disabled
+variants keep their paint at .5 opacity, and hover paint is limited to
+hover-capable pointers. Native disclosures use secondary-button metrics while
+retaining their marker. Native choice checkboxes retain their 24px paint within
+a named 44px choice, with control-border/control-fill tokens and 4px corners.
+Shared select, chart disclosure and shell breadcrumb styles remain component-owned.
+The strict hosted-control gate asserts 31 computed fields for every case;
+padding, typography, radii and border colours have no owner exemption.
+The reference correction uses real read-only Demo Button/primary, destructive
+confirmation, secondary action and plain Input states at both widths/themes.
+Ready native panels retain the real Card's inherited 16px/24px type
+(`--lf-text-lg` / `--lf-menu-leading`) and 16px CardHeader insets. Their one-line
+height derives from those insets, the source line box and both borders; the
+Demo's chart/content-slot height is caller content, not a primitive token.
+Skeleton bars inherit the real table primitive's 12px/18px type even though
+the bars contain no text. Their retained real dark capture has inherited
+`rgb(136 136 137)` ink; the hosted-only `--lf-hosted-skeleton-ink` token keeps
+that exact value and the light foreground. Status messages keep their own
+13px/20px line box rather than inheriting the Card's 24px line box.
+Only Alert/default/sm retains its documented
+read-only-unreachable pinned-MIT exception.
+The existing fixed-sidenav-shell keeps main as vertical scroll owner; table
+overflow and peek body retain their separate named responsibilities.
+
+Dashboard B retains the four actual catalog/change/connection/token metrics and
+the paired change chart/recent-skills table. Missing revision totals are not
+invented to match illustrative wireframe data. Card and Metric supply the widget
+anatomy; consent, source selection and management remain available below.
+The skills table retains its four URL-controlled columns and mobile metadata.
+Cold catalog reads propagate busy to the shared table and show placeholders,
+not an empty result or a zero count. A failed first read keeps that table mounted
+but hidden; a failed refresh retains previously received rows with a stale caption.
+Its existing histogram becomes an initially closed native disclosure so the
+table leads as in v3. The detail uses underline tabs and a document-first layout
+with the supporting version index on the right at desktop, stacked below on
+phones. Peek retains its existing responsive modality and persistent controller.
+Versions keep all current head/pin/export/delete actions and genuine labels;
+the API does not supply historical revision numbers.
+Version/status columns reserve 128px/96px and keep labels on one line, including
+the phone peek. The named table region owns horizontal scroll so dates, digests
+and all management actions remain available without fragmenting Korean labels.
+Phone peek facts use the existing 8px compact gap; the five summary values stay
+visible. The identifier/head facts remain available in their original order.
+
+Connections keeps its command, combined token/device table and existing pairing
+and token disclosures. Its wireframe's device-only table is not a reason to
+remove OAuth/PAT management. Account shows the genuine profile and session;
+device consent remains at Connections, not an invented account checkbox.
+Anonymous login is a centred 360px card with 24px inset and one Google action.
+GitHub sign-in, policy acceptance and account consent editing in the mock are
+not implemented routes or capabilities. The public 404 is centred with its
+existing recovery destinations. Both retain system/light/dark.
+
+No new decorative motion or accessibility debt. The evidence ledger records
+every v3 difference, live Demo comparisons and source-only exceptions separately.
+
 ## Phase B tables (PR-4)
 
 Measured-part correction: compact non-interactive row content is 28px;

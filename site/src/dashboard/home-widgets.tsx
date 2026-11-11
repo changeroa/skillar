@@ -1,7 +1,8 @@
 import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import type { PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
-import { BarChart, DataTable, NumberTile, Pill } from "../ui";
+import { BarChart, DataTable, Pill } from "../ui";
+import { Card, Metric } from "../../../local/dashboard/foundation/widgets/cards";
 import type { TableColumn } from "../ui";
 import { connectionStatus } from "../mcp-connections";
 import type { DeviceState } from "./devices";
@@ -45,7 +46,7 @@ function ReadNotice({ state, onRetry }: { readonly state: ReadState<unknown>; re
 }
 
 function Widget({ title, children }: { readonly title: string; readonly children: ComponentChildren }) {
-  return <section class="home-widget"><h2>{title}</h2>{children}</section>;
+  return <Card title={title}>{children}</Card>;
 }
 
 export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }: {
@@ -78,12 +79,12 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
   const retry = () => { reloadCatalog(); reloadMcp(); onRetryDevices(); };
   return <section class="home-widgets" aria-label="자산·연결 요약" data-home-variant="B">
     <div class="home-number-tiles">
-      <NumberTile label="스킬 수" value={catalog.data?.skills.length ?? null} note="보관함 전체 · 현재 등록된 스킬" />
-      <NumberTile label="이번 주 변경 수" value={catalog.data === null ? null : weeklyChanges}
-        note="updatedAt 기준 · 최근 7일 · KST" />
-      <NumberTile label="등록된 연결 수" value={devices.data !== null && mcp.data !== null ? activeDevices.length + activeMcp.length : null}
+      <Metric label="스킬 수" value={catalog.data?.skills.length ?? null} note="보관함 전체 · 현재 등록된 스킬" />
+      <Metric label="이번 주 변경 수" value={catalog.data === null ? null : weeklyChanges}
+        note="최근 변경 시각 기준 · 최근 7일 · KST" />
+      <Metric label="등록된 연결 수" value={devices.data !== null && mcp.data !== null ? activeDevices.length + activeMcp.length : null}
         note="활성 기기 + MCP 등록 · 중복 제거 안 함" />
-      <NumberTile label="활성 토큰 수" value={mcp.data === null ? null : activeMcp.filter(connection => connection.kind === "pat").length}
+      <Metric label="활성 토큰 수" value={mcp.data === null ? null : activeMcp.filter(connection => connection.kind === "pat").length}
         note="미철회·만료 전 PAT만 · OAuth 제외" />
     </div>
     <ReadNotice state={catalog} onRetry={retry} /><ReadNotice state={mcp} onRetry={retry} />
@@ -100,9 +101,9 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
           { label: "스킬 마지막 변경", values: catalog.data === null ? dates.map(() => null) : changes.counts },
           { label: "보관 버전 생성", values: dates.map(() => catalog.data?.skills.length === 0 ? 0 : null) },
         ] }} />
-        <p class="note">updatedAt의 마지막 변경일별 개수이며 전체 변경 이력이 아닙니다. 두 계열을 더하지 않습니다.</p>
+        <p class="note">스킬의 마지막 변경일별 개수이며 전체 변경 이력이 아닙니다. 두 계열을 더하지 않습니다.</p>
         <p class="note">{catalog.data?.skills.length === 0 ? "보관된 스킬이 없어 보관 버전 생성 수도 0개입니다." :
-          "버전 생성: 미측정 · versions[].createdAt은 스킬별 상세 조회가 필요해 자동으로 전체 조회하지 않습니다."}</p>
+          "버전 생성 수는 미측정입니다. 보관 버전의 생성 시각은 각 스킬 상세에서 확인할 수 있습니다."}</p>
       </section>
       <Widget title="최근 변경된 스킬">
         {catalog.data !== null && <DataTable caption={`기간 내 ${changes.total}개 중 최근 5개 이하 · KST`}

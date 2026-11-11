@@ -1,4 +1,204 @@
-# PR-5 widgets and charts: paint-review correction
+# PR-6 hosted screens
+
+Draft PR: https://github.com/changeroa/skillar/pull/105
+Branch: `uxb/pr-6-hosted`, based on merged PR-0 through PR-5 at `ba64d91`.
+Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-6/`.
+The strict-control revision's exact published head and terminal CI are recorded
+in that directory's `publication-strict-controls.json` and
+`ci-strict-controls.json`. Older publication receipts remain historical.
+This is implementer evidence, not approval.
+
+## Reference-blocker correction after d63716e
+
+The reference audit at
+`.omo/evidence/skillar-pr-105-d63716e-reference-gate-review.md` rejected 68
+unsupported pinned-only references. All 56 previously unproved variant/state
+cases are reachable read-only and now have real captures at both widths/themes.
+No new unreachable exception was needed. The verified inventory is 128 real
+references and four labelled pinned-MIT Alert/sm exceptions.
+`pr-6/hosted-controls-real-demo-verified/results.json` passes 132/132 cases,
+4,092 field comparisons, 264 rejected style mutations and 36 rejected
+focus-removal mutations. The first real-reference run rejected 14 cases;
+its failures are retained separately in `hosted-controls-real-demo/`.
+Card inherited type is now 16px/24px, Skeleton type is 12px/18px with exact
+recorded ink, and StatusMessage retains its 20px line box.
+
+Fresh site validation passes 458/458 tests and the production build. Local
+typecheck/build pass; its full suite remains 986/987 because of the documented
+pre-existing `/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist` ENOTDIR
+failure. No test or `/tmp/h` was edited. LSP diagnostics were unavailable
+(workspace TypeScript initialization and missing Biome); actual typechecks
+and builds are the executed compiler checks.
+
+Fresh source evidence:
+`pr-6/demo-reference-correction/records.json` and its 80 PNGs. Every capture
+records all 31 style fields, expected hover/held-active/trusted-Tab state,
+nonblank pixel acceptance and a hidden account footer. Two PR-1 Skeleton
+captures supply the remaining four width/theme cases; the 60 already-live
+outline/select/checkbox cases now use real fields and PNGs as the
+primary reference, rather than a concordant local render.
+
+All routes below are under
+`https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646`.
+The fresh Demo is v4.78.0; retained PR-1/PR-5 captures are v4.77.0.
+
+| Cases | Exact route and read-only method |
+| --- | --- |
+| primary default/hover/active/focus-visible, 16 cases | `/evals`: enabled New evaluator button, never activated. Phone: More actions reveals the same button. |
+| danger default/hover/active/focus-visible, 16 cases | `/evals`: first Evaluator actions menu, Delete opens the confirmation only; enabled Delete evaluators button is measured but never clicked. Source `EvaluatorsPage.tsx` sets `deleteIds` on opening; only `onConfirm` calls the mutation. |
+| input default/hover/focus-visible, 12 cases | `/skills`: Use skill menu, Install with CLI, Configure install command, Tag. The genuine plain `input[placeholder="my-tag"]` only controls displayed command text. No typing, copy, install or network write. |
+| summary default/hover/focus-visible, 12 cases | `/skills`: actual secondary Use skill button; phone More actions reveals it. |
+| disabled, 4 cases | `/skills`: actual disabled primary New skill button, not a fabricated disabled state. Existing PR-1 disabled ghost remains historical; this real primary caller matches the shipped primary-disabled case. |
+| ready panel, 4 cases | Root: ready Traces Card plus CardHeader insets, refreshed from the same real composition already recorded by PR-5. No source DOM/content/style substitution. |
+| skeleton, 4 cases | `/sessions`: existing PR-1 `34-skeleton-row` real 96x16 primitive, pulse paused at recorded 0ms. |
+| outline and quiet-danger, 32 cases | Root: actual Filters button at desktop; phone More actions reveals it. Fresh width-specific states replace historical desktop hover/active paint, which must not define coarse-pointer paint. Quiet-danger keeps only its existing approved destructive-ink adaptation. |
+
+Additional checked routes: `/datasets` has disabled row-delete buttons;
+`/traces` with local row selection opens Delete Traces with a disabled Confirm;
+`/experiments`, `/annotation-queues`, `/prompts`, `/dashboards` have
+permission-disabled creation actions. `/evals` is the reachable destructive
+confirmation counterexample, so none of these observations is used to claim
+destructive unreachability. Active captures hold the pointer and release
+outside; keyboard captures use trusted Tab. No confirm, sign-in, create, edit,
+settings, execution or data mutation was performed.
+
+### Remaining pinned-MIT cases, individually enumerated
+
+These are the four pre-existing approved standing-rule exceptions, not new
+exceptions inferred from missing captures. Pinned source:
+`69181812b87169df157841fce1314ec96ecd2c5a`, actual `Alert/default/sm`.
+
+| Exact case | Exact checked routes | Why real read-only capture is unavailable |
+| --- | --- | --- |
+| status-default-light-1440 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Retained PR-5 route proof: `/skills` exposes only default/default Alerts, with no size selector. Root/traces expose no small Alert; recorded session exposes a different StatusMessage/ERROR/compact; `/topics` is unavailable. No read-only control selects Alert/sm. |
+| status-default-dark-1440 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for dark Alert/default/sm: only default-size Alerts are exposed; other routes do not offer this component/size. Theme changes do not expose a size selector. |
+| status-default-light-390 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for phone light Alert/default/sm: responsive layout does not expose the small size; no read-only size selector exists. |
+| status-default-dark-390 | `/skills`; root; `/traces`; `/sessions/chat_3dc9c765-eeb5-4a52-88b4-6883df36e1a1`; `/topics` | Same checked-route proof for phone dark Alert/default/sm: responsive/theme changes do not expose the small size; other checked routes supply different components or are unavailable. |
+
+Retained proof: `pr-5/read-only-state-routes.json` and
+`pr-5/state-sources.json`; accepted explicitly by the d63716e reference audit.
+Every other missing source now fails before product comparison. The old
+strict-control provenance explanation below is historical and superseded here.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1 Component visual/style comparisons | PASS | `hosted-controls-real-demo-verified/results.json`: 132/132 native cases, 128 real Demo references and four documented MIT Alert/sm exceptions; 4,092 exact field comparisons, 264 rejected style mutations and 36 rejected focus-removal mutations. The prior 86 shared-control comparisons are historical. Every padding, typography, corner, border, height and focus field is asserted. |
+| 2 Complete screen/state comparison | PASS (prior verified coverage) | The reviewed b38461e run contains 176 default captures plus 376 before/after state captures. 47 route/state cases produce 188 paired boards: 44 reachable cases and three explicitly N/A static-404 cases, each at both widths/themes. Those 552 captures were not rerun or relabelled as the strict-control revision. Source references distinguish live Demo primitives from pinned MIT loading references. |
+| 3 Keyboard/ARIA and real-page measurements | PASS | The checked-in `pr6-runtime.mjs` fails on every bad baseline and invokes the real 32/44px predicate for all 142 size mutations. 36/36 scenarios, 146 passing painted-focus measurements and 146 rejected focus-removal mutations; four native publisher-checkbox crops each contain 64 contrasting pairs. Native checkboxes are not falsely counted as 32/44px inputs. Six fresh peek profiles pass 819 assertions and 24 native confirmations. |
+| 4 R1–R7 | PASS | Real grouped shell, sidebar identity/logout, command palette, URL state, peak/full navigation, dirty drafts, default list rows (15 desktop / 7 phone), empty states and common chart baseline preserved. Native pagehide/pageshow and listener cleanup passed; this Chrome run did not restore bfcache, so an actual cache hit remains unverified. |
+| 5 Builds, tests and release contents | PASS with existing local exception | Reference correction: site build and 458/458 tests, local typecheck/build and 986/987 local tests. The sole local failure is the unchanged `/tmp/h` ENOTDIR exception. Source-eligibility and Card-content-height regressions are added; the release-content gate remains in the site suite. Exact-head CI is recorded separately. |
+| 6 License/NOTICE | PASS | No new dependencies, upstream source copies or EE reads. Existing MIT NOTICE remains in the clean production output. The earlier package NOTICE inspection is historical, not a rerun claimed by these fixes. |
+| 7 Deployment boundary | PASS | No production deployment, merge or self-approval. The existing `uxb-pr-6` Pages preview predates the strict-control revision and is not final-head evidence. |
+
+The full per-screen wireframe deviations, source-route mappings, evidence
+pipeline corrections and residual review gaps are in `pr-6/gate.md`.
+The preview's `/__qa/pr6/` contains only synthetic/public-Demo PNG evidence;
+source account footers are hidden and asserted absent from every capture.
+
+## Strict hosted-control gate after re-review at b38461e
+
+The earlier `hosted-controls/` 128-capture run was not a style gate: padding was
+absent and recorded differences did not fail it. Its G1 claim is superseded.
+The evidence entry point `pr-6/hosted-controls.mjs` now invokes the checked-in
+`scripts/uxb/hosted-controls.mjs`, backed by `hosted-control-style.mjs`.
+Any missing, invalid or differing required metric throws; source disagreement,
+incomplete inventory, a surviving mutation or a failed painted-focus baseline
+also exits nonzero. Capture count alone cannot pass.
+
+The inventory preserves all 128 previous cases and adds checked-checkbox focus
+at four profiles: 33 cases at 1440px/390px, light/dark = 132. Every case asserts
+31 fields: height; four paddings; font size, line height and weight; four corner
+radii; four border widths and RGBA colours; background/foreground RGBA; opacity;
+focus-visible, outline width/style/offset/RGBA and painted shadows; disabled and
+checked state. Shadow normalization removes only zero-alpha/zero-extent paint.
+No typography, padding, radius or border-colour differences are whitelisted.
+
+Every passing case is mutated in the real browser and restored, then rechecked:
+132 padding-left +4px probes, 112 font-size +2px probes and 20 corner-radius +2px
+probes must fail the same baseline comparator. All 36 keyboard-focus cases must
+paint contrasting focus and reject removal of the ring. These are deliberate
+failures caught by assertions, not counts of attempted screenshots.
+
+References are rendered from actual MIT components at
+`69181812b87169df157841fce1314ec96ecd2c5a`, not hand-painted target clones:
+Button primary/outline/destructive/secondary/disabled, plain Input, SelectInput,
+Checkbox/sm, Card+CardHeader, Alert/sm and Skeleton/h-4. Sixty cases additionally
+require concordance with the available live Demo records for padding, type,
+radii, border widths/colours, opacity and height before the source can define
+expected values. The live input has prefix/icon padding and is not the plain
+input caller; the live primary link is not a primary button. Those cases use
+the genuine pinned variant and are explicitly not labelled live screenshots.
+The live focused checkbox is checked. Both checked and unchecked focus are now
+tested; unchecked focus combines live unchecked metrics with genuine pinned
+keyboard focus. Card padding belongs to CardHeader; identical one-line content
+makes its natural height comparable without imposing a fixture-only height.
+
+The exact owner adaptations are 32px mouse/44px touch control height, existing
+24px native checkbox paint inside its 44px named choice, semantic destructive
+ink for the existing quiet-danger button, and a 2px primary-accent outline with
+2px offset replacing the source neutral shadow. Expected accent/destructive
+RGBA comes from source tokens, never from the measured target. Caller text,
+width, disclosure marker and native-select caret remain native; this is not a
+claim of pixel-identical content or browser affordances.
+
+The first strict run failed 104/128 actual cases. Real fixes retain variant
+paint at disabled opacity .5, remove incorrect primary/destructive borders and
+pointer-active outlines, correct input/select padding and type, align native
+disclosure metrics, paint native checkbox border/check states, add Card shadow,
+use 16px skeleton bars and limit hover to hover-capable pointers. Shared
+selects, chart disclosures and shell breadcrumbs keep their component styles.
+
+Reproduce with the actual pinned reference server and QA browser running:
+
+```sh
+OMOWRIGHT_HELPER=/absolute/path/to/omowright.mjs \
+node scripts/uxb/hosted-controls.mjs \
+  http://localhost:5182 http://127.0.0.1:57588 /absolute/output \
+  /absolute/path/to/pr-1/demo-captures/records.json \
+  /absolute/path/to/pr-6/demo-reference-correction/records.json
+node --test site/test/hosted-control-style.test.mjs
+```
+
+## Independent review corrections
+
+Review at `6259817` found fixture leakage, ignored checkbox focus failures,
+tautological height probes and missing hosted state comparisons. These findings
+supersede the original PR-6 evidence claims. Full corrected inventories and
+state/deviation explanations are in `pr-6/review-fixes/`.
+
+Production fixture selection is compile-time gated. Hosted users still start
+with HTTP and configure the existing cloud adapter on source selection; the
+real API paths and response contracts are unchanged. Development fixture mode
+is separately exercised. Gallery output is built outside production dist.
+
+The native publisher checkbox already paints a contrasting outline on its
+input. The old harness cropped its prose sibling. It now crops a sibling only
+for the actual shared `.lf-checkbox__box`, and requires a passing baseline
+before accepting any removal probe. The audit also corrected empty-library
+readiness and checks returned gate verdicts and active navigation.
+
+State capture exposed a real cold-library defect: the table displayed an
+empty-result message while the first catalog request was pending or failed.
+Loading now propagates busy to the shared table; a failed first read keeps its
+table mounted but hidden. Two integration regressions cover those states.
+
+At 390px, version/status labels no longer fragment: columns reserve 128px/96px
+with nowrap. The named horizontal table region retains dates, full digest and
+all actions. The remaining tall detail/peek preamble preserves the five-field
+R5 summary and identifier/head facts; all controls retain 44px touch targets.
+The existing shell's wrapping breadcrumb/version controls remain unchanged.
+
+## Explicit owner overrides
+
+- Absolute 32px mouse / 44px phone/coarse controls.
+- Contrasting visible keyboard focus and accessible labels override Demo parity.
+  Hosted controls use `--lf-primary-accent`; the peek validator checks that token
+  and retains every existing target, geometry, native-dialog and lifecycle check.
+- Dashboard B, no read-history column, actual reads only, KST everywhere.
+- Account v3 intentionally shows its own profile email; the general R1 prohibition
+  on duplicating account information in unrelated main views remains intact.
+
+## Historical PR-5 record (not the current PR's gate verdict)
 
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Merged PR-4 base: `431fb9b0351c6f82eaacb16e36b32f7c7c658f32`.

@@ -6,8 +6,29 @@
     <meta name="robots" content="noindex">
     <title>컴포넌트 상태 갤러리 | skillar dev</title>
   </head>
-  <body>
+  <body class="hosted-screen">
     <div id="gallery-root"></div>
+    <main id="hosted-native-gallery" hidden>
+      <h1>Hosted control states</h1>
+      <section class="panel" id="native-panel">
+        <p>계정 정보</p>
+      </section>
+      <section class="panel">
+        <div class="cluster">
+          <button class="button primary" id="native-primary">계속하기</button>
+          <button class="button secondary" id="native-secondary">다시 시도</button>
+          <button class="button primary" id="native-disabled" disabled>처리 중</button>
+          <button class="button danger" id="native-danger">삭제</button>
+          <button class="button secondary danger-quiet" id="native-danger-quiet">삭제…</button>
+        </div>
+        <label class="field-label">이름<input class="text-field" id="native-input" value="예시 스킬"></label>
+        <label class="field-label">버전<select id="native-select"><option>현재 버전</option><option>보관 버전</option></select></label>
+        <label class="choice"><input type="checkbox" id="native-checkbox"><span>선택한 파일을 업로드합니다.</span></label>
+        <details><summary id="native-summary">기술 정보</summary><p>세부 정보</p></details>
+        <p class="ui-toast" id="native-status" role="status">다시 시도할 수 있습니다.</p>
+        <div class="ui-skeleton" role="status" aria-label="불러오는 중"><div id="native-skeleton"></div><div></div></div>
+      </section>
+    </main>
     <script type="module" src="/src/gallery.ts"></script>
   </body>
 </html>

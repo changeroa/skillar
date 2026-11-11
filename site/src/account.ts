@@ -119,6 +119,8 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
     const times = document.querySelector<HTMLElement>('.account-times');
     if (name) name.textContent = user.name || user.email;
     if (email) email.textContent = user.name ? user.email : '';
+    for (const field of Array.from(document.querySelectorAll<HTMLElement>('[data-profile-name]'))) field.textContent = user.name || user.email;
+    for (const field of Array.from(document.querySelectorAll<HTMLElement>('[data-profile-email]'))) field.textContent = user.email;
     if (picture && user.picture.startsWith('https://')) {
       picture.addEventListener('error', () => { picture.hidden = true; }, { once: true });
       picture.src = user.picture;
