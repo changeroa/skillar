@@ -81,11 +81,13 @@ export function traceConsoleStyles() {
 .trace-summary .trace__prompt summary{min-height:var(--lf-control-height);padding-block:0}
 .trace .tl__args summary{height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding-block:0}
 .trace-summary__reads .pe-pill{border-radius:var(--lf-radius-sm);border-color:var(--lf-border);background:var(--lf-muted);color:var(--lf-foreground)}
-.trace .trace-event-row{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0 var(--lf-space-2);gap:var(--lf-space-2);background:var(--lf-background);border-color:var(--lf-border);font:var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans);color:var(--lf-foreground)}
+.trace .trace-event-row{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0;gap:var(--lf-space-2);background:var(--lf-background);border-color:var(--lf-border);font:var(--lf-weight-regular) var(--lf-text-lg)/var(--lf-space-6) var(--lf-font-sans);color:var(--lf-foreground)}
 .trace .trace-event-row:hover{background:var(--lf-accent)}
 .trace .trace-event-row__kind{font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
 .trace .trace-event-row>.pe-icon{width:var(--trace-icon-size);height:var(--trace-icon-size);color:var(--trace-kind-line)}
-.trace [role=treeitem]{border:0}
+.trace [role=treeitem]{border:0;border-color:var(--lf-border)}
+.trace :is(.trace-event-row__kind,.trace-event-row__summary,.trace-event-row time,.json-line code,.json-value,.json-value-preview){border-color:var(--lf-border)}
+.trace :is(.trace-event-row__summary,.trace-event-row time){font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs)}
 .trace [role=treeitem][aria-selected=false]:not(:hover){background:transparent}
 .trace [role=treeitem][aria-selected=false]{color:light-dark(var(--lf-foreground),var(--lf-muted-foreground))}
 .trace .trace-event-row[aria-selected=true]{background:var(--lf-muted)}

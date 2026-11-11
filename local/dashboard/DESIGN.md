@@ -179,6 +179,12 @@ independent reviewers must be reported as unverified gates, never self-approved.
 
 ## Approved local analysis P-F (2026-11-05)
 
+PR-7 complete-field parity correction: event row containers inherit the Demo's
+16px/24px body typography and zero padding; kind labels retain 13px/20px and
+time/summary labels retain 12px/18px. Event rows and JSON parts use the shared
+border token even on zero-width sides. The owner 32/44px row height and visible
+keyboard ring remain the absolute sizing and focus contracts.
+
 The analysis screens reuse the P-E shell, controls, sheet and typography.
 The document owns vertical scrolling; charts and dense tables own labelled
 horizontal scroll regions. Workspace peek is a 560px right pane on desktop
