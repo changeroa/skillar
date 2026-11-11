@@ -3,7 +3,8 @@
 PR: https://github.com/changeroa/skillar/pull/106
 
 Rebased onto merged PR-6 `b8b1d62100b7fcdf552494bb97ca5910f9475a18`.
-The checkpoint `557c42d` contains the verified product and validator corrections.
+Verified corrections were pushed at each milestone through `82a5ca4`.
+The exact final HEAD and its CI check URLs are recorded in `pr-7/final-ci.json`.
 The historical ledgers below are preserved; their old PR-7 counts are not current approvals.
 
 Completed machine evidence:
@@ -15,7 +16,34 @@ Completed machine evidence:
 - Local typecheck and both production builds pass. Site tests pass 497/497. Local tests pass 997/998 with the unchanged pre-existing `/tmp/h` ENOTDIR; standalone performance passes 1/1.
 - Release scan: local dist 134 files, hosted dist 52, dry-run pack 174; 94 local and 290 hosted contributing modules, zero forbidden fixture/gallery/reference imports, equal NOTICE copies.
 
-The remaining final screen/keyboard/focus/structural/widget/JSON/board and exact-head CI receipts are recorded by the final takeover audit, not inferred from these completed milestones. Independent review remains lead-owned.
+| Gate | Result | Final evidence |
+| --- | --- | --- |
+| G1 source/style/paint | PASS | Above source and fixed-membership matrices; JSON adds 8 contexts, 32 visible leaves, 736 field/color comparisons and 736 rejected corruptions. Required properties, targets and cases fail closed. |
+| G2 actual screens | PASS | 252 ready and 504 state before/after contexts; 1,512 visible top/end PNGs, 756 regenerated source/before/after boards with original-input hashes and unmasked diagnostic pixel diffs. All 14 mobile MIT references were recaptured at 390x844, DPR 3 and scale 1. |
+| G3 keyboard/ARIA/owner size/focus | PASS | 4 functional keyboard cases, 88 desktop and 56 phone trace targets, 4 phone closure paths; 252 non-ready contexts with 1,292 painted-focus targets and 1,096 rejected 60px size corruptions. Eight fractional-origin/DPR/scroll corruptions reject 1px or white indicators. |
+| G4 original structure | PASS | 8 home/empty width/theme probes retain the original assertions. Home R4 remains N.A.; actual native peek/modal behavior is covered separately by G3. The merged Card wrapper selector was updated without weakening the expected 5 connection rows. |
+| G5 tests/build | EXPLAINED | Site 497/497; local 997/998 with the unchanged `/tmp/h` ENOTDIR; standalone performance 1/1; local typecheck and both builds pass. Exact final-head CI is a separate publication receipt. |
+| G6 license/package/release exclusion | PASS | Dist/pack counts above; zero forbidden contributors/content and equal NOTICE copies. The new trace specimen stays in development HTML and the existing separate dashboard TypeScript project. |
+| G7 deployment | NOT RUN | Owner-gated. No deployment or merge was requested or performed. |
+
+The preserved PR-5 browser matrix passes all 520 cases and 40,860 assertions,
+with 21,372 rejected real DOM corruptions, zero failures and `bootstrap: false`.
+`local-paint-inventory.json` fixes all 336 required case memberships in 224
+templates; the normal gate never regenerates or discovers its required set.
+
+Stricter gates exposed and fixed complete font/spacing/frame recipes, mobile
+workspace-title wrapping/overlap, widget retry indicators erased by an overly
+broad outline reset, and dark numeric/boolean/null JSON ink. The latter updates
+only 8 fixed native paint references from the real pinned source color. The final
+84-case paint run and affected real JSON screen captures were repeated after it.
+Failure receipts are retained as `widget-focus-failure-proof.json` and
+`json-scalar-failure-proof.json`; independent review remains lead-owned.
+
+Evidence root:
+`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-7`.
+`final-audit.json` verifies exact membership, all acceptance/mutation verdicts,
+PNG dimensions, source/code hashes, board-input freshness, package contents and
+NOTICE equality. `final-ci.json` pins publication to the exact final HEAD.
 
 ## Conflict decisions
 
