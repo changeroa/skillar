@@ -22,6 +22,16 @@ for (const [field, value] of [
     assert.equal(availablePaint(changed, expected), false);
   });
 }
+for (const field of ["opacity", "effectiveOpacity", "fillOpacity", "strokeOpacity", "dash", "stroke", "strokeWidth"]) {
+  test(`rejects a reference missing required ${field}`, () => {
+    // Given
+    const reference = { ...paint };
+    // When
+    delete reference[field];
+    // Then
+    assert.equal(availablePaint(paint, { ...expected, paint: reference }), false);
+  });
+}
 test("rejects a removed required paint part", () => {
   // Given
   const part = { index: 1, tag: "path", ...expected };
@@ -31,9 +41,9 @@ test("rejects a removed required paint part", () => {
   globalThis.document = { head, createElement: () => ({ remove() {} }) };
   try {
     // When
-    const result = auditPaint(root, () => paint, () => ["stroke"], availablePaint, [part]);
+    const result = auditPaint(root, { observe: () => paint, available: availablePaint,
+      required: { nodeCount: 2, parts: [part] } });
     // Then
-    assert.equal(result.inventory.length, 1);
-    assert.equal(result.inventory[0].baseline.pass, false);
+    assert.ok(result.inventory.some(row => row.index === 1 && row.baseline.pass === false));
   } finally { globalThis.document = prior; }
 });

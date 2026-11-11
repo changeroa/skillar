@@ -15,18 +15,19 @@ export async function paintedFocus(page, selector, output) {
     node.blur();
     const paint = (0, eval)(`(${owner})`)(node);
     const box = paint.getBoundingClientRect();
-    const x = Math.max(0, Math.floor(box.left + scrollX - 8));
-    const y = Math.max(0, Math.floor(box.top + scrollY - 8));
+    const x = Math.max(scrollX, Math.floor(box.left + scrollX - 8));
+    const y = Math.max(scrollY, Math.floor(box.top + scrollY - 8));
     return { left: box.left + scrollX - x, top: box.top + scrollY - y,
       width: box.width, height: box.height, dpr: devicePixelRatio,
-      clip: { x, y, width: Math.ceil(box.right + scrollX + 8 - x),
-        height: Math.ceil(box.bottom + scrollY + 8 - y), scale: 1 } };
+      scroll: { x: scrollX, y: scrollY },
+      clip: { x, y, width: Math.min(scrollX + innerWidth, Math.ceil(box.right + scrollX + 8)) - x,
+        height: Math.min(scrollY + innerHeight, Math.ceil(box.bottom + scrollY + 8)) - y, scale: 1 } };
   }, { selector, owner: focusPaintOwner.toString() });
   const before = await page._sendToTarget("Page.captureScreenshot",
-    { format: "png", clip: geometry.clip, captureBeyondViewport: true });
+    { format: "png", clip: geometry.clip, captureBeyondViewport: false });
   await page.evaluate(selector => document.querySelector(selector).focus({ preventScroll: true }), selector);
   const after = await page._sendToTarget("Page.captureScreenshot",
-    { format: "png", clip: geometry.clip, captureBeyondViewport: true });
+    { format: "png", clip: geometry.clip, captureBeyondViewport: false });
   if (output) for (const [state, image] of [["before", before], ["focused", after]])
     await writeFile(`${output}-${state}.png`, Buffer.from(image.data, "base64"));
   return page.evaluate(async ({ before, after, geometry }) => {
@@ -44,7 +45,9 @@ export async function paintedFocus(page, selector, output) {
       return .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
     };
     const contrasting = (x, y) => {
-      x = Math.floor(x * geometry.dpr); y = Math.floor(y * geometry.dpr);
+      // Sample CSS-pixel centres, not antialiased leading edges at fractional
+      // layout origins. Two samples still span two distinct CSS pixels.
+      x = Math.floor((x + .5) * geometry.dpr); y = Math.floor((y + .5) * geometry.dpr);
       if (x < 0 || y < 0 || x >= base.width || y >= base.height) return false;
       const a = luminance(base, x, y), b = luminance(focus, x, y);
       return (Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 3;
@@ -63,6 +66,8 @@ export async function paintedFocus(page, selector, output) {
       }
     }
     return { adjacentContrastingPairs, minimumContrast: 3, thicknessCssPixels: 2,
+      dpr: geometry.dpr, captureScroll: geometry.scroll, clip: geometry.clip,
+      frame: { width: focus.width, height: focus.height },
       pass: adjacentContrastingPairs >= Math.max(4, Math.floor((width + height) / 10)) };
   }, { before: before.data, after: after.data, geometry });
 }

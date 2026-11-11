@@ -85,7 +85,8 @@ export function traceConsoleStyles() {
 .trace .trace-event-row:hover{background:var(--lf-accent)}
 .trace .trace-event-row__kind{font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
 .trace .trace-event-row>.pe-icon{width:var(--trace-icon-size);height:var(--trace-icon-size);color:var(--trace-kind-line)}
-.trace [role=treeitem]{border:0;border-color:var(--lf-border)}
+.trace :is([role=treeitem],[role=gridcell]){border:0;border-color:var(--lf-border)}
+.trace .event-console__tabs>[role=tab]{border-color:var(--lf-border)}
 .trace :is(.trace-event-row__kind,.trace-event-row__summary,.trace-event-row time,.json-line code,.json-value,.json-value-preview){border-color:var(--lf-border)}
 .trace :is(.trace-event-row__summary,.trace-event-row time){font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs)}
 .trace [role=treeitem][aria-selected=false]:not(:hover){background:transparent}
@@ -101,10 +102,11 @@ export function traceConsoleStyles() {
 .trace .json-viewer__tree{--trace-json-property:light-dark(#005cc5,#79b8ff);--trace-json-string:light-dark(#032f62,#9ecbff);padding:var(--lf-space-2);background:var(--lf-muted);border-radius:var(--lf-radius-md);font-family:var(--lf-font-mono)}
 .trace .json-line{min-height:var(--lf-control-height);padding-block:var(--lf-space-1);line-height:var(--lf-leading-xs)}
 .trace .json-line:not(summary){min-height:var(--lf-leading-xs);padding-block:0}
-.trace.pe-console summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding-block:calc((var(--lf-control-height) - var(--lf-leading-xs))/2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace.pe-console .json-viewer summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding:calc((var(--lf-control-height) - var(--lf-leading-xs))/2) 0;border:0;border-color:var(--lf-border);border-radius:0;font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trace summary.json-line code{white-space:nowrap;overflow-wrap:normal}
 .trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
 .trace :is(.json-value,.json-value-preview)[data-json-type=string]{color:var(--trace-json-string)}
+.trace :is(.json-value,.json-value-preview):not([data-json-type=string]){color:var(--lf-foreground)}
 .trace .event-gantt-track{border-color:var(--lf-border)}
 .trace .trace-event-row{--trace-kind:var(--lf-observation-event);--trace-kind-line:var(--lf-observation-event-line)}
 .trace [data-event-kind=prompt],.trace [data-event-kind=skill_span],.trace [data-event-kind=native_skill]{--trace-kind:var(--lf-observation-span);--trace-kind-line:var(--lf-observation-span-line)}

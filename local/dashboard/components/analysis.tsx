@@ -177,13 +177,13 @@ installStyles("analysis", `
 .analysis.pe-console :is(.hmc,.flow__chart),.ws.analysis.pe-console .card{font-size:var(--lf-text-lg);line-height:var(--lf-space-6);box-shadow:var(--lf-widget-shadow)}
 .analysis.pe-console :is(.hmc__title,.lf-card__title,.lf-card__header,.lf-card__content,.lf-metric__value){border-color:var(--lf-border)}
 .ws.analysis.pe-console>section.card>h2{font:var(--lf-weight-strong) var(--lf-text-base)/var(--lf-leading-base) var(--lf-font-sans);color:var(--lf-foreground);letter-spacing:-.025em}
-.analysis.pe-console .workspace-peek{border-color:var(--lf-border);background:var(--lf-modal)}
+.analysis.pe-console .workspace-peek{border-color:var(--lf-border);background:var(--lf-modal);box-shadow:var(--lf-shadow-peek)}
 .analysis.pe-console :is(.pe-button,summary,.seg__btn,.seg__b,.analysis-table button,.analysis-table a):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .analysis.pe-console :is(.seg__btn,.seg__b)[aria-pressed=true]::after{content:" ✓";color:inherit}
 .analysis.pe-console .analysis-facets [aria-pressed=true]{background:var(--lf-muted)}
 .analysis.pe-console .analysis-facets [aria-pressed=true]::after{content:" ✓"}
 .analysis.pe-console .analysis-scroll{scrollbar-gutter:auto}
-@media(max-width:1023px){.workspace-split:has(.workspace-peek){display:block}.workspace-peek{position:fixed;inset:0;height:100dvh;z-index:100;width:100%}}
+@media(max-width:1023px){.workspace-split:has(.workspace-peek){display:block}.workspace-peek{position:fixed;inset:0;height:100dvh;z-index:100;width:100%}.analysis.pe-console .workspace-peek{border:0;border-color:var(--lf-border);box-shadow:none}}
 @media(max-width:639px){.analysis-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.analysis-tile,.analysis-widget{padding:12px}.analysis-number{font-size:22px}.analysis-widgets{grid-template-columns:minmax(0,1fr)}.analysis-widget--wide{grid-column:auto}.analysis-toolbar{gap:6px}.analysis-toolbar label{flex:1;min-width:0}.analysis-toolbar select{min-width:0;width:100%;padding-inline:4px}.analysis-refresh{width:44px;padding:0}.analysis-refresh__text{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.analysis-table th,.analysis-table td{padding:0 4px}}
 @media(max-width:639px){.analysis .paths td{padding:0 8px}}
 `);

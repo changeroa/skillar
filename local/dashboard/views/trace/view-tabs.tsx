@@ -3,7 +3,7 @@ import type { ViewProps } from "../../state";
 
 export function EventViewTabs({ route, navigate, prefix = "event" }: Pick<ViewProps, "route" | "navigate"> & { readonly prefix?: string }) {
   const tab = route.traceTab ?? "tree";
-  return <div class="lf-tabs lf-tabs--underline">
+  return <div class="lf-tabs">
     <div class="event-console__tabs" role="tablist" aria-label="이벤트 표시" onKeyDown={event => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();

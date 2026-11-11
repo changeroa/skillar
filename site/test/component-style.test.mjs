@@ -1,11 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { componentStyleFields, compareComponentStyle, readComponentStyles } from "../../scripts/uxb/component-style.mjs";
+import { compareComponentStyle } from "../../scripts/uxb/component-style.mjs";
 
-for (const field of componentStyleFields) {
+const required = [
+  "height", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "fontSize", "lineHeight", "fontWeight", "borderRadius",
+  "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor",
+  "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+  "outlineColor", "outlineStyle", "outlineWidth", "outlineOffset", "boxShadow",
+];
+for (const field of required) {
   test(`rejects changed or missing ${field} in a component state`, () => {
     // Given
-    const reference = Object.fromEntries(componentStyleFields.map(name => [name, "reference"]));
+    const reference = Object.fromEntries(required.map(name => [name, "reference"]));
     assert.ok(compareComponentStyle(reference, reference).every(row => row.pass));
     // When
     const changed = { ...reference, [field]: "changed" };
@@ -19,10 +26,10 @@ for (const field of componentStyleFields) {
 }
 test("retains a failed required target when the selector matches nothing", () => {
   // Given
-  const root = { querySelectorAll: () => [] };
+  const reference = Object.fromEntries(required.map(field => [field, "reference"]));
   // When
-  const observations = readComponentStyles(root, ".required", componentStyleFields);
+  const measurements = compareComponentStyle(null, reference);
   // Then
-  assert.deepEqual(observations, [{ missing: true, actual: null }]);
-  assert.ok(compareComponentStyle(observations[0].actual, {}).every(row => !row.pass));
+  assert.equal(measurements.length, required.length);
+  assert.ok(measurements.every(row => !row.pass));
 });

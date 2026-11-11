@@ -3,11 +3,15 @@
   "cases": {
     "local-sessions-1440-light": [
       ".sessions-console .page-title :is(h1,h2)",
-      ".session-table th"
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
     ],
     "local-sessions-1440-dark": [
       ".sessions-console .page-title :is(h1,h2)",
-      ".session-table th"
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
     ],
     "local-sessions-390-light": [
       ".sessions-console .page-title :is(h1,h2)"
@@ -281,11 +285,15 @@
     ],
     "hosted-sessions-1440-light": [
       ".sessions-console .page-title :is(h1,h2)",
-      ".session-table th"
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
     ],
     "hosted-sessions-1440-dark": [
       ".sessions-console .page-title :is(h1,h2)",
-      ".session-table th"
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
     ],
     "hosted-sessions-390-light": [
       ".sessions-console .page-title :is(h1,h2)"
@@ -521,11 +529,15 @@
   "counts": {
     "local-sessions-1440-light": {
       ".sessions-console .page-title :is(h1,h2)": 1,
-      ".session-table th": 7
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
     },
     "local-sessions-1440-dark": {
       ".sessions-console .page-title :is(h1,h2)": 1,
-      ".session-table th": 7
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
     },
     "local-sessions-390-light": {
       ".sessions-console .page-title :is(h1,h2)": 1
@@ -799,11 +811,15 @@
     },
     "hosted-sessions-1440-light": {
       ".sessions-console .page-title :is(h1,h2)": 1,
-      ".session-table th": 7
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
     },
     "hosted-sessions-1440-dark": {
       ".sessions-console .page-title :is(h1,h2)": 1,
-      ".session-table th": 7
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
     },
     "hosted-sessions-390-light": {
       ".sessions-console .page-title :is(h1,h2)": 1

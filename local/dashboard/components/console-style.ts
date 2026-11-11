@@ -7,6 +7,9 @@ export function consoleStyles() {
 .pe-console code{font-family:var(--lf-font-mono);font-size:inherit;font-weight:inherit}
 .pe-console .lf-status-message{font-size:var(--lf-text-lg);line-height:24px}
 .pe-console .lf-alert__title{font-size:var(--lf-text-lg);line-height:var(--lf-text-lg)}
+.pe-console,.pe-console :is(.lf-status-message,.lf-alert__title,.lf-alert__description,.lf-empty,.lf-empty__title,.lf-empty__description){border-color:var(--lf-border)}
+.pe-console .lf-empty{font-size:var(--lf-text-lg);line-height:var(--lf-space-6)}
+.pe-console .lf-empty__description{font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
 .pe-shell .sr-only,.pe-console .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);border:0;white-space:nowrap}
 .pe-pill{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 7px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:12px;white-space:nowrap;color:var(--ink)}
 .pe-button,.pe-console :is(button.btn,a.btn){display:inline-flex;align-items:center;justify-content:center;gap:var(--lf-space-1h);min-width:var(--lf-control-height);height:var(--lf-control-height);min-height:var(--lf-control-height);padding:0 var(--lf-space-3);border:var(--lf-border-width) solid var(--lf-border);border-radius:var(--lf-radius-md);background:var(--lf-background);color:var(--lf-foreground);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans);text-decoration:none;cursor:pointer}

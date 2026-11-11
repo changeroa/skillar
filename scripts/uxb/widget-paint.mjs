@@ -100,6 +100,15 @@ export function paintChannels(node,paint) {
 
 export function availablePaint(actual,expected) {
   if (!actual || !expected || !actual.visible) return false;
+  if (expected.paint) {
+    const fields = ["opacity","effectiveOpacity","fillOpacity","strokeOpacity","dash",
+      ...expected.channels.flatMap(channel => channel.startsWith("pseudo:") ? ["pseudo"] :
+        channel === "marker" ? ["listStyleType","pseudo"] : [channel])];
+    if (expected.channels.includes("stroke")) fields.push("strokeWidth");
+    for (const channel of expected.channels.filter(channel => channel.startsWith("border") && channel.endsWith("Color")))
+      fields.push(channel.replace("Color","Width"));
+    if (!expected.channels.length || fields.some(field => !Object.hasOwn(expected.paint,field))) return false;
+  }
   if (expected.paint && Object.entries(expected.paint).some(
     ([field, value]) => value === undefined || JSON.stringify(actual[field]) !== JSON.stringify(value))) return false;
   return actual.visible&&expected.channels.every(channel=>{

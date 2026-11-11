@@ -18,7 +18,7 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
 .session-peek__actions>a{margin-right:auto;font-size:12px}.session-peek__actions>span{font-size:12px}
 .session-peek .trace__back{display:none}.session-peek .trace__console{display:block}.session-peek .trace__title{font-size:16px;overflow-wrap:anywhere}
 .session-peek .trace__inspector{border:0;padding:0;margin:12px 0}.session-peek .trace__scope{display:none}
-@media(max-width:1023px){.session-peek{position:fixed;inset:0;z-index:60;align-self:stretch;height:100dvh;max-height:100dvh;border:0}.session-peek__body{flex:1;padding-bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(max-width:1023px){.session-peek{position:fixed;inset:0;z-index:60;align-self:stretch;height:100dvh;max-height:100dvh;border:0;border-color:var(--lf-border);box-shadow:none}.session-peek__body{flex:1;padding-bottom:max(12px,env(safe-area-inset-bottom))}}
 `);
   const closeButton = useRef<HTMLButtonElement>(null);
   const originId = useRef(route.peek);

@@ -228,3 +228,49 @@ replace independent visual or accessibility review.
 Fixtures carry no user data. The page owns its existing scroll and control
 behavior. For async components, use a ready selector reflecting the settled
 state; there are no sleeps or retry loops. Tests run with `site/npm test`.
+
+## PR-7 complete-field certification
+
+The committed `local-style-inventory.json` and
+`local-state-style-inventory.json` name every required ready/non-ready target
+and its visible count. Missing, hidden or removed targets fail; intentionally
+collapsed descendants are represented by their own state, not discovered and
+silently omitted during validation.
+
+With the production local/hosted surface harness running on 5184:
+
+```sh
+node scripts/uxb/local-full-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
+node scripts/uxb/local-nonready-style.mjs "$PR7_EVIDENCE"
+node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE"
+```
+
+These commands require `OMOWRIGHT_HELPER` and the source records/real-surface
+loader in the evidence directory. They compare all 22 required fields: height,
+four paddings, font size/line height/weight, radius, four border colours/widths,
+outline colour/style/width/offset and painted shadow. CSS Typed OM preserves
+intrinsic `auto` height instead of comparing unrelated fixture content heights.
+The owner 32/44px controls, native panel geometry and named source compositions
+are explicit in `local/dashboard/DESIGN.md`; no observed value becomes its own
+expected style. Transparent zero shadows and unpainted outlines are canonical
+non-paint, not tolerated painted differences.
+
+Tree, Timeline, JSON disclosure and view-tab states are driven through real
+hover, keyboard focus, pointer press, selection, disablement and collapse/expand.
+Loading/error/empty use the real product API boundary. Every field has a
+corruption probe, and removal uses the same missing-observation predicate.
+Focus raster probes cover fractional origins at DPR 1 and 3 and reject both
+1px and white indicators.
+
+`local-paint-inventory.json` separately freezes DOM counts, part indices/classes,
+channels and exact paint values (including ancestor opacity, channel opacities
+and dash). It preserves owner-native plot paint as well as shared components;
+source colour/icon/primitive comparisons remain separate source-parity checks.
+The normal audit never regenerates this inventory. An intentional source or
+owner-contract correction requires review of its inventory diff and a complete
+mutation rerun, not accepting a smaller discovered set.
+
+With the development galleries on site 5183/local 5184, run
+`node scripts/uxb/local-json-primitives.mjs "$PR7_EVIDENCE"` for all four JSON
+primitive types. Its fixture uses the actual `JsonViewer`; release-build tests
+must continue proving gallery fixtures are absent from shipped artifacts.

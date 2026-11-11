@@ -6,6 +6,7 @@ import { TRACE_CSS } from "../views/trace/styles";
 import { traceConsoleStyles } from "../views/trace/console-style";
 import { installStyles } from "../charts/sankey";
 import { createTimelineKeys } from "../views/trace/plan";
+import { JsonViewer } from "../components/json-viewer";
 
 const startedAt = Date.UTC(2026, 10, 5, 5);
 const steps: readonly TraceStep[] = [
@@ -28,6 +29,9 @@ export function TracesGallery() {
     </div>
     <div class="trace pe-console" data-specimen="empty-trace">
       <EventConsole source={[]} bounds={{}} route={{ view: "trace", filter: {} }} navigate={() => undefined} prefix="empty" embedded />
+    </div>
+    <div class="trace pe-console" data-specimen="json-primitives">
+      <JsonViewer value={{ number: 42, boolean: false, missing: null, string: "recorded" }} />
     </div>
   </main>;
 }

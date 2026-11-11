@@ -254,6 +254,16 @@ test("session summary counts missing search latency separately from measured zer
   assert.equal(ui.summaryFacts([{ kind: "prompt", ts: 100, detail: { kind: "prompt", text: "captured" } }]).unmeasuredSearches, 0);
 });
 
+test("JSON primitive paint selectors distinguish null from container objects", async t => {
+  // Given
+  const value = { count: 42, enabled: false, missing: null, text: "recorded" };
+  // When
+  const { container } = await mount(t, ui.JsonViewer, { value });
+  // Then
+  assert.deepEqual(all(container, node => node.getAttribute("class") === "json-value")
+    .map(node => node.getAttribute("data-json-type")), ["number", "boolean", "null", "string"]);
+});
+
 test("unrecognised view preference values do not become active controls", () => {
   assert.deepEqual(ui.parseHash("#/sessions?sort=bad&density=bad&tab=graph&format=bad&runtime=codex"), {
     view: "sessions", filter: { runtime: ["codex"] },

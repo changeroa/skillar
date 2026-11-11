@@ -189,6 +189,23 @@ flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type wit
 CardHeader's 16px inset; their height remains content-driven. Analysis segments
 use the measured Tree tab's 16px inline inset, 13px line box, 600 weight and 4px
 radius. Zero-width border sides still use the border token.
+Trace Tree/Timeline choices use the measured segmented Tabs primitive, including
+the existing disabled Graph choice; no graph or parentage data is invented.
+Timeline rows share Tree's zero-border container recipe. Native JSON summaries
+retain 32/44px controls with a 12px/18px line box, zero inline inset and square
+corners in both standalone and hosted layouts.
+JSON strings retain the measured string ink; number, boolean and null leaves
+use the pinned JSON renderer's neutral foreground. Null has its own paint
+selector rather than the object-container discriminator.
+Empty descriptions explicitly retain 13px/20px after the Empty root takes the
+source 16px/24px body type. Native peeks compose the source Peek's modal paint
+and shadow with the existing Card frame (1px on every side on desktop). Session
+peek is intrinsic-height inline on desktop and borderless 100dvh on phone;
+workspace peek retains its fixed 100dvh-minus-48px desktop / 100dvh phone
+geometry and 13px/20px DataTable body type. These are native layout contracts,
+not measurements copied from the Demo's different banner height.
+Both phone peeks are square, borderless full-viewport panels; the source mobile
+sheet's absent shadow is retained instead of painting a desktop shadow offscreen.
 
 The analysis screens reuse the P-E shell, controls, sheet and typography.
 The document owns vertical scrolling; charts and dense tables own labelled
