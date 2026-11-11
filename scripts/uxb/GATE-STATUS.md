@@ -5,7 +5,36 @@ Branch: `uxb/pr-8-viewers`; baseline `b8b1d62` (PR-0 through PR-6).
 Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-8/`.
 Exact publication head, final-head CI and preview receipts: `publication.json`, `ci.json`, `preview.json`. These external receipts are written after publication. Executed implementer gates are not independent approval.
 
-## Gate verdicts
+## Rebased strict revalidation (current)
+
+Rebased onto merged PR-7 `03e76038`. Product head for every gate below: `0a37221`.
+The historical sections further down predate this run and are not current approvals.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1 Component visual parity | PASS | `p1-strict-final.json` / `p1-final.json`: 111 states, 2664/2664 raw-declaration comparisons (8 profiles x 333; rest/hover/active), 2664 captures, 2664 side/raw diff pairs, 0 evidence errors; 108 REAL-DEMO and 2556 labelled pinned-MIT rows; 2640 painted, 24 empty non-painted. No RGBA8 normalization remains. |
+| 2 Screen comparison | PASS | 37 real surfaces, 296/296 before/after frames, each with an asserted scrolled end; 148 Demo / before / after rows; 12 Demo contexts (`g2-complete.json`, `surface-review.html`). |
+| 3 Keyboard/ARIA | PASS | 27/27 trusted-key checks per surface (site, local); 360 painted-focus positives and 368 rejected negatives; 200/200 browser mutations; PR-6 real-page runtime 36/36; production `/__gallery.html` 404. |
+| 4 R1-R7 structure | PASS | 8/8 profile structure checks; real hosted embeds assert four tabs, one source, mounted panel, no standalone palette. |
+| 5 Tests and builds | PASS, known local exception | Site 546/546 and build; local typecheck and build; local 997/998, the unchanged `/tmp/h` ENOTDIR in `cli-init.test.mjs:159`. |
+| 6 License/release safety | PASS | `release-strict/release.json`: 47 production artifacts, 176 npm-pack files incl. NOTICE, no gallery/QA modules. |
+| 7 Deployment | Not deployed | Deploy gated on owner. No production deploy, no merge, no new preview for this head. |
+
+Merged-validator regressions at the same head:
+
+- PR-7 certification (isolated harness copy on port 5182, own evidence folder): full style 84/84, non-ready 252/252, interaction 264/264, disabled outline 8 cases / 240 comparisons, 0 failures.
+- Preserved PR-5 paint validator: 520 cases, 40,860 assertions, 0 failures, 21,372 rejected mutations, `bootstrap: false`.
+
+Changes in this revalidation:
+
+- Combobox/MultiSelect: ArrowUp/ArrowDown with no active option (pointer open or after filtering) start at the last/first enabled option. Trusted-key checks cover closed open-direction entry, Home/End, wrap both ways, disabled skipping and pointer/filter entry on both controls; a unit regression fails on the old code (activates Beta).
+- G1 reads raw computed declarations. The scratch reference CSS is compiled with Lightning CSS 1.32.0, target Safari 15, outside the repository (see `REFERENCE-NORMALIZATION.md`). Three browser mutations per profile apply an oklab nudge that paints identical RGBA8 bytes; each is rejected at the root, a descendant and text paint (24/24).
+- Raw comparison exposed oklch-vs-Lab serialization in four P1 inks. P1-scoped tokens now carry the Demo's exact Lab declarations (diff added, green Switch/Avatar, CodeBlock JSON number); shared tokens are unchanged, so PR-5/PR-7 paint is unchanged.
+- Rebase conflicts: `analysis.tsx` keeps PR-7's Alert/Button/Select with PR-8's CodeBlock details and TimePeriodSelect; `focus-paint.mjs` keeps PR-7's `focusPaintOwner` with the radio ring and switch track added. The G2 driver now targets the merged refresh Button and Alert.
+
+Held review observations not addressed in this run: invisible nested input/select text (G1-PAINT-CHILD), loading Toast omitting its action (G1-TOAST-LOADING), and open-popup/range-error/Markdown anatomy coverage (G1-STATE-COVERAGE).
+
+## Historical gate verdicts (pre-rebase, superseded)
 
 | Gate | Implementer result | Evidence |
 | --- | --- | --- |
