@@ -35,7 +35,7 @@ function sourceTarget(spec) {
   if (spec.control === "select") return { selector: '[data-specimen="select-default"] [role="combobox"]', recipe: "SelectInput/default" };
   if (spec.control === "checkbox") return { selector: `[data-specimen="${spec.state === "checked" || spec.checked ? "checkbox-small" : "hosted-checkbox-unchecked"}"] [role="checkbox"]`, recipe: "Checkbox/sm, the actual live-Demo caller variant" };
   if (spec.control === "panel") return { selector: '[data-specimen="hosted-panel"] .sample > div',
-    paddingSelector: '[data-specimen="hosted-panel"] .sample > div > div', recipe: "Card + CardHeader, identical one-line content" };
+    paddingSelector: '[data-specimen="hosted-panel"] .sample > div > div', recipe: "Card + CardHeader" };
   if (spec.control === "status") return { selector: '[data-specimen="hosted-status"] [role="alert"]', recipe: "Alert/sm, identical one-line content" };
   assert.equal(spec.control, "skeleton");
   return { selector: '[data-specimen="skeleton-default"] .skeleton-stack > div', recipe: "Skeleton/h-4" };
