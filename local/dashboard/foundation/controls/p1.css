@@ -20,15 +20,26 @@
 .lf-combobox__input:has(input[aria-invalid="true"]) { border-color: var(--lf-destructive); }
 .lf-combobox__input:has(input:focus-visible) { box-shadow: var(--lf-field-focus-shadow); }
 .lf-combobox__input > .lf-combobox__control:focus-visible { box-shadow: none; }
-.lf-combobox__input > span { display: flex; flex-shrink: 0; margin-inline-start: auto; color: var(--lf-foreground-tertiary); pointer-events: none; }
-.lf-combobox__input:has(input[aria-invalid="true"]) > span { color: var(--lf-destructive); }
-.lf-combobox__popup { position: absolute; top: calc(100% + var(--lf-space-1)); inset-inline: 0; z-index: 10; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-md); box-shadow: var(--lf-shadow-popover); background: var(--lf-popover); color: var(--lf-popover-foreground); padding: var(--lf-space-1); }
-.lf-combobox__popup ul { list-style: none; margin: 0; padding: 0; max-height: var(--lf-command-list-height); overflow-y: auto; }
+.lf-combobox__value { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.lf-combobox__value[data-placeholder="true"] { color: var(--lf-muted-foreground); }
+.lf-combobox__input[data-expanded="false"] > .lf-combobox__control { color: transparent; }
+.lf-combobox__input > span:last-child { display: flex; flex-shrink: 0; margin-inline-start: auto; color: var(--lf-foreground-tertiary); pointer-events: none; }
+.lf-combobox__input:has(input[aria-invalid="true"]) > span:last-child { color: var(--lf-destructive); }
+.lf-combobox__popup { position: absolute; top: calc(100% + var(--lf-space-1)); inset-inline: 0; z-index: 10; min-width: 128px; overflow: hidden; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-md); box-shadow: var(--lf-shadow-popover); background: var(--lf-popover); color: var(--lf-popover-foreground); padding: 0; font-size: var(--lf-text-lg); line-height: var(--lf-space-6); }
+.lf-combobox__popup :is(ul, li, .lf-combobox__all, .lf-combobox__radio > span) { border-color: var(--lf-border); }
+.lf-combobox__popup ul { list-style: none; margin: 0; padding: var(--lf-space-1h); max-height: var(--lf-command-list-height); overflow-y: auto; }
 .lf-combobox__popup li, .lf-combobox__all { box-sizing: border-box; min-height: var(--lf-control-height); display: flex; align-items: center; gap: var(--lf-space-2); border: 0; border-radius: var(--lf-radius-sm); padding: var(--lf-space-1h); font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); cursor: pointer; overflow-wrap: anywhere; }
 .lf-combobox__all { width: 100%; background: transparent; color: inherit; }
 .lf-combobox__popup li[data-active="true"], .lf-combobox__all:hover { background: var(--lf-accent); color: var(--lf-accent-foreground); }
 .lf-combobox__popup li[aria-disabled="true"] { opacity: var(--lf-opacity-disabled); cursor: not-allowed; }
-.lf-combobox__check { display: flex; width: var(--lf-space-4); flex-shrink: 0; }
+.lf-combobox__mark { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: var(--lf-text-base); height: var(--lf-text-base); pointer-events: none; }
+.lf-combobox__label { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-combobox__radio, .lf-combobox__box { box-sizing: border-box; display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: var(--lf-text-base); height: var(--lf-text-base); border: var(--lf-border-width) solid var(--lf-control-border); }
+.lf-combobox__radio { border-radius: calc(infinity * 1px); box-shadow: var(--lf-radio-shadow); }
+.lf-combobox__radio[data-checked="true"] { border-color: var(--lf-control-fill); }
+.lf-combobox__radio > span { width: var(--lf-space-1h); height: var(--lf-space-1h); border-radius: calc(infinity * 1px); background: var(--lf-control-fill); }
+.lf-combobox__box { border-radius: var(--lf-radius-sm); }
+.lf-combobox__box[data-checked="true"] { background: var(--lf-control-fill); border-color: var(--lf-control-fill); color: var(--lf-primary-foreground); }
 .lf-combobox__popup p { padding: var(--lf-space-3); margin: 0; }
 .lf-radio, .lf-switch { display: inline-flex; align-items: center; position: relative; gap: var(--lf-space-2); height: var(--lf-control-height); min-width: var(--lf-control-height); color: var(--lf-foreground); font: var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); cursor: pointer; }
 .lf-radio input, .lf-switch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: inherit; }
@@ -102,6 +113,8 @@
 .lf-input[data-date-range-field] { padding: var(--lf-space-2) var(--lf-space-3); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-input[data-date-range-field]:disabled { background: color-mix(in oklab, var(--lf-muted) 50%, transparent); }
 .lf-date-range .lf-button:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
+.lf-date-range p[role=alert] { flex-basis: 100%; margin: 0; border-color: var(--lf-border); color: var(--lf-destructive); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
+.lf-select-badge { box-sizing: border-box; flex-shrink: 0; width: calc(2 * var(--lf-space-5)); height: var(--lf-space-5); margin-inline-end: var(--lf-space-1); padding: 0 var(--lf-space-1h); border-radius: var(--lf-radius-sm); border-color: var(--lf-border); background: var(--lf-muted); font-size: var(--lf-text-xs); line-height: var(--lf-space-5); text-align: center; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .lf-loading .lf-spinner { animation: lf-loading-progress var(--lf-spinner-duration) ease-in-out infinite alternate; }
 }

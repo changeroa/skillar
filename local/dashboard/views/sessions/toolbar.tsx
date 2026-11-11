@@ -26,7 +26,8 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
         onChange={setDraft} onSubmit={value => update({ q: value.trim() || undefined })} />
       <TimePeriodSelect label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
         options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
-          { value: "7", label: "최근 7일" }, { value: "30", label: "최근 30일" }, { value: "60", label: "최근 60일" }]}
+          { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
+          { value: "60", label: "최근 60일", badge: "60d" }]}
         onChange={days => {
           const to = Date.now();
           update(days === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(to, Number(days)), to });

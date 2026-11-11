@@ -1,5 +1,5 @@
 import { P1_PAINT_FIELDS, P1_LOADER_FIELDS, checkP1Inventory } from "./p1-inventory.mjs";
-import { p1Descendants } from "./p1-descendants.mjs";
+import { p1Descendants, p1Excluded } from "./p1-descendants.mjs";
 import { P1_TEXT_FIELDS, compareTextPaint } from "./p1-text-paint.mjs";
 /** Fields required by the Phase B contract, including every independent edge. */
 export const P1_STYLE_FIELDS = Object.freeze([
@@ -16,7 +16,8 @@ const geometry = new Set(["height", "width", "paddingTop", "paddingRight", "padd
 
 export async function readP1Style(page, selector, specimen) {
   const descriptors = specimen ? p1Descendants(specimen.component, specimen.state) : [];
-  return page.evaluate(({ selector, fields, descriptors, textFields }) => {
+  const excluded = specimen ? p1Excluded(specimen.component, specimen.state) : null;
+  return page.evaluate(({ selector, fields, descriptors, textFields, excluded }) => {
     const node = document.querySelector(selector);
     if (!node) throw new RangeError(`Missing style target: ${selector}`);
     const css = getComputedStyle(node);
@@ -36,7 +37,11 @@ export async function readP1Style(page, selector, specimen) {
     };
     const values = measure(node).values;
     const painted = [...(node.matches("svg") ? [node] : []),
-      ...node.querySelectorAll("svg,svg path,svg circle,svg line,svg polyline,svg polygon,svg rect,svg ellipse,svg text,svg use,svg g,.sonner-loading-bar,.lf-toast-loader__bar")];
+      ...node.querySelectorAll("svg,svg path,svg circle,svg line,svg polyline,svg polygon,svg rect,svg ellipse,svg text,svg use,svg g,.sonner-loading-bar,.lf-toast-loader__bar")]
+      .filter(part => !(excluded && part.closest(excluded)));
+    // Owner-adapted regions (named per component/state) are measured, never silently dropped.
+    const excludedHeight = excluded ? [...node.querySelectorAll(excluded)]
+      .reduce((sum, part) => sum + part.getBoundingClientRect().height, 0) : 0;
     const glyphs = painted.map(part => {
       const paint = getComputedStyle(part), loader = part.matches(".sonner-loading-bar,.lf-toast-loader__bar");
       const box = loader ? { width: parseFloat(paint.width), height: parseFloat(paint.height) } : part.getBBox();
@@ -62,12 +67,27 @@ export async function readP1Style(page, selector, specimen) {
       return { role: kind === "avatar" ? part.matches("img") ? "image" : "fallback" : kind,
         x: box.x - rect.x, y: box.y - rect.y, style: measure(part) };
     }) : [];
+    // Form controls paint their value or placeholder, not DOM text nodes.
+    const controlText = part => {
+      const value = part.value ?? "";
+      const css = value === "" ? getComputedStyle(part, "::placeholder") : getComputedStyle(part);
+      const text = (value === "" ? part.placeholder ?? "" : value).replace(/\s+/g, "");
+      if (!text) return [];
+      const own = value === "" ? Number(css.opacity) : 1;
+      return [{ text, source: value === "" ? "placeholder" : "value", values: {
+        ...Object.fromEntries(textFields.map(field => [field, css[field]])),
+        opacity: String(Number(opacityOf(part)) * own) } }];
+    };
+    const product = !node.closest("#mit-ready") && node.matches(".lf-markdown,.lf-codeblock,.lf-toast,.lf-diff-scroll," +
+      ".lf-combobox__input,.lf-combobox__popup,.lf-select-wrap,textarea.lf-textarea,input.lf-input");
     const descendants = descriptors.map(descriptor => {
-      const product = node.matches(".lf-markdown,.lf-codeblock,.lf-toast,.lf-diff-scroll");
       const selector = product ? descriptor.actual : descriptor.source;
-      const nodes = [...node.querySelectorAll(selector)];
-      return { role: descriptor.role, expectedCount: descriptor.count, styles: nodes.map(part => {
+      const scope = descriptor.scope === "specimen" ? node.closest("[data-specimen],section[data-component]") : node;
+      const nodes = selector === ":scope" ? [node] : [...scope.querySelectorAll(selector)];
+      const control = product ? descriptor.actualControl : descriptor.sourceControl;
+      return { role: descriptor.role, expectedCount: descriptor.count, textOnly: descriptor.textOnly === true, styles: nodes.map(part => {
         const style = measure(part);
+        if (control) return { ...style, textPaint: controlText(part) };
         const textRoot = product && descriptor.actualText ? part.querySelector(descriptor.actualText) : part;
         const walker = document.createTreeWalker(textRoot ?? part, NodeFilter.SHOW_TEXT);
         const textPaint = [];
@@ -92,10 +112,10 @@ export async function readP1Style(page, selector, specimen) {
     });
     return { values, rawValues: Object.fromEntries(fields.map(field => [field, css[field]])),
       text: node.textContent, geometry: { width: rect.width, height: rect.height },
-      rawOpacity: css.opacity, glyphs, parts, descendants, focusVisible: node.matches(":focus-visible"),
+      rawOpacity: css.opacity, glyphs, parts, descendants, excludedHeight, focusVisible: node.matches(":focus-visible"),
       focusWithin: node.matches(":focus-visible") || !!node.querySelector(":focus-visible"),
       visible: node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
-  }, { selector, fields: P1_STYLE_FIELDS, descriptors, textFields: P1_TEXT_FIELDS });
+  }, { selector, fields: P1_STYLE_FIELDS, descriptors, textFields: P1_TEXT_FIELDS, excluded });
 }
 
 /** Explicit owner adaptations are passed as measured-property replacements, never blanket exemptions. */
@@ -111,7 +131,7 @@ export function compareP1Style(reference, actual, policy = {}) {
     if (expected === undefined || received === undefined) { failures.push({ field, expected, actual: received }); continue; }
     const tolerance = (field === "height" || field === "width") && policy[field] !== undefined ? .01 : 1;
     const normalizeShadow = value => value.replace(/rgba\([^)]*,\s*0\)\s[-.\dpx\s]+,?\s*/g, "")
-      .replace(/rgba?\([^)]*\) 0px 0px 0px 0px(?: inset)?(?:,\s*)?/g, "").replace(/^,\s*/, "").trim() || "none";
+      .replace(/rgba?\([^)]*\) 0px 0px 0px 0px(?: inset)?(?:,\s*)?/g, "").replace(/^,\s*/, "").replace(/,\s*$/, "").trim() || "none";
     const match = geometry.has(field) && Number.isFinite(parseFloat(expected)) && Number.isFinite(parseFloat(received))
       ? Math.abs(parseFloat(expected) - parseFloat(received)) <= tolerance
       : field === "boxShadow" ? normalizeShadow(expected) === normalizeShadow(received) : expected === received;
@@ -153,6 +173,15 @@ export function compareP1Style(reference, actual, policy = {}) {
     if (!received) continue;
     for (const [position, style] of part.styles.entries()) {
       if (!received.styles[position]) continue;
+      if (part.textOnly) {
+        // Box geometry of a text carrier differs by anatomy (overlay input vs span); its painted text does not.
+        const prefix = `descendants.${part.role}.${position}`;
+        if (style.visible !== received.styles[position].visible)
+          failures.push({ field: `${prefix}.visible`, expected: style.visible, actual: received.styles[position].visible });
+        failures.push(...compareTextPaint(style.textPaint, received.styles[position].textPaint)
+          .map(failure => ({ ...failure, field: `${prefix}.${failure.field}` })));
+        continue;
+      }
       const overrides = policy.descendants?.[part.role] ?? {};
       failures.push(...compareP1Style(style, received.styles[position], overrides)
         .map(failure => ({ ...failure, field: `descendants.${part.role}.${position}.${failure.field}` })));

@@ -1,7 +1,7 @@
 /** Every channel that paints a text run, including inherited ancestor opacity. */
 export const P1_TEXT_FIELDS = Object.freeze([
   "fontSize", "lineHeight", "fontWeight", "fontStyle", "fontFamily",
-  "color", "backgroundColor", "opacity", "visibility",
+  "color", "webkitTextFillColor", "backgroundColor", "opacity", "visibility",
 ]);
 
 export function compareTextPaint(reference, actual) {

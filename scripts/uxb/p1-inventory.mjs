@@ -12,8 +12,8 @@ export const P1_LOADER_FIELDS = Object.freeze(["radius", "left", "top"]);
 function paintInventory(component, state) {
   switch (component) {
     case "Textarea": case "DateRangeInput": return { glyphs: [], parts: [] };
-    case "Combobox": case "MultiSelect": case "TimePeriodSelect":
-      return { glyphs: ["path", "svg"], parts: [] };
+    case "Combobox": return { glyphs: state === "open" ? [] : ["path", "svg"], parts: [] };
+    case "MultiSelect": case "TimePeriodSelect": return { glyphs: ["path", "svg"], parts: [] };
     case "Switch": return { glyphs: [], parts: ["thumb"] };
     case "Radio": return { glyphs: [], parts: ["dot"] };
     case "Avatar": return { glyphs: [], parts: [state === "image" ? "image" : "fallback"] };
@@ -22,7 +22,8 @@ function paintInventory(component, state) {
       return { glyphs: state === "loading" ? Array(12).fill("loader-bar") :
         state === "default" ? ["line", "line", "svg"] : ["line", "line", "path", "svg", "svg"], parts: [] };
     case "CodeBlock": return { glyphs: ["path", "rect", "svg"], parts: [] };
-    case "MarkdownViewer": case "DiffViewer": return { glyphs: [], parts: [] };
+    case "MarkdownViewer": return { glyphs: state === "structured" ? ["path", "path", "rect", "rect", "svg", "svg"] : [], parts: [] };
+    case "DiffViewer": return { glyphs: [], parts: [] };
     default: throw new RangeError(`Unknown P1 component/state: ${component}/${state}`);
   }
 }

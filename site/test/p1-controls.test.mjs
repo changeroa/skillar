@@ -3,7 +3,7 @@ import test from "node:test";
 import { useState } from "preact/hooks";
 import { act, all, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
 const { Textarea, Avatar, Spinner, Toast, Combobox, MultiSelect, DateRangeFields, DateRangeInput, parseKstDateTime, formatKstDateTime,
-  MarkdownViewer, DiffViewer } = await loadViews(`
+  MarkdownViewer, DiffViewer, TimePeriodSelect } = await loadViews(`
 export * from "./local/dashboard/foundation/controls/index.ts";
 export {parseKstDateTime,formatKstDateTime} from "./local/dashboard/foundation/controls/date-range.tsx";
 export * from "./local/dashboard/foundation/viewers/index.ts";`);
@@ -16,6 +16,38 @@ test("Markdown preserves hostile HTML and URLs as literal text", async t => {
   // Then
   assert.equal(byTag(container, "img").length + byTag(container, "script").length + byTag(container, "a").length, 0);
   assert.ok(container.textContent.includes(text.split("\n\n")[0]));
+});
+
+test("Markdown emphasis and nested ordered items render while snake_case stays literal", async t => {
+  // Given
+  const text = "- Cost source priority:\n  1) Ingested cost overrides.\n  2) Otherwise inferred.\n- input_cached_tokens stays\n\n_python: example_";
+  // When
+  const { container } = await mount(t, MarkdownViewer, { text });
+  // Then
+  assert.equal(byTag(byTag(container, "li")[0], "ol").length, 1);
+  assert.equal(byTag(byTag(container, "ol")[0], "li").length, 2);
+  assert.deepEqual(byTag(container, "em").map(node => node.textContent), ["python: example"]);
+  assert.ok(container.textContent.includes("input_cached_tokens"));
+});
+
+test("period select paints the selected option's badge only", async t => {
+  // Given
+  const options = [{ value: "1", label: "Past 1 day", badge: "1d" }, { value: "all", label: "All" }];
+  // When
+  const { container } = await mount(t, TimePeriodSelect, { value: "1", options, onChange() {} });
+  // Then
+  assert.deepEqual(all(container, node => node.getAttribute("class") === "lf-select-badge").map(node => node.textContent), ["1d"]);
+});
+
+test("an inverted applied range marks both date inputs invalid with the alert", async t => {
+  // Given
+  const range = { from: Date.UTC(2026, 10, 7), to: Date.UTC(2026, 10, 1) };
+  const { container } = await mount(t, DateRangeInput, { range, onChange() { throw new Error("must not apply"); } });
+  // When
+  await act(() => byTag(container, "button")[0].dispatchEvent(new FakeEvent("click")));
+  // Then
+  assert.equal(all(container, node => node.getAttribute("role") === "alert").length, 1);
+  assert.deepEqual(byTag(container, "input").map(node => node.getAttribute("aria-invalid")), ["true", "true"]);
 });
 
 test("empty diffs expose a named region without fabricated comparison rows", async t => {

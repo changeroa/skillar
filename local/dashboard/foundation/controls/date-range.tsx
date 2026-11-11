@@ -27,18 +27,20 @@ export function TimePeriodSelect({ label = "기간", options, value, onChange, d
 }
 
 /** Presentation only: callers retain their draft parser, including exact-millisecond text fallbacks. */
-export function DateRangeFields({ value, onChange, disabled, fromLabel = "시작 (KST)", toLabel = "종료 (KST)",
+export function DateRangeFields({ value, onChange, disabled, invalid, fromLabel = "시작 (KST)", toLabel = "종료 (KST)",
   fromType = "datetime-local", toType = "datetime-local", step }: {
   readonly value: DateRangeText; readonly onChange: (patch: Partial<DateRangeText>) => void;
-  readonly disabled?: boolean; readonly fromLabel?: string; readonly toLabel?: string;
+  readonly disabled?: boolean; readonly invalid?: boolean; readonly fromLabel?: string; readonly toLabel?: string;
   readonly fromType?: "text" | "datetime-local"; readonly toType?: "text" | "datetime-local"; readonly step?: string;
 }) {
   const id = useId();
   const precision = step === undefined ? {} : { step };
   return <>
     <Input id={`${id}-from`} label={fromLabel} type={fromType} data-date-range-field="" icon={false} disabled={disabled} {...precision}
+      aria-invalid={invalid ? "true" : undefined}
       value={value.from} onInput={event => onChange({ from: event.currentTarget.value })} />
     <Input id={`${id}-to`} label={toLabel} type={toType} data-date-range-field="" icon={false} disabled={disabled} {...precision}
+      aria-invalid={invalid ? "true" : undefined}
       value={value.to} onInput={event => onChange({ to: event.currentTarget.value })} />
   </>;
 }
@@ -61,7 +63,7 @@ export function DateRangeInput({ label = "기간", range, onChange, disabled = f
   };
   return <fieldset class="lf-date-range" disabled={disabled} aria-describedby={error ? `${id}-error` : undefined}>
     <legend>{label} · KST</legend>
-    <DateRangeFields value={{ from: fromText, to: toText }} step="0.001" onChange={patch => {
+    <DateRangeFields value={{ from: fromText, to: toText }} step="0.001" invalid={Boolean(error)} onChange={patch => {
       if (patch.from !== undefined) setFromText(patch.from);
       if (patch.to !== undefined) setToText(patch.to);
       setError("");

@@ -35,7 +35,7 @@ export async function p1Focus(page, { base, out, surface }) {
         });
     }, targets);
     const allTargets = [...Object.entries(targets).map(([name, selector]) => ({ name, selector })), ...inventory];
-    assert.equal(allTargets.length, 45, "Committed focus inventory must not lose a control");
+    assert.equal(allTargets.length, 53, "Committed focus inventory must not lose a control");
     for (const { name, selector } of allTargets) {
       try {
         await press(page, "Tab");

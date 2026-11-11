@@ -70,7 +70,8 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   </div>;
 }
 
-export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean };
+/** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */
+export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean; readonly badge?: string };
 export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
   readonly size?: "default" | "sm";
@@ -90,6 +91,7 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
         <option value="" disabled>{options.length === 0 ? "선택 가능한 항목 없음" : placeholder}</option>
         {options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </select>
+      {selected?.badge && <span class="lf-select-badge" aria-hidden="true">{selected.badge}</span>}
       <span class="lf-select-value" aria-hidden="true">{text}</span>
       <Glyph name={size === "sm" ? "chevrons" : "chevron"} />
     </div>

@@ -120,11 +120,31 @@ test("P1 parity rejects symmetrically missing descendants against fixed anatomy"
   const empty = { values, glyphs: [], parts: [] };
   for (const [component, state] of [["Switch", "default-default-checked-enabled"],
     ["Radio", "unchecked-enabled"], ["Avatar", "image"], ["CodeBlock", "default"],
-    ["Spinner", "md-inherit"], ["Toast", "loading"]]) {
+    ["Spinner", "md-inherit"], ["Toast", "loading"], ["Textarea", "empty"], ["Combobox", "default"],
+    ["Combobox", "open"], ["MultiSelect", "open"], ["DateRangeInput", "error"], ["TimePeriodSelect", "default"],
+    ["MarkdownViewer", "structured"]]) {
     // When
     const failures = compareP1Style(empty, empty, { inventory: p1Inventory(component, state) });
     // Then
     assert.ok(failures.some(row => row.field.endsWith(".inventory")), component);
+  }
+});
+
+test("P1 text-only control parts reject hidden or transparent text", () => {
+  // Given
+  const run = { text: "Alpha", values: Object.fromEntries(P1_TEXT_FIELDS.map(field => [field, "rgb(39, 39, 42)"])) };
+  const part = visible => ({ role: "text", expectedCount: 1, textOnly: true,
+    styles: [{ visible, values: {}, glyphs: [], textPaint: [structuredClone(run)] }] });
+  const source = { values, glyphs: [], descendants: [part(true)] };
+  for (const mutate of [actual => { actual.descendants[0].styles[0].visible = false; },
+    actual => { actual.descendants[0].styles[0].textPaint[0].values.webkitTextFillColor = "rgba(0, 0, 0, 0)"; },
+    actual => { actual.descendants[0].styles[0].textPaint = []; }]) {
+    const actual = structuredClone(source);
+    mutate(actual);
+    // When
+    const failures = compareP1Style(source, actual);
+    // Then
+    assert.ok(failures.some(row => row.field.startsWith("descendants.text.0.")));
   }
 });
 

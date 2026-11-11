@@ -15,7 +15,8 @@ export async function p1Pointer(page, selector, state) {
     window.__p1PointerCleanup = () => listeners.forEach(([type, listener]) =>
       document.removeEventListener(type, listener, { capture: true }));
     const box = node.getBoundingClientRect();
-    return { x: box.left + box.width / 2, y: box.top + Math.min(box.height / 2, 10) };
+    // A target taller than the viewport is pointed at inside its visible part.
+    return { x: box.left + box.width / 2, y: Math.max(box.top, 0) + Math.min(box.height / 2, 10) };
   }, selector);
   await page._sendToTarget("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 1 });
   await page._sendToTarget("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });

@@ -24,7 +24,7 @@ export function P1Gallery() {
   const examples = new URLSearchParams(location.search);
   const [single, setSingle] = useState("");
   const [multiple, setMultiple] = useState<readonly string[]>(["alpha"]);
-  const [period, setPeriod] = useState("7");
+  const [period, setPeriod] = useState("1");
   const [range, setRange] = useState({ from: Date.UTC(2026, 10, 1) - 9 * 3600000, to: Date.UTC(2026, 10, 7) - 9 * 3600000 });
   const [message, setMessage] = useState("Saved");
   const [theme, setTheme] = useState(document.documentElement.dataset["theme"] ?? "system");
@@ -44,9 +44,11 @@ export function P1Gallery() {
       <Specimen component="Combobox" state="disabled"><Combobox label="Skill" options={options} value="alpha" onChange={setSingle} disabled /></Specimen>
       <Specimen component="Combobox" state="error"><Combobox label="Skill" options={options} value="" onChange={setSingle} error="Required" /></Specimen>
       <Specimen component="Combobox" state="empty"><Combobox label="Skill" options={[]} value="" onChange={setSingle} /></Specimen>
+      <Specimen component="Combobox" state="open"><Combobox id="p1-combo-open" label="Skill" options={options} value="alpha" onChange={() => undefined} /></Specimen>
       <Specimen component="MultiSelect" state="selected"><MultiSelect id="p1-multi" label="Models" options={options} value={multiple} onChange={setMultiple} /></Specimen>
       <Specimen component="MultiSelect" state="empty"><MultiSelect label="Models" options={[]} value={[]} onChange={setMultiple} /></Specimen>
       <Specimen component="MultiSelect" state="disabled"><MultiSelect label="Models" options={options} value={["alpha"]} onChange={setMultiple} disabled /></Specimen>
+      <Specimen component="MultiSelect" state="open"><MultiSelect id="p1-multi-open" label="Models" options={options} value={["alpha"]} onChange={() => undefined} /></Specimen>
       {["default", "sm"].flatMap(size => ["default", "green"].flatMap(color => [false, true].flatMap(checked =>
         [false, true].map(disabled => <Specimen component="Switch" key={`${size}-${color}-${checked}-${disabled}`}
           state={`${size}-${color}-${checked ? "checked" : "unchecked"}-${disabled ? "disabled" : "enabled"}`}>
@@ -75,6 +77,7 @@ export function P1Gallery() {
         </Specimen>)))}
       <Specimen component="Avatar" state="image"><Avatar displayName="Demo User" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23888'/%3E%3C/svg%3E" /></Specimen>
       <Specimen component="MarkdownViewer" state="formatted"><MarkdownViewer text={examples.get("markdown") ?? sample} /></Specimen>
+      <Specimen component="MarkdownViewer" state="structured"><MarkdownViewer text={examples.get("structured") ?? sample} /></Specimen>
       <Specimen component="MarkdownViewer" state="empty"><MarkdownViewer text="" /></Specimen>
       <Specimen component="MarkdownViewer" state="literal-html"><MarkdownViewer text={'<img src=x onerror="alert(1)">\n\n<script>alert(1)</script>'} /></Specimen>
       <Specimen component="CodeBlock" state="default"><CodeBlock value={examples.get("code") ?? "const value = 1;"} language={examples.get("language") ?? "javascript"} /></Specimen>
@@ -87,8 +90,9 @@ export function P1Gallery() {
       <Specimen component="DiffViewer" state="empty"><DiffViewer rows={[]} /></Specimen>
       <Specimen component="DateRangeInput" state="default"><DateRangeInput range={range} onChange={setRange} /></Specimen>
       <Specimen component="DateRangeInput" state="disabled"><DateRangeInput range={range} onChange={setRange} disabled /></Specimen>
+      <Specimen component="DateRangeInput" state="error"><DateRangeInput range={{ from: range.to, to: range.from }} onChange={setRange} /></Specimen>
       <Specimen component="TimePeriodSelect" state="default"><TimePeriodSelect value={period} onChange={setPeriod}
-        options={[{ value: "7", label: "Past 7 days" }, { value: "30", label: "Past 30 days" }]} /></Specimen>
+        options={[{ value: "1", label: "Past 1 day", badge: "1d" }, { value: "7", label: "Past 7 days", badge: "7d" }]} /></Specimen>
     </div>
   </main>;
 }

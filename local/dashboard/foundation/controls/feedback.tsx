@@ -27,7 +27,7 @@ export function Toast({ message, description, variant = "default", onDismiss, ac
       {variant === "loading" ? <span class="lf-toast__icon"><ToastLoading /></span> : variant !== "default" &&
         <span class="lf-toast__icon" aria-hidden="true"><ToastIcon variant={variant} /></span>}
       <div class="lf-toast__content" aria-hidden="true"><strong>{message}</strong>{description && <div>{description}</div>}</div>
-      {variant !== "loading" && action && <Button text={action.label} onClick={action.onClick} />}
+      {action && <Button text={action.label} onClick={action.onClick} />}
       {variant !== "loading" && <button class="lf-toast__dismiss" type="button" aria-label="알림 닫기" onClick={onDismiss}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
           stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>

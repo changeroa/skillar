@@ -193,8 +193,8 @@ html {
   --lf-weight-regular: 400;
   --lf-weight-medium: 500;
   --lf-weight-bold: 700;
-  --lf-viewer-heading-1: 24px; --lf-viewer-leading-1: 32px;
-  --lf-viewer-heading-2: 20px; --lf-viewer-leading-2: 28px;
+  --lf-viewer-heading-1: 22px; --lf-viewer-leading-1: 27.5px;
+  --lf-viewer-heading-2: 20px; --lf-viewer-leading-2: 26px;
   --lf-viewer-heading-3: 16px; --lf-viewer-leading-3: 24px;
   --lf-icon-leading: 24px;
   --lf-diff-added: lab(70.5521% -66.5147 45.8073);

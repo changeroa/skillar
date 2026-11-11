@@ -90,7 +90,8 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
     </div>
     <ReadNotice state={catalog} onRetry={retry} /><ReadNotice state={mcp} onRetry={retry} />
     <div class="home-range"><TimePeriodSelect value={String(range)} options={[
-      { value: "3", label: "최근 3일" }, { value: "5", label: "최근 5일" }, { value: "7", label: "최근 7일" },
+      { value: "3", label: "최근 3일", badge: "3d" }, { value: "5", label: "최근 5일", badge: "5d" },
+      { value: "7", label: "최근 7일", badge: "7d" },
     ]} onChange={value => {
       const days = Number(value);
       setRange(days);

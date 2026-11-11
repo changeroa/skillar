@@ -4,20 +4,26 @@ import { arm, signal, press, ready, typeahead } from "./trusted-keys.mjs";
 // Gallery options: 0 Alpha, 1 Disabled (aria-disabled), 2 Beta, 3 Gamma.
 const LABELS = Object.freeze(["Alpha", "Disabled", "Beta", "Gamma"]);
 
-async function expectActive(page, id, index) {
-  assert.deepEqual(await page.evaluate(id => {
+// Every observed aria-activedescendant after a trusted key, kept as gate evidence.
+let trace = [];
+export function p1KeyboardTrace() { return trace; }
+
+async function expectActive(page, id, index, key = "open") {
+  const observed = await page.evaluate(id => {
     const input = document.getElementById(id), active = document.getElementById(input.getAttribute("aria-activedescendant"));
     return { focused: document.activeElement === input, expanded: input.getAttribute("aria-expanded"),
       id: active?.id, text: active?.textContent, visual: active?.dataset.active, disabled: active?.getAttribute("aria-disabled") ?? null,
       painted: [...document.querySelectorAll(`#${id}-list [data-active=true]`)].map(node => node.id) };
-  }, id), { focused: true, expanded: "true", id: `${id}-option-${index}`, text: LABELS[index], visual: "true", disabled: null,
+  }, id);
+  trace.push({ control: id, key, activedescendant: observed.id ?? null, text: observed.text ?? null, painted: observed.painted });
+  assert.deepEqual(observed, { focused: true, expanded: "true", id: `${id}-option-${index}`, text: LABELS[index], visual: "true", disabled: null,
     painted: [`${id}-option-${index}`] });
 }
 
 async function step(page, id, key, index) {
   await arm(page, { kind: "attribute", selector: `#${id}`, attribute: "aria-activedescendant", value: `${id}-option-${index}` });
   await press(page, key); await signal(page);
-  await expectActive(page, id, index);
+  await expectActive(page, id, index, key);
 }
 
 async function closeWithEscape(page, id) {
@@ -82,6 +88,7 @@ async function listboxNavigation(page, id, results, name) {
 
 export async function p1Keyboard(page, base) {
   const results = [];
+  trace = [];
   await page.goto(`${base}/__gallery.html?p1&atomic`, { waitUntil: "domcontentloaded" });
   await ready(page, "#p1-combo");
   await page._sendToTarget("Page.bringToFront");

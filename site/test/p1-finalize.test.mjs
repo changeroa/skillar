@@ -6,8 +6,8 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 
-const expected = { Textarea: 5, Combobox: 4, MultiSelect: 3, Switch: 16, Radio: 5, Spinner: 48,
-  Toast: 6, Avatar: 13, MarkdownViewer: 3, CodeBlock: 3, DiffViewer: 2, DateRangeInput: 2, TimePeriodSelect: 1 };
+const expected = { Textarea: 5, Combobox: 5, MultiSelect: 4, Switch: 16, Radio: 5, Spinner: 48,
+  Toast: 6, Avatar: 13, MarkdownViewer: 4, CodeBlock: 3, DiffViewer: 2, DateRangeInput: 3, TimePeriodSelect: 1 };
 const states = Object.entries(expected).flatMap(([component, count]) =>
   Array.from({ length: count }, (_, state) => ({ component, state })));
 const rows = ["site", "local"].flatMap(surface => [390, 1440].flatMap(width => ["light", "dark"].flatMap(theme =>

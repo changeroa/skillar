@@ -41,13 +41,14 @@ try {
       [...document.querySelectorAll('[data-sidebar="footer"]')].every(n => !n.checkVisibility()));
     assert.equal(footerHidden, true);
     const selector = "[data-pr8-period]", file = `${out}/demo-matched/period-${width}-${theme}.png`;
-    const style = await readP1Style(page, selector);
+    const specimen = { component: "TimePeriodSelect", state: "default" };
+    const style = await readP1Style(page, selector, specimen);
     const geometry = await page.evaluate(selector => {
       const node = document.querySelector(selector), rect = node.getBoundingClientRect();
       return { width: rect.width, height: rect.height, text: node.textContent };
     }, selector);
     const capture = await captureP1(page, selector, file);
-    const states = await captureLiveStates(page, { selector, file });
+    const states = await captureLiveStates(page, { selector, file, specimen });
     rows.push({ component: "TimePeriodSelect", state: "default", theme, width, geometry,
       style, file, capture, states, accountFooterHidden: footerHidden, provenance: "REAL-DEMO",
       url: await page.evaluate(() => location.href), selector });

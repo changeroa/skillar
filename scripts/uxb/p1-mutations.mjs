@@ -3,6 +3,42 @@ import { readP1Style, compareP1Style } from "./p1-style.mjs";
 import { p1Pointer, releaseP1Pointer } from "./p1-pointer.mjs";
 import { p1Inventory } from "./p1-inventory.mjs";
 import { p1OwnerPolicy } from "./p1-policy.mjs";
+import { checkP1Native, readP1Native } from "./p1-native.mjs";
+
+/** Hiding or blanking the inner control or its text must fail the fixed inventory or the native contract. */
+async function controlTextMutations(page) {
+  const rows = [];
+  for (const [component, state, root, inner, text] of [
+    ["Combobox", "default", ".lf-combobox__input", "input", ".lf-combobox__value"],
+    ["MultiSelect", "selected", ".lf-combobox__input", "input", ".lf-combobox__value"],
+    ["TimePeriodSelect", "default", ".lf-select-wrap", "select", ".lf-select-value"],
+    ["Textarea", "default", "textarea", null, null],
+    ["DateRangeInput", "default", ".lf-date-range input", null, null],
+  ]) {
+    const selector = `[data-component="${component}"][data-state="${state}"] ${root}`;
+    const specimen = { component, state }, inventory = p1Inventory(component, state);
+    const original = await readP1Style(page, selector, specimen);
+    assert.deepEqual(checkP1Native(await readP1Native(page, selector, component), component), [], `${component} native baseline`);
+    const probes = [[inner, "visibility", "hidden"], [inner, "display", "none"], [inner, "pointer-events", "none"],
+      ...(component === "TimePeriodSelect" ? [[".lf-select-badge", "opacity", "0"]] : [[inner, "opacity", "0"]]),
+      [text, "color", "transparent"], [text, "-webkit-text-fill-color", "transparent"]];
+    for (const [target, property, value] of probes) {
+      const apply = (remove) => page.evaluate(({ selector, target, property, value, remove }) => {
+        const node = target ? document.querySelector(selector).querySelector(target) : document.querySelector(selector);
+        if (remove) node.style.removeProperty(property); else node.style.setProperty(property, value, "important");
+      }, { selector, target, property, value, remove });
+      await apply(false);
+      try {
+        const failures = [...compareP1Style(original, await readP1Style(page, selector, specimen), { inventory }),
+          ...checkP1Native(await readP1Native(page, selector, component), component)];
+        assert.ok(failures.some(row => /^(descendants\.|native\.|actual\.descendants)/.test(row.field)),
+          `${component} ${target ?? "self"} ${property}:${value} must fail the inner-control contract`);
+        rows.push({ name: `${component}-${target ?? "self"}-${property}-rejected`, status: "PASS", failures });
+      } finally { await apply(true); }
+    }
+  }
+  return rows;
+}
 
 /** Mutate the real painted control, not just a manufactured style object. */
 export async function p1Mutations(page, { coarse }) {
@@ -150,6 +186,7 @@ export async function p1Mutations(page, { coarse }) {
         : document.querySelector(root)).style.removeProperty("background-color"), { root, target });
     }
   }
+  rows.push(...await controlTextMutations(page));
   const missing = structuredClone(code);
   missing.descendants = [];
   assert.ok(compareP1Style(missing, missing, { inventory: p1Inventory("CodeBlock", "default") })

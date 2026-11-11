@@ -64,7 +64,8 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
       const now = Date.now();
       update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
     }} options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
-      { value: "7", label: "최근 7일" }, { value: "30", label: "최근 30일" }, { value: "60", label: "최근 60일" }]} />
+      { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
+      { value: "60", label: "최근 60일", badge: "60d" }]} />
     {!workspace && <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
       const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
       update({ runtime: runtime ? [runtime] : undefined });

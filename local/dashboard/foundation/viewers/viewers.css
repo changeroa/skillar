@@ -6,6 +6,10 @@
 .lf-markdown h3[data-level="2"] { font-size: var(--lf-viewer-heading-2); line-height: var(--lf-viewer-leading-2); }
 .lf-markdown ul, .lf-markdown ol { margin: 0; padding-inline-start: var(--lf-space-6); }
 .lf-markdown li { margin-top: var(--lf-space-1); }
+/* Flex items do not collapse a first item's margin as the source's block flow does. */
+.lf-markdown > :is(ul, ol) > li:first-child { margin-top: 0; }
+.lf-markdown :is(h3, ul, ol, li, em, .lf-markdown__code) { border-color: var(--lf-border); }
+.lf-markdown__code { padding-block: var(--lf-space-2); }
 .lf-codeblock { display: flex; flex-direction: column; overflow: hidden; width: 100%; border: var(--lf-border-width) solid var(--lf-border); border-radius: var(--lf-radius-md); background: color-mix(in oklab, var(--lf-muted) 30%, transparent); }
 .lf-codeblock header { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--lf-space-2); padding: var(--lf-space-1) var(--lf-space-2); border-bottom: var(--lf-border-width) solid var(--lf-border); color: inherit; font-size: var(--lf-text-xs); line-height: var(--lf-leading-sm); }
 .lf-codeblock :is(header,header > span,pre,pre *) { border-color: var(--lf-border); }
@@ -24,7 +28,7 @@
   :root:not(.light):not([data-theme="light"]) .lf-codeblock [data-token="comment"] { font-style: normal; }
 }
 .lf-codeblock :is([data-token="punctuation"],[data-token="operator"]) { color: light-dark(#393a34, #d4d4d4); }
-.lf-codeblock [data-token="function"] { color: light-dark(#393a34, #dcdcaa); }
+.lf-codeblock [data-token="function"] { color: light-dark(#d73a49, #dcdcaa); }
 .lf-codeblock[data-language="json"] [data-token="property"] { color: var(--lf-muted-foreground); }
 .lf-codeblock[data-language="json"] [data-token="string"] { color: var(--lf-json-value-string); }
 .lf-codeblock[data-language="json"] [data-token="number"] { color: var(--lf-p1-json-value-number); }
