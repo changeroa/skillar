@@ -9,6 +9,7 @@ import {
 import { DOW_LABEL, isEmptyFilter, serializeFilter, type Route, type ViewProps } from "../state";
 import { AnalysisEmpty, AnalysisError, AnalysisToolbar, conditions, useAnalysisReport } from "../components/analysis";
 import { observedRequests, requestsInRange, requestsSkillWeek, sessionsHeatmap } from "./analysis-data";
+import { StatusMessage } from "../foundation/widgets/messages";
 
 const NARROW_QUERY = "(max-width: 639.98px)";
 const BUCKET_CHOICES: readonly BucketChoice[] = ["auto", ...BUCKET_OPTIONS];
@@ -132,7 +133,7 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
       <HeatmapStyles />
       <header class="page-title">{embedded ? <h2>활동</h2> : <h1>활동</h1>}<p>세션의 시작 시간과 주별 스킬 읽기를 확인합니다.</p></header>
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
-      {report.busy && <p class="dim" role="status">{grid ? `갱신 중: ${conditions(dataFilter)} · ${requestBucket}시간` : "활동 분포를 집계하는 중…"}</p>}
+      {report.busy && <StatusMessage level="DEFAULT" announce message={grid ? `갱신 중: ${conditions(dataFilter)} · ${requestBucket}시간` : "활동 분포를 집계하는 중…"} />}
       <AnalysisError error={report.error} title="활동 분포를 불러올 수 없습니다" retry={report.refresh} />
       {grid && <p class="analysis-scope" data-result-conditions>{conditions(resultFilter)} · {bucketHours}시간 · {timezoneLabel}</p>}
       <button class="pe-button" data-range-toggle aria-pressed={rangeMode} onClick={() => { setRangeMode(!rangeMode); clearSelection(); }}>범위 선택{rangeMode ? " · 켜짐" : ""}</button>

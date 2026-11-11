@@ -5,6 +5,7 @@ import { AnalysisEmpty, AnalysisError, AnalysisToolbar, AnalysisWidget, Metric, 
 import { Bars } from "../charts/bars";
 import { durationDistribution, observedRequests, requestSeries, requestsInRange } from "./analysis-data";
 import { DashboardActivity, DashboardFlow } from "./dashboard-widgets";
+import { StatusMessage } from "../foundation/widgets/messages";
 
 export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
   const report = useAnalysisReport(serializeFilter(route.filter), async () => {
@@ -35,7 +36,7 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
   return <section class="analysis pe-console" data-analysis-dashboard aria-busy={report.busy}>
     <header class="page-title">{embedded ? <h2>대시보드</h2> : <h1>대시보드</h1>}<p>이 기기의 세션·검색·읽기 요약</p></header>
     <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
-    {report.busy && <p role="status">{data ? `갱신 중: ${conditions(route.filter)}` : "세션 활동 집계 중…"}</p>}
+    {report.busy && <StatusMessage level="DEFAULT" announce message={data ? `갱신 중: ${conditions(route.filter)}` : "세션 활동 집계 중…"} />}
     <AnalysisError error={report.error} title="세션 활동을 불러올 수 없습니다" retry={report.refresh} />
     {data && <><p class="analysis-scope" data-result-conditions>{api.mode === "fixtures" ? "예시 데이터 · " : ""}{conditions(data.filter)} · {coverage}</p>
       {data.rows.length === 0 ? <AnalysisEmpty route={route} navigate={navigate} /> : <>

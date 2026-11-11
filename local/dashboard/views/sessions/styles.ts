@@ -4,8 +4,9 @@ import { consoleStyles } from "../../components/console-style";
 export function sessionsStyles() {
   consoleStyles();
   installStyles("sessions-console", `
-.sessions-console{min-width:0}.sessions-console .page-title{margin:0 0 12px}.sessions-console .page-title h1,.sessions-console .page-title h2{font-size:22px;margin:0}
+.sessions-console{min-width:0}.sessions-console .page-title{margin:0 0 12px}.sessions-console .page-title h1,.sessions-console .page-title h2{font:var(--lf-weight-strong) var(--lf-text-lg)/24px var(--lf-font-sans);margin:0}
 .sessions-console .page-title p{margin:4px 0 0;color:var(--ink-2);font-size:12px}
+.sessions-console .session-waiting{max-width:48ch;margin:var(--lf-space-6) auto}
 .session-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .session-toolbar>.lf-table-toolbar{flex:1;margin:0}.session-toolbar .lf-field:has(select){max-width:160px}
 .session-toolbar .field{min-height:44px;font-size:12px;padding:6px 8px;width:auto}
@@ -13,6 +14,7 @@ export function sessionsStyles() {
 .session-search input{flex:1;width:100%;min-width:0;min-height:44px;background:var(--bg);border:1px solid var(--line-2);padding:8px;font-size:14px}
 .session-toolbar__count{font-size:12px;white-space:nowrap;color:var(--ink-2)}
 .session-menu{position:relative;font-size:12px}.session-menu>summary{list-style:none;font-size:12px}.session-menu>summary::-webkit-details-marker{display:none}
+.sessions-console .session-menu>summary.pe-button{font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
 .session-menu__body{position:absolute;right:0;top:100%;width:220px;padding:8px;z-index:20;background:var(--bg);border:1px solid var(--line-2);max-height:65dvh;overflow:auto}
 .session-menu__body label{display:flex;align-items:center;gap:8px;min-height:44px}.session-menu__body label:has(select){display:grid}
 .session-menu input,.session-facet input[type=checkbox]{accent-color:var(--accent)}
@@ -47,6 +49,9 @@ export function sessionsStyles() {
 .session-table-frame.lf-table-surface .session-table{table-layout:fixed}
 .session-table-frame.lf-table-surface .rowlink{height:var(--lf-control-height);min-height:var(--lf-control-height);font:inherit;color:inherit}
 .session-table-frame.lf-table-surface .session-table :is(th,td){padding:0 var(--lf-space-2)}
+.session-table-frame.lf-table-surface .session-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));font:var(--lf-weight-strong) var(--lf-text-sm)/1.5 var(--lf-font-sans)}
+.session-table-frame.lf-table-surface .lf-sort{line-height:1.5}
+.session-table-frame.lf-table-surface .session-table td{font:var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-sans)}
 .session-table-frame.lf-table-surface .rowlink>span{-webkit-line-clamp:1}
 .session-table-frame.lf-table-surface .session-table td{height:var(--lf-table-row-height)}
 .session-table__skills{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px 0}

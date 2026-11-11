@@ -1,13 +1,19 @@
 import { writeFile } from "node:fs/promises";
 
+export function focusPaintOwner(node) {
+  if (node.matches("select") || node.matches(".lf-select")) return node.closest(".lf-select-wrap") ?? node;
+  if (node.matches('input[type="checkbox"],input[type="radio"]') &&
+      node.nextElementSibling?.matches(".lf-checkbox__box")) return node.nextElementSibling;
+  return node;
+}
+
 /** Compare actual unfocused/focused PNG pixels, including inset outlines. */
 export async function paintedFocus(page, selector, output) {
-  const geometry = await page.evaluate(selector => {
+  const geometry = await page.evaluate(({ selector, owner }) => {
     const node = document.querySelector(selector);
     node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
     node.blur();
-    const paint = node.nextElementSibling?.matches(".lf-checkbox__box") ? node.nextElementSibling :
-      node.matches("select") ? node.closest(".lf-select-wrap") ?? node : node;
+    const paint = (0, eval)(`(${owner})`)(node);
     const box = paint.getBoundingClientRect();
     const x = Math.max(0, Math.floor(box.left + scrollX - 8));
     const y = Math.max(0, Math.floor(box.top + scrollY - 8));
@@ -15,7 +21,7 @@ export async function paintedFocus(page, selector, output) {
       width: box.width, height: box.height, dpr: devicePixelRatio,
       clip: { x, y, width: Math.ceil(box.right + scrollX + 8 - x),
         height: Math.ceil(box.bottom + scrollY + 8 - y), scale: 1 } };
-  }, selector);
+  }, { selector, owner: focusPaintOwner.toString() });
   const before = await page._sendToTarget("Page.captureScreenshot",
     { format: "png", clip: geometry.clip, captureBeyondViewport: true });
   await page.evaluate(selector => document.querySelector(selector).focus({ preventScroll: true }), selector);

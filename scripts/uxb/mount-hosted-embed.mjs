@@ -10,7 +10,7 @@ async function click(page,selector){
     await page._sendToTarget("Input.dispatchMouseEvent",{type,...point,button:"left",clickCount:1});
 }
 /** Exercise the real source-picker handler and LocalViews mount, never inject a substitute. */
-export async function mountHostedEmbed(page){
+export async function mountHostedEmbed(page, contentSelector='.dash-embed .pe-sessions-region [data-session-id]'){
   await ready(page,".dash-source-picker summary");
   await arm(page,{kind:"attribute",selector:".dash-source-picker",attribute:"open",value:""});
   await click(page,".dash-source-picker summary");await signal(page);
@@ -18,7 +18,7 @@ export async function mountHostedEmbed(page){
   await ready(page,source);
   await arm(page,{kind:"attribute",selector:".pe-sessions-region",attribute:"class",value:"pe-sessions-region"});
   await click(page,source);await signal(page);
-  await ready(page,'.dash-embed .pe-sessions-region [data-session-id]');
+  await ready(page,contentSelector);
   await page.evaluate(()=>document.querySelector(".local-top").scrollIntoView({block:"start",behavior:"instant"}));
   const result=await page.evaluate(()=>({
     mounted:!!document.querySelector('.dash-embed [role="tabpanel"] .pe-sessions-region'),

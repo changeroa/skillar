@@ -13,7 +13,7 @@ import { SessionSummary } from "./trace/summary";
 import { CompactTree } from "./trace/compact-tree";
 import { traceConsoleStyles } from "./trace/console-style";
 import { EventConsole } from "./trace/event-console";
-import { EmptyState } from "../foundation/widgets/messages";
+import { Alert, EmptyState, StatusMessage } from "../foundation/widgets/messages";
 export * from "./trace/model";
 export * from "./trace/plan";
 
@@ -99,9 +99,9 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
     return (
       <section class="trace pe-console" aria-busy={busy}>
         <Header sessionId={sessionId} steps={[]} backHref={backHref} embedded={embedded} />
-        {busy && <p role="status">추적 기록 불러오는 중…</p>}
-        {error && <div class="notice" role="alert"><p>{error}</p><button type="button" class="btn"
-          onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></div>}
+        {busy && <StatusMessage level="DEFAULT" announce message="추적 기록 불러오는 중…" />}
+        {error && <Alert variant="destructive" announce action={<button type="button" class="btn"
+          onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>}>{error}</Alert>}
       </section>
     );
   }
@@ -112,15 +112,15 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
   const source = timelineKeys(steps);
   if (presentation === "peek") return <section class="trace pe-console" aria-busy={busy}>
     <SessionSummary sessionId={sessionId} steps={steps} row={row} peek embedded backHref={backHref} />
-    {error && <p role="alert">{error}<button class="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button></p>}
+    {error && <Alert variant="destructive" announce action={<button class="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button>}>{error}</Alert>}
     <CompactTree items={source} startedAt={bounds.startedAt} endedAt={bounds.endedAt} route={route} navigate={navigate} />
   </section>;
   return (
     <section class="trace trace-console pe-console" data-pe-screen="session-detail" aria-busy={busy}>
-      {error && <p class="notice" role="alert">실시간 갱신 실패: {error} <button type="button" class="btn"
-        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button></p>}
+      {error && <Alert variant="destructive" announce action={<button type="button" class="btn"
+        onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>}>실시간 갱신 실패: {error}</Alert>}
       <SessionSummary sessionId={sessionId} row={row} steps={steps} backHref={backHref} embedded={embedded} peek={false} />
-      {busy && <p role="status">추적 기록 불러오는 중…</p>}
+      {busy && <StatusMessage level="DEFAULT" announce message="추적 기록 불러오는 중…" />}
       {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
       {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
       <EventConsole source={source} report={report} bounds={bounds} route={route} navigate={navigate} embedded={embedded} />

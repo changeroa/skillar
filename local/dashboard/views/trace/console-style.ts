@@ -4,6 +4,8 @@ import { consoleStyles } from "../../components/console-style";
 export function traceConsoleStyles() {
   consoleStyles();
   installStyles("trace-console", `
+.trace.pe-console .foldbtn,.trace.pe-console input[type=range]{height:var(--lf-control-height);min-height:var(--lf-control-height);max-height:var(--lf-control-height)}
+.trace.pe-console .foldbtn{font:inherit}
 .trace.pe-console{grid-template-columns:minmax(0,1fr);min-width:0;gap:16px}
 .trace-summary{margin:0 0 16px;min-width:0}.trace-summary__title{display:flex;align-items:center;gap:8px;min-width:0}
 .trace-summary .trace__title{font-size:20px;margin:0;overflow-wrap:anywhere}.trace-summary .trace__title code{font-size:inherit}
@@ -97,8 +99,9 @@ export function traceConsoleStyles() {
 .trace .json-viewer__tree{--trace-json-property:light-dark(#005cc5,#79b8ff);--trace-json-string:light-dark(#032f62,#9ecbff);padding:var(--lf-space-2);background:var(--lf-muted);border-radius:var(--lf-radius-md);font-family:var(--lf-font-mono)}
 .trace .json-line{min-height:var(--lf-control-height);padding-block:var(--lf-space-1);line-height:var(--lf-leading-xs)}
 .trace .json-line:not(summary){min-height:var(--lf-leading-xs);padding-block:0}
-.trace summary.json-line{height:auto;min-height:var(--lf-control-height)}
-.trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);color:var(--trace-json-property)}
+.trace.pe-console summary.json-line{height:var(--lf-control-height);min-height:var(--lf-control-height);padding-block:calc((var(--lf-control-height) - var(--lf-leading-xs))/2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace summary.json-line code{white-space:nowrap;overflow-wrap:normal}
+.trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
 .trace :is(.json-value,.json-value-preview)[data-json-type=string]{color:var(--trace-json-string)}
 .trace .event-gantt-track{border-color:var(--lf-border)}
 .trace .trace-event-row{--trace-kind:var(--lf-observation-event);--trace-kind-line:var(--lf-observation-event-line)}

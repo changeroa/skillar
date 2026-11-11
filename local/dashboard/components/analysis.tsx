@@ -9,6 +9,7 @@ import { Button } from "../foundation/controls/buttons";
 import { Select } from "../foundation/controls/fields";
 import { Card, Metric as FoundationMetric } from "../foundation/widgets/cards";
 import { Alert, EmptyState } from "../foundation/widgets/messages";
+import { consoleStyles } from "./console-style";
 
 /** Keep a report and the exact conditions that produced it together. */
 export function useAnalysisReport<T>(key: string, load: () => Promise<T>, sequence: number) {
@@ -95,6 +96,7 @@ export function AnalysisWidget({ title, id, wide = false, children }: {
   </div>;
 }
 
+consoleStyles();
 installStyles("analysis", `
 .analysis{display:grid;gap:16px;min-width:0;line-height:1.65}
 .analysis .page-title{margin:0}.analysis .page-title h1,.analysis .page-title h2{font-size:22px;margin:0}
@@ -155,6 +157,7 @@ installStyles("analysis", `
 .dashboard-activity-grid [data-level="3"]{background:color-mix(in srgb,var(--accent) 30%,var(--bg))}
 .dashboard-activity-grid [data-level="4"]{background:var(--accent);color:var(--on-accent)}
 .analysis.pe-console{grid-template-columns:minmax(0,1fr);line-height:var(--lf-leading-sm);color:var(--lf-foreground)}
+.analysis.pe-console>header>:is(h1,h2){font:var(--lf-weight-strong) var(--lf-text-lg)/24px var(--lf-font-sans)}
 .analysis.pe-console .analysis-toolbar{gap:var(--lf-space-2)}
 .analysis.pe-console .analysis-toolbar>.lf-field{min-width:0;flex:0 1 auto}
 .analysis.pe-console .analysis-toolbar :is(select,.lf-select-wrap){height:var(--lf-control-height);min-height:var(--lf-control-height)}
@@ -163,13 +166,14 @@ installStyles("analysis", `
 .analysis.pe-console .analysis-tile>.pe-muted{padding:0 var(--lf-space-4) var(--lf-space-4);font-size:var(--lf-text-xs)}
 .analysis-widget-shell{min-width:0;display:flex}.analysis-widget-shell>.lf-card{width:100%}
 .analysis.pe-console :is(.analysis-table th,.analysis-table td){height:var(--lf-control-height);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm);border-color:var(--lf-border)}
-.analysis.pe-console .analysis-table th{font-weight:var(--lf-weight-strong)}
+.analysis.pe-console .analysis-table th{font-weight:var(--lf-weight-strong);line-height:1.5}
 .analysis.pe-console :is(.analysis-table th button,.analysis-table td>button,.analysis-table a,.paths__skill,.ws__back,.sess__link,.pane__sum,.turn__sum){min-height:var(--lf-control-height);min-width:var(--lf-control-height)}
 .analysis.pe-console :is(.seg__btn,.seg__b){height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);font-size:var(--lf-text-sm);font-weight:var(--lf-weight-regular)}
 .analysis.pe-console :is(.hmc,.flow__paths,.flow__chart){border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
 .analysis.pe-console .hmc__title{font-size:var(--lf-text-base);line-height:var(--lf-leading-base);font-weight:var(--lf-weight-strong)}
-.analysis.pe-console .hm-stack{--hm-l1:color-mix(in srgb,var(--lf-chart-1) 24%,transparent);--hm-l2:color-mix(in srgb,var(--lf-chart-1) 46%,transparent);--hm-l3:color-mix(in srgb,var(--lf-chart-1) 70%,transparent);--hm-l4:var(--lf-chart-1)}
-.ws.analysis.pe-console .card{border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
+.hm-stack.analysis.pe-console{--hm-l1:color-mix(in srgb,var(--lf-chart-1) 24%,transparent);--hm-l2:color-mix(in srgb,var(--lf-chart-1) 46%,transparent);--hm-l3:color-mix(in srgb,var(--lf-chart-1) 70%,transparent);--hm-l4:var(--lf-chart-1)}
+.ws.analysis.pe-console .card{padding:var(--lf-space-4);border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
+.ws.analysis.pe-console>section.card>h2{font:var(--lf-weight-strong) var(--lf-text-base)/var(--lf-leading-base) var(--lf-font-sans);color:var(--lf-foreground);letter-spacing:-.025em}
 .analysis.pe-console .workspace-peek{border-color:var(--lf-border);background:var(--lf-modal)}
 .analysis.pe-console :is(.pe-button,summary,.seg__btn,.seg__b,.analysis-table button,.analysis-table a):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .analysis.pe-console :is(.seg__btn,.seg__b)[aria-pressed=true]::after{content:" ✓";color:inherit}

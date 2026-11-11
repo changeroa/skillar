@@ -9,6 +9,7 @@ import { WorkspaceView } from "./detail";
 import { Input } from "../../foundation/controls/fields";
 import { SortButton } from "../../foundation/table/parts";
 import { tableStyles } from "../../foundation/table/styles";
+import { StatusMessage } from "../../foundation/widgets/messages";
 
 export function sortWorkspaces(rows: readonly FlowListEntry[], sort: string) {
   const key = sort.replace(/^-/, "");
@@ -60,7 +61,7 @@ export function WorkspacesView(props: ViewProps) {
     <AnalysisToolbar route={{ ...route, filter: workspaceFilter(query) }} navigate={navigate} refresh={report.refresh} busy={report.busy} workspace />
     <Input label="작업 공간 검색" type="search" value={search} onInput={event => navigate({ ...route, analysisQuery: event.currentTarget.value || undefined, peek: undefined })} />
     <AnalysisError error={report.error} title="작업 공간을 불러올 수 없습니다" retry={report.refresh} />
-    {report.busy && <p role="status">{current ? `갱신 중: ${conditions(workspaceFilter(query))}` : "작업 공간 불러오는 중…"}</p>}
+    {report.busy && <StatusMessage level="DEFAULT" announce message={current ? `갱신 중: ${conditions(workspaceFilter(query))}` : "작업 공간 불러오는 중…"} />}
     {current && <p class="analysis-scope" data-result-conditions>{conditions(current.filter)} · {formatStarted(current.dto.generatedAt)} 기준 · 받은 {current.dto.flows.length}개 내부 정렬{current.dto.nextCursor ? " · 추가 작업 공간 있음" : ""}</p>}
     <div class="workspace-split">
       <div inert={!!route.peek}>
