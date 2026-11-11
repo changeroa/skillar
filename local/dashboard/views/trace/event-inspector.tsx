@@ -62,7 +62,9 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
       <div class="event-inspector__preview" data-source-key={id} hidden={Boolean(route.attributes) || raw}>{children}</div>
       {rawVisited.current && <div hidden={!raw}><JsonViewer value={value} /></div>}
       {open && !raw && route.attributes && <dl class="event-attributes">{Object.entries(value).map(([key, item]) =>
-        <div key={key}><dt><code>{key}</code></dt><dd><pre>{typeof item === "string" ? item : JSON.stringify(item, null, 2)}</pre></dd></div>)}</dl>}
+        <div key={key}><dt><code>{key}</code></dt><dd><CodeBlock value={typeof item === "string" ? item : JSON.stringify(item, null, 2) ?? ""}
+          language={typeof item === "string" ? "text" : "json"} label={key} /></dd></div>)}</dl>}
     </div>
   </section>;
 }
+import { CodeBlock } from "../../foundation/viewers";

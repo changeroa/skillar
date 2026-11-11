@@ -10,6 +10,8 @@ import { Select } from "../foundation/controls/fields";
 import { Card, Metric as FoundationMetric } from "../foundation/widgets/cards";
 import { Alert, EmptyState } from "../foundation/widgets/messages";
 import { consoleStyles } from "./console-style";
+import { CodeBlock } from "../foundation/viewers";
+import { TimePeriodSelect } from "../foundation/controls/date-range";
 
 /** Keep a report and the exact conditions that produced it together. */
 export function useAnalysisReport<T>(key: string, load: () => Promise<T>, sequence: number) {
@@ -32,7 +34,7 @@ export function AnalysisError({ error, retry, title }: { readonly error: unknown
   if (error === undefined) return null;
   return <Alert announce variant="destructive" title={error instanceof ApiError && error.status === 403 ? "이 기록을 볼 권한이 없습니다" : title}
     action={<Button text="다시 시도" variant="outline" onClick={retry} />}>
-    <details><summary>기술 세부 정보</summary><pre>{error instanceof Error ? error.message : String(error)}</pre></details>
+    <details><summary>기술 세부 정보</summary><CodeBlock value={error instanceof Error ? error.message : String(error)} label="기술 세부 정보" /></details>
   </Alert>;
 }
 
@@ -58,11 +60,12 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
 }) {
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
   return <div class="analysis-toolbar">
-    <Select label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={event => {
-      const value = event.currentTarget.value, now = Date.now();
+    <TimePeriodSelect value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={value => {
+      const now = Date.now();
       update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
     }} options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
-      { value: "7", label: "최근 7일" }, { value: "30", label: "최근 30일" }, { value: "60", label: "최근 60일" }]} />
+      { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
+      { value: "60", label: "최근 60일", badge: "60d" }]} />
     {!workspace && <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
       const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
       update({ runtime: runtime ? [runtime] : undefined });
@@ -103,7 +106,7 @@ installStyles("analysis", `
 .analysis .page-title p{margin:4px 0;color:var(--ink-2)}
 .analysis-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
 .analysis-toolbar label{display:grid;gap:4px;font-size:12px;color:var(--ink-2)}
-.analysis-toolbar select{min-width:100px;min-height:44px}
+.analysis-toolbar select:not(.lf-select){min-width:100px;min-height:44px}
 .analysis-scope{font-size:12px;color:var(--ink-2);margin:0;overflow-wrap:anywhere}
 .analysis-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .analysis-tile,.analysis-widget{border:1px solid var(--line);padding:16px;min-width:0;background:var(--bg)}

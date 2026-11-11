@@ -3,24 +3,13 @@
 // nextSibling, childNodes, data, attributes, event listeners) plus focus, click, keyboard and input
 // dispatch, so interaction contracts can be asserted. Layout and CSS are out of scope.
 
+import { FakeEvent } from "./fake-event.mjs";
+export { FakeEvent };
+
 const XHTML = "http://www.w3.org/1999/xhtml";
 const FORM_CONTROLS = new Set(["button", "input", "textarea", "select"]);
 const FOCUSABLE = new Set(["button", "input", "textarea", "select", "a", "summary"]);
 const HANDLER_PROPERTIES = ["onclick", "oninput", "onkeydown", "onkeyup", "onchange", "onsubmit", "onfocus", "onblur"];
-
-export class FakeEvent {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.bubbles = init.bubbles ?? true;
-    this.key = init.key ?? "";
-    this.target = null;
-    this.currentTarget = null;
-    this.defaultPrevented = false;
-    this.propagationStopped = false;
-  }
-  preventDefault() { this.defaultPrevented = true; }
-  stopPropagation() { this.propagationStopped = true; }
-}
 
 class FakeNode {
   constructor(document, nodeType) {
@@ -92,11 +81,22 @@ class FakeElement extends FakeNode {
     for (let current = node; current; current = current.parentNode) if (current === this) return true;
     return false;
   }
+  querySelector(selector) {
+    for (const child of this.children) {
+      if (child.matches(selector)) return child;
+      const match = child.querySelector(selector);
+      if (match) return match;
+    }
+    return null;
+  }
   matches(selector) {
     return selector.split(",").some(part => {
       const value = part.trim();
-      const attribute = /^\[([\w-]+)=([\w-]+)\]$/.exec(value);
-      return attribute ? this.getAttribute(attribute[1]) === attribute[2] : this.localName === value;
+      const attribute = /^(?:([a-z][\w-]*))?\[([\w-]+)(?:=['"]?([^'"\]]+)['"]?)?\]$/i.exec(value);
+      if (!attribute) return this.localName === value;
+      if (attribute[1] && this.localName !== attribute[1]) return false;
+      const actual = this.getAttribute(attribute[2]);
+      return attribute[3] === undefined ? actual !== null : actual === attribute[3];
     });
   }
   closest(selector) {

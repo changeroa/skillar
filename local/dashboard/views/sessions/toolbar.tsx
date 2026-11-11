@@ -7,7 +7,8 @@ import { COLUMN_LABEL } from "./model";
 import { DEFAULT_COLUMNS } from "./table";
 import { kstPeriodStart } from "../../time";
 import { Button } from "../../foundation/controls/buttons";
-import { SearchInput, Select } from "../../foundation/controls/fields";
+import { SearchInput } from "../../foundation/controls/fields";
+import { TimePeriodSelect } from "../../foundation/controls/date-range";
 import { DropdownMenu } from "../../foundation/overlays/menu";
 import { ColumnVisibility, TableDensity } from "../../foundation/table/controls";
 import { TableToolbar } from "../../foundation/table/parts";
@@ -23,11 +24,11 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
     <div class="session-toolbar"><TableToolbar>
       <SearchInput id="session-search" label="요청문과 스킬 검색" value={draft} placeholder="요청문 · 스킬 · 세션 ID"
         onChange={setDraft} onSubmit={value => update({ q: value.trim() || undefined })} />
-      <Select label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
+      <TimePeriodSelect label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
         options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
-          { value: "7", label: "최근 7일" }, { value: "30", label: "최근 30일" }, { value: "60", label: "최근 60일" }]}
-        onChange={event => {
-          const days = event.currentTarget.value;
+          { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
+          { value: "60", label: "최근 60일", badge: "60d" }]}
+        onChange={days => {
           const to = Date.now();
           update(days === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(to, Number(days)), to });
         }} />

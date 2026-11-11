@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const root = new URL("./", import.meta.url);
 const out = await mkdtemp(join(tmpdir(), "skillar-dashboard-dev-"));
 await mkdir(join(out, "assets"));
+await mkdir(join(out, "viewers"));
 for (const [source, target] of [
   ["dashboard/index.html", "index.html"],
   ["dashboard/__gallery.html", "__gallery.html"],
@@ -16,6 +17,8 @@ for (const [source, target] of [
   ["dashboard/foundation/gallery.css", "assets/gallery.css"],
   ["dashboard/foundation/shell/shell.css", "assets/shell.css"],
   ["dashboard/foundation/controls/controls.css", "assets/controls.css"],
+  ["dashboard/foundation/controls/p1.css", "assets/p1.css"],
+  ["dashboard/foundation/viewers/viewers.css", "viewers/viewers.css"],
   ["dashboard/foundation/overlays/overlays.css", "assets/overlays.css"],
   ["dashboard/foundation/widgets/widgets.css", "assets/widgets.css"],
   ["dashboard/foundation/widgets/charts.css", "assets/charts.css"],

@@ -1,5 +1,111 @@
 # skillar.sh
 
+## Phase B viewers and P1 controls (PR-8)
+
+The shared Preact viewers and controls follow the actual MIT Langfuse sources
+at `69181812b87169df157841fce1314ec96ecd2c5a`. Existing semantic tokens own
+all paint. Native editing, form values, URL filters and recorded content stay
+with their callers. Markdown remains an escaped structural subset; no HTML
+parser, innerHTML or remote media loading is introduced.
+
+Markdown uses 13px/20px sans, 8px paragraph gaps and existing heading tokens.
+Code uses 12px/18px Plex Mono, 12px insets, a 6px bordered muted/30 surface,
+and a wrapping 8px/4px toolbar. Diff rows retain line numbers, signs and the
+existing line-diff algorithm; 12px/18px mono, 16px/4px cell padding and
+semantic green/destructive 10% washes mark additions/removals with signs.
+Contiguous additions/removals are paired visually without changing the caller's
+LCS algorithm or losing line numbers. Diff-added uses Tailwind green-500
+oklch(72.3% .219 149.579); removed uses the existing destructive
+token. Changed-line word marks use muted for unchanged words, added green at
+30%, and destructive at 60%, preserving the caller's line diff and metadata.
+Code syntax tokens are Prism's lexical tokens rendered as escaped Preact spans,
+never Prism's HTML output. GitHub light and VS Dark colors follow the pinned
+MIT SyntaxHighlight. Plain/unsupported languages remain exact escaped text.
+Prism's automatic DOM highlighter is disabled before its module initializes;
+only `tokenize` is called. No formatter or syntax helper assigns innerHTML.
+Syntax tokens: plain #393a34/#9cdcfe, keyword #00009f/#569cd6,
+string #e3116c/#ce9178, number #36acaa/#b5cea8,
+comment #999988/#6a9955, function #393a34/#dcdcaa (light/dark).
+JSON uses the existing json-value-string/number/boolean/nullish tokens.
+Shell uses foreground plain text, muted comments/punctuation, json-value-string
+literals and qlang-keyword commands, matching the pinned shell theme.
+Markdown's preserved h3 DOM carries display-level 1/2 as 24px/32px and
+20px/28px bold; other levels use 16px/24px. It keeps the caller's structural
+subset instead of adding navigation or remote media.
+Only code regions own horizontal scrolling; document/main owns vertical scroll.
+
+Textarea is native, min-height 80px, 8px/12px padding, 6px corners, 13px/20px.
+Code-document editors keep their existing 18 rows and mono content.
+Combobox uses an editable native input, one active descendant and a listbox.
+MultiSelect separates keyboard-active wash from selected check glyphs.
+Disabled options are skipped, Escape closes, Tab leaves naturally, composition
+confirmation never commits an option. Pointer and keyboard share active state.
+Popup lists own bounded vertical scroll; no same-direction page scroll is added.
+The existing remote search keeps its API and current-version open behavior.
+Its compact/full instances have distinct IDs; unopenable results are disabled
+options, arrow keys skip them, and each active descendant names the highlighted
+list item. Result action buttons remain pointer alternatives outside Tab order.
+
+DateRange uses native KST datetime fields and existing preset values. ISO input
+is parsed at the form boundary with an explicit +09:00 offset; no browser-local
+timezone conversions. Invalid/reversed ranges cannot update caller state.
+The shared DateRangeFields also skins consent's existing raw draft fields,
+preserving its text fallback for exact millisecond boundaries and its original
+save/validation flow. Incomplete native edits remain editable until Apply.
+TimePeriodSelect is the native shared Select, preserving the caller's values.
+
+Switch uses 36x20px track/16px thumb (small 28x16/12px); Radio has a 16px ring
+and 8px dot. Their native labelled target is exactly 32px mouse/44px touch.
+Spinner uses the existing loader SVG, sizes 12/14/16/20/24/32/48px, with
+rotation only while busy; reduced motion retains an opacity progress pulse.
+Toast has a persistent polite atomic live region, no autofocus, semantic
+icon plus title/description, 16px inset, 8px corners and shadow-lg.
+The actual Sonner paint is preserved by toast-background (#fff/#000),
+toast-foreground (#171717/#fcfcfc), toast-border (#ededed/#333),
+toast-shadow (0 4px 12px black/10), and Sonner's system font stack.
+Root type is 13px/19.5px regular, title medium, description 13px/18.2px.
+Filled status glyphs are Sonner's MIT paths; loading uses its 12-bar mechanism.
+Loading bars use toast-loader-color #6f6f6f, 6px corners, 1.2s linear fade and
+the source's -1.2s to -0.1s phase offsets. Textarea invalid states keep the
+neutral field border. Combobox invalid states use the pinned InputControl
+destructive edge and indicator, with a linked error message and aria-invalid.
+The editable combobox keeps InputControl's 8px/12px closed-control insets on
+its painted wrapper; its native input owns keyboard focus and the wrapper
+paints the focus ring.
+Toast width is bounded to 356px. Close/action retain the owner-required target
+size while the close glyph/circle keep their source visual size.
+Its close/action controls retain 32/44px targets. Avatar has 24/28/32px sizes,
+circle or 8px rounded shape, named initials fallback and load-failure fallback.
+
+Every focusable part retains a contrasting painted 2px primary-accent ring.
+Native date fields use the same 13px/20px sans and 8px/12px insets as the
+pinned time fields. Read-only code puts Copy at the upper trailing corner
+with 40px trailing content inset, keeping its immutable-field surface.
+Code toolbar Copy targets are 32/44px; compared with the source's 26px
+language label and 24px action, the resulting toolbar grows by 6/18px.
+Diffs retain Skillar's line numbers and change signs in normal text flow.
+The narrow MIT comparison receives the same visible line-number/sign prefix
+as input so its text and wrapping geometry are equivalent.
+An empty diff uses the pinned plain 13px/20px muted empty message.
+Raw HTML blocks remain escaped text nodes with the source renderer's plain
+text flow; they never become DOM elements or acquire paragraph spacing.
+No decorative transitions or new dependency are needed. Native date surfaces
+are an explicit owner-native adaptation. No new accessibility debt is accepted.
+
+Descendant parity uses the same border token on paragraphs, toolbar labels,
+code surfaces and diff cells. Markdown paragraphs fill their available measure;
+legacy page prose widths do not constrain a viewer. Code toolbar leading is
+20px, captions retain muted ink, Copy has 4px corners, and plain-text captions
+keep the source's `text` label. Diff headings use the 600 strong weight.
+Toast content is intrinsic-width with a trailing action; the action is 12px/18px
+medium and 32/44px high. Toast description ink is #3f3f3f/#e8e8e8.
+Native text/date focus keeps a 2px primary-accent outline with a 2px offset
+and the existing field shadow in both hosts. Native period focus retains its
+2px foreground outline; hover-capable pointers use the shared accent wash.
+Dark syntax operators and punctuation are #d4d4d4; unclassified text inherits
+the existing #9cdcfe pre ink. Dark comments are normal; light comments retain
+their source italics.
+
 ## Phase B hosted screens (PR-6)
 
 The hosted wireframes-v3 define composition; merged PR-1 through PR-5 primitives

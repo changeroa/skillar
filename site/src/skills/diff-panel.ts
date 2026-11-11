@@ -7,6 +7,7 @@ import { draftFromExport } from "./model.ts";
 import { lineDiff } from "./diff.ts";
 import type { DiffLine } from "./diff.ts";
 import { versionLabel } from "./version-label.ts";
+import { DiffViewer } from "../../../local/dashboard/foundation/viewers";
 
 type Props = {
   readonly detail: PrivateSkillDetail;
@@ -54,11 +55,7 @@ export function VersionDiff({ detail, signal, onUnauthorized, active = true }: P
   }, [active, detail.skill.skillId, beforeDigest, afterDigest, signal, retry]);
   const busy = comparison.kind === "loading";
   const rows = comparison.kind === "ready" && comparison.before === beforeDigest && comparison.after === afterDigest
-    ? h("ol", { class: "diff-lines", "aria-label": "SKILL.md 줄별 변경점" }, comparison.rows.map((row, index) =>
-      h("li", { key: index, "data-change": row.kind },
-        h("span", { class: "diff-line-number" }, `${row.before ?? "·"} / ${row.after ?? "·"}`),
-        h("span", { "aria-label": { same: "같음", added: "추가", removed: "삭제" }[row.kind] }, { same: "=", added: "+", removed: "−" }[row.kind]),
-        h("code", null, row.text)))) : null;
+    ? h(DiffViewer, { rows: comparison.rows }) : null;
   return h("section", { class: "skill__section version-diff", "aria-labelledby": "diff-title" },
     h("h3", { id: "diff-title", class: "panel__subtitle" }, "버전 비교"),
     h("p", { class: "note" }, "보관된 두 버전의 SKILL.md를 비교합니다. − 삭제, + 추가, = 같은 줄입니다. 게시·현재 버전·고정 상태는 바뀌지 않습니다."),

@@ -3,7 +3,8 @@ import { writeFile } from "node:fs/promises";
 export function focusPaintOwner(node) {
   if (node.matches("select") || node.matches(".lf-select")) return node.closest(".lf-select-wrap") ?? node;
   if (node.matches('input[type="checkbox"],input[type="radio"]') &&
-      node.nextElementSibling?.matches(".lf-checkbox__box")) return node.nextElementSibling;
+      [".lf-checkbox__box", ".lf-radio__ring", ".lf-switch__track"].some(paint => node.nextElementSibling?.matches(paint)))
+    return node.nextElementSibling;
   return node;
 }
 

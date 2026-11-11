@@ -10,6 +10,7 @@ import type { ReadState } from "./home-checklist";
 import { homeSort, lastChanges, readCatalog, readConnections, recentDays, saveHomeSort, useHomeRead } from "./home-data";
 import { shortId } from "./status";
 import { KST_TIME_ZONE } from "../time.ts";
+import { TimePeriodSelect } from "../../../local/dashboard/foundation/controls/date-range";
 import "../ui/ui.css";
 import "./home-widgets.css";
 
@@ -88,13 +89,16 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
         note="미철회·만료 전 PAT만 · OAuth 제외" />
     </div>
     <ReadNotice state={catalog} onRetry={retry} /><ReadNotice state={mcp} onRetry={retry} />
-    <label class="home-range">기간 <select value={range} onChange={event => {
-      const days = Number(event.currentTarget.value);
+    <div class="home-range"><TimePeriodSelect value={String(range)} options={[
+      { value: "3", label: "최근 3일", badge: "3d" }, { value: "5", label: "최근 5일", badge: "5d" },
+      { value: "7", label: "최근 7일", badge: "7d" },
+    ]} onChange={value => {
+      const days = Number(value);
       setRange(days);
       const url = new URL(location.href); url.searchParams.set("days", String(days)); history.replaceState(null, "", url);
-    }}><option value="3">최근 3일</option><option value="5">최근 5일</option><option value="7">최근 7일</option></select>
+    }} />
       <span>{dates[0]} – {dates.at(-1)} · KST · 양끝 포함</span>
-    </label>
+    </div>
     <div class="home-widget-grid">
       <section class="home-widget home-changes" aria-label="일별 변경 수">
         <BarChart title="일별 변경 수 · KST" data={{ labels: dates.map(date => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}\nKST`), series: [

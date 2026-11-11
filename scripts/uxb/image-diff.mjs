@@ -99,7 +99,9 @@ export async function diffImages(page, paths) {
       throw new TypeError(`Capture is not a PNG: ${path}`);
     return `data:image/png;base64,${bytes.toString("base64")}`;
   }));
-  const images = await page.evaluate(async sources => {
+  // The same comparePixels runs in the page so full-document captures never cross CDP as number arrays.
+  const corners = paths.cornerTolerance ? { inset: paths.cornerInset, radius: paths.cornerRadius, tolerance: paths.cornerTolerance } : null;
+  const images = await page.evaluate(async ({ sources, compare, threshold, corners }) => {
     const loaded = await Promise.all(sources.map(src => new Promise((resolve, reject) => {
       const image = new Image();
       const timer = setTimeout(() => reject(Error("PNG decode timed out")), 5000);
@@ -114,26 +116,23 @@ export async function diffImages(page, paths) {
       canvas.width = width; canvas.height = height;
       const context = canvas.getContext("2d");
       context.drawImage(image, 0, 0);
-      return [...context.getImageData(0, 0, width, height).data];
+      return context.getImageData(0, 0, width, height).data;
     });
     const side = document.createElement("canvas");
     side.width = left.width + right.width; side.height = height;
     side.getContext("2d").drawImage(left, 0, 0);
     side.getContext("2d").drawImage(right, left.width, 0);
-    return { width, height, reference: { width: left.width, height: left.height },
-      actual: { width: right.width, height: right.height }, pixels, side: side.toDataURL("image/png") };
-  }, sources);
-  const comparison = comparePixels(images.pixels[0], images.pixels[1], paths.channelTolerance ?? 0,
-    paths.cornerTolerance ? { width: images.width, height: images.height, inset: paths.cornerInset,
-      radius: paths.cornerRadius, tolerance: paths.cornerTolerance } : null);
-  const encoded = await page.evaluate(({ width, height, pixels }) => {
+    const comparePixels = (0, eval)(`(${compare})`);
+    const { diff, ...counts } = comparePixels(pixels[0], pixels[1], threshold, corners && { width, height, ...corners });
     const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
-    canvas.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0);
-    return canvas.toDataURL("image/png");
-  }, { width: images.width, height: images.height, pixels: [...comparison.diff] });
+    canvas.getContext("2d").putImageData(new ImageData(diff, width, height), 0, 0);
+    return { width, height, reference: { width: left.width, height: left.height },
+      actual: { width: right.width, height: right.height }, counts,
+      side: side.toDataURL("image/png"), diff: canvas.toDataURL("image/png") };
+  }, { sources, compare: comparePixels.toString(), threshold: paths.channelTolerance ?? 0, corners });
   await writeFile(paths.sideBySide, Buffer.from(images.side.split(",")[1], "base64"));
-  await writeFile(paths.diff, Buffer.from(encoded.split(",")[1], "base64"));
-  const { diff, ...counts } = comparison;
+  await writeFile(paths.diff, Buffer.from(images.diff.split(",")[1], "base64"));
+  const counts = images.counts;
   return { ...counts, reference: images.reference, actual: images.actual,
     dimensionsMatch: images.reference.width === images.actual.width && images.reference.height === images.actual.height,
     similarityScore: 100 * (1 - counts.diffRatio), channelTolerance: paths.channelTolerance ?? 0, alphaCompared: true };
