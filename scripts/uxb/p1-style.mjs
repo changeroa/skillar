@@ -20,13 +20,8 @@ export async function readP1Style(page, selector, specimen) {
     const node = document.querySelector(selector);
     if (!node) throw new RangeError(`Missing style target: ${selector}`);
     const css = getComputedStyle(node);
-    const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    const paintBackground = value => {
-      if (!/^oklab\(/.test(value)) return value;
-      context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1);
-      return `rgba8(${[...context.getImageData(0, 0, 1, 1).data].join(",")})`;
-    };
+    // Paint channels are compared as the browser's raw computed declarations.
+    // No canvas quantization: distinct oklab/lab serializations must fail.
     const opacityOf = part => {
       let opacity = 1;
       for (let ancestor = part; ancestor; ancestor = ancestor.parentElement) opacity *= Number(getComputedStyle(ancestor).opacity);
@@ -35,7 +30,7 @@ export async function readP1Style(page, selector, specimen) {
     const measure = part => {
       const paint = getComputedStyle(part), box = part.getBoundingClientRect();
       return { values: { ...Object.fromEntries(fields.map(field => [field, paint[field]])),
-        backgroundColor: paintBackground(paint.backgroundColor), opacity: opacityOf(part) },
+        opacity: opacityOf(part) },
         geometry: { width: box.width, height: box.height }, glyphs: [],
         visible: part.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
     };
@@ -81,7 +76,7 @@ export async function readP1Style(page, selector, specimen) {
           if (!text) continue;
           const parent = textNode.parentElement, css = getComputedStyle(parent);
           textPaint.push({ text, values: { ...Object.fromEntries(textFields.map(field => [field, css[field]])),
-            backgroundColor: paintBackground(css.backgroundColor), opacity: opacityOf(parent) } });
+            opacity: opacityOf(parent) } });
         }
         // The labelled MIT narrow fixture includes the owner's line-number/sign
         // prefix as input. Product metadata is separately painted outside code.
