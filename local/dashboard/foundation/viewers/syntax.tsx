@@ -15,6 +15,7 @@ function tokenNodes(tokens: Prism.TokenStream): ComponentChildren {
   return <span data-token={tokens.type}>{tokenNodes(tokens.content)}</span>;
 }
 export function SyntaxText({ value, language }: { readonly value: string; readonly language: string }) {
-  const grammar = Prism.languages[language.toLowerCase()];
-  return <>{grammar ? tokenNodes(Prism.tokenize(value, grammar)) : value}</>;
+  // Fence info strings are untrusted: only own grammar objects, never prototype keys or Prism helpers.
+  const grammar = Object.hasOwn(Prism.languages, language.toLowerCase()) ? Prism.languages[language.toLowerCase()] : undefined;
+  return <>{typeof grammar === "object" ? tokenNodes(Prism.tokenize(value, grammar)) : value}</>;
 }

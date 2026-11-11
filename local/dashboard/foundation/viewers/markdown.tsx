@@ -3,10 +3,16 @@ import { CodeBlock } from "./code-block";
 
 const listItem = /^(\s*)([-*]|\d+[.)])\s+(.*)$/;
 
-/** `_text_` / `*text*` emphasis only; intraword underscores (snake_case) stay literal. */
+const maxListDepth = 16;
+
+/**
+ * `_text_` / `*text*` emphasis only; intraword underscores (snake_case) stay literal.
+ * Content may hold its own delimiter only intraword, so an unclosed opener stops at the
+ * next delimiter and a long line of openers is scanned in linear time.
+ */
 function inline(text: string): ComponentChildren {
   const parts: ComponentChildren[] = [];
-  const pattern = /(?<![\w*])([_*])(?![\s*_])(.+?)(?<!\s)\1(?![\w*])/g;
+  const pattern = /(?<![\w*])([_*])(?![\s*_])((?:(?!\1).|(?<=\w)\1(?=\w))+?)(?<!\s)\1(?![\w*])/g;
   let last = 0;
   for (const match of text.matchAll(pattern)) {
     if (match.index > last) parts.push(text.slice(last, match.index));
@@ -17,9 +23,12 @@ function inline(text: string): ComponentChildren {
   return parts.length === 1 ? parts[0] : parts;
 }
 
-/** One list level; deeper-indented marker lines become a nested list inside the preceding item. */
-function list(lines: readonly string[], key: number): ComponentChildren {
-  const indent = listItem.exec(lines[0] ?? "")?.[1]?.length ?? 0;
+/**
+ * One list level; deeper-indented marker lines become a nested list inside the preceding item.
+ * Past `maxListDepth` levels every marker line stays at the current level, bounding the work.
+ */
+function list(lines: readonly string[], key: number, depth = 1): ComponentChildren {
+  const indent = depth >= maxListDepth ? Infinity : listItem.exec(lines[0] ?? "")?.[1]?.length ?? 0;
   const items: { text: string; nested: string[] }[] = [];
   for (const line of lines) {
     const match = listItem.exec(line);
@@ -28,7 +37,7 @@ function list(lines: readonly string[], key: number): ComponentChildren {
   }
   const ordered = /^\s*\d/.test(lines[0] ?? "");
   return h(ordered ? "ol" : "ul", { key }, items.map((item, row) => h("li", { key: row }, inline(item.text),
-    item.nested.length > 0 ? list(item.nested, row) : null)));
+    item.nested.length > 0 ? list(item.nested, row, depth + 1) : null)));
 }
 
 /** Escaped text nodes only. Raw HTML, URLs and remote media are never executed. */
