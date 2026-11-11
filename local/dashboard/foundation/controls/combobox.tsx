@@ -48,8 +48,11 @@ function ChoiceList({ label, options, disabled, error, placeholder = "선택", e
   };
   const move = (key: string) => {
     const index = enabled.findIndex(option => option.value === activeValue);
+    const step = key === "ArrowDown" ? 1 : -1;
+    // With no active option (opened by pointer or after typing), arrows start at the matching end.
     const next = key === "Home" ? enabled[0] : key === "End" ? enabled.at(-1)
-      : enabled[(index + (key === "ArrowDown" ? 1 : -1) + enabled.length) % enabled.length];
+      : index < 0 ? (step > 0 ? enabled[0] : enabled.at(-1))
+      : enabled[(index + step + enabled.length) % enabled.length];
     setActiveValue(next?.value ?? null);
     if (next) requestAnimationFrame(() => document.getElementById(optionId(options.indexOf(next)))?.scrollIntoView({ block: "nearest" }));
   };

@@ -180,6 +180,25 @@ test("Combobox filtered options never create a nonexistent active descendant", a
   assert.equal(all(container, node => node.getAttribute("role") === "option").length, 0);
 });
 
+for (const [name, Component, value] of [["Combobox", Combobox, ""], ["MultiSelect", MultiSelect, []]]) {
+  test(`${name} ArrowUp after pointer open activates the last enabled option`, async t => {
+    // Given: the fake DOM has no frames; scrolling the active option is not under test.
+    if (!globalThis.requestAnimationFrame) {
+      globalThis.requestAnimationFrame = () => 0;
+      t.after(() => { delete globalThis.requestAnimationFrame; });
+    }
+    const { container } = await mount(t, Component, { id: "pick", label: "Choose", value, onChange() {}, options: [
+      { value: "a", label: "Alpha" }, { value: "b", label: "Beta" }, { value: "g", label: "Gamma" },
+      { value: "x", label: "Locked", disabled: true }] });
+    const field = byTag(container, "input")[0];
+    await act(() => field.dispatchEvent(new FakeEvent("click")));
+    // When
+    await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowUp" })));
+    // Then
+    assert.equal(field.getAttribute("aria-activedescendant"), "pick-option-2");
+  });
+}
+
 test("MultiSelect select-all preserves disabled selections in one controlled update", async t => {
   // Given
   let changes = 0;
