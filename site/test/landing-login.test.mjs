@@ -7,6 +7,7 @@ import { runInNewContext } from "node:vm";
 const bundle = await build({
   entryPoints: [fileURLToPath(new URL("../src/account.ts", import.meta.url))],
   bundle: true, write: false, format: "iife", platform: "browser", target: "es2022",
+  nodePaths: [fileURLToPath(new URL("../node_modules", import.meta.url))],
 });
 const source = bundle.outputFiles[0].text;
 const user = { sub: "fixture", email: "fixture@example.test", name: "예시 계정", picture: "", createdAt: 1800000000, lastLogin: 1800000000 };

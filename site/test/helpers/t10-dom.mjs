@@ -16,6 +16,7 @@ export async function loadViews(exports, instrument = {}) {
     banner: { js: `import { createRequire as testCreateRequire } from "node:module"; const require = testCreateRequire(${JSON.stringify(`${root}/site/package.json`)});` },
     jsx: "automatic", jsxImportSource: "preact", logLevel: "silent",
     loader: { ".css": "empty" },
+    nodePaths: [`${root}/site/node_modules`],
     plugins: [{
       name: "test-boundaries",
       setup(builder) {
