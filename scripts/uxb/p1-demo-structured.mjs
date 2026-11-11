@@ -19,11 +19,13 @@ const specimen = { component: "MarkdownViewer", state: "structured" };
 const rows = [];
 await mkdir(`${out}/demo-structured`, { recursive: true });
 try {
-  for (const theme of ["light", "dark"]) {
-    await tabs.repin(tab, { width: 1440, height: 3200 });
+  for (const width of [1440, 390]) for (const theme of ["light", "dark"]) {
+    const phone = width === 390;
+    await tabs.repin(tab, { width, height: 3200 });
     await page.goto(url, { waitUntil: "domcontentloaded" });
     // Tall viewport so the whole document fits the peek panel without an inner scroll.
-    await applyViewport(page, { width: 1440, height: 3200, deviceScaleFactor: 1, mobile: false, coarse: false });
+    const viewport = { width, height: 3200, deviceScaleFactor: phone ? 3 : 1, mobile: phone, coarse: phone };
+    await applyViewport(page, viewport);
     await ready(page, ".space-y-2 > h1");
     await page.evaluate(async theme => {
       // next-themes consumers (syntax highlighting) need the transient theme event as well as CSS classes.
@@ -50,19 +52,19 @@ try {
     const footerHidden = await page.evaluate(() =>
       [...document.querySelectorAll('[data-sidebar="footer"]')].every(n => !n.checkVisibility()));
     assert.equal(footerHidden, true);
-    const selector = "[data-pr8-structured]", file = `${out}/demo-structured/markdown-1440-${theme}.png`;
+    const selector = "[data-pr8-structured]", file = `${out}/demo-structured/markdown-${width}-${theme}.png`;
     const style = await readP1Style(page, selector, specimen);
     const geometry = await page.evaluate(selector => {
       const rect = document.querySelector(selector).getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     }, selector);
-    const states = await captureLiveStates(page, { selector, file, specimen });
-    console.log(`P1_DEMO_STRUCTURED ${theme} ${style.descendants.map(part => `${part.role}:${part.styles.length}`).join(" ")}`);
-    rows.push({ component: "MarkdownViewer", state: "structured", theme, width: 1440, geometry, style, file, states,
+    const states = await captureLiveStates(page, { selector, file, specimen, viewport });
+    console.log(`P1_DEMO_STRUCTURED ${width} ${theme} ${style.descendants.map(part => `${part.role}:${part.styles.length}`).join(" ")}`);
+    rows.push({ component: "MarkdownViewer", state: "structured", theme, width, geometry, style, file, states,
       accountFooterHidden: footerHidden, provenance: "REAL-DEMO", url, selector });
   }
 } finally {
   await writeFile(`${out}/demo-records-structured.json`, JSON.stringify(rows, null, 2));
   await tabs.closeAll(); await browser.close();
 }
-assert.equal(rows.length, 2);
+assert.equal(rows.length, 4);

@@ -18,8 +18,10 @@ try {
   for (const width of [1440, 390]) for (const theme of ["light", "dark"]) {
     await page.goto("https://jp.cloud.langfuse.com/project/cmmnj9e9n0006ad06nyz28646",
       { waitUntil: "domcontentloaded" });
-    await applyViewport(page, { width, height: width === 390 ? 844 : 900,
-      deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 });
+    const viewport = { width, height: width === 390 ? 844 : 900,
+      deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 };
+    await tabs.repin(tab, { width: viewport.width, height: viewport.height });
+    await applyViewport(page, viewport);
     await ready(page, "tbody tr");
     await page.evaluate(async theme => {
       document.documentElement.classList.toggle("dark", theme === "dark");
@@ -47,8 +49,9 @@ try {
       const node = document.querySelector(selector), rect = node.getBoundingClientRect();
       return { width: rect.width, height: rect.height, text: node.textContent };
     }, selector);
+    await applyViewport(page, viewport);
     const capture = await captureP1(page, selector, file);
-    const states = await captureLiveStates(page, { selector, file, specimen });
+    const states = await captureLiveStates(page, { selector, file, specimen, viewport });
     rows.push({ component: "TimePeriodSelect", state: "default", theme, width, geometry,
       style, file, capture, states, accountFooterHidden: footerHidden, provenance: "REAL-DEMO",
       url: await page.evaluate(() => location.href), selector });

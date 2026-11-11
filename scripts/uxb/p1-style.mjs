@@ -78,6 +78,53 @@ export async function readP1Style(page, selector, specimen) {
         ...Object.fromEntries(textFields.map(field => [field, css[field]])),
         opacity: String(Number(opacityOf(part)) * own) } }];
     };
+    // Native date internals (edit fields, value box, picker indicator) are UA pseudo-elements that
+    // getComputedStyle does not expose. Their effective author declarations are resolved instead:
+    // every matching rule, unlayered over layered, logical block padding as physical (horizontal-tb).
+    const datePseudo = /::-webkit-(?:calendar-picker-indicator|datetime-edit(?:-[a-z]+)*|date-and-time-value)/;
+    const physical = { "padding-block-start": "padding-top", "padding-block-end": "padding-bottom" };
+    const dateInternals = part => {
+      if (getComputedStyle(part).writingMode !== "horizontal-tb") return { writingMode: getComputedStyle(part).writingMode };
+      const effective = {};
+      const visit = (rules, layered) => {
+        for (const rule of rules) {
+          if (!(rule instanceof CSSStyleRule)) {
+            if (rule.cssRules) visit(rule.cssRules, layered || rule instanceof CSSLayerBlockRule);
+            continue;
+          }
+          for (const selector of rule.selectorText.split(",")) {
+            const pseudo = selector.match(datePseudo)?.[0];
+            if (!pseudo) continue;
+            const base = selector.replace(pseudo, "").trim() || "*";
+            let matches;
+            try { matches = part.matches(base); } catch { effective[`unmatchable ${selector.trim()}`] = {}; continue; }
+            if (!matches) continue;
+            const entry = effective[pseudo] ??= {};
+            for (const property of rule.style) {
+              const name = physical[property] ?? property;
+              if (entry[name] && !entry[name].layered && layered) continue;
+              entry[name] = { value: rule.style.getPropertyValue(property), layered };
+            }
+          }
+        }
+      };
+      for (const sheet of document.styleSheets) {
+        // An unreadable sheet could restyle the internals unseen: record it so the comparison fails.
+        try { visit(sheet.cssRules, false); } catch { effective[`unreadable ${sheet.href}`] = {}; }
+      }
+      return Object.fromEntries(Object.keys(effective).sort().map(pseudo => [pseudo,
+        Object.fromEntries(Object.keys(effective[pseudo]).sort().map(name => [name, effective[pseudo][name].value]))]));
+    };
+    // A native control's hit and paint state. Layout display (block/flex) is root geometry; here only
+    // whether the control renders at all.
+    const hitOf = (part, nativeDate) => {
+      const css = getComputedStyle(part);
+      return { shown: part.checkVisibility({ checkVisibilityCSS: true }), visibility: css.visibility,
+        rendered: css.display !== "none", pointerEvents: css.pointerEvents, opacity: opacityOf(part),
+        ...Object.fromEntries(textFields.filter(field => field !== "opacity" && field !== "visibility")
+          .map(field => [field, css[field]])),
+        ...(nativeDate ? { dateInternals: dateInternals(part) } : {}) };
+    };
     const product = !node.closest("#mit-ready") && node.matches(".lf-markdown,.lf-codeblock,.lf-toast,.lf-diff-scroll," +
       ".lf-combobox__input,.lf-combobox__popup,.lf-select-wrap,textarea.lf-textarea,input.lf-input");
     const descendants = descriptors.map(descriptor => {
@@ -85,8 +132,11 @@ export async function readP1Style(page, selector, specimen) {
       const scope = descriptor.scope === "specimen" ? node.closest("[data-specimen],section[data-component]") : node;
       const nodes = selector === ":scope" ? [node] : [...scope.querySelectorAll(selector)];
       const control = product ? descriptor.actualControl : descriptor.sourceControl;
-      return { role: descriptor.role, expectedCount: descriptor.count, textOnly: descriptor.textOnly === true, styles: nodes.map(part => {
+      return { role: descriptor.role, expectedCount: descriptor.count, textOnly: descriptor.textOnly === true,
+        hit: descriptor.hit === true, overlay: descriptor.overlay === true, transparent: descriptor.transparent === true,
+        styles: nodes.map(part => {
         const style = measure(part);
+        if (descriptor.hit) return { ...style, hit: hitOf(part, descriptor.nativeDate === true), textPaint: [] };
         if (control) return { ...style, textPaint: controlText(part) };
         const textRoot = product && descriptor.actualText ? part.querySelector(descriptor.actualText) : part;
         const walker = document.createTreeWalker(textRoot ?? part, NodeFilter.SHOW_TEXT);
@@ -116,6 +166,25 @@ export async function readP1Style(page, selector, specimen) {
       focusWithin: node.matches(":focus-visible") || !!node.querySelector(":focus-visible"),
       visible: node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
   }, { selector, fields: P1_STYLE_FIELDS, descriptors, textFields: P1_TEXT_FIELDS, excluded });
+}
+
+/** The native control is mounted, shown, hit-testable and painted exactly like the source trigger. */
+function compareHit(part, reference, actual) {
+  const failures = [];
+  const fields = ["shown", "visibility", "rendered", "pointerEvents",
+    ...(part.transparent ? [] : ["opacity"]),
+    ...(part.overlay ? [] : P1_TEXT_FIELDS.filter(field => field !== "opacity" && field !== "visibility")),
+    ...(reference?.dateInternals || actual?.dateInternals ? ["dateInternals"] : [])];
+  for (const field of fields) {
+    const expected = reference?.[field], received = actual?.[field];
+    if (expected === undefined || received === undefined || JSON.stringify(expected) !== JSON.stringify(received))
+      failures.push({ field: `hit.${field}`, expected, actual: received });
+  }
+  // The owner's native select overlay is transparent by design; the source trigger paints.
+  if (part.transparent && (actual?.opacity !== "0" || reference?.opacity === "0"))
+    failures.push({ field: "hit.opacity", expected: { actual: "0", reference: "> 0" },
+      actual: { actual: actual?.opacity, reference: reference?.opacity } });
+  return failures;
 }
 
 /** Explicit owner adaptations are passed as measured-property replacements, never blanket exemptions. */
@@ -173,6 +242,11 @@ export function compareP1Style(reference, actual, policy = {}) {
     if (!received) continue;
     for (const [position, style] of part.styles.entries()) {
       if (!received.styles[position]) continue;
+      if (part.hit) {
+        failures.push(...compareHit(part, style.hit, received.styles[position].hit)
+          .map(failure => ({ ...failure, field: `descendants.${part.role}.${position}.${failure.field}` })));
+        continue;
+      }
       if (part.textOnly) {
         // Box geometry of a text carrier differs by anatomy (overlay input vs span); its painted text does not.
         const prefix = `descendants.${part.role}.${position}`;

@@ -46,7 +46,7 @@ const demo = JSON.parse(await readFile(`${out}/demo-records.json`, "utf8"));
 const refreshed = JSON.parse(await readFile(`${out}/demo-records-matched.json`, "utf8"));
 const extra = JSON.parse(await readFile(`${out}/demo-records-extra.json`, "utf8"));
 const structured = JSON.parse(await readFile(`${out}/demo-records-structured.json`, "utf8"));
-assert.equal(structured.length, 2, "Live structured Markdown is required in both themes");
+assert.equal(structured.length, 4, "Live structured Markdown is required at both widths in both themes");
 examples.structured = await readFile(`${out}/demo-markdown.md`, "utf8");
 assert.equal(extra.length, 4, "Live Avatar and Spinner reconciliation is required");
 const [js, css, fontCss] = await Promise.all(["mit.js", "mit.css", "reference-font.css"].map(path => readFile(`${out}/${path}`, "utf8")));
@@ -78,7 +78,7 @@ async function reference({ component, state, interaction, theme, width }) {
     return remember({ ...audited, ...audited.states[interaction] });
   }
   const live = !mitSelectors[component] ||
-    component === "MarkdownViewer" && ["formatted", "structured"].includes(state) && width === 1440 ||
+    component === "MarkdownViewer" && (state === "structured" || state === "formatted" && width === 1440) ||
     component === "CodeBlock" && state === "default" && width === 1440 ||
     component === "DiffViewer" && state === "changed" && width === 1440;
   if (live) {
@@ -188,6 +188,7 @@ try {
         try {
           const sourceRecord = await reference({ ...item, interaction, theme, width });
           const comparableWidth = item.component === "TimePeriodSelect" ? sourceRecord.geometry.width
+            : item.component === "MarkdownViewer" && item.state === "structured" ? parseFloat(sourceRecord.style.values.width)
             : width === 1440 && (
             item.component === "CodeBlock" && item.state === "default" ||
             item.component === "MarkdownViewer" && ["formatted", "structured"].includes(item.state)) ? parseFloat(sourceRecord.style.values.width)

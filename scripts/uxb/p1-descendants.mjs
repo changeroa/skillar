@@ -1,6 +1,15 @@
 /** Logical painted parts shared by the source and Preact implementations. */
 const controlText = { role: "text", actual: ":scope", source: ":scope", count: 1,
   actualControl: true, sourceControl: true, textOnly: true };
+/**
+ * The real native hit control (input/select/textarea). Its shown state, visibility, display,
+ * pointer events and effective opacity are compared with the source trigger in every state.
+ * `overlay`: the product's own glyphs are transparent and a sibling text run paints the value.
+ * `transparent`: the owner's native select overlay must stay at opacity 0 while the source paints.
+ */
+const control = (actual, extra = {}) => ({ role: "control", actual, source: ":scope", count: 1, hit: true, ...extra });
+const dateField = { role: "to-field", scope: "specimen", actual: ".lf-field + .lf-field input[data-date-range-field]",
+  source: ":scope", count: 1, hit: true, nativeDate: true };
 
 /**
  * Open popup anatomy. Combobox is single-choice (pinned SelectInput: Radix Select,
@@ -81,16 +90,20 @@ export function p1Descendants(component, state) {
         { role: "removed", actual: '[data-side=before]', source: ":scope > .p-0 > div:last-child > div > div:first-child", count: 1, actualText: "code", sourceText: ":scope" },
         { role: "added", actual: '[data-side=after]', source: ":scope > .p-0 > div:last-child > div > div:last-child", count: 1, actualText: "code", sourceText: ":scope" },
       ];
-    case "Textarea": return [controlText];
+    case "Textarea": return [control(":scope"), controlText];
     case "DateRangeInput":
-      return [controlText, ...(state === "error" ? [{ role: "message", scope: "specimen",
-        actual: "p[role=alert]", source: "p.text-destructive", count: 1 }] : [])];
+      // Both KST fields are the same pinned native Input; the second is compared with it too.
+      return [control(":scope", { nativeDate: true }), controlText, dateField,
+        ...(state === "error" ? [{ role: "message", scope: "specimen",
+          actual: "p[role=alert]", source: "p.text-destructive", count: 1 }] : [])];
     case "Combobox": case "MultiSelect":
       // The visible value/placeholder: a painted span on both sides (the product's input carries typed search only).
       return state === "open" ? popup(component)
-        : [{ role: "text", actual: ":scope > .lf-combobox__value", source: ":scope > span", count: 1, textOnly: true }];
+        : [control(":scope > input", { overlay: true }),
+          { role: "text", actual: ":scope > .lf-combobox__value", source: ":scope > span", count: 1, textOnly: true }];
     case "TimePeriodSelect":
       return [
+        control(":scope > select", { overlay: true, transparent: true }),
         { role: "badge", actual: ":scope > .lf-select-badge", source: ":scope > div > div > span:first-child", count: 1 },
         { role: "label", actual: ":scope > .lf-select-value", source: ":scope > div > div > span:last-child", count: 1, textOnly: true },
       ];

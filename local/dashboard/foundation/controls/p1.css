@@ -111,6 +111,19 @@
 .lf-date-range legend { padding: 0; margin-bottom: var(--lf-space-2); }
 .lf-date-range > .lf-field { flex: 1 1 200px; }
 .lf-input[data-date-range-field] { padding: var(--lf-space-2) var(--lf-space-3); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
+/* Native date internals match the pinned source's preflight: no edit-field insets, 1.5em value box, inherited alignment. */
+.lf-input[data-date-range-field]::-webkit-date-and-time-value { min-height: 1.5em; text-align: inherit; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit { display: inline-flex; padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-year-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-month-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-day-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-hour-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-minute-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-second-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-millisecond-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-datetime-edit-meridiem-field { padding-block: 0; }
+.lf-input[data-date-range-field]::-webkit-calendar-picker-indicator { line-height: 1; }
 .lf-input[data-date-range-field]:disabled { background: color-mix(in oklab, var(--lf-muted) 50%, transparent); }
 .lf-date-range .lf-button:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
 .lf-date-range p[role=alert] { flex-basis: 100%; margin: 0; border-color: var(--lf-border); color: var(--lf-destructive); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }

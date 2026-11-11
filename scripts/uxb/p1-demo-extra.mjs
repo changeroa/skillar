@@ -45,7 +45,8 @@ async function capture(component, state, theme, selector, interaction) {
   const style = await readP1Style(page, selector), file = `${out}/demo-extra/${component}-${state}-${theme}.png`;
   assert.equal(style.visible, true);
   const image = await captureP1(page, selector, file);
-  const states = await captureLiveStates(page, { selector, file });
+  const states = await captureLiveStates(page, { selector, file,
+    viewport: { width: 390, height: 844, mobile: true, coarse: true, deviceScaleFactor: 3 } });
   assert.ok(image.varied > 0);
   rows.push({ component, state, theme, width: 390, viewportWidth: 390, provenance: "REAL-DEMO",
     url: origin, selector, style, states, geometry: style.geometry, file, accountFooterHidden: true, interaction, metrics });

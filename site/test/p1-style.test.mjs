@@ -148,6 +148,32 @@ test("P1 text-only control parts reject hidden or transparent text", () => {
   }
 });
 
+test("P1 native control parts reject hidden, inert or exposed inner controls", () => {
+  // Given
+  const hit = { shown: true, visibility: "visible", rendered: true, pointerEvents: "auto", opacity: "1",
+    ...Object.fromEntries(P1_TEXT_FIELDS.filter(field => field !== "opacity" && field !== "visibility")
+      .map(field => [field, "rgb(39, 39, 42)"])) };
+  const part = (flags, value) => ({ role: "control", expectedCount: 1, hit: true, ...flags,
+    styles: [{ visible: true, values: {}, glyphs: [], textPaint: [], hit: { ...hit, ...value } }] });
+  for (const [flags, sourceHit, actualHit, ok] of [
+    [{}, {}, {}, true], [{}, {}, { shown: false, visibility: "hidden" }, false],
+    [{}, {}, { rendered: false }, false], [{}, {}, { pointerEvents: "none" }, false],
+    [{}, {}, { opacity: "0" }, false], [{}, {}, { color: "rgba(0, 0, 0, 0)" }, false],
+    [{ overlay: true, transparent: true }, {}, { opacity: "0", color: "rgba(0, 0, 0, 0)" }, true],
+    [{ overlay: true, transparent: true }, {}, { opacity: "1" }, false],
+    [{ overlay: true, transparent: true }, { opacity: "0" }, { opacity: "0" }, false],
+    [{}, { dateInternals: { "::-webkit-calendar-picker-indicator": { "line-height": "1" } } },
+      { dateInternals: { "::-webkit-calendar-picker-indicator": { "line-height": "1", opacity: "0" } } }, false],
+    [{}, { dateInternals: { "::-webkit-datetime-edit": { display: "inline-flex" } } }, { dateInternals: {} }, false],
+  ]) {
+    // When
+    const failures = compareP1Style({ values, glyphs: [], descendants: [part(flags, sourceHit)] },
+      { values, glyphs: [], descendants: [part(flags, actualHit)] });
+    // Then
+    assert.equal(failures.some(row => row.field.startsWith("descendants.control.0.hit.")), !ok, JSON.stringify(actualHit));
+  }
+});
+
 test("P1 text paint checks every required channel across different token boundaries", () => {
   // Given
   const values = Object.fromEntries(P1_TEXT_FIELDS.map(field => [field, "original"]));

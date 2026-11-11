@@ -34,6 +34,7 @@ async function capture(component, theme) {
   const selector = `[data-pr8-source="${component}"]`;
   const file = `${out}/demo/${component}-${theme}.png`;
   const states = await captureLiveStates(page, { selector, file,
+    viewport: { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false, coarse: false },
     specimen: { component, state: component === "CodeBlock" ? "default" : component === "MarkdownViewer" ? "formatted" : "changed" } });
   const geometry = states.rest.style.geometry;
   assert.ok(geometry.width > 0 && geometry.height > 0);

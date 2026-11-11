@@ -1,40 +1,69 @@
 import assert from "node:assert/strict";
 import { readP1Style, compareP1Style } from "./p1-style.mjs";
 import { p1Pointer, releaseP1Pointer } from "./p1-pointer.mjs";
-import { p1Inventory } from "./p1-inventory.mjs";
+import { checkP1Inventory, p1Inventory } from "./p1-inventory.mjs";
 import { p1OwnerPolicy } from "./p1-policy.mjs";
 import { checkP1Native, readP1Native } from "./p1-native.mjs";
 
-/** Hiding or blanking the inner control or its text must fail the fixed inventory or the native contract. */
+/**
+ * Every closed state of the five native-backed controls: hiding, blanking or exposing any part of the
+ * fixed inventory (inner input/select, value/placeholder text, badge, chevron, second date field,
+ * picker indicator) must fail the inventory itself, independent of the separate native contract.
+ * Rules are injected as author CSS so pseudo-elements (placeholder, picker indicator) are reachable.
+ */
+const CONTROL_PROBES = {
+  Combobox: { states: ["default", "disabled", "error", "empty"], root: ".lf-combobox__input",
+    inner: ".lf-combobox__input > input", text: ".lf-combobox__value", chevron: ".lf-combobox__input > span:last-child svg" },
+  MultiSelect: { states: ["selected", "empty", "disabled"], root: ".lf-combobox__input",
+    inner: ".lf-combobox__input > input", text: ".lf-combobox__value", chevron: ".lf-combobox__input > span:last-child svg" },
+  TimePeriodSelect: { states: ["default"], root: ".lf-select-wrap", inner: ".lf-select-wrap > select",
+    text: ".lf-select-value", badge: ".lf-select-badge", chevron: ".lf-select-wrap > svg" },
+  Textarea: { states: ["default", "empty", "disabled", "error", "code"], root: "textarea", inner: "textarea", text: "textarea" },
+  DateRangeInput: { states: ["default", "disabled", "error"], root: ".lf-date-range input", inner: ".lf-date-range input",
+    text: ".lf-date-range input", second: ".lf-field + .lf-field input[data-date-range-field]" },
+};
+
 async function controlTextMutations(page) {
   const rows = [];
-  for (const [component, state, root, inner, text] of [
-    ["Combobox", "default", ".lf-combobox__input", "input", ".lf-combobox__value"],
-    ["MultiSelect", "selected", ".lf-combobox__input", "input", ".lf-combobox__value"],
-    ["TimePeriodSelect", "default", ".lf-select-wrap", "select", ".lf-select-value"],
-    ["Textarea", "default", "textarea", null, null],
-    ["DateRangeInput", "default", ".lf-date-range input", null, null],
-  ]) {
-    const selector = `[data-component="${component}"][data-state="${state}"] ${root}`;
+  for (const [component, probe] of Object.entries(CONTROL_PROBES)) for (const state of probe.states) {
+    const scope = `[data-component="${component}"][data-state="${state}"]`, selector = `${scope} ${probe.root}`;
     const specimen = { component, state }, inventory = p1Inventory(component, state);
     const original = await readP1Style(page, selector, specimen);
+    assert.deepEqual(checkP1Inventory(original, inventory), [], `${component}/${state} inventory baseline`);
+    // The transparent select overlay is judged against a painting source trigger, as in the gate:
+    // the reference copy carries the source's nonzero opacity, so the unmutated baseline is clean.
+    const reference = structuredClone(original);
+    for (const part of reference.descendants.filter(part => part.transparent))
+      for (const style of part.styles) style.hit.opacity = "1";
+    assert.deepEqual(compareP1Style(reference, original, { inventory }), [], `${component}/${state} self-comparison baseline`);
     assert.deepEqual(checkP1Native(await readP1Native(page, selector, component), component), [], `${component} native baseline`);
-    const probes = [[inner, "visibility", "hidden"], [inner, "display", "none"], [inner, "pointer-events", "none"],
-      ...(component === "TimePeriodSelect" ? [[".lf-select-badge", "opacity", "0"]] : [[inner, "opacity", "0"]]),
-      [text, "color", "transparent"], [text, "-webkit-text-fill-color", "transparent"]];
+    const empty = await page.evaluate(selector => {
+      const node = document.querySelector(selector);
+      return "value" in node && node.value === "" && node.placeholder !== "";
+    }, `${scope} ${probe.inner}`);
+    const text = probe.text === probe.inner && empty ? `${probe.text}::placeholder` : probe.text;
+    const select = component === "TimePeriodSelect";
+    const probes = [[probe.inner, "visibility", "hidden"], [probe.inner, "display", "none"],
+      [probe.inner, "pointer-events", "none"], [probe.inner, "opacity", select ? "1" : "0"],
+      [text, "color", "transparent"], [text, "-webkit-text-fill-color", "transparent"],
+      ...(probe.badge ? [[probe.badge, "opacity", "0"], [probe.badge, "display", "none"]] : []),
+      ...(probe.chevron ? [[probe.chevron, "opacity", "0"], [probe.chevron, "display", "none"]] : []),
+      ...(probe.second ? [[probe.second, "visibility", "hidden"], [probe.second, "display", "none"],
+        [probe.second, "opacity", "0"], [probe.second, "color", "transparent"],
+        [`${probe.inner}::-webkit-calendar-picker-indicator`, "opacity", "0"]] : [])];
     for (const [target, property, value] of probes) {
-      const apply = (remove) => page.evaluate(({ selector, target, property, value, remove }) => {
-        const node = target ? document.querySelector(selector).querySelector(target) : document.querySelector(selector);
-        if (remove) node.style.removeProperty(property); else node.style.setProperty(property, value, "important");
-      }, { selector, target, property, value, remove });
-      await apply(false);
+      const rule = `${scope} ${target} { ${property}: ${value} !important; }`;
+      await page.evaluate(rule => {
+        const sheet = document.createElement("style"); sheet.id = "p1-control-probe"; sheet.textContent = rule;
+        document.head.append(sheet);
+      }, rule);
       try {
-        const failures = [...compareP1Style(original, await readP1Style(page, selector, specimen), { inventory }),
-          ...checkP1Native(await readP1Native(page, selector, component), component)];
-        assert.ok(failures.some(row => /^(descendants\.|native\.|actual\.descendants)/.test(row.field)),
-          `${component} ${target ?? "self"} ${property}:${value} must fail the inner-control contract`);
-        rows.push({ name: `${component}-${target ?? "self"}-${property}-rejected`, status: "PASS", failures });
-      } finally { await apply(true); }
+        const failures = compareP1Style(reference, await readP1Style(page, selector, specimen), { inventory });
+        assert.ok(failures.some(row => /^(descendants\.|glyphs\.|actual\.(descendants|glyphs)\.)/.test(row.field)),
+          `${component}/${state} ${target} ${property}:${value} must fail the fixed inventory`);
+        rows.push({ name: `${component}-${state}-${target}-${property}-rejected`, status: "PASS",
+          failures: failures.slice(0, 6) });
+      } finally { await page.evaluate(() => document.getElementById("p1-control-probe").remove()); }
     }
   }
   return rows;
