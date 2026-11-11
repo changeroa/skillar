@@ -5,10 +5,31 @@ Branch: `uxb/pr-8-viewers`; baseline `b8b1d62` (PR-0 through PR-6).
 Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-8/`.
 Exact publication head, final-head CI and preview receipts: `publication.json`, `ci.json`, `preview.json`. These external receipts are written after publication. Executed implementer gates are not independent approval.
 
-## Rebased strict revalidation (current)
+## G1 blocker closure (current)
+
+Product and harness head for every gate below: `9bed856` (on merged PR-7 `03e76038`). It closes the three G1 findings from the `1bdf61f` review. The sections further down are historical.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| 1 Component visual parity | PASS | `p1-final.json` (from `p1-final-9bed856.json`): 115 states, 2760/2760 raw-declaration comparisons (8 profiles x 345, rest/hover/active), 2760 captures, 2760 side/raw diff pairs (`pixel-diffs.json`, 0 errors), 0 evidence errors. 132 REAL-DEMO and 2628 labelled pinned-MIT rows; 2736 painted, 24 empty non-painted. No normalization, tolerance change or mask. 1232 browser mutation probes rejected, 0 failures. |
+| 2 Screen comparison | PASS | Fresh full run: 37 surfaces, 296/296 before/after frames with asserted scrolled ends, 148 Demo / before / after rows, 12 Demo contexts (`g2-complete.json`). |
+| 3 Keyboard/ARIA | PASS | 27/27 trusted-key checks per surface (site, local); `keyboard-activedescendant.json`: 48 Combobox/MultiSelect `aria-activedescendant` records, each equal to the one painted active option. 856/856 painted-focus checks. PR-6 real-page runtime 36/36; production `/__gallery.html` 404. |
+| 4 R1-R7 structure | PASS | 8/8 profile structure checks; G2 real hosted embeds unchanged and passing. |
+| 5 Tests and builds | PASS, known local exception | Site 551/551 and build; local typecheck and build; local 997/998, the unchanged `/tmp/h` ENOTDIR in `cli-init.test.mjs`. |
+| 6 License/release safety | PASS | `release-9bed856/release.json`: 47 production artifacts, 176 npm-pack files incl. NOTICE, no gallery/QA modules. |
+| 7 Deployment | Not deployed | Deploy gated on owner. No production deploy, no merge, no preview for this head. |
+
+Merged-validator regressions at `9bed856`: PR-7 full style 84/84, non-ready 252/252, interaction 264/264, disabled outline 8 cases / 240 comparisons, 0 failures; PR-5 paint 520 cases, 40,860 assertions, 0 failures, 21,372 rejected mutations, `bootstrap: false`.
+
+Findings closed:
+
+- G1-TOAST-LOADING: the loading Toast keeps its action like the pinned Sonner toast, and the action is in the fixed Toast inventory for every variant, loading included.
+- G1-PAINT-CHILD: Textarea, Combobox, MultiSelect, TimePeriodSelect and DateRangeInput inventories now name the inner native control (input/select/textarea), the value or placeholder text run, the select badge, the chevron glyph, the second KST field and the native date internals. For each control the gate compares shown, visibility, rendered, pointer events, effective opacity and text paint; the select overlay must stay transparent while the source trigger paints. 129 probes over every closed state hide, blank or expose a part and must fail the inventory itself (not only the separate native contract). A product difference surfaced: the pinned preflight zeroes native date edit-field insets and sets the value box and picker indicator; the date fields now carry the same declarations.
+- G1-STATE-COVERAGE: open Combobox and MultiSelect (surface, list, active, selected, disabled and rest rows, marks), the range error (both fields invalid, alert) and structured Markdown (headings, lists, nested list, emphasis, two code blocks) are comparison targets. Structured Markdown is REAL-DEMO at both widths and themes; the other three are pinned MIT under the standing rule, with the routes below. Demo live captures now re-pin and assert width and pixel density per state.
+
+## Rebased strict revalidation (superseded by the section above)
 
 Rebased onto merged PR-7 `03e76038`. Product head for every gate below: `0a37221`.
-The historical sections further down predate this run and are not current approvals.
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
@@ -32,7 +53,7 @@ Changes in this revalidation:
 - Raw comparison exposed oklch-vs-Lab serialization in four P1 inks. P1-scoped tokens now carry the Demo's exact Lab declarations (diff added, green Switch/Avatar, CodeBlock JSON number); shared tokens are unchanged, so PR-5/PR-7 paint is unchanged.
 - Rebase conflicts: `analysis.tsx` keeps PR-7's Alert/Button/Select with PR-8's CodeBlock details and TimePeriodSelect; `focus-paint.mjs` keeps PR-7's `focusPaintOwner` with the radio ring and switch track added. The G2 driver now targets the merged refresh Button and Alert.
 
-Held review observations not addressed in this run: invisible nested input/select text (G1-PAINT-CHILD), loading Toast omitting its action (G1-TOAST-LOADING), and open-popup/range-error/Markdown anatomy coverage (G1-STATE-COVERAGE).
+Held review observations at that head (closed at `9bed856`, see above): G1-PAINT-CHILD, G1-TOAST-LOADING and G1-STATE-COVERAGE.
 
 ## Historical gate verdicts (pre-rebase, superseded)
 
@@ -68,6 +89,9 @@ Checked read-only routes under `https://jp.cloud.langfuse.com/project/cmmnj9e9n0
 - A: root dashboard, settled tables, period/date popover and Select from calendar.
 - B: `/traces`, public model-cost question and its read-only Formatted detail.
 - C: `/prompts/answer%20question`, enabled read-only Compare with selected prompt.
+- D: root dashboard popups opened read-only and closed with Escape (no selection): `Env` filter is `features/filters/components/MultiSelect.tsx` (cmdk, `Select All` and `Clear filters` as items), the model popover is `MultiSelectTagInput`, the period control is a date dialog. None is the pinned `SelectInput`/`MultiSelectInput`.
+- E: `/traces` filter sidebar and its `Add filter` popover (opened read-only, closed with Escape). The pinned inputs appear only in `KeyValueFilterBuilder` after choosing a facet in `Add filter`, which edits the view's filters; experiment filter blocks render only for an added filter. Every other consumer at the pinned SHA (`SettingsTable`, `Form`, API-key expiry, annotation queues, dataset mapping, blob storage, Mixpanel, PagerDuty, monitors, AI gateway) is a settings or create/edit surface, which the contract forbids.
+- The range error needs an invalid apply (an induced error), so it is not reproduced on the Demo.
 
 Every fresh Demo screenshot hides and asserts the account footer. `demo-context.json` contains 12 genuine full-page contexts. `demo-records-matched.json` refreshes actual period paint at both widths/themes. `demo-records-extra.json` reconciles actual mobile navigation Avatar image and Home Spinner in both themes. No account menu was opened and no name/email/image URL was retained. Only exact read-only dashboard GET requests were held to capture loading, then continued; no induced error or write. The actual Spinner signature is Loader2 / size-5 / block with omitted variant, so `md-inherit`, not explicit primary.
 
@@ -182,6 +206,10 @@ Each state has eight required site/local x width/theme comparisons. A/B/C above 
 | MarkdownViewer | `formatted` | A, B, C | 4 REAL-DEMO / 4 ACTUAL-PINNED-MIT |
 | MarkdownViewer | `empty` | A, B, C | 8 ACTUAL-PINNED-MIT |
 | MarkdownViewer | `literal-html` | A, B, C | 8 ACTUAL-PINNED-MIT |
+| MarkdownViewer | `structured` (headings, lists, nested list, emphasis, code blocks) | B (trace peek `4c869ec4f5478358`) | 8 REAL-DEMO (1440 and 390, both themes) |
+| Combobox | `open` (surface, active, selected, disabled, rest rows, radio marks) | A, B, C, D, E | 8 ACTUAL-PINNED-MIT (pinned `SelectInput`) |
+| MultiSelect | `open` (surface, select-all, active, selected, disabled, rest rows, checkboxes) | A, B, C, D, E | 8 ACTUAL-PINNED-MIT (pinned `MultiSelectInput`) |
+| DateRangeInput | `error` (both fields invalid, alert text) | A, B, C | 8 ACTUAL-PINNED-MIT (pinned `FormField` + `Input`) |
 | CodeBlock | `default` | A, B, C | 4 REAL-DEMO / 4 ACTUAL-PINNED-MIT |
 | CodeBlock | `read-only` | A, B, C | 8 ACTUAL-PINNED-MIT |
 | CodeBlock | `empty` | A, B, C | 8 ACTUAL-PINNED-MIT |
