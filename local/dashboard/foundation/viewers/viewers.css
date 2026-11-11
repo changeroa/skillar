@@ -27,7 +27,7 @@
 .lf-codeblock [data-token="function"] { color: light-dark(#393a34, #dcdcaa); }
 .lf-codeblock[data-language="json"] [data-token="property"] { color: var(--lf-muted-foreground); }
 .lf-codeblock[data-language="json"] [data-token="string"] { color: var(--lf-json-value-string); }
-.lf-codeblock[data-language="json"] [data-token="number"] { color: var(--lf-json-value-number); }
+.lf-codeblock[data-language="json"] [data-token="number"] { color: var(--lf-p1-json-value-number); }
 .lf-codeblock[data-language="json"] [data-token="boolean"] { color: var(--lf-json-value-boolean); }
 .lf-codeblock[data-language="json"] [data-token="null"], .lf-codeblock[data-language="json"] [data-token="keyword"] { color: var(--lf-json-value-nullish); }
 .lf-codeblock:is([data-language="bash"],[data-language="sh"],[data-language="shell"]) pre { color: var(--lf-foreground); }

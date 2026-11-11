@@ -124,6 +124,9 @@ html {
   --lf-dark-yellow: light-dark(oklch(47.6% 0.114 61.907), oklch(79.5% 0.184 86.047));
   --lf-light-green: light-dark(oklch(95% 0.052 163.051 / 0.7), oklch(37.8% 0.077 168.94 / 0.7));
   --lf-dark-green: light-dark(oklch(43.2% 0.095 166.913), oklch(76.5% 0.177 163.223));
+  /* Same inks in the Demo's production (Lab) serialization, for P1 controls compared raw. */
+  --lf-p1-light-green: light-dark(lab(94.9004% -17.0769 5.63836 / .7), lab(28.8637% -26.9249 5.45986 / .7));
+  --lf-p1-dark-green: light-dark(lab(35.3675% -33.1188 8.04002), lab(75.0771% -60.7313 19.4147));
   --lf-light-blue: light-dark(hsl(214 94.6% 92.7%), hsl(209 45% 15%));
   --lf-dark-blue: light-dark(hsl(227.1 75.7% 41.1%), hsl(209 88% 60%));
   --lf-accent-light-blue: light-dark(hsl(251 95.2% 91.8%), hsl(240 32.4% 13.9%));
@@ -137,7 +140,9 @@ html {
   --lf-qlang-number: light-dark(hsl(17.5 88.3% 40.4%), hsl(27 96% 61%));
   --lf-qlang-keyword: light-dark(hsl(224.3 76.3% 48%), hsl(213 94% 68%));
   --lf-json-value-string: light-dark(oklch(44.8% 0.119 151.328), hsl(142 40% 60%));
-  --lf-json-value-number: light-dark(lab(30.2514% 27.7853 -70.2699), hsl(213 50% 68%));
+  --lf-json-value-number: light-dark(oklch(42.4% 0.199 265.638), hsl(213 50% 68%));
+  /* P1 viewers compare raw paint against the Demo, whose production CSS serializes these inks as Lab. */
+  --lf-p1-json-value-number: light-dark(lab(30.2514% 27.7853 -70.2699), hsl(213 50% 68%));
   --lf-json-value-boolean: light-dark(oklch(47% 0.157 37.304), hsl(27 50% 61%));
   --lf-json-value-nullish: light-dark(oklch(55.1% 0.027 264.364), oklch(70.7% 0.022 261.325));
   --lf-sidebar-background: light-dark(var(--lf-surface-sunken), hsl(0 0% 4%));
