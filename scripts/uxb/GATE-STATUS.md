@@ -34,28 +34,28 @@ Source: `69181812b87169df157841fce1314ec96ecd2c5a`. All entries are actual pinne
 | `mit-Empty-empty-1440-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
 | `mit-Skeleton-loading-1440-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
 | `mit-Json-mixed-primitives-1440-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
-| `mit-Json-collapsed-1440-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-light` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
 | `mit-Button-disabled-1440-light` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
 | `mit-Alert-error-1440-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
 | `mit-StatusMessage-loading-1440-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
 | `mit-Empty-empty-1440-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
 | `mit-Skeleton-loading-1440-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
 | `mit-Json-mixed-primitives-1440-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
-| `mit-Json-collapsed-1440-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-dark` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
 | `mit-Button-disabled-1440-dark` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
 | `mit-Alert-error-390-light` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
 | `mit-StatusMessage-loading-390-light` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
 | `mit-Empty-empty-390-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
 | `mit-Skeleton-loading-390-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
 | `mit-Json-mixed-primitives-390-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
-| `mit-Json-collapsed-390-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-light` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
 | `mit-Button-disabled-390-light` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
 | `mit-Alert-error-390-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
 | `mit-StatusMessage-loading-390-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
 | `mit-Empty-empty-390-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
 | `mit-Skeleton-loading-390-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
 | `mit-Json-mixed-primitives-390-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
-| `mit-Json-collapsed-390-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-dark` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
 | `mit-Button-disabled-390-dark` | trace disabled navigation action; /traces | The live disabled navigation action is a ghost icon control, not the loading toolbar outline-button recipe. |
 
 ## Environment findings
