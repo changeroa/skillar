@@ -1,10 +1,12 @@
 # PR-9 landing token alignment
 
-Branch: `uxb/pr-9-landing`, based on current `origin/main` `b8b1d62`.
-Verified implementation: `dd939c7`; final publication/CI head is recorded in
-`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-9/publication.json`.
-Preview: https://uxb-pr-9.skillar-site.pages.dev/
-Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-9/`.
+Branch: `uxb/pr-9-landing`, rebased onto `origin/main` `a6685a4` (PR-0 through PR-8).
+Implementation commit after rebase: `c7b688c` (originally `dd939c7`); colour-mutation
+test `c5f0610` (originally `d94a6dd`). The exact published head and final-head CI
+are recorded in
+`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-9/rebase-a6685a4/publication.json`.
+Preview: https://uxb-pr-9.skillar-site.pages.dev/ (deployment https://ed7b0312.skillar-site.pages.dev/).
+Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-9/rebase-a6685a4/`.
 This is implementer evidence, not independent approval. The lead owns review.
 
 The landing keeps its content, hero/example, section order, responsive grid,
@@ -13,42 +15,41 @@ native href destinations, display/body typography and brand palette
 contract without adding JavaScript. Landing-only aliases adopt shared neutral,
 surface, border, radius and existing spacing tokens.
 
-| Gate | Result | Current evidence |
+## Rebase onto a6685a4
+
+| Gate | Result | Current evidence (rebased head, before = main `a6685a4`) |
 | --- | --- | --- |
-| 1 Component comparison | PASS | 176 live landing cases against real Demo crops, 31 strict fields each; 176 rejected mutations; 44 painted-focus passes and 44 invisible-ring rejections |
-| 2 Landing comparison | PASS | 24 before/after contexts, each with top/end captures; required 1440x900 and 390x844 light/dark plus 1920; header/hero geometry and content equality asserted |
-| 3 Keyboard/focus | PASS | 14 native targets at both widths/themes; trusted Tab/Enter, focus-visible, native anchor navigation; every migrated focus target has painted-ring probes |
-| 4 R1-R7 structure | PASS | Eight populated/empty width/theme cases reuse the original assertions with the merged Card/data-row selector; fixture evidence in `structure/`; R4 is N/A as in the original gate |
-| 5 Build/test/performance | FAIL (known local environment) | Site 492/492, both builds and local typecheck pass, release-safety passes; local 986/987, only documented `/tmp/h` LaunchAgent ENOTDIR; local performance test passes |
-| 6 License/package | PASS | Pinned MIT source `69181812b87169df157841fce1314ec96ecd2c5a`; all NOTICE copies match; npm pack includes both notices and no QA/gallery/fixture |
-| 7 Preview | PASS | Preview-only deployment https://09254ba2.skillar-site.pages.dev/; live four-context geometry/palette checks; no production deployment |
+| 1 Component comparison | PASS | 176 live landing cases, 31 strict fields each, against 8 fresh real Demo primary crops (footer hidden, nonblank) and PR-1 real Demo outline/Link crops; 176 rejected/restored mutations (60px height, 60px padding, focus removal); 44 painted-focus passes and 44 invisible-ring rejections; comparator unit tests reject every field, including valid colour values |
+| 2 Landing comparison | PASS | 24 contexts (1440x900, 390x844, 1920x900 x light/dark x 4 session states), top and end captures; content and header/hero geometry equal to main; both phone CTAs in the first viewport; rebased captures pixel-identical (diff 0) to the pre-rebase approved captures in all 48 images |
+| 3 Keyboard/focus | PASS | 14 native targets in four width/theme contexts; trusted Tab/Enter, 2px solid focus outline with 2px offset, 32/44 targets, native anchor navigation |
+| 4 R1-R7 structure | PASS | Eight populated/empty width/theme cases on the merged hosted dashboard; R4 N/A as in the inherited gate |
+| 5 Build/test/performance | FAIL (known local environment) | Site 591/591 and build; local typecheck and build; local 997/998, only the documented `/tmp/h` LaunchAgent ENOTDIR; sync-performance 1/1; release-safety test passes; Lighthouse medians unchanged |
+| 6 License/package | PASS | PR-9 changes no notice; all four NOTICE copies match (`61c1db6c...`, updated by PR-8); npm pack 176 entries with `NOTICE` and `dist/dashboard/NOTICE`, no gallery/QA/fixture |
+| 7 Preview | PASS | Preview branch `uxb-pr-9` only; live 32/44 targets, brand fills, no overflow, phone CTA bottoms 626.19/686.19 of 844; no production deployment |
 
-Before/after Lighthouse: three production runs per mobile/desktop and light/dark
-profile. All medians remain Performance 100, Accessibility 100, Best Practices
-96, SEO 100. The existing Best Practices deduction is the static preview's
-`/auth/session` response, not a new failure. FCP changes are +0.03/+0.11ms
-mobile and +0.75/+0.77ms desktop; TBT remains 0. Phone CLS changes by 0.00003;
-desktop CLS improves from 0.00764 to 0.00186.
-All nonlanding JS/CSS content-hashed assets and byte counts are identical.
-Landing CSS gzip grows from 673 to 4408 bytes by importing the shared controls;
-no JavaScript is added and measured performance remains within the noise gate.
+Conflict decisions: `site/DESIGN.md` kept PR-8's section and PR-9's section unchanged,
+PR-9 first (newest first). This ledger: PR-8 (`a6685a4`) had replaced the whole file
+with its own section; this file keeps PR-9, then PR-8 verbatim, then the PR-7
+ledger merged at `03e7603` with its PR-6/PR-5/PR-4 history restored verbatim.
+No product conflict occurred. PR-8's `p1.css` scopes `.lf-button` only inside
+`.lf-toast` and `.lf-date-range`, so landing control paint is unchanged.
 
-Expected visible changes: shared neutral surfaces/ink/borders/radii; shared
-13px/20px Button and 12px/18px Link paint; 32px mouse and 44px phone targets.
-The navigation row retains its original extent, so header/hero origin does
-not shift. Smaller CTA targets move only following content upward; both
-phone CTAs remain in the first viewport. Docs links use shared secondary
-foreground on the muted surface after measurement caught 4.39:1 contrast;
-this restores Accessibility 100 without a new palette value. The approved
-brand, primary 90% hover/80% active recipe and contrasting 2px focus outlines
-are documented owner/accessibility overrides, not unexplained parity errors.
+Performance (Lighthouse Node API, Chrome 9333, 3 runs per profile, median):
+Performance 100, Accessibility 100, Best Practices 96, SEO 100 before and after
+in mobile/desktop light/dark. FCP mobile 904.67->905.11 / 902.83->904.39 ms,
+desktop 242.94->243.48 / 243.04->242.91 ms; TBT 0; CLS within 0.01.
+All 28 non-landing hashed assets are byte-identical. Landing CSS grows from
+1940 to 47013 bytes (673 -> 7705 gzip), up from 4408 gzip before the rebase,
+because merged PR-8 `controls.css` now imports `p1.css`; no JavaScript is added.
+The existing Best Practices 96 is the static server's `/auth/session` response.
 
-Preview-only comparison PNGs are staged outside `site/dist` under `__qa/pr9/`.
-Production builds and npm artifacts remain free of development fixtures.
-Raw originals, unmasked side-by-sides/diffs, computed fields, mutation probes,
-Lighthouse reports, test logs and deployment receipt stay in the evidence root.
-PR-7 and PR-8 worktrees were not modified. PR-9 merges last; rebase again when
-those PRs land. This branch was checked against current main without a conflict.
+Expected visible changes (unchanged by the rebase): shared neutral surfaces, ink,
+borders and radii; shared 13px/20px Button and 12px/18px Link paint; 32px mouse
+and 44px phone targets. The navigation row retains its original extent, so
+header/hero origin does not shift; smaller CTAs move only following content up.
+Docs links use shared secondary foreground on the muted surface (4.39:1 otherwise).
+Brand, 32/44 targets and contrasting 2px focus outlines are documented overrides.
+PR-7 and PR-8 worktrees, production and `/tmp/h` were not modified.
 
 # PR-8 viewers and P1 controls
 
