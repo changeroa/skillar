@@ -38,7 +38,7 @@ export function traceConsoleStyles() {
 .event-inspector__tabs,.event-inspector__formats{display:flex;gap:4px;margin:4px 0 12px}.event-inspector__tabs .pe-button,.event-inspector__formats .pe-button{border:0}
 .event-inspector__digest{font-size:12px;overflow-wrap:anywhere;margin:4px 0}
 .event-inspector__preview{min-width:0}.event-inspector .tl__meta{font-size:12px}.event-inspector .tl__text{font-size:14px;overflow-wrap:anywhere}
-.event-inspector pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;font-size:12px}
+.event-inspector pre:not(.lf-codeblock pre){white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;font-size:12px}
 .json-viewer{min-width:0;margin-top:12px}.json-viewer__head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
 .json-viewer__tree{counter-reset:json-line;font-size:12px}
 .json-line{counter-increment:json-line;min-height:44px;padding:8px 0;overflow-wrap:anywhere;white-space:pre-wrap}

@@ -3,25 +3,13 @@
 // nextSibling, childNodes, data, attributes, event listeners) plus focus, click, keyboard and input
 // dispatch, so interaction contracts can be asserted. Layout and CSS are out of scope.
 
+import { FakeEvent } from "./fake-event.mjs";
+export { FakeEvent };
+
 const XHTML = "http://www.w3.org/1999/xhtml";
 const FORM_CONTROLS = new Set(["button", "input", "textarea", "select"]);
 const FOCUSABLE = new Set(["button", "input", "textarea", "select", "a", "summary"]);
 const HANDLER_PROPERTIES = ["onclick", "oninput", "onkeydown", "onkeyup", "onchange", "onsubmit", "onfocus", "onblur"];
-
-export class FakeEvent {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.bubbles = init.bubbles ?? true;
-    this.key = init.key ?? "";
-    this.isComposing = init.isComposing ?? false;
-    this.target = null;
-    this.currentTarget = null;
-    this.defaultPrevented = false;
-    this.propagationStopped = false;
-  }
-  preventDefault() { this.defaultPrevented = true; }
-  stopPropagation() { this.propagationStopped = true; }
-}
 
 class FakeNode {
   constructor(document, nodeType) {

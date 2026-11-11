@@ -6,7 +6,7 @@ const { omowright } = await loadOmowright();
 const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
 const { page } = await tabs.create("about:blank");
-const report = JSON.parse(await readFile(`${out}/p1-gate.json`, "utf8"));
+const report = JSON.parse(await readFile(`${out}/${process.env.P1_REPORT ?? "p1-gate"}.json`, "utf8"));
 const results = [];
 await mkdir(`${out}/diffs`, { recursive: true });
 try {
