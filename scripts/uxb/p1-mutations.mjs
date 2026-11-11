@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readP1Style, compareP1Style } from "./p1-style.mjs";
 import { p1Pointer, releaseP1Pointer } from "./p1-pointer.mjs";
 import { p1Inventory } from "./p1-inventory.mjs";
+import { p1OwnerPolicy } from "./p1-policy.mjs";
 
 /** Mutate the real painted control, not just a manufactured style object. */
 export async function p1Mutations(page, { coarse }) {
@@ -26,8 +27,10 @@ export async function p1Mutations(page, { coarse }) {
     }, { selector, property });
     try {
       const mutant = await readP1Style(page, selector);
+      const policy = await p1OwnerPolicy(page,
+        { component: "TimePeriodSelect", state: "default", reference: mutant, actual: mutant, coarse });
       const failures = compareP1Style(property === "height" ? mutant : original, mutant,
-        property === "height" ? { height: `${coarse ? 44 : 32}px` } : {});
+        property === "height" ? policy : {});
       assert.ok(failures.length > 0, `${property} mutation must fail strict validation`);
       rows.push({ name: `${property}-mutation-rejected`, status: "PASS", failures });
     } finally {
@@ -41,7 +44,11 @@ export async function p1Mutations(page, { coarse }) {
   await page.evaluate(selector => document.querySelector(selector).style.setProperty("width", "60px", "important"), square);
   try {
     const mutant = await readP1Style(page, square);
-    const failures = compareP1Style(mutant, mutant, { width: `${coarse ? 44 : 32}px` });
+    const root = await readP1Style(page, '[data-component="CodeBlock"][data-state="default"] .lf-codeblock',
+      { component: "CodeBlock", state: "default" });
+    const policy = await p1OwnerPolicy(page,
+      { component: "CodeBlock", state: "default", reference: root, actual: root, coarse });
+    const failures = compareP1Style(mutant, mutant, policy.descendants.copy);
     assert.ok(failures.some(row => row.field === "width"));
     rows.push({ name: "absolute-square-width-mutation-rejected", status: "PASS", failures });
   } finally {
