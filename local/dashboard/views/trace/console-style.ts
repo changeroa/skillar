@@ -106,7 +106,7 @@ export function traceConsoleStyles() {
 .trace summary.json-line code{white-space:nowrap;overflow-wrap:normal}
 .trace .json-line code{font-family:var(--lf-font-mono);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);font-weight:var(--lf-weight-regular);color:var(--trace-json-property)}
 .trace :is(.json-value,.json-value-preview)[data-json-type=string]{color:var(--trace-json-string)}
-.trace :is(.json-value,.json-value-preview):not([data-json-type=string]){color:var(--lf-foreground)}
+.trace :is(.json-value,.json-value-preview):not([data-json-type=string]){color:light-dark(var(--lf-foreground),#79b8ff)}
 .trace .event-gantt-track{border-color:var(--lf-border)}
 .trace .trace-event-row{--trace-kind:var(--lf-observation-event);--trace-kind-line:var(--lf-observation-event-line)}
 .trace [data-event-kind=prompt],.trace [data-event-kind=skill_span],.trace [data-event-kind=native_skill]{--trace-kind:var(--lf-observation-span);--trace-kind-line:var(--lf-observation-span-line)}

@@ -11,7 +11,8 @@ import { mountGallery } from "../../local/dashboard/foundation/gallery";
 
 const root = document.getElementById("gallery-root");
 const native = document.getElementById("hosted-native-gallery");
-if (new URLSearchParams(location.search).has("hostedNative") && root && native) {
+const parameters = new URLSearchParams(location.search);
+if (parameters.has("hostedNative") && root && native) {
   root.hidden = true;
   native.hidden = false;
-} else if (root) mountGallery(root);
+} else if (root && !parameters.has("traces")) mountGallery(root);

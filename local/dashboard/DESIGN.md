@@ -203,7 +203,7 @@ Timeline rows share Tree's zero-border container recipe. Native JSON summaries
 retain 32/44px controls with a 12px/18px line box, zero inline inset and square
 corners in both standalone and hosted layouts.
 JSON strings retain the measured string ink; number, boolean and null leaves
-use the pinned JSON renderer's neutral foreground. Null has its own paint
+use the pinned JSON renderer's neutral light ink and `#79b8ff` dark ink. Null has its own paint
 selector rather than the object-container discriminator.
 Empty descriptions explicitly retain 13px/20px after the Empty root takes the
 source 16px/24px body type. Native peeks compose the source Peek's modal paint

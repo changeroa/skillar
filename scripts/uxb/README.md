@@ -277,3 +277,5 @@ With the development galleries on site 5183/local 5184, run
 `node scripts/uxb/local-json-primitives.mjs "$PR7_EVIDENCE"` for all four JSON
 primitive types. Its fixture uses the actual `JsonViewer`; release-build tests
 must continue proving gallery fixtures are absent from shipped artifacts.
+Both development galleries expose the shared `?traces=1` specimen. The site's
+native trace entry uses the existing separate dashboard TypeScript project.
