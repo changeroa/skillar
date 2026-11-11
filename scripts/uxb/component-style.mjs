@@ -5,6 +5,8 @@ export const componentStyleFields = Object.freeze([
   "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor",
   "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
   "outlineColor", "outlineStyle", "outlineWidth", "outlineOffset", "boxShadow",
+  "color", "backgroundColor", "opacity", "textDecorationLine",
+  "textDecorationColor", "textDecorationStyle", "textDecorationThickness", "strokeDasharray",
 ]);
 
 export function compareComponentStyle(actual, expected) {
@@ -33,7 +35,12 @@ export function normalizeComponentStyle(css, height) {
   const padding = (css.padding ?? "0px").split(/\s+/);
   const sides = ["Top", "Right", "Bottom", "Left"];
   const values = { height, fontSize: css.fontSize, lineHeight: css.lineHeight,
-    fontWeight: css.fontWeight, borderRadius: css.borderRadius };
+    fontWeight: css.fontWeight, borderRadius: css.borderRadius,
+    color: color(css.color), backgroundColor: color(css.backgroundColor),
+    opacity: css.opacity, textDecorationLine: css.textDecorationLine,
+    textDecorationColor: color(css.textDecorationColor),
+    textDecorationStyle: css.textDecorationStyle,
+    textDecorationThickness: css.textDecorationThickness, strokeDasharray: css.strokeDasharray };
   for (const [index, side] of sides.entries()) {
     values[`padding${side}`] = css[`padding${side}`] ??
       padding[index] ?? padding[index % 2] ?? padding[0];

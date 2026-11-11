@@ -8,6 +8,8 @@ const required = [
   "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor",
   "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
   "outlineColor", "outlineStyle", "outlineWidth", "outlineOffset", "boxShadow",
+  "color", "backgroundColor", "opacity", "textDecorationLine",
+  "textDecorationColor", "textDecorationStyle", "textDecorationThickness", "strokeDasharray",
 ];
 for (const field of required) {
   test(`rejects changed or missing ${field} in a component state`, () => {
