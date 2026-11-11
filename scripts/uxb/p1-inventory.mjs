@@ -4,8 +4,10 @@ export const P1_PAINT_FIELDS = Object.freeze([
   "tag", "width", "height", "viewBox", "viewportWidth", "viewportHeight",
   "fill", "stroke", "strokeWidth", "opacity", "fillOpacity", "strokeOpacity",
   "dash", "visibility", "display", "path", "points",
+  "fillRule", "clipRule", "strokeLinecap", "strokeLinejoin", "strokeMiterlimit",
+  "strokeDashoffset", "transform", "transformOrigin",
 ]);
-export const P1_LOADER_FIELDS = Object.freeze(["transform", "radius", "left", "top"]);
+export const P1_LOADER_FIELDS = Object.freeze(["radius", "left", "top"]);
 
 function paintInventory(component, state) {
   switch (component) {
@@ -27,13 +29,14 @@ function paintInventory(component, state) {
 
 export function p1Inventory(component, state) {
   return { ...paintInventory(component, state),
-    descendants: p1Descendants(component, state).map(part => part.role) };
+    descendants: p1Descendants(component, state).map(part => `${part.role}:${part.count}`) };
 }
 
 export function checkP1Inventory(style, inventory) {
   const failures = [];
   for (const [kind, expected] of Object.entries(inventory)) {
-    const actual = (style[kind] ?? []).map(part => kind === "glyphs" ? part.tag : part.role);
+    const actual = (style[kind] ?? []).map(part => kind === "glyphs" ? part.tag :
+      kind === "descendants" ? `${part.role}:${part.styles?.length ?? 0}` : part.role);
     if (JSON.stringify(expected) !== JSON.stringify(actual))
       failures.push({ field: `${kind}.inventory`, expected, actual });
   }

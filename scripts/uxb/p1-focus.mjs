@@ -59,5 +59,17 @@ export async function p1Focus(page, { base, out, surface }) {
       }
     }
   }
+  assert.ok(candidates.length > 0, "Focus inventory must not disappear");
+  const invisible = await page.evaluate(() => {
+    const style = document.createElement("style"); style.id = "p1-invisible-focus";
+    style.textContent = '#p1-textarea-default:focus-visible{outline:2px solid var(--lf-background)!important;outline-offset:2px!important;box-shadow:0 0 0 2px var(--lf-background),0 0 0 4px var(--lf-background)!important}';
+    document.head.append(style); return "#p1-textarea-default";
+  });
+  try {
+    const mutation = await paintedFocus(page, { selector: invisible, kind: "textarea" },
+      `${out}/invisible-focus-mutation`);
+    assert.equal(mutation.pass, false, "A same-background focus indicator must not pass");
+    results[0] = { ...results[0], invisibleFocusMutation: { ...mutation, rejected: true } };
+  } finally { await page.evaluate(() => document.querySelector("#p1-invisible-focus").remove()); }
   return results;
 }

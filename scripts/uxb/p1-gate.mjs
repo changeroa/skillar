@@ -46,6 +46,7 @@ const extra = JSON.parse(await readFile(`${out}/demo-records-extra.json`, "utf8"
 assert.equal(extra.length, 4, "Live Avatar and Spinner reconciliation is required");
 const [js, css, fontCss] = await Promise.all(["mit.js", "mit.css", "reference-font.css"].map(path => readFile(`${out}/${path}`, "utf8")));
 const results = [], captures = [], structure = [], keyboard = [], focus = [], mutations = [], errors = [];
+const referenceCache = new Map();
 await mkdir(`${out}/matrix`, { recursive: true }); await mkdir(`${out}/mit-captures`, { recursive: true });
 async function mountSource(theme) {
   const tree = await source._sendToTarget("Page.getFrameTree");
@@ -63,10 +64,13 @@ async function mountSource(theme) {
   await ready(source, "#mit-ready");
 }
 async function reference({ component, state, interaction, theme, width }) {
+  const key = [component, state, interaction, theme, width].join(":");
+  if (referenceCache.has(key)) return referenceCache.get(key);
+  const remember = record => { referenceCache.set(key, record); return record; };
   const audited = extra.find(row => row.component === component && row.state === state && row.theme === theme);
   if (audited) {
     assert.ok(audited.states?.[interaction], `Missing live ${component} ${interaction}`);
-    return { ...audited, ...audited.states[interaction] };
+    return remember({ ...audited, ...audited.states[interaction] });
   }
   const live = !mitSelectors[component] ||
     component === "MarkdownViewer" && state === "formatted" && width === 1440 ||
@@ -79,8 +83,8 @@ async function reference({ component, state, interaction, theme, width }) {
     const sourceWidth = source.geometry?.width ?? (component === "DiffViewer" ? 1242 : 596);
     assert.ok(source.states?.[interaction], `Missing live ${component} ${interaction}`);
     const measured = source.states[interaction];
-    return { ...source, ...measured, style: { ...measured.style,
-      values: { ...measured.style.values, width: `${sourceWidth}px` } } };
+    return remember({ ...source, ...measured, style: { ...measured.style,
+      values: { ...measured.style.values, width: `${sourceWidth}px` } } });
   }
   const sourceState = component === "Radio" && state === "group" ? "checked-enabled" : state;
   await source.evaluate(settings => window.renderReference(settings), { state: sourceState, theme, examples });
@@ -123,8 +127,8 @@ async function reference({ component, state, interaction, theme, width }) {
   await captureP1(source, selector, screenshot);
   if (interaction === "active") await releaseP1Pointer(source);
   await source.evaluate(() => document.querySelector("#mit-evidence-label").remove());
-  return { provenance: "ACTUAL-PINNED-MIT", sourceSHA: "69181812b87169df157841fce1314ec96ecd2c5a",
-    component, state, theme, style, screenshot, pointer };
+  return remember({ provenance: "ACTUAL-PINNED-MIT", sourceSHA: "69181812b87169df157841fce1314ec96ecd2c5a",
+    component, state, theme, style, screenshot, pointer });
 }
 try {
   for (const [surface, base] of [["site", site], ["local", local]]) {
@@ -208,7 +212,7 @@ try {
       await product.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
       const end = await product._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       await writeFile(`${out}/matrix/${surface}-${width}-${theme}-end.png`, Buffer.from(end.data, "base64"));
-      console.log(`P1_MATRIX ${surface} ${width} ${theme} ${results.length} cases, ${errors.length} evidence errors`);
+      console.log(`P1_MATRIX ${surface} ${width} ${theme} ${results.length} cases, ${results.filter(row => row.status === "PASS").length} passing, ${errors.length} evidence errors`);
       mutations.push(...(await p1Mutations(product, owner)).map(row => ({ surface, width, theme, ...row })));
     }
     try { keyboard.push({ surface, results: await p1Keyboard(product, base), status: "PASS" }); }

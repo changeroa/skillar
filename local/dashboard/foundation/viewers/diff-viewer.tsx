@@ -1,4 +1,4 @@
-import { lineDiff } from "../../../../site/src/skills/diff";
+import { lineDiff } from "./line-diff";
 
 export type DiffRow = {
   readonly kind: "same" | "added" | "removed"; readonly text: string;

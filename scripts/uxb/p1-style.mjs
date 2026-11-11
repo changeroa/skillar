@@ -50,6 +50,9 @@ export async function readP1Style(page, selector, specimen) {
         fill: loader ? paint.backgroundColor : paint.fill, stroke: paint.stroke, strokeWidth: paint.strokeWidth,
         opacity: opacityOf(part), fillOpacity: paint.fillOpacity, strokeOpacity: paint.strokeOpacity,
         dash: paint.strokeDasharray, visibility: paint.visibility, display: paint.display,
+        fillRule: paint.fillRule, clipRule: paint.clipRule, strokeLinecap: paint.strokeLinecap,
+        strokeLinejoin: paint.strokeLinejoin, strokeMiterlimit: paint.strokeMiterlimit,
+        strokeDashoffset: paint.strokeDashoffset, transform: paint.transform, transformOrigin: paint.transformOrigin,
         path: part.getAttribute("d"), points: part.getAttribute("points"),
         ...(loader ? { transform: paint.transform, radius: paint.borderRadius, left: paint.left, top: paint.top } : {}) };
     }).sort((a, b) => a.tag === "loader-bar" && b.tag === "loader-bar" ? 0 :
@@ -83,7 +86,7 @@ export async function readP1Style(page, selector, specimen) {
         // The labelled MIT narrow fixture includes the owner's line-number/sign
         // prefix as input. Product metadata is separately painted outside code.
         if (!product && descriptor.actualText && node.closest("#mit-ready")) {
-          const prefix = textPaint.map(run => run.text).join("").match(/^1[−+]/)?.[0] ?? "";
+          const prefix = textPaint.map(run => run.text).join("").match(/^1[−+=]/)?.[0] ?? "";
           let remaining = prefix.length;
           for (const run of textPaint) {
             const skip = Math.min(remaining, run.text.length); run.text = run.text.slice(skip); remaining -= skip;

@@ -12,12 +12,18 @@
 .lf-codeblock pre { margin: 0; padding: var(--lf-space-3); overflow: auto; min-width: 0; background: transparent; border: 0; border-radius: 0; color: inherit; font: var(--lf-weight-regular) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-font-mono); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; }
 .lf-codeblock code { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; }
 .lf-codeblock pre { color: light-dark(#393a34, #9cdcfe); }
+.lf-codeblock code { color: light-dark(#393a34, #d4d4d4); }
 .lf-codeblock[data-language="text"] pre { color: inherit; }
+.lf-codeblock[data-language="text"] code { color: inherit; }
 .lf-codeblock { color: var(--lf-foreground-secondary); }
 .lf-codeblock [data-token="keyword"] { color: light-dark(#00009f, #569cd6); }
 .lf-codeblock [data-token="string"], .lf-codeblock [data-token="char"], .lf-codeblock [data-token="attr-value"] { color: light-dark(#e3116c, #ce9178); }
 .lf-codeblock [data-token="number"], .lf-codeblock [data-token="boolean"] { color: light-dark(#36acaa, #b5cea8); }
 .lf-codeblock [data-token="comment"] { color: light-dark(#999988, #6a9955); font-style: italic; }
+.dark .lf-codeblock [data-token="comment"] { font-style: normal; }
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .lf-codeblock [data-token="comment"] { font-style: normal; }
+}
 .lf-codeblock [data-token="function"] { color: light-dark(#393a34, #dcdcaa); }
 .lf-codeblock[data-language="json"] [data-token="property"] { color: var(--lf-muted-foreground); }
 .lf-codeblock[data-language="json"] [data-token="string"] { color: var(--lf-json-value-string); }

@@ -2,7 +2,7 @@
 @import "../viewers/viewers.css";
 .lf-time-period .lf-select-wrap:has(select:focus-visible) { outline: var(--lf-focus-width) solid var(--lf-foreground); outline-offset: var(--lf-focus-offset); box-shadow: none; }
 .lf-time-period .lf-select-wrap { padding: var(--lf-space-1) var(--lf-space-2); border-color: var(--lf-border-contrast); }
-.lf-time-period .lf-select-wrap:hover { background: var(--lf-accent); }
+@media (hover: hover) { .lf-time-period .lf-select-wrap:hover { background: var(--lf-accent); } }
 .lf-time-period .lf-select-wrap > svg { width: var(--lf-text-xs); height: var(--lf-text-xs); }
 .lf-textarea, .lf-combobox__control { box-sizing: border-box; width: 100%; min-width: 0; border: var(--lf-border-width) solid var(--lf-input); border-radius: var(--lf-radius-md); padding: var(--lf-space-2) var(--lf-space-3); color: var(--lf-foreground); background: var(--lf-background); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-textarea { min-height: 80px; resize: vertical; }
@@ -86,6 +86,7 @@
 .lf-codeblock .lf-icon-button { border-radius: var(--lf-radius-sm); color: var(--lf-muted-foreground); }
 .lf-toast .lf-button { margin-inline-start: auto; padding: 0 var(--lf-space-2); font: var(--lf-weight-medium) var(--lf-text-xs)/var(--lf-leading-xs) var(--lf-toast-font); background: var(--lf-toast-foreground); color: var(--lf-toast-background); border: 0; outline: 0; }
 .lf-toast .lf-button:focus-visible { outline: var(--lf-focus-width) solid var(--lf-primary-accent); outline-offset: var(--lf-focus-offset); }
+.lf-toast .lf-button__content { background: inherit; }
 .lf-toast__dismiss { position: absolute; top: 3px; left: 3px; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: var(--lf-control-height); height: var(--lf-control-height); padding: 0; border: 0; border-radius: calc(infinity * 1px); background: transparent; color: inherit; cursor: pointer; font: inherit; }
 .lf-toast__dismiss::before { position: absolute; width: var(--lf-space-5); height: var(--lf-space-5); border: var(--lf-border-width) solid var(--lf-toast-border); border-radius: calc(infinity * 1px); background: var(--lf-toast-background); content: ""; box-sizing: border-box; }
 .lf-toast__dismiss svg { z-index: 1; }

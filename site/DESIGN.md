@@ -101,7 +101,9 @@ Toast content is intrinsic-width with a trailing action; the action is 12px/18px
 medium and 32/44px high. Toast description ink is #3f3f3f/#e8e8e8.
 Native text/date focus keeps a 2px primary-accent outline with a 2px offset
 and the existing field shadow in both hosts. Native period focus retains its
-2px foreground outline; hover uses the shared accent wash.
+2px foreground outline; hover-capable pointers use the shared accent wash.
+Dark syntax plain text is #d4d4d4 inside the existing blue-tinted pre surface
+ink, with normal comments; light comments retain their source italics.
 
 ## Phase B hosted screens (PR-6)
 

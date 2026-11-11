@@ -121,5 +121,21 @@ export async function p1Mutations(page, { coarse }) {
         document.querySelector(selector).querySelector("pre").style.removeProperty(property), { selector: codeSelector, property });
     }
   }
+  await page.evaluate(selector => {
+    const node = document.querySelector(selector).querySelector("pre");
+    window.__p1Detached = { node, parent: node.parentNode, next: node.nextSibling };
+    node.remove();
+  }, codeSelector);
+  try {
+    const failures = compareP1Style(code, await readP1Style(page, codeSelector, { component: "CodeBlock", state: "default" }),
+      { inventory: p1Inventory("CodeBlock", "default") });
+    assert.ok(failures.some(row => row.field === "actual.descendants.inventory"));
+    rows.push({ name: "removed-code-descendant-rejected", status: "PASS", failures });
+  } finally {
+    await page.evaluate(() => {
+      const { node, parent, next } = window.__p1Detached;
+      parent.insertBefore(node, next); delete window.__p1Detached;
+    });
+  }
   return rows;
 }
