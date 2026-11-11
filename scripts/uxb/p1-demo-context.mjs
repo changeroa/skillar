@@ -19,13 +19,13 @@ try {
         await tabs.repin(tab, { width, height: width === 390 ? 844 : 900 });
         await applyViewport(page, { width, height: width === 390 ? 844 : 900,
           deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 });
-        await ready(page, name === "prompt" ? "[role=tabpanel]" : "tbody tr");
+        await ready(page, name === "prompt" ? "main" : "tbody tr");
         await page.evaluate(name => new Promise((resolve, reject) => {
           const observer = new MutationObserver(check);
           const timer = setTimeout(() => { observer.disconnect(); reject(Error("Demo main remained empty")); }, 10000);
           function check() {
             if ((document.querySelector("main")?.innerText.length ?? 0) <= 50) return;
-            if (name === "prompt" && (document.querySelector("[role=tabpanel]")?.innerText.length ?? 0) <= 30) return;
+            if (name === "prompt" && !document.querySelector("main")?.innerText.includes("Answer the following questions:")) return;
             observer.disconnect(); clearTimeout(timer); resolve();
           }
           observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true }); check();
@@ -39,7 +39,11 @@ try {
           hide.textContent = '[data-sidebar="footer"]{display:none!important}';
           document.head.append(hide);
           await document.fonts.ready;
-          for (const animation of document.getAnimations()) { animation.pause(); animation.currentTime = 0; }
+          for (const animation of document.getAnimations()) {
+            if (typeof animation.currentTime !== "number") animation.pause();
+            else if (Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
+            else { animation.pause(); animation.currentTime = 0; }
+          }
         }, theme);
         const metrics = await page.evaluate(() => ({
           width: innerWidth, textLength: document.querySelector("main")?.innerText.length ?? 0,
