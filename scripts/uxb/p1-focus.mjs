@@ -35,6 +35,7 @@ export async function p1Focus(page, { base, out, surface }) {
         });
     }, targets);
     const allTargets = [...Object.entries(targets).map(([name, selector]) => ({ name, selector })), ...inventory];
+    assert.equal(allTargets.length, 45, "Committed focus inventory must not lose a control");
     for (const { name, selector } of allTargets) {
       try {
         await press(page, "Tab");
@@ -58,18 +59,16 @@ export async function p1Focus(page, { base, out, surface }) {
         results.push({ surface, name, width, theme, status: "FAIL", error: String(error) });
       }
     }
+    const invisible = await page.evaluate(() => {
+      const style = document.createElement("style"); style.id = "p1-invisible-focus";
+      style.textContent = '#p1-textarea-default:focus-visible{outline:2px solid var(--lf-background)!important;outline-offset:2px!important;box-shadow:0 0 0 2px var(--lf-background),0 0 0 4px var(--lf-background)!important}';
+      document.head.append(style); return "#p1-textarea-default";
+    });
+    try {
+      const mutation = await paintedFocus(page, invisible, `${out}/${surface}-${width}-${theme}-invisible-focus-mutation`);
+      assert.equal(mutation.pass, false, "A same-background focus indicator must not pass");
+      results.push({ surface, name: "same-background-negative-control", width, theme, status: "PASS", ...mutation });
+    } finally { await page.evaluate(() => document.querySelector("#p1-invisible-focus").remove()); }
   }
-  assert.ok(candidates.length > 0, "Focus inventory must not disappear");
-  const invisible = await page.evaluate(() => {
-    const style = document.createElement("style"); style.id = "p1-invisible-focus";
-    style.textContent = '#p1-textarea-default:focus-visible{outline:2px solid var(--lf-background)!important;outline-offset:2px!important;box-shadow:0 0 0 2px var(--lf-background),0 0 0 4px var(--lf-background)!important}';
-    document.head.append(style); return "#p1-textarea-default";
-  });
-  try {
-    const mutation = await paintedFocus(page, { selector: invisible, kind: "textarea" },
-      `${out}/invisible-focus-mutation`);
-    assert.equal(mutation.pass, false, "A same-background focus indicator must not pass");
-    results[0] = { ...results[0], invisibleFocusMutation: { ...mutation, rejected: true } };
-  } finally { await page.evaluate(() => document.querySelector("#p1-invisible-focus").remove()); }
   return results;
 }

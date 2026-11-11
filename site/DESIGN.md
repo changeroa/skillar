@@ -102,8 +102,9 @@ medium and 32/44px high. Toast description ink is #3f3f3f/#e8e8e8.
 Native text/date focus keeps a 2px primary-accent outline with a 2px offset
 and the existing field shadow in both hosts. Native period focus retains its
 2px foreground outline; hover-capable pointers use the shared accent wash.
-Dark syntax plain text is #d4d4d4 inside the existing blue-tinted pre surface
-ink, with normal comments; light comments retain their source italics.
+Dark syntax operators and punctuation are #d4d4d4; unclassified text inherits
+the existing #9cdcfe pre ink. Dark comments are normal; light comments retain
+their source italics.
 
 ## Phase B hosted screens (PR-6)
 
