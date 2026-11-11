@@ -6,6 +6,10 @@ import { mountHostedEmbed } from "./mount-hosted-embed.mjs";
 import { P1_SURFACES as specs } from "./p1-surfaces.mjs";
 
 const [out] = process.argv.slice(2);
+// Before (b8b1d62) and the merged PR-7 toolbar/alert markup: the refresh control is the
+// first outline Button and analysis failures render in the shared Alert.
+const refreshButton = ".analysis-refresh:not(:disabled), .analysis-toolbar > button.lf-button--outline:first-of-type:not(:disabled)";
+const alertRegion = ":is(.notice,.lf-alert)[role=alert]";
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
 const { omowright } = await loadOmowright();
 const browser = await omowright.connect("http://127.0.0.1:9333");
@@ -60,18 +64,18 @@ async function prepare(spec) {
       else await clickText(({ dashboard: "대시보드", flow: "흐름", workspaces: "작업 공간", heatmap: "활동" })[spec.view],
         ".local-tabs [role=tab]");
       await ready(page, spec.ready);
-      await ready(page, ".analysis-refresh:not(:disabled)");
+      await ready(page, refreshButton);
       if (spec.error) {
         await page.evaluate(scenario => {
           if (!["before8.localhost", "after8.localhost"].includes(location.hostname))
             throw new RangeError("Failure scenarios are restricted to the fixture origins");
           document.cookie = `x-qa-scenario=${encodeURIComponent(scenario)}; Path=/; SameSite=Lax`;
         }, spec.scenario);
-        await page.click(".analysis-refresh:not(:disabled)");
-        await ready(page, ".notice[role=alert] details summary");
-        await page.click(".notice[role=alert] details summary");
-        await ready(page, ".notice[role=alert] pre");
-        await page.evaluate(() => document.querySelector(".notice[role=alert]").scrollIntoView({ block: "center" }));
+        await page.click(refreshButton);
+        await ready(page, `${alertRegion} details summary`);
+        await page.click(`${alertRegion} details summary`);
+        await ready(page, `${alertRegion} pre`);
+        await page.evaluate(selector => document.querySelector(selector).scrollIntoView({ block: "center" }), alertRegion);
       }
     }
     return;
