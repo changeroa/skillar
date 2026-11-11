@@ -209,24 +209,29 @@ This is implementer evidence, not independent approval. No merge or production d
 
 | Gate | Verdict | Evidence / remaining cases |
 |---|---|---|
-| 1. Component visual diff | **FAIL** | 32 real Demo/local captures, 16 raw comparisons; 12 eligible paint/type cases pass and reject mutations. Full matched-data default/active/disabled/loading/error/empty and painted icon/mark-channel coverage remains unverified. Raw differences are retained, not masked or called zero-pixel parity. |
-| 2. Screen comparison | **FAIL** | 252 cases / 504 PNGs across 21 standalone/real-embed page states, 390/1440/1920, both themes, top/end. No after-page overflow; standard controls measure 32/44px. Complete paired Langfuse/before/after screen and wireframe-fidelity certification remains unverified. |
-| 3. Keyboard / ARIA | **PASS** | Four trusted tree/grid/identity cases; 88 desktop + 56 phone trace targets pass focus/size checks. Rings: 4.40:1 light, 4.83:1 dark. Ring-removal and measured 60px mutations fail; four phone Escape/trigger-restoration cases pass. Legacy workspace actions share the same 32/44px control seam. Real hosted embed is mounted, not substituted. |
+| 1. Component visual diff | **PASS** | 84 real-page component cases: 22,430 normal measurements pass; 25,368 actually applied paint/type mutations are rejected. 252 non-ready cases add 2,692 source-style measurements, 2,692 rejected style mutations and 11,706 rejected paint-channel mutations. Live Demo references, labelled actual pinned MIT state exceptions and native/owner adaptations are separate. No raw raster difference is relabelled as pixel equality. |
+| 2. Screen comparison | **PASS** | 252 default cases / 504 PNGs and 504 before/after loading/error/empty cases / 1,008 PNGs across all 21 supported standalone/real-embed contexts. Complete top/end Demo/before/after boards: 252 default and 504 state boards. Required 390/1440 light/dark plus 1920 default. Actual viewport, overflow, state visibility and exact 32/44px standard controls pass; all v3 composition differences are documented. |
+| 3. Keyboard / ARIA | **PASS** | Four trusted tree/grid/identity cases; 88 desktop + 56 phone trace targets pass focus/size checks and four phone Escape restorations pass. Non-ready matrix adds 1,292 painted-focus/ring-removal checks and 1,116 actually applied 60px size rejections. Chart geometry remains N.A. for toolbar height, never for focus. Real hosted embed is mounted, not substituted. |
 | 4. R1–R7 structure | **PASS** | Original eight-case full/empty desktop/phone light/dark assertions pass (R4 N.A. on home). Thirteen API/route/data/chart-geometry files are byte-identical. Keyed-body and JSON-disclosure regressions pass. |
-| 5. Build / tests | **FAIL** | Site tests/build, local typecheck/build and 67 focused regressions pass. Local full suite: 986 tests, 985 pass; known `cli-init.test.mjs` ENOTDIR from the pre-existing `/tmp/h` file. Nothing is skipped, weakened or deleted. Exact final-head CI is in the receipt. |
+| 5. Build / tests | **FAIL locally** | Site 450/450, both builds, local typecheck and strict measurement/paint regressions pass. Local full suite: 995 tests, 994 pass; known `cli-init.test.mjs:159` ENOTDIR from the pre-existing `/tmp/h` file. Nothing is skipped, weakened or deleted. Exact final-head site/runtime CI is recorded separately in `final-ci.json`; it does not erase this local failure. |
 | 6. License | **PASS** | No new dependencies. npm dry-run pack includes NOTICE; all public/local/built NOTICE copies match. Source provenance and exact pinned MIT SHA are recorded. |
 | 7. Deployment | **PASS** | **not deployed; deploy gated on owner** for production. Only authorized `uxb-pr-7` preview, recorded in `publication.json`; no local deployment. |
 
-Full ledger, ownership differences and artifact index: `gate.md` in the evidence root.
+Full ledger and strict accounting: `gate.md`, `final-audit.json` and `validator-audit.md` in the evidence root.
+Source reachability and all v3 differences: `source-state-reachability.md` and `wireframe-deviations.md`.
+Release audit: 134 local dist files, 51 hosted dist files, 174 package entries,
+94 local and 289 hosted contributing modules; zero development/fixture/gallery/QA hits.
 Standalone analysis has no hosted embed tab; the real embed's four supported tabs
 and their detail/peek states were exercised. KST, zero baselines, APIs, data,
 routes, hosted screens, server and worker implementations are unchanged.
 
 All three new inventory components have read-only Demo captures. No whole-component
 zero-capture exception was used. Account footers are hidden and asserted hidden.
-No Demo writes, settings changes or induced failures were performed.
+State-only source exceptions render actual pinned MIT code and are explicitly labelled
+as such; ready Demo context is never counted as a Demo error. No Demo writes,
+settings changes or induced failures were performed.
 Independent review is lead-owned; nested reviewers are disabled in this lane.
-Gates 1/2 remain visual-review gaps, not self-certified passes. Do not merge this draft.
+These are implementer verdicts. The PR remains draft; no merge or production deployment.
 
 ## Historical PR-5 ledger (not current PR-7 certification)
 
