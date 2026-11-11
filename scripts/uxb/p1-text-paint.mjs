@@ -1,6 +1,6 @@
 /** Every channel that paints a text run, including inherited ancestor opacity. */
 export const P1_TEXT_FIELDS = Object.freeze([
-  "fontSize", "lineHeight", "fontWeight", "fontStyle", "fontFamily",
+  "fontSize", "lineHeight", "fontWeight", "fontStyle", "fontFamily", "textAlign",
   "color", "webkitTextFillColor", "backgroundColor", "opacity", "visibility",
 ]);
 
