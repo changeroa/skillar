@@ -61,9 +61,10 @@ export function P1Gallery() {
         <Radio label="Alpha" name="group" value="a" defaultChecked /><Radio label="Beta" name="group" value="b" />
       </fieldset></Specimen>
       {(["xxs", "xs", "sm", "md", "lg", "xl", "xxl", "full"] as const).flatMap(size =>
-        (["primary", "muted"] as const).map(variant => <Specimen component="Spinner" key={`${size}-${variant}`} state={`${size}-${variant}`}>
-          <div style={{ width: "48px", height: "48px" }}><Spinner size={size} variant={variant} /></div>
-        </Specimen>))}
+        (["primary", "muted", "inherit"] as const).flatMap(variant => (["block", "inline"] as const).map(display =>
+          <Specimen component="Spinner" key={`${size}-${variant}-${display}`} state={`${size}-${variant}${display === "inline" ? "-inline" : ""}`}>
+            <div style={{ width: "48px", height: "48px" }}><Spinner size={size} variant={variant} display={display} /></div>
+          </Specimen>)))}
       {variants.map(variant => <Specimen component="Toast" state={variant} key={variant}>
         <Toast message={message} description="Your changes are saved." variant={variant}
           action={{ label: "Undo", onClick: () => setMessage("Undone") }} onDismiss={() => setMessage("")} />

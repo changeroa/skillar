@@ -6,6 +6,7 @@ import { captureP1 } from "./p1-capture.mjs";
 import { compareP1Style, readP1Style } from "./p1-style.mjs";
 import { p1Keyboard } from "./p1-keyboard.mjs";
 import { p1Focus } from "./p1-focus.mjs";
+import { p1Mutations } from "./p1-mutations.mjs";
 const [site, local, out] = process.argv.slice(2);
 if (!site || !local || !out || !process.env.OMOWRIGHT_HELPER) throw Error("site local evidence and OMOWRIGHT_HELPER required");
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
@@ -14,23 +15,34 @@ const browser = await omowright.connect("http://127.0.0.1:9333");
 const tabs = omowright.createAgentTabs(browser);
 const product = (await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } })).page;
 const source = (await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } })).page;
-const expected = { Textarea: 5, Combobox: 4, MultiSelect: 3, Switch: 16, Radio: 5, Spinner: 16,
+const expected = { Textarea: 5, Combobox: 4, MultiSelect: 3, Switch: 16, Radio: 5, Spinner: 48,
   Toast: 6, Avatar: 13, MarkdownViewer: 3, CodeBlock: 3, DiffViewer: 2, DateRangeInput: 2, TimePeriodSelect: 1 };
 const selectors = {
-  Textarea: "textarea", Combobox: "input", MultiSelect: "input", Switch: ".lf-switch__track",
+  Textarea: "textarea", Combobox: ".lf-combobox__input", MultiSelect: ".lf-combobox__input", Switch: ".lf-switch__track",
   Radio: ".lf-radio__ring", Spinner: ".lf-loading svg", Toast: ".lf-toast", Avatar: ".lf-avatar",
   MarkdownViewer: ".lf-markdown", CodeBlock: ".lf-codeblock", DiffViewer: ".lf-diff-scroll",
-  DateRangeInput: ".lf-date-range", TimePeriodSelect: "select",
+  DateRangeInput: ".lf-date-range input", TimePeriodSelect: ".lf-select-wrap",
 };
 const mitSelectors = {
   Textarea: '[data-component="Textarea"] textarea', Switch: '[data-component="Switch"] [role=switch]',
   Radio: '[data-component="Radio"] > span > span', Spinner: '[data-component="Spinner"] svg',
   Avatar: '[data-component="Avatar"] .relative', Toast: '[data-sonner-toast][data-front=true]',
+  Combobox: '[data-component="Combobox"] [role=combobox]',
+  MultiSelect: '[data-component="MultiSelect"] [role=combobox]',
+  DateRangeInput: '[data-component="NativeDate"] input',
+  CodeBlock: '[data-component="CodeBlock"] .codeblock',
+  MarkdownViewer: '[data-component="MarkdownViewer"] .space-y-2',
+  DiffViewer: '[data-component="DiffViewer"] .rounded-lg.border',
 };
-const examples = JSON.parse(await readFile(`${out}/viewer-examples.json`, "utf8"));
+const retainedExamples = JSON.parse(await readFile(`${out}/viewer-examples.json`, "utf8"));
+// The cited Demo PNG has one blank line here; text extraction doubled it.
+const examples = { ...retainedExamples, code: retainedExamples.code.replace("\n\n\nlf = get_client()", "\n\nlf = get_client()") };
 const demo = JSON.parse(await readFile(`${out}/demo-records.json`, "utf8"));
+const refreshed = JSON.parse(await readFile(`${out}/demo-records-matched.json`, "utf8"));
+const extra = JSON.parse(await readFile(`${out}/demo-records-extra.json`, "utf8"));
+assert.equal(extra.length, 4, "Live Avatar and Spinner reconciliation is required");
 const [js, css, fontCss] = await Promise.all(["mit.js", "mit.css", "reference-font.css"].map(path => readFile(`${out}/${path}`, "utf8")));
-const results = [], captures = [], structure = [], keyboard = [], focus = [], errors = [];
+const results = [], captures = [], structure = [], keyboard = [], focus = [], mutations = [], errors = [];
 await mkdir(`${out}/matrix`, { recursive: true }); await mkdir(`${out}/mit-captures`, { recursive: true });
 async function mountSource(theme) {
   const tree = await source._sendToTarget("Page.getFrameTree");
@@ -40,19 +52,30 @@ async function mountSource(theme) {
   await source.evaluate(({ js, css, fontCss }) => {
     const style = document.createElement("style"); style.textContent = css + fontCss + `
       #mit-ready>section{width:min(356px,calc(100% - 32px));margin:16px}
-      :root{--font-plex-mono:plexMono}`;
+      #mit-ready>[data-component="CodeBlock"]{font-size:13px;line-height:20px;color:hsl(var(--foreground-secondary))}
+      :root{--font-plex-mono:plexMono,"plexMono Fallback"}`;
     document.head.append(style);
     const script = document.createElement("script"); script.type = "module"; script.textContent = js; document.body.append(script);
   }, { js, css, fontCss });
   await ready(source, "#mit-ready");
 }
 async function reference(component, state, theme, width) {
-  if (!mitSelectors[component]) {
-    const source = demo.find(row => row.component === component && row.theme === theme);
-    return source ? { ...source, screenshot: source.file } : null;
+  const audited = extra.find(row => row.component === component && row.state === state && row.theme === theme);
+  if (audited) return { ...audited, screenshot: audited.file };
+  const live = !mitSelectors[component] ||
+    component === "MarkdownViewer" && state === "formatted" && width === 1440 ||
+    component === "CodeBlock" && state === "default" && width === 1440 ||
+    component === "DiffViewer" && state === "changed" && width === 1440;
+  if (live) {
+    const source = refreshed.find(row => row.component === component && row.theme === theme && row.width === width) ??
+      demo.find(row => row.component === component && row.theme === theme);
+    if (!source) return null;
+    const sourceWidth = source.geometry?.width ?? (component === "DiffViewer" ? 1242 : 596);
+    return { ...source, screenshot: source.file, style: { ...source.style,
+      values: { ...source.style.values, width: `${sourceWidth}px` } } };
   }
   const sourceState = component === "Radio" && state === "group" ? "checked-enabled" : state;
-  await source.evaluate(settings => window.renderReference(settings), { state: sourceState, theme });
+  await source.evaluate(settings => window.renderReference(settings), { state: sourceState, theme, examples });
   await source.evaluate(({ state, theme }) => new Promise((resolve, reject) => {
     const observer = new MutationObserver(check);
     const timer = setTimeout(() => { observer.disconnect(); reject(Error(`MIT state ${state}`)); }, 8000);
@@ -76,7 +99,8 @@ async function reference(component, state, theme, width) {
       if (Number.isFinite(end)) animation.finish(); else { animation.pause(); animation.currentTime = 0; }
     }
   });
-  const selector = mitSelectors[component];
+  const selector = component === "DiffViewer" && state === "empty"
+    ? '[data-component="DiffViewer"] > .text-muted-foreground' : mitSelectors[component];
   const style = await readP1Style(source, selector);
   const screenshot = `${out}/mit-captures/${component}-${state}-${width}-${theme}.png`;
   await source.evaluate(selector => {
@@ -110,7 +134,8 @@ try {
       }, theme);
       const cases = await product.evaluate(() => [...document.querySelectorAll("[data-specimen]")].map(n =>
         ({ component: n.dataset.component, state: n.dataset.state })));
-      assert.equal(cases.length, 79);
+      assert.equal(cases.length, Object.values(expected).reduce((sum, count) => sum + count, 0));
+      assert.equal(new Set(cases.map(row => `${row.component}:${row.state}`)).size, cases.length);
       for (const [component, count] of Object.entries(expected)) assert.equal(cases.filter(row => row.component === component).length, count, component);
       const owner = await product.evaluate(() => ({
         coarse: matchMedia("(pointer:coarse)").matches, width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
@@ -126,22 +151,43 @@ try {
         const root = `[data-component="${item.component}"][data-state="${item.state}"]`;
         const selector = `${root} ${selectors[item.component]}`;
         try {
-          const actual = await readP1Style(product, selector);
           const sourceRecord = await reference(item.component, item.state, theme, width);
+          const comparableWidth = item.component === "TimePeriodSelect" ? sourceRecord.geometry.width
+            : width === 1440 && (
+            item.component === "CodeBlock" && item.state === "default" ||
+            item.component === "MarkdownViewer" && item.state === "formatted") ? 596
+            : width === 1440 && item.component === "DiffViewer" && item.state === "changed" ? 1242 : null;
+          if (comparableWidth) await product.evaluate(({ root, width }) => {
+            document.querySelector(`${root} [data-probe]`).style.width = `${width}px`;
+          }, { root, width: comparableWidth });
+          const actual = await readP1Style(product, selector);
           const referenceStyle = sourceRecord?.style ?? null;
-          const policy = item.component === "CodeBlock" && item.state === "default" && referenceStyle
-            ? { height: `${parseFloat(referenceStyle.values.height) + (owner.coarse ? 20 : 8)}px` }
+          const policy = item.component === "CodeBlock" && item.state !== "read-only" && referenceStyle
+            ? { height: `${parseFloat(referenceStyle.values.height) + (owner.coarse ? 18 : 6)}px` }
+            : ["Combobox", "MultiSelect", "DateRangeInput", "TimePeriodSelect"].includes(item.component)
+              ? { height: `${owner.coarse ? 44 : 32}px` }
             : item.component === "Toast" && owner.coarse && item.state !== "loading" && referenceStyle
               ? { height: `${Math.max(parseFloat(referenceStyle.values.height),
                 parseFloat(referenceStyle.values.paddingTop) + parseFloat(referenceStyle.values.paddingBottom) +
                 parseFloat(referenceStyle.values.borderTopWidth) + parseFloat(referenceStyle.values.borderBottomWidth) + 44)}px` } : {};
           const differences = compareP1Style(referenceStyle, actual, policy);
+          if (item.component === "DiffViewer" && item.state === "changed" && width === 390) {
+            const expectedText = referenceStyle.text.replace(/\s+/g, " ").trim();
+            const actualText = actual.text.replace(/\s+/g, " ").trim();
+            if (expectedText !== actualText) differences.push({ field: "visibleContent", expected: expectedText, actual: actualText });
+          }
           const path = `${out}/matrix/${surface}-${item.component}-${item.state}-${width}-${theme}.png`;
           const capture = await captureP1(product, selector, path);
           captures.push({ surface, width, theme, ...item, ...capture });
           results.push({ surface, width, theme, ...item, reference: sourceRecord, actual, policy, differences,
             status: differences.length ? "FAIL" : "PASS", capture: path });
+          if (comparableWidth) await product.evaluate(root => {
+            document.querySelector(`${root} [data-probe]`).style.removeProperty("width");
+          }, root);
         } catch (error) {
+          await product.evaluate(root => {
+            document.querySelector(`${root} [data-probe]`)?.style.removeProperty("width");
+          }, root);
           errors.push({ surface, width, theme, ...item, error: String(error) });
         }
       }
@@ -149,6 +195,7 @@ try {
       const end = await product._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       await writeFile(`${out}/matrix/${surface}-${width}-${theme}-end.png`, Buffer.from(end.data, "base64"));
       console.log(`P1_MATRIX ${surface} ${width} ${theme} ${results.length} cases, ${errors.length} evidence errors`);
+      mutations.push(...(await p1Mutations(product, owner)).map(row => ({ surface, width, theme, ...row })));
     }
     try { keyboard.push({ surface, results: await p1Keyboard(product, base), status: "PASS" }); }
     catch (error) { keyboard.push({ surface, status: "FAIL", error: String(error) }); }
@@ -156,7 +203,7 @@ try {
   }
 } finally {
   await writeFile(`${out}/${process.env.P1_REPORT ?? "p1-gate"}.json`, JSON.stringify({
-    expected, selectedComponents: process.env.P1_COMPONENTS ?? "all", results, captures, structure, keyboard, focus, errors,
+    expected, selectedComponents: process.env.P1_COMPONENTS ?? "all", results, captures, structure, keyboard, focus, mutations, errors,
   }, null, 2));
   await tabs.closeAll(); await browser.close();
 }

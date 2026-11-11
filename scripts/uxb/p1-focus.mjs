@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { paintedFocus } from "./focus-paint.mjs";
 import { applyViewport } from "./viewport.mjs";
-import { ready } from "./trusted-keys.mjs";
+import { press, ready } from "./trusted-keys.mjs";
 
 export async function p1Focus(page, { base, out, surface }) {
   await mkdir(out, { recursive: true });
@@ -22,14 +22,29 @@ export async function p1Focus(page, { base, out, surface }) {
     await page.goto(`${base}/__gallery.html?p1&atomic&theme=${theme}`, { waitUntil: "domcontentloaded" });
     await ready(page, "#p1-combo");
     await page.evaluate(() => { for (const a of document.getAnimations()) { a.pause(); a.currentTime = 0; } });
-    for (const [name, selector] of Object.entries(targets)) {
+    const inventory = await page.evaluate(known => {
+      const original = new Set(Object.values(known).map(selector => document.querySelector(selector)));
+      return [...document.querySelectorAll('[data-specimen] :is(button,input,select,textarea,[tabindex])')]
+        .filter(node => !original.has(node) && !node.matches(":disabled") && node.tabIndex >= 0 &&
+          node.getBoundingClientRect().height > 0)
+        .map((node, index) => {
+          node.dataset.p1Focus = String(index);
+          const specimen = node.closest("[data-specimen]");
+          return { name: `${specimen.dataset.component}-${specimen.dataset.state}-${index}`,
+            selector: `[data-p1-focus="${index}"]` };
+        });
+    }, targets);
+    const allTargets = [...Object.entries(targets).map(([name, selector]) => ({ name, selector })), ...inventory];
+    for (const { name, selector } of allTargets) {
       try {
+        await press(page, "Tab");
         const normal = await paintedFocus(page, selector, `${out}/${surface}-${name}-${width}-${theme}`);
         assert.equal(normal.pass, true, `${name} must visibly paint 2px keyboard focus at 3:1`);
-        if (name === "textarea") {
+        {
           await page.evaluate(() => {
             const style = document.createElement("style"); style.id = "p1-focus-mutation";
-            style.textContent = "#gallery :focus-visible{outline:none!important;box-shadow:none!important}"; document.head.append(style);
+            style.textContent = "#gallery :focus-visible,#gallery :has(:focus-visible),#gallery :focus-visible+*{outline:none!important;box-shadow:none!important}";
+            document.head.append(style);
           });
           const mutant = await paintedFocus(page, selector, `${out}/${surface}-${name}-${width}-${theme}-no-ring`);
           await page.evaluate(() => document.querySelector("#p1-focus-mutation").remove());
