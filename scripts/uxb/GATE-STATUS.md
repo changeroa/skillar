@@ -8,7 +8,10 @@ Current correction checkpoint:
 - All 16 Tree/Timeline hover cases reject hidden child paths while the row stays hovered and every computed parent field remains unchanged.
 - Four real Demo disabled-outline references replace the four MIT state exceptions. Both native renderers pass all 8 cases and 240 style comparisons; the owner's 32/44px target remains absolute.
 - All 84 ready source contexts pass 63,360 field comparisons. Newly exposed native differences include the actual selected tab-indicator shadow and Oklab selected-interval ring ink.
-- Fixed ready/non-ready paint, release checks and final-head publication remain in progress. The older receipts below are historical, not approval of this correction.
+- Ready fixed paint passes 32,980 measurements and 119,250 corruptions across 84 cases. Source-proven updates preserve all 336 fixed case memberships, 224 templates and every part/channel.
+- All 252 non-ready source cases pass 13,824 comparisons and 12,960 corruptions. The preserved PR-5 validator passes 520 cases, 40,860 assertions and 21,372 corruptions with `bootstrap: false`.
+- Site tests pass 506/506; both production builds and local typecheck pass. Release scanning finds zero forbidden fixture/reference bytes or imports, with equal NOTICE copies.
+- Final non-ready fixed-paint/frame refresh and final-head publication remain in progress. The older receipts below are historical, not approval of this correction.
 
 ## Historical takeover verification after the 6bf20ff review
 
