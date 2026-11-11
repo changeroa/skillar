@@ -5,6 +5,7 @@ import { api } from "../api";
 import { STATE_VALUES, Sankey, genericLabel, installStyles, nodeValue, percent, share, type FlowLink, type FlowNode, type FlowTarget } from "../charts/sankey";
 import { ADOPTION_STATES, STATE_LABEL, buildHash, serializeFilter, skillName, type Route, type ViewProps } from "../state";
 import { AnalysisEmpty, AnalysisError, AnalysisToolbar, conditions, useAnalysisReport } from "../components/analysis";
+import { StatusMessage } from "../foundation/widgets/messages";
 
 // Flow view: Sankey (>= TABLE_THRESHOLD sessions) or the "Top paths" table, each switchable.
 // Clicks map to the shared Filter: skill node -> `skill`, outcome node -> `state`, band -> both.
@@ -267,7 +268,7 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
       <header class="page-title">{embedded ? <h2>흐름</h2> : <h1>흐름</h1>}<p>작업 유형에서 스킬과 요청 상태로 이어지는 기록</p></header>
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
       <Segmented label="단위" value={unit} options={FLOW_UNITS.map(value => ({ value, label: UNIT_LABEL[value] }))} onChange={setUnit} />
-      {report.busy && <p role="status">{dto ? `갱신 중: ${UNIT_LABEL[unit]} · ${conditions(route.filter)}` : "사용 흐름 집계 중…"}</p>}
+      {report.busy && <StatusMessage level="DEFAULT" announce message={dto ? `갱신 중: ${UNIT_LABEL[unit]} · ${conditions(route.filter)}` : "사용 흐름 집계 중…"} />}
       <AnalysisError error={report.error} title="사용 흐름을 불러올 수 없습니다" retry={report.refresh} />
       {body}
     </section>

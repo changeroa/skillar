@@ -10,6 +10,7 @@ import { Tree } from "./tree";
 import { Steps } from "./steps";
 import { formatStarted, specLabel, summaryFacts, flowSummary, flowsQuery, reportIndex, sessionInWindow, dateTimeFmt, workspaceFilter } from "./model";
 import { AnalysisError, conditions } from "../../components/analysis";
+import { StatusMessage } from "../../foundation/widgets/messages";
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 export function Header({ report, backHref, onRefresh, busy, embedded = false }: { report: FlowReportDto; backHref: string; onRefresh: () => void; busy: boolean; readonly embedded?: boolean }) {
   const Title = embedded ? "h2" : "h1";
@@ -129,18 +130,18 @@ export function WorkspaceView({ route, live, embedded = false, peek = false }: V
   if (error !== undefined && report === undefined) {
     return (
       <section class="ws analysis pe-console">
-        {embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}
+        <header class="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header>
         <AnalysisError error={error} title="이 워크플로를 불러올 수 없습니다" retry={() => setRefresh(n => n + 1)} />
         <a class="btn ws__backbtn" href={backHref}>작업 공간 목록으로</a>
       </section>
     );
   }
-  if (report === undefined) return <section class="ws analysis pe-console" aria-busy="true">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}<p role="status">작업 공간 보고서 읽는 중…</p></section>;
+  if (report === undefined) return <section class="ws analysis pe-console" aria-busy="true"><header class="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header><StatusMessage level="DEFAULT" announce message="작업 공간 보고서 읽는 중…" /></section>;
 
   const { findings, usageBySpan } = reportIndex(report);
   return (
     <section class="ws analysis pe-console" aria-busy={busy}>
-      {busy && <p role="status">갱신 중: {conditions(workspaceFilter(query))}</p>}
+      {busy && <StatusMessage level="DEFAULT" announce message={`갱신 중: ${conditions(workspaceFilter(query))}`} />}
       <p class="analysis-scope" data-result-conditions>{conditions(workspaceFilter(resultQuery))}</p>
       <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded || peek} />
       <AnalysisError error={error} title="이 워크플로를 새로 고칠 수 없습니다" retry={() => setRefresh(n => n + 1)} />

@@ -3,6 +3,24 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {comparePaint,availablePaint,plotPaintFields,iconPaintFields,chartPaintCoverage} from "../../scripts/uxb/widget-paint.mjs";
 const fixture=JSON.parse(readFileSync(new URL("./fixtures/widget-paint-source.json",import.meta.url),"utf8"));
+test("an explicitly unpainted source channel rejects added paint and hidden targets",()=>{
+ // Given a required, visible container whose reference background is transparent.
+ const paint={opacity:"1",effectiveOpacity:1,fillOpacity:"1",strokeOpacity:"1",dash:"none",backgroundColor:[0,0,0,0]};
+ const expected={channels:["backgroundColor"],unpainted:["backgroundColor"],paint};
+ const actual={...paint,visible:true};
+ // When the reference paint is compared with normal, added-paint and hidden states.
+ const normal=availablePaint(actual,expected);
+ const added=availablePaint({...actual,backgroundColor:[1,2,3,255]},expected);
+ const hidden=availablePaint({...actual,visible:false},expected);
+ const changedOpacity=availablePaint({...actual,opacity:"0"},expected);
+ const undeclared=availablePaint(actual,{...expected,unpainted:[]});
+ // Then absence of paint is required without dropping the target's visibility contract.
+ assert.equal(normal,true);
+ assert.equal(added,false);
+ assert.equal(hidden,false);
+ assert.equal(changedOpacity,false);
+ assert.equal(undeclared,false);
+});
 test("an empty or incomplete plot selector cannot certify a populated chart",()=>{
  const plots=["grid","axis","tick","series","line","point"].map(kind=>({kind}));
  assert.ok(chartPaintCoverage({svg:true,plots,activeSeries:2},"line").every(a=>a.pass));

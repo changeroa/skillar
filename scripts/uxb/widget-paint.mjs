@@ -1,18 +1,20 @@
 /** Browser-native paint observations; geometry/data are deliberately separate. */
 export function observePaint(node) {
   const style=getComputedStyle(node),box=node.getBoundingClientRect();
+  const canvas=document.createElement("canvas");canvas.width=canvas.height=1;
+  const context=canvas.getContext("2d",{willReadFrequently:true});
   const rgba=color=>{
     if(color==="none")return "none";
-    const canvas=document.createElement("canvas");canvas.width=canvas.height=1;
-    const context=canvas.getContext("2d",{willReadFrequently:true});
-    context.fillStyle=color;context.fillRect(0,0,1,1);
+    context.clearRect(0,0,1,1);context.fillStyle="transparent";context.fillStyle=color;context.fillRect(0,0,1,1);
     return [...context.getImageData(0,0,1,1).data];
   };
   let effectiveOpacity=1,visible=true;
   for(let current=node;current;current=current.parentElement){
     const s=getComputedStyle(current);
+    const clip=s.clip?.match(/-?[\d.]+px/g)?.map(parseFloat);
+    const fullyClipped=s.clipPath==="inset(50%)"||clip?.length===4&&(clip[1]<=clip[3]||clip[2]<=clip[0]);
     effectiveOpacity*=Number(s.opacity);
-    visible&&=s.display!=="none"&&s.visibility==="visible";
+    visible&&=s.display!=="none"&&s.visibility==="visible"&&!fullyClipped;
   }
   const drawnStroke=element=>{
     const s=getComputedStyle(element),stroke=rgba(s.stroke);
@@ -20,13 +22,29 @@ export function observePaint(node) {
   };
   const stroked=node instanceof SVGElement&&(drawnStroke(node)||[...node.querySelectorAll("path,line,polyline")].some(drawnStroke));
   const hasGeometry=box.width>0&&box.height>0||stroked&&(box.width>0||box.height>0);
+  const fill=rgba(style.fill);
+  let fillPainted=Array.isArray(fill)&&fill[3]>0&&Number(style.fillOpacity)>0;
+  if(fillPainted&&node instanceof SVGGeometryElement){
+    fillPainted=false;
+    if(visible&&effectiveOpacity>0&&hasGeometry&&node.localName!=="line"){
+      const bounds=node.getBBox(),length=node.getTotalLength();
+      const epsilon=Math.max(Math.min(bounds.width,bounds.height)*.0001,.000001);
+      for(let i=1;i<9&&length>0&&!fillPainted;i++){
+        const at=length*i/9,step=length*.0001,p=node.getPointAtLength(at);
+        const a=node.getPointAtLength(Math.max(0,at-step)),b=node.getPointAtLength(Math.min(length,at+step));
+        const norm=Math.hypot(b.x-a.x,b.y-a.y);
+        if(norm>0)for(const sign of [-1,1])
+          if(node.isPointInFill(new DOMPoint(p.x-sign*(b.y-a.y)/norm*epsilon,p.y+sign*(b.x-a.x)/norm*epsilon)))fillPainted=true;
+      }
+    }
+  }
   const shadowPainted=style.boxShadow!=="none"&&style.boxShadow.split(/,\s*(?![^()]*\))/).some(layer=>{
-    const color=layer.match(/rgba?\([^)]*\)/)?.[0],lengths=layer.replace(/rgba?\([^)]*\)/g,"").match(/-?[\d.]+px/g)??[];
+    const color=layer.match(/(?:rgba?|hsla?|lab|lch|oklab|oklch|color)\([^)]*\)/)?.[0],lengths=layer.replace(/(?:rgba?|hsla?|lab|lch|oklab|oklch|color)\([^)]*\)/g,"").match(/-?[\d.]+px/g)??[];
     return color&&rgba(color)[3]>0&&lengths.some(value=>parseFloat(value)!==0);
   });
   return {tag:node.localName,visible:visible&&effectiveOpacity>0&&hasGeometry,
     effectiveOpacity,width:box.width,height:box.height,text:node.textContent?.trim(),
-    fill:rgba(style.fill),stroke:rgba(style.stroke),strokeWidth:style.strokeWidth,
+    fill,fillPainted,stroke:rgba(style.stroke),strokeWidth:style.strokeWidth,
     fillOpacity:style.fillOpacity,strokeOpacity:style.strokeOpacity,opacity:style.opacity,
     dash:style.strokeDasharray,radius:style.r,color:rgba(style.color),backgroundColor:rgba(style.backgroundColor),
     borderColor:rgba(style.borderTopColor),borderWidth:style.borderTopWidth,
@@ -58,9 +76,13 @@ export function comparePaint(actual,reference,fields=plotPaintFields) {
 export function paintChannels(node,paint) {
   const channels=[],alpha=value=>Array.isArray(value)&&value[3]>0;
   if(node instanceof SVGElement){
-    if(["text","tspan"].includes(node.localName)){if(paint.text&&alpha(paint.fill))channels.push("fill");}
+    if(["text","tspan"].includes(node.localName)){
+      const text=[...node.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
+      if(text&&alpha(paint.fill))channels.push("fill");
+      if(text&&alpha(paint.stroke)&&parseFloat(paint.strokeWidth)>0)channels.push("stroke");
+    }
     else if(["path","rect","circle","line","polygon","polyline","ellipse"].includes(node.localName)){
-      if(alpha(paint.fill)&&!["line","path"].includes(node.localName))channels.push("fill");
+      if(alpha(paint.fill)&&paint.fillPainted&&node.localName!=="line")channels.push("fill");
       if(alpha(paint.stroke)&&parseFloat(paint.strokeWidth)>0)channels.push("stroke");
     }
   }else{
@@ -70,13 +92,25 @@ export function paintChannels(node,paint) {
     for(const side of ["Right","Bottom","Left"])if(alpha(paint[`border${side}Color`])&&parseFloat(paint[`border${side}Width`])>0)channels.push(`border${side}Color`);
     if(paint.backgroundImage!=="none")channels.push("backgroundImage");
     if(paint.shadowPainted)channels.push("boxShadow");
-    for(const key of ["before","after"])if(paint.pseudo[key].content&&!["none","normal"].includes(paint.pseudo[key].content)&&(paint.pseudo[key].content!=='""'||alpha(paint.pseudo[key].backgroundColor)||paint.pseudo[key].backgroundImage!=="none"))channels.push(`pseudo:${key}`);
+    for(const key of ["before","after"])if(paint.pseudo[key].display!=="none"&&paint.pseudo[key].visibility==="visible"&&Number(paint.pseudo[key].opacity)>0&&paint.pseudo[key].content&&!["none","normal"].includes(paint.pseudo[key].content)&&(paint.pseudo[key].content!=='""'||alpha(paint.pseudo[key].backgroundColor)||paint.pseudo[key].backgroundImage!=="none"))channels.push(`pseudo:${key}`);
     if(paint.display==="list-item"&&paint.listStyleType!=="none")channels.push("pseudo:marker");
   }
   return channels;
 }
 
 export function availablePaint(actual,expected) {
+  if (!actual || !expected || !actual.visible) return false;
+  if (expected.paint) {
+    const fields = ["opacity","effectiveOpacity","fillOpacity","strokeOpacity","dash",
+      ...expected.channels.flatMap(channel => channel.startsWith("pseudo:") ? ["pseudo"] :
+        channel === "marker" ? ["listStyleType","pseudo"] : [channel])];
+    if (expected.channels.includes("stroke")) fields.push("strokeWidth");
+    for (const channel of expected.channels.filter(channel => channel.startsWith("border") && channel.endsWith("Color")))
+      fields.push(channel.replace("Color","Width"));
+    if (!expected.channels.length || fields.some(field => !Object.hasOwn(expected.paint,field))) return false;
+  }
+  if (expected.paint && Object.entries(expected.paint).some(
+    ([field, value]) => value === undefined || JSON.stringify(actual[field]) !== JSON.stringify(value))) return false;
   return actual.visible&&expected.channels.every(channel=>{
     if(channel.startsWith("pseudo:")){
       const p=actual.pseudo[channel.slice(7)];
@@ -87,6 +121,7 @@ export function availablePaint(actual,expected) {
     if(channel==="boxShadow")return actual.shadowPainted;
     if(channel==="backgroundImage")return actual.backgroundImage!=="none";
     const value=actual[channel];
+    if(expected.unpainted?.includes(channel))return Boolean(expected.paint)&&Array.isArray(value)&&value[3]===0;
     return Array.isArray(value)&&value[3]>0&&
       (channel!=="stroke"||Number(actual.strokeOpacity)>0&&parseFloat(actual.strokeWidth)>0)&&
       (channel!=="fill"||Number(actual.fillOpacity)>0)&&

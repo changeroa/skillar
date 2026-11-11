@@ -53,7 +53,7 @@ test("unavailable traces do not become zero request measurements", async t => {
   views.configureApi({ ...base(), sessions: async () => [fixtures.sessions[0]], trace: async () => { throw new Error("synthetic trace unavailable"); } });
   const props = { route: { view: "dashboard", filter: {} }, live: { state: "paused", seq: 0 }, navigate() {} };
   const { dom, container } = await mount(t, views.DashboardView, props);
-  const metrics = () => all(container, node => (node.getAttribute("class") ?? "").split(/\s+/).includes("analysis-number"));
+  const metrics = () => all(container, node => (node.getAttribute("class") ?? "").split(/\s+/).includes("lf-metric__value"));
   await waitFor(dom, () => metrics().length === 4, "dashboard request metrics");
   assert.deepEqual([metrics()[1].textContent, metrics()[2].textContent], ["미측정", "미측정"]);
 });

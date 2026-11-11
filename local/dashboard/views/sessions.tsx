@@ -15,6 +15,7 @@ import { readSkills, sortSessions } from "./sessions/model";
 import { sessionsStyles } from "./sessions/styles";
 import { useNarrow } from "../components/use-narrow";
 import { SessionFilterSheet } from "./sessions/filter-sheet";
+import { Alert, EmptyState, StatusMessage } from "../foundation/widgets/messages";
 
 const USAGE_CSS = `
 .usage { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0; color: var(--ink-2); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
@@ -106,19 +107,18 @@ function When({ row }: { row: SessionListRow }) {
 
 function WaitingEmpty({ stats }: { stats: Stats }) {
   if (api.mode === "cloud") return (
-    <section class="empty" aria-live="polite">
-      <h2>이 기록에는 활동이 없습니다</h2>
-      <p>출처 기기에서 세션을 시작한 뒤 최신 기록을 올리고 출처를 다시 불러오세요.</p>
+    <section aria-live="polite">
+      <EmptyState title="이 기록에는 활동이 없습니다"
+        description="출처 기기에서 세션을 시작한 뒤 최신 기록을 올리고 출처를 다시 불러오세요." />
     </section>
   );
   const { ingest } = stats;
   return (
-    <section class="empty" aria-live="polite">
-      <h2>첫 이벤트를 기다리고 있습니다</h2>
-      <p>
+    <section class="session-waiting" aria-live="polite">
+      <EmptyState title="첫 이벤트를 기다리고 있습니다" action={<p>
         아직 이벤트를 보낸 실행 환경이 없습니다. 연결된 실행 환경에서 세션을 시작하거나
         {" "}<code class="cmd">skillar doctor</code>로 연결 상태를 확인하세요.
-      </p>
+      </p>} />
       <dl class="checklist">
         {RUNTIME_IDS.filter((id) => id !== "unknown").map((id) => {
           const ts = stats.lastEventByRuntime[id];
@@ -150,21 +150,17 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
 
 function FilteredEmpty({ route, navigate }: { route: Route; navigate: ViewProps["navigate"] }) {
   return (
-    <section class="empty">
-      <h2>조건에 맞는 세션이 없습니다</h2>
-      <p>기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다.</p>
-      <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 해제</button>
-    </section>
+    <EmptyState title="조건에 맞는 세션이 없습니다"
+      description="기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다."
+      action={<button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 해제</button>} />
   );
 }
 
 function NoSessionsEmpty() {
   return (
-    <section class="empty">
-      <h2>아직 기록된 세션이 없습니다</h2>
-      {api.mode === "cloud" ? <p>올린 기록에 이벤트는 있지만 세션은 없습니다. 출처 기기에서 최신 기록을 올리고 출처를 다시 불러오세요.</p> :
-        <p>이벤트는 도착했지만 세션을 시작한 이벤트가 없습니다. 연결된 실행 환경에 요청문을 입력하거나 <code class="cmd">skillar doctor</code>를 실행하세요.</p>}
-    </section>
+    <EmptyState title="아직 기록된 세션이 없습니다"
+      description={api.mode === "cloud" ? "올린 기록에 이벤트는 있지만 세션은 없습니다. 출처 기기에서 최신 기록을 올리고 출처를 다시 불러오세요." : undefined}
+      action={api.mode !== "cloud" ? <p>이벤트는 도착했지만 세션을 시작한 이벤트가 없습니다. 연결된 실행 환경에 요청문을 입력하거나 <code class="cmd">skillar doctor</code>를 실행하세요.</p> : undefined} />
   );
 }
 
@@ -218,22 +214,21 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
     return () => { cancelled = true; };
   }, [filterKey, refresh]);
 
-  const failure = error && <div class="notice" role="alert">
-    <p>{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+  const failure = error && <Alert variant="destructive" announce action={
     <button type="button" class="btn" onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
-  </div>;
+  }>{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</Alert>;
   if (detail && error) return <section class="session-picker" role="group" aria-label="세션 목록 다시 시도" tabIndex={0} aria-busy={busy}
     onKeyDown={event => {
       if (event.key !== "Enter") return;
       event.preventDefault(); setError(undefined); setRefresh(n => n + 1);
     }}>
-    <p role="alert">{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</p>
+    <StatusMessage level="ERROR" announce message={error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"} />
     <p>엔터 키로 목록을 다시 불러올 수 있습니다.</p>
     <button type="button" class="btn" tabIndex={-1} onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
   </section>;
   if (detail) return <section aria-busy={busy}>
     {failure}
-    {busy && <p role="status">세션 불러오는 중…</p>}
+    {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
     {rows && <div class="session-picker" role="listbox" aria-label="세션 목록" tabIndex={0}
       aria-activedescendant={rows.some(row => row.id === active) ? `session-option-${encodeURIComponent(active ?? "")}` : undefined}
       onKeyDown={event => {
@@ -285,12 +280,11 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
     <section class="sessions-console pe-console" data-pe-screen="sessions-table" data-peek={Boolean(route.peek)} aria-busy={busy}>
       <div class="page-title">
         <Title>세션</Title>
-        <p>세션 사용 기록</p>
       </div>
       <SessionToolbar route={route} navigate={navigate} count={rows?.length} facetsOpen={facetsOpen} sheet={narrow}
         toggleFacets={() => setFacetsOpen(value => !value)} />
       {failure}
-      {busy && <p role="status">세션 불러오는 중…</p>}
+      {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
       <div class="sessions-body" data-facets-open={facetsOpen}>
         {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
         <Results class="session-results" aria-label="세션 기록" tabIndex={-1}>

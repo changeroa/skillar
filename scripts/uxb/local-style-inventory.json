@@ -1,0 +1,1055 @@
+{
+  "provenance": "Required ready component profiles from reviewed 6bf20ff screen manifest; selecting zero or hidden nodes is a failure.",
+  "cases": {
+    "local-sessions-1440-light": [
+      ".sessions-console .page-title :is(h1,h2)",
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
+    ],
+    "local-sessions-1440-dark": [
+      ".sessions-console .page-title :is(h1,h2)",
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
+    ],
+    "local-sessions-390-light": [
+      ".sessions-console .page-title :is(h1,h2)"
+    ],
+    "local-sessions-390-dark": [
+      ".sessions-console .page-title :is(h1,h2)"
+    ],
+    "local-sessions-peek-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "local-sessions-peek-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "local-sessions-peek-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "local-sessions-peek-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "local-session-detail-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "local-session-detail-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "local-session-detail-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "local-session-detail-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "local-session-timeline-1440-light": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "local-session-timeline-1440-dark": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "local-session-timeline-390-light": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "local-session-timeline-390-dark": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "local-session-json-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "local-session-json-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "local-session-json-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "local-session-json-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "local-analysis-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".lf-card",
+      ".lf-card__title",
+      ".lf-card__header",
+      ".lf-card__content",
+      ".lf-metric__value",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-analysis-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".lf-card",
+      ".lf-card__title",
+      ".lf-card__header",
+      ".lf-card__content",
+      ".lf-metric__value",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-analysis-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".lf-card",
+      ".lf-card__title",
+      ".lf-card__header",
+      ".lf-card__content",
+      ".lf-metric__value",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-analysis-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".lf-card",
+      ".lf-card__title",
+      ".lf-card__header",
+      ".lf-card__content",
+      ".lf-metric__value",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-flow-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "local-flow-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "local-flow-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "local-flow-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "local-heatmap-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "local-heatmap-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "local-heatmap-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "local-heatmap-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "local-workspaces-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-workspaces-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-workspaces-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-workspaces-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "local-workspace-peek-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-peek-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-peek-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-peek-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-detail-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-detail-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-detail-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "local-workspace-detail-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-sessions-1440-light": [
+      ".sessions-console .page-title :is(h1,h2)",
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
+    ],
+    "hosted-sessions-1440-dark": [
+      ".sessions-console .page-title :is(h1,h2)",
+      ".session-table th",
+      ".session-table .lf-table-sort",
+      ".session-table .lf-table-sort>span"
+    ],
+    "hosted-sessions-390-light": [
+      ".sessions-console .page-title :is(h1,h2)"
+    ],
+    "hosted-sessions-390-dark": [
+      ".sessions-console .page-title :is(h1,h2)"
+    ],
+    "hosted-sessions-peek-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "hosted-sessions-peek-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "hosted-sessions-peek-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "hosted-sessions-peek-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]"
+    ],
+    "hosted-session-detail-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "hosted-session-detail-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "hosted-session-detail-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "hosted-session-detail-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]"
+    ],
+    "hosted-session-timeline-1440-light": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "hosted-session-timeline-1440-dark": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "hosted-session-timeline-390-light": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "hosted-session-timeline-390-dark": [
+      "[role=gridcell] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary"
+    ],
+    "hosted-session-json-1440-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "hosted-session-json-1440-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "hosted-session-json-390-light": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "hosted-session-json-390-dark": [
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind",
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind",
+      ".trace-event-row time",
+      ".trace-event-row__summary",
+      "[role=treeitem][aria-selected=false]",
+      "[role=treeitem][aria-selected=true]",
+      ".json-line code",
+      ".json-value[data-json-type=string]",
+      ".json-value-preview[data-json-type=string]"
+    ],
+    "hosted-flow-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "hosted-flow-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "hosted-flow-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "hosted-flow-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".flow__chart"
+    ],
+    "hosted-heatmap-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "hosted-heatmap-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "hosted-heatmap-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "hosted-heatmap-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".seg__btn,.seg__b",
+      ".hmc",
+      ".hmc__title"
+    ],
+    "hosted-workspaces-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "hosted-workspaces-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "hosted-workspaces-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "hosted-workspaces-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".analysis-toolbar .lf-button",
+      ".analysis-table th"
+    ],
+    "hosted-workspace-peek-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-peek-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-peek-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-peek-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-detail-1440-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-detail-1440-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-detail-390-light": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ],
+    "hosted-workspace-detail-390-dark": [
+      ".analysis.pe-console>header>:is(h1,h2)",
+      ".ws .card"
+    ]
+  },
+  "counts": {
+    "local-sessions-1440-light": {
+      ".sessions-console .page-title :is(h1,h2)": 1,
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
+    },
+    "local-sessions-1440-dark": {
+      ".sessions-console .page-title :is(h1,h2)": 1,
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
+    },
+    "local-sessions-390-light": {
+      ".sessions-console .page-title :is(h1,h2)": 1
+    },
+    "local-sessions-390-dark": {
+      ".sessions-console .page-title :is(h1,h2)": 1
+    },
+    "local-sessions-peek-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "local-sessions-peek-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "local-sessions-peek-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "local-sessions-peek-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "local-session-detail-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "local-session-detail-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "local-session-detail-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "local-session-detail-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "local-session-timeline-1440-light": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "local-session-timeline-1440-dark": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "local-session-timeline-390-light": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "local-session-timeline-390-dark": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "local-session-json-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "local-session-json-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "local-session-json-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "local-session-json-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "local-analysis-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".lf-card": 7,
+      ".lf-card__title": 7,
+      ".lf-card__header": 7,
+      ".lf-card__content": 7,
+      ".lf-metric__value": 4,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-analysis-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".lf-card": 7,
+      ".lf-card__title": 7,
+      ".lf-card__header": 7,
+      ".lf-card__content": 7,
+      ".lf-metric__value": 4,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-analysis-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".lf-card": 7,
+      ".lf-card__title": 7,
+      ".lf-card__header": 7,
+      ".lf-card__content": 7,
+      ".lf-metric__value": 4,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-analysis-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".lf-card": 7,
+      ".lf-card__title": 7,
+      ".lf-card__header": 7,
+      ".lf-card__content": 7,
+      ".lf-metric__value": 4,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-flow-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "local-flow-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "local-flow-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "local-flow-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "local-heatmap-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "local-heatmap-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "local-heatmap-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "local-heatmap-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "local-workspaces-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-workspaces-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-workspaces-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-workspaces-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "local-workspace-peek-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-peek-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-peek-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-peek-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-detail-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-detail-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-detail-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "local-workspace-detail-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-sessions-1440-light": {
+      ".sessions-console .page-title :is(h1,h2)": 1,
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
+    },
+    "hosted-sessions-1440-dark": {
+      ".sessions-console .page-title :is(h1,h2)": 1,
+      ".session-table th": 7,
+      ".session-table .lf-table-sort": 5,
+      ".session-table .lf-table-sort>span": 5
+    },
+    "hosted-sessions-390-light": {
+      ".sessions-console .page-title :is(h1,h2)": 1
+    },
+    "hosted-sessions-390-dark": {
+      ".sessions-console .page-title :is(h1,h2)": 1
+    },
+    "hosted-sessions-peek-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "hosted-sessions-peek-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "hosted-sessions-peek-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "hosted-sessions-peek-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      ".trace-event-row time": 12,
+      ".trace-event-row__summary": 12,
+      "[role=treeitem][aria-selected=false]": 12
+    },
+    "hosted-session-detail-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "hosted-session-detail-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "hosted-session-detail-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "hosted-session-detail-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1
+    },
+    "hosted-session-timeline-1440-light": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "hosted-session-timeline-1440-dark": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "hosted-session-timeline-390-light": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "hosted-session-timeline-390-dark": {
+      "[role=gridcell] .trace-event-row__kind": 13,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13
+    },
+    "hosted-session-json-1440-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "hosted-session-json-1440-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "hosted-session-json-390-light": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "hosted-session-json-390-dark": {
+      "[role=treeitem][aria-selected=false] .trace-event-row__kind": 12,
+      "[role=treeitem][aria-selected=true] .trace-event-row__kind": 1,
+      ".trace-event-row time": 13,
+      ".trace-event-row__summary": 13,
+      "[role=treeitem][aria-selected=false]": 12,
+      "[role=treeitem][aria-selected=true]": 1,
+      ".json-line code": 10,
+      ".json-value[data-json-type=string]": 3,
+      ".json-value-preview[data-json-type=string]": 1
+    },
+    "hosted-flow-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "hosted-flow-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "hosted-flow-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "hosted-flow-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".flow__chart": 1
+    },
+    "hosted-heatmap-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "hosted-heatmap-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "hosted-heatmap-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "hosted-heatmap-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".seg__btn,.seg__b": 4,
+      ".hmc": 2,
+      ".hmc__title": 2
+    },
+    "hosted-workspaces-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "hosted-workspaces-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "hosted-workspaces-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "hosted-workspaces-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".analysis-toolbar .lf-button": 1,
+      ".analysis-table th": 5
+    },
+    "hosted-workspace-peek-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-peek-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-peek-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-peek-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-detail-1440-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-detail-1440-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-detail-390-light": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    },
+    "hosted-workspace-detail-390-dark": {
+      ".analysis.pe-console>header>:is(h1,h2)": 1,
+      ".ws .card": 2
+    }
+  }
+}

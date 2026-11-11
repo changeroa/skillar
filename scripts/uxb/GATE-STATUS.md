@@ -1,3 +1,121 @@
+# PR-7 interaction paint correction
+
+PR: https://github.com/changeroa/skillar/pull/106
+
+Current correction verification:
+
+- 264 normal interaction cases pass 7,920 source-field comparisons and field corruptions, 808 fixed painted descendants and 6,216 rejected descendant corruptions.
+- All 16 Tree/Timeline hover cases reject hidden child paths while the row stays hovered and every computed parent field remains unchanged.
+- Four real Demo disabled-outline references replace the four MIT state exceptions. Both native renderers pass all 8 cases and 240 style comparisons; the owner's 32/44px target remains absolute.
+- All 84 ready source contexts pass 63,360 field comparisons. Newly exposed native differences include the actual selected tab-indicator shadow and Oklab selected-interval ring ink.
+- Ready fixed paint passes 32,980 measurements and 119,250 corruptions across 84 cases. All 336 fixed case memberships and every part/channel remain required; 12 phone/desktop source-ink splits give 236 templates.
+- All 252 non-ready contexts pass 13,824 source comparisons, 12,960 source corruptions, 6,720 fixed painted parts and 46,150 paint corruptions. Their after-build top/end frames were refreshed; the complete before/after ledger passes 504/504 contexts.
+- The preserved PR-5 validator passes 520 cases, 40,860 assertions and 21,372 corruptions with `bootstrap: false`.
+- Site tests pass 506/506; both production builds and local typecheck pass. Release scanning finds zero forbidden fixture/reference bytes or imports, with equal NOTICE copies.
+- `final-audit.json` checks current machine receipts and original-input board hashes. `final-ci.json` records the exact published head and terminal check URLs. Independent approval remains lead-owned; the older receipts below are historical.
+
+## Historical takeover verification after the 6bf20ff review
+
+Rebased onto merged PR-6 `b8b1d62100b7fcdf552494bb97ca5910f9475a18`.
+Verified corrections were pushed at each milestone through `82a5ca4`.
+The exact final HEAD and its CI check URLs are recorded in `pr-7/final-ci.json`.
+The historical ledgers below are preserved; their old PR-7 counts are not current approvals.
+
+Completed machine evidence:
+
+- Ready source fields: 84 cases, 46,464 exact field comparisons and 46,464 rejected field corruptions, with every visible required target counted.
+- Interaction source fields: 264 cases, 5,808 comparisons and 5,808 rejected field corruptions; 264 actual target removals fail; eight fractional-origin/DPR/scroll focus corruptions fail.
+- Ready fixed paint/source comparisons: 84 cases, 32,980 normal measurements and 119,250 rejected real DOM paint/type corruptions.
+- Loading/error/empty: 504 before/after cases; 252 after cases provide 10,368 source-style comparisons, 9,504 rejected style corruptions, 6,720 fixed painted parts and 46,150 rejected paint corruptions. All 1,008 state frames contain visible native text.
+- Local typecheck and both production builds pass. Site tests pass 497/497. Local tests pass 997/998 with the unchanged pre-existing `/tmp/h` ENOTDIR; standalone performance passes 1/1.
+- Release scan: local dist 134 files, hosted dist 52, dry-run pack 174; 94 local and 290 hosted contributing modules, zero forbidden fixture/gallery/reference imports, equal NOTICE copies.
+
+| Gate | Result | Final evidence |
+| --- | --- | --- |
+| G1 source/style/paint | PASS | Above source and fixed-membership matrices; JSON adds 8 contexts, 32 visible leaves, 736 field/color comparisons and 736 rejected corruptions. Required properties, targets and cases fail closed. |
+| G2 actual screens | PASS | 252 ready and 504 state before/after contexts; 1,512 visible top/end PNGs, 756 regenerated source/before/after boards with original-input hashes and unmasked diagnostic pixel diffs. All 14 mobile MIT references were recaptured at 390x844, DPR 3 and scale 1. |
+| G3 keyboard/ARIA/owner size/focus | PASS | 4 functional keyboard cases, 88 desktop and 56 phone trace targets, 4 phone closure paths; 252 non-ready contexts with 1,292 painted-focus targets and 1,096 rejected 60px size corruptions. Eight fractional-origin/DPR/scroll corruptions reject 1px or white indicators. |
+| G4 original structure | PASS | 8 home/empty width/theme probes retain the original assertions. Home R4 remains N.A.; actual native peek/modal behavior is covered separately by G3. The merged Card wrapper selector was updated without weakening the expected 5 connection rows. |
+| G5 tests/build | EXPLAINED | Site 497/497; local 997/998 with the unchanged `/tmp/h` ENOTDIR; standalone performance 1/1; local typecheck and both builds pass. Exact final-head CI is a separate publication receipt. |
+| G6 license/package/release exclusion | PASS | Dist/pack counts above; zero forbidden contributors/content and equal NOTICE copies. The new trace specimen stays in development HTML and the existing separate dashboard TypeScript project. |
+| G7 deployment | NOT RUN | Owner-gated. No deployment or merge was requested or performed. |
+
+The preserved PR-5 browser matrix passes all 520 cases and 40,860 assertions,
+with 21,372 rejected real DOM corruptions, zero failures and `bootstrap: false`.
+`local-paint-inventory.json` fixes all 336 required case memberships in 224
+templates; the normal gate never regenerates or discovers its required set.
+
+Stricter gates exposed and fixed complete font/spacing/frame recipes, mobile
+workspace-title wrapping/overlap, widget retry indicators erased by an overly
+broad outline reset, and dark numeric/boolean/null JSON ink. The latter updates
+only 8 fixed native paint references from the real pinned source color. The final
+84-case paint run and affected real JSON screen captures were repeated after it.
+Failure receipts are retained as `widget-focus-failure-proof.json` and
+`json-scalar-failure-proof.json`; independent review remains lead-owned.
+
+Evidence root:
+`/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-7`.
+`final-audit.json` verifies exact membership, all acceptance/mutation verdicts,
+PNG dimensions, source/code hashes, board-input freshness, package contents and
+NOTICE equality. `final-ci.json` pins publication to the exact final HEAD.
+
+## Conflict decisions
+
+- `api.ts`: retain the merged `configureApi` disposal contract and guard fixture imports themselves against production emission; exactly one exported API binding.
+- `focus-paint.mjs`: retain native Select wrapper ownership and the real checkbox proxy only when present; preserve merged sizing/focus contracts. Fractional-pixel capture is corrected using document clip coordinates, actual viewport capture and CSS-pixel centres. The unchanged predicate rejects 1px and white rings at DPR 1/3 and scroll 0/53.
+- `GATE-STATUS.md`: preserve the complete merged PR-6 ledger and historical PR-7 evidence; the takeover section supersedes failed old counts.
+
+## Individually bounded pinned-MIT states
+
+Source: `69181812b87169df157841fce1314ec96ecd2c5a`. All entries are actual pinned MIT renders, not Demo captures or hand-built substitutes. Read-only route evidence is in `source-state-reachability.md`, `cert-source.json`, `state-references.json` and `source-loading.json`. Available Demo components remain the primary reference. The unused ghost-capture exploration is not included in passing evidence.
+
+| Exact state ID | Checked read-only routes | Reason for isolated reference |
+| --- | --- | --- |
+| `mit-Alert-error-1440-light` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-1440-light` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-1440-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-1440-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-1440-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-light` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
+| `mit-Alert-error-1440-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-1440-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-1440-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-1440-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-1440-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-1440-dark` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
+| `mit-Alert-error-390-light` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-390-light` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-390-light` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-390-light` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-390-light` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-light` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
+| `mit-Alert-error-390-dark` | /traces; trace peek; project Home | Successful read-only routes expose no matching error Alert. Inducing a failure was not permitted. |
+| `mit-StatusMessage-loading-390-dark` | /traces; trace peek; project Home | Observed loading is Skeleton/spinner, not the native text-status recipe. |
+| `mit-Empty-empty-390-dark` | /skills; /traces; trace peek; project Home | /skills shows an empty context; populated matched routes expose no TopicsEmptyState recipe. |
+| `mit-Skeleton-loading-390-dark` | /traces; trace peek; project Home | Real loading frames are retained; the isolated pinned primitive supplements their transient geometry. |
+| `mit-Json-mixed-primitives-390-dark` | trace Metadata/Raw desktop; trace Data phone | The matched record has strings/objects, not the mixed number/boolean/null specimen; native disclosure geometry is explicitly adapted. |
+| `mit-Json-collapsed-390-dark` | trace Metadata/Raw desktop; trace Data phone | Collapsed JSON is reachable and uses actual Demo captures. This isolated pinned primitive is supplementary, not an unavailable-state replacement. |
+
+## Environment findings
+
+The four disabled-outline cases now use real read-only Demo pagination buttons
+(`Go to previous page`) at `/traces?viewId=cmo6yrbti0006ad07v1r1xyva&orderBy=order-DESC_column-startTime`.
+`disabled-outline-demo/records.json` contains all four width/theme records,
+hidden-footer assertions, disabled-state assertions and nonblank original crops.
+`state-references.json` names them `demo-Button-disabled-*`; none is an
+unavailable-state MIT exception. Source border, background and opacity are
+primary. The padded text-button content/padding remains an explicitly bounded
+pinned-MIT supplement; the product keeps the owner's absolute 32/44px target.
+The source phone pagination button is 32px and does not override that target.
+
+The local suite has one pre-existing ENOTDIR because `/tmp/h` is a regular file. Neither that file nor the failing test was changed. The standalone performance test passes separately.
+
+The evidence proxy previously left upstream SSE fetches open after page navigation. Its 256-request fetch pool became saturated (518 TCP descriptors including both sides), while a direct internal backend still returned HTTP 200. Propagating the downstream request abort signal cancels abandoned upstream streams. This was a fixture-server failure, not a frozen Chrome session or a product failure.
+
+Independent gate review remains lead-owned; this lane provides implementer evidence and does not self-approve the PR.
+
+
+---
 # PR-6 hosted screens
 
 Draft PR: https://github.com/changeroa/skillar/pull/105
@@ -199,6 +317,43 @@ The existing shell's wrapping breadcrumb/version controls remain unchanged.
   on duplicating account information in unrelated main views remains intact.
 
 ## Historical PR-5 record (not the current PR's gate verdict)
+# PR-7 local screens — current implementer status
+
+Draft PR: https://github.com/changeroa/skillar/pull/106
+Branch: `uxb/pr-7-local`; base: `ba64d91bfd000add5553aadf2640be077678e2f1`.
+Evidence: `/Users/iyen/.dori/state/lane-results/skillar-ux-phase-b-20261109/pr-7/`.
+Exact published head and terminal CI: `publication.json` and `final-ci.json`.
+This is implementer evidence, not independent approval. No merge or production deployment.
+
+| Gate | Verdict | Evidence / remaining cases |
+|---|---|---|
+| 1. Component visual diff | **PASS** | 84 real-page component cases: 22,430 normal measurements pass; 25,368 actually applied paint/type mutations are rejected. 252 non-ready cases add 2,692 source-style measurements, 2,692 rejected style mutations and 11,706 rejected paint-channel mutations. Live Demo references, labelled actual pinned MIT state exceptions and native/owner adaptations are separate. No raw raster difference is relabelled as pixel equality. |
+| 2. Screen comparison | **PASS** | 252 default cases / 504 PNGs and 504 before/after loading/error/empty cases / 1,008 PNGs across all 21 supported standalone/real-embed contexts. Complete top/end Demo/before/after boards: 252 default and 504 state boards. Required 390/1440 light/dark plus 1920 default. Actual viewport, overflow, state visibility and exact 32/44px standard controls pass; all v3 composition differences are documented. |
+| 3. Keyboard / ARIA | **PASS** | Four trusted tree/grid/identity cases; 88 desktop + 56 phone trace targets pass focus/size checks and four phone Escape restorations pass. Non-ready matrix adds 1,292 painted-focus/ring-removal checks and 1,116 actually applied 60px size rejections. Chart geometry remains N.A. for toolbar height, never for focus. Real hosted embed is mounted, not substituted. |
+| 4. R1–R7 structure | **PASS** | Original eight-case full/empty desktop/phone light/dark assertions pass (R4 N.A. on home). Thirteen API/route/data/chart-geometry files are byte-identical. Keyed-body and JSON-disclosure regressions pass. |
+| 5. Build / tests | **FAIL locally** | Site 450/450, both builds, local typecheck and strict measurement/paint regressions pass. Local full suite: 995 tests, 994 pass; known `cli-init.test.mjs:159` ENOTDIR from the pre-existing `/tmp/h` file. Nothing is skipped, weakened or deleted. Exact final-head site/runtime CI is recorded separately in `final-ci.json`; it does not erase this local failure. |
+| 6. License | **PASS** | No new dependencies. npm dry-run pack includes NOTICE; all public/local/built NOTICE copies match. Source provenance and exact pinned MIT SHA are recorded. |
+| 7. Deployment | **PASS** | **not deployed; deploy gated on owner** for production. Only authorized `uxb-pr-7` preview, recorded in `publication.json`; no local deployment. |
+
+Full ledger and strict accounting: `gate.md`, `final-audit.json` and `validator-audit.md` in the evidence root.
+Source reachability and all v3 differences: `source-state-reachability.md` and `wireframe-deviations.md`.
+Release audit: 134 local dist files, 51 hosted dist files, 174 package entries,
+94 local and 289 hosted contributing modules; zero development/fixture/gallery/QA hits.
+Standalone analysis has no hosted embed tab; the real embed's four supported tabs
+and their detail/peek states were exercised. KST, zero baselines, APIs, data,
+routes, hosted screens, server and worker implementations are unchanged.
+
+All three new inventory components have read-only Demo captures. No whole-component
+zero-capture exception was used. Account footers are hidden and asserted hidden.
+State-only source exceptions render actual pinned MIT code and are explicitly labelled
+as such; ready Demo context is never counted as a Demo error. No Demo writes,
+settings changes or induced failures were performed.
+Independent review is lead-owned; nested reviewers are disabled in this lane.
+These are implementer verdicts. The PR remains draft; no merge or production deployment.
+
+## Historical PR-5 ledger (not current PR-7 certification)
+
+### PR-5 widgets and charts: paint-review correction
 
 Draft PR: https://github.com/changeroa/skillar/pull/104
 Branch: `uxb/pr-5-widgets`. Merged PR-4 base: `431fb9b0351c6f82eaacb16e36b32f7c7c658f32`.

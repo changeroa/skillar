@@ -15,6 +15,8 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
   const open = selected && (!narrow || route.event !== undefined);
   const domId = encodeURIComponent(id);
   const raw = route.format === "raw";
+  const rawVisited = useRef(false);
+  if (open && raw) rawVisited.current = true;
   const close = () => navigate({ ...route, event: undefined });
   useLayoutEffect(() => {
     if (!open || !narrow) return;
@@ -58,7 +60,7 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
     </div>
     <div id={`${domId}-content`} role="tabpanel" aria-labelledby={`${domId}-${route.attributes ? "attributes" : "preview"}-tab`}>
       <div class="event-inspector__preview" data-source-key={id} hidden={Boolean(route.attributes) || raw}>{children}</div>
-      {open && raw && <JsonViewer value={value} />}
+      {rawVisited.current && <div hidden={!raw}><JsonViewer value={value} /></div>}
       {open && !raw && route.attributes && <dl class="event-attributes">{Object.entries(value).map(([key, item]) =>
         <div key={key}><dt><code>{key}</code></dt><dd><pre>{typeof item === "string" ? item : JSON.stringify(item, null, 2)}</pre></dd></div>)}</dl>}
     </div>

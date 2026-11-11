@@ -14,10 +14,10 @@ function JsonNode({ name, value, depth }: { readonly name?: string; readonly val
   }
   const text = JSON.stringify(value);
   if (text.length > 160) return <details class="json-long">
-    <summary class="json-line"><code>{label}{text.slice(0, 160)}…</code></summary>
-    <div class="json-line"><code class="json-value">{text}</code></div>
+    <summary class="json-line"><code>{label}<span class="json-value-preview" data-json-type={typeof value}>{text.slice(0, 160)}…</span></code></summary>
+    <div class="json-line"><code class="json-value" data-json-type={typeof value}>{text}</code></div>
   </details>;
-  return <div class="json-line"><code>{label}<span class="json-value">{text}</span></code></div>;
+  return <div class="json-line"><code>{label}<span class="json-value" data-json-type={value === null ? "null" : typeof value}>{text}</span></code></div>;
 }
 
 export function JsonViewer({ value }: { readonly value: object }) {

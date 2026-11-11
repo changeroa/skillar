@@ -1,5 +1,73 @@
 # skillar Dashboard Design System
 
+## Phase B local screens (PR-7)
+
+The local v3 wireframes supply screen composition; the merged foundation owns
+control, table, shell and widget paint. This section supersedes legacy screen
+geometry below. Standalone and the real hosted `LocalViews` embed consume the
+same components. No host shell, API, filter or route contract changes.
+
+Screen content uses `--lf-background`, `--lf-foreground`, muted foreground,
+border, accent and card tokens, system sans at 13px/20px and mono at 12px/18px.
+Cards retain the shared 8px radius and shadow; page gutters and split gaps are
+16px (12px on phones). Interactive controls are exactly 32px with mouse and
+44px on coarse pointers or phone widths. Dense event rows use the same heights.
+Selected events use a neutral muted wash and check glyph, never an accent edge.
+Focus-visible uses the shared contrasting 2px ring and 2px clearance.
+Local screen focus overrides `--lf-ring` to `--lf-muted-foreground`: the
+source ring measured only 2.33:1 against selected rows. This owner accessibility
+override keeps the source hue while clearing the required 3:1 in both themes.
+Interaction paint is asserted independently of geometry: foreground, background,
+four border colours, opacity, outline/shadow ink and extent, text decoration and
+stroke dash. Segmented triggers retain transparent backgrounds and tertiary
+inactive ink; selection uses foreground ink and the existing check indicator.
+Desktop selected/held triggers use the source primary dark ink; phone triggers
+use the source underline variant's muted inactive and foreground selected ink.
+Native analysis table headers retain the source background token.
+Native analysis segments and event tabs retain manual keyboard activation.
+Focus keeps the real inactive ink/background and the owner's neutral focus
+indicator; pointer-active and selected paint use their separately measured
+source states. Source records retain the actual focus/activation observations.
+Native event tabs retain the inset selected indicator on phones. Its real
+desktop selected-state reference supplies the background and shadow:
+`--trace-tab-indicator-shadow` is `0 1px 3px 0 rgb(0 0 0 / 10%)`,
+`0 1px 2px -1px rgb(0 0 0 / 10%)` in light, with transparent ink in dark.
+Native filled sort carets use the measured header ink. Timeline tracks use
+the source border token and shared 1px frame stroke; interval/point fills use
+their actual observation palette, and selected marks retain the measured
+1px, 80%-foreground source ring in Oklab (the source mixing space).
+Tree and Timeline unselected containers share transparent paint and muted dark
+ink; their hover wash applies only to hover-capable pointers. JSON disclosure
+triggers retain the property syntax ink, transparent fill and no underline in
+standalone and hosted views. Native disabled tabs retain the shared .5 opacity.
+
+Trace tree exposes chronological root-level leaves: the source has no causal
+parent/child edges. It has one roving Tab stop; Up/Down, Home/End move focus,
+Enter/Space select. Left/Right on a leaf do not invent expansion. Timeline is
+a one-column grid of event cells with Up/Down and Ctrl+Home/End. Home/End
+stay within the current one-cell row, as the grid pattern requires.
+Focus and selection are independent. Switching tree/timeline changes semantics
+on the same keyed row nodes. Source event inspectors and JSON disclosures stay
+mounted when hidden, including format, selection and report updates.
+
+JSON uses native nested disclosure, mono keys/values, line numbers, shared
+CopyButton and muted code surface. Folding changes display only. Long recorded
+values wrap, retain selectable full content and copy without truncation.
+Syntax tokens from the public Demo's `react18-json-view` GitHub theme:
+`--trace-json-property` is light `#005cc5` / dark `#79b8ff` for keys,
+punctuation, numbers, booleans and null; `--trace-json-string` is light
+`#032f62` / dark `#9ecbff`. No third-party JSON renderer is imported.
+Timeline geometry retains actual offsets and measured intervals only.
+Trace geometry tokens are `--trace-icon-size:14px`, `--trace-interval-height:18px`,
+`--trace-point-size:4px` and `--trace-mark-radius:1px`, measured from Demo
+tree icons and dense timeline bars. Observation palette mapping uses existing
+`--lf-observation-*`: model calls=generation, tool/read actions=tool,
+search=retriever, prompt/skill intervals=span, errors=guardrail, lifecycle=event.
+Instantaneous events stay points; unmeasured durations never become bars.
+R7 chart baselines, zero ticks, KST and unknown measurements remain unchanged.
+Document owns page scroll; desktop event panes and mobile sheets retain their
+bounded scroll regions. No decorative motion or new accessibility debt.
+
 ## Phase B widgets (PR-5)
 
 The shared widget contract is the PR-5 section in `site/DESIGN.md`, including
@@ -133,6 +201,42 @@ capture/diff evidence lives under `scripts/uxb/`. Missing upstream captures or
 independent reviewers must be reported as unverified gates, never self-approved.
 
 ## Approved local analysis P-F (2026-11-05)
+
+PR-7 complete-field parity correction: event row containers inherit the Demo's
+16px/24px body typography and zero padding; kind labels retain 13px/20px and
+time/summary labels retain 12px/18px. Event rows and JSON parts use the shared
+border token even on zero-width sides. The owner 32/44px row height and visible
+keyboard ring remain the absolute sizing and focus contracts.
+Table headers use the Demo's 4px inset and 13px/20px strong text.
+Workspace title buttons keep the exact 32/44px height and truncate within their
+table cell; their full text remains the accessible button name.
+Native single-box flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type with
+CardHeader's 16px inset; their height remains content-driven. Analysis segments
+use the measured Tree tab's 16px inline inset, 13px line box, 600 weight and 4px
+radius. Zero-width border sides still use the border token.
+Analysis segments retain the native 2px outward keyboard outline. Shared outline
+buttons retain their source inset 2px shadow, with console muted-foreground ink
+for contrast. The console suppresses the hosted site's additional global button
+outline, so local and embedded buttons have the same single indicator.
+Buttons inside Card, Chart, Empty, Alert and Callout retain the widgets'
+outward primary-accent outline instead of the standalone button shadow.
+Trace Tree/Timeline choices use the measured segmented Tabs primitive, including
+the existing disabled Graph choice; no graph or parentage data is invented.
+Timeline rows share Tree's zero-border container recipe. Native JSON summaries
+retain 32/44px controls with a 12px/18px line box, zero inline inset and square
+corners in both standalone and hosted layouts.
+JSON strings retain the measured string ink; number, boolean and null leaves
+use the pinned JSON renderer's neutral light ink and `#79b8ff` dark ink. Null has its own paint
+selector rather than the object-container discriminator.
+Empty descriptions explicitly retain 13px/20px after the Empty root takes the
+source 16px/24px body type. Native peeks compose the source Peek's modal paint
+and shadow with the existing Card frame (1px on every side on desktop). Session
+peek is intrinsic-height inline on desktop and borderless 100dvh on phone;
+workspace peek retains its fixed 100dvh-minus-48px desktop / 100dvh phone
+geometry and 13px/20px DataTable body type. These are native layout contracts,
+not measurements copied from the Demo's different banner height.
+Both phone peeks are square, borderless full-viewport panels; the source mobile
+sheet's absent shadow is retained instead of painting a desktop shadow offscreen.
 
 The analysis screens reuse the P-E shell, controls, sheet and typography.
 The document owns vertical scrolling; charts and dense tables own labelled

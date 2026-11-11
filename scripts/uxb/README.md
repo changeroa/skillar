@@ -228,3 +228,73 @@ replace independent visual or accessibility review.
 Fixtures carry no user data. The page owns its existing scroll and control
 behavior. For async components, use a ready selector reflecting the settled
 state; there are no sleeps or retry loops. Tests run with `site/npm test`.
+
+## PR-7 complete-field certification
+
+The committed `local-style-inventory.json` and
+`local-state-style-inventory.json` name every required ready/non-ready target
+and its visible count. Missing, hidden or removed targets fail; intentionally
+collapsed descendants are represented by their own state, not discovered and
+silently omitted during validation.
+
+With the production local/hosted surface harness running on 5184:
+
+```sh
+node scripts/uxb/local-full-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
+node scripts/uxb/local-nonready-style.mjs "$PR7_EVIDENCE"
+node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
+```
+
+These commands require `OMOWRIGHT_HELPER` and the source records/real-surface
+loader in the evidence directory. They compare all 30 required fields: height,
+four paddings, font size/line height/weight, radius, four border colours/widths,
+outline colour/style/width/offset, painted shadow, ink/background/opacity,
+four text-decoration fields and dash. CSS Typed OM preserves
+intrinsic `auto` height instead of comparing unrelated fixture content heights.
+The owner 32/44px controls, native panel geometry and named source compositions
+are explicit in `local/dashboard/DESIGN.md`; no observed value becomes its own
+expected style. Transparent zero shadows and unpainted outlines are canonical
+non-paint, not tolerated painted differences.
+
+Tree, Timeline, JSON disclosure and view-tab states are driven through real
+hover, keyboard focus, pointer press, selection, disablement and collapse/expand.
+The fixed 264-case interaction matrix also checks analysis segments, analysis
+toolbar outline buttons and desktop session sorting controls. Phone session
+lists ship cards rather than sortable table headers; their absence is explicit.
+Loading/error/empty use the real product API boundary. Every field has a
+corruption probe, and removal uses the same missing-observation predicate.
+Focus raster probes cover fractional origins at DPR 1 and 3 and reject both
+1px and white indicators.
+
+`local-interaction-paint-inventory.json` fixes descendant membership and paint
+for every one of those 264 states, separately from the ready inventory.
+Missing, hidden, transparent, recoloured, resized-stroke, changed-opacity and
+changed-dash parts fail the same checker. Every hover SVG-path removal records
+that the row remains hovered and its computed parent fields stay unchanged.
+Native pseudo glyphs, counters and the inset tab indicator are also asserted;
+the selected indicator uses the real selected-state background and shadow.
+`INTERACTION_PAINT_DRAFT=1` is an explicit authoring mode: it independently
+checks source root/descendant recipes, writes an external review draft and
+exits 42. It never certifies or rewrites the committed inventory.
+
+`node scripts/uxb/local-disabled-style.mjs "$PR7_EVIDENCE"` compares both native
+renderers against the four real Demo disabled outline pagination captures.
+Border, background and opacity come from that live control. Text-button padding
+is a labelled pinned-MIT supplement; the absolute 32/44px owner target remains.
+
+`local-paint-inventory.json` separately freezes DOM counts, part indices/classes,
+channels and exact paint values (including ancestor opacity, channel opacities
+and dash). It preserves owner-native plot paint as well as shared components;
+source colour/icon/primitive comparisons remain separate source-parity checks.
+The normal audit never regenerates this inventory. An intentional source or
+owner-contract correction requires review of its inventory diff and a complete
+mutation rerun, not accepting a smaller discovered set.
+
+With the development galleries on site 5183/local 5184, run
+`node scripts/uxb/local-json-primitives.mjs "$PR7_EVIDENCE"` for all four JSON
+primitive types. Its fixture uses the actual `JsonViewer`; release-build tests
+must continue proving gallery fixtures are absent from shipped artifacts.
+Both development galleries expose the shared `?traces=1&primitives=1` specimen.
+This isolates the actual JsonViewer from other gallery specimens' phone dialogs.
+The site's
+native trace entry uses the existing separate dashboard TypeScript project.

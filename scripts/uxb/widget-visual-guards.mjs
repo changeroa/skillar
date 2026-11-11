@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { arm,signal,press } from "./trusted-keys.mjs";
+import { focusPaintOwner } from "./focus-paint.mjs";
 
 export async function focusWidgetControl(page,selector) {
   await page.evaluate(selector=>{
@@ -72,8 +73,8 @@ async function raster(page,bounds) {
 }
 
 export async function measureWidgetFocus(page,selector,stem) {
-  const context=await page.evaluate(selector=>{
-    const n=document.querySelector(selector),target=n.matches(".lf-select")?n.closest(".lf-select-wrap"):n;
+  const context=await page.evaluate(({selector,owner})=>{
+    const n=document.querySelector(selector),target=(0,eval)(`(${owner})`)(n);
     const rect=target.getBoundingClientRect(),dpr=devicePixelRatio;
     const x=Math.max(0,Math.floor((rect.left-8)*dpr)),y=Math.max(0,Math.floor((rect.top-8)*dpr));
     const width=Math.min(innerWidth*dpr,Math.ceil((rect.right+8)*dpr))-x;
@@ -81,16 +82,16 @@ export async function measureWidgetFocus(page,selector,stem) {
     return {focusVisible:n===document.activeElement&&n.matches(":focus-visible"),dpr,x,y,width,height,
       box:{left:rect.left*dpr-x,right:rect.right*dpr-x,top:rect.top*dpr-y,bottom:rect.bottom*dpr-y},
       name:n.getAttribute("aria-label")??n.textContent,point:n.hasAttribute("data-chart-point"),tabIndex:n.tabIndex};
-  },selector);
+  },{selector,owner:focusPaintOwner.toString()});
   const focused=await raster(page,context);
-  const originals=await page.evaluate(selector=>{
-    const n=document.querySelector(selector),target=n.matches(".lf-select")?n.closest(".lf-select-wrap"):n;
+  const originals=await page.evaluate(({selector,owner})=>{
+    const n=document.querySelector(selector),target=(0,eval)(`(${owner})`)(n);
     return [...new Set([n,target])].map((element,index)=>{
       element.dataset.focusPaintTarget=String(index);const old=element.getAttribute("style");
       element.style.setProperty("outline","none","important");element.style.setProperty("box-shadow","none","important");
       return {index,old};
     });
-  },selector);
+  },{selector,owner:focusPaintOwner.toString()});
   let removed;
   try {removed=await raster(page,context)}
   finally {await page.evaluate(originals=>{for(const {index,old}of originals){
