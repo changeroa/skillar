@@ -33,19 +33,31 @@ export async function verifyPaintObservation(page) {
 }
 
 /** Run in the browser; each removal is observed before its original style returns. */
-export function auditPaint(root, observe, channelsFor, available) {
+export function auditPaint(root, observe, channelsFor, available, required) {
+  if (!Array.isArray(required) || !required.length) throw Error("Missing committed paint inventory");
   const stable = document.createElement("style"), inventory = [], probes = [];
   stable.textContent = "*,*::before,*::after{transition:none!important;animation:none!important}";
   document.head.append(stable);
   try {
-    for (const [index, node] of [root, ...root.querySelectorAll("*")].entries()) {
+    const nodes = [root, ...root.querySelectorAll("*")];
+    for (const expected of required) {
+      const { index, tag, channels } = expected, node = nodes[index];
+      if (!node || node.localName !== tag) {
+        inventory.push({ index, tag, channels, baseline: { pass: false }, missing: true });
+        continue;
+      }
       const paint = observe(node);
-      if (!paint.visible) continue;
-      const channels = channelsFor(node, paint);
-      if (!channels.length) continue;
-      const expected = { channels, text: paint.text, marker: paint.listStyleType };
       const baseline = { pass: available(paint, expected) };
       inventory.push({ index, tag: node.localName, class: node.getAttribute("class"), paint, channels, baseline });
+      for (const [property, value] of [["opacity", ".37"], ["fill-opacity", ".39"], ["stroke-opacity", ".41"],
+        ["stroke-dasharray", "7px, 3px"], ["visibility", "hidden"]]) {
+        const old = node.getAttribute("style");
+        try {
+          node.style.setProperty(property, value, "important");
+          probes.push({ index, channel: property, baseline, mutated: { pass: available(observe(node), expected) },
+            applied: node.getAttribute("style") !== old });
+        } finally { if (old === null) node.removeAttribute("style"); else node.setAttribute("style", old); }
+      }
       for (const channel of channels) {
         const old = node.getAttribute("style"), css = document.createElement("style");
         try {
@@ -67,12 +79,12 @@ export function auditPaint(root, observe, channelsFor, available) {
   return { inventory, probes };
 }
 
-export async function auditPagePaint(page, scope) {
-  return page.evaluate(({ scope, audit, observer, channels, availability }) => {
+export async function auditPagePaint(page, scope, required) {
+  return page.evaluate(({ scope, audit, observer, channels, availability, required }) => {
     const root = document.querySelector(scope);
     if (!root) throw Error(`Missing paint root ${scope}`);
     const parse = source => (0, eval)(`(${source})`);
-    return parse(audit)(root, parse(observer), parse(channels), parse(availability));
-  }, { scope, audit: auditPaint.toString(), observer: observePaint.toString(),
+    return parse(audit)(root, parse(observer), parse(channels), parse(availability), required);
+  }, { scope, required, audit: auditPaint.toString(), observer: observePaint.toString(),
     channels: paintChannels.toString(), availability: availablePaint.toString() });
 }

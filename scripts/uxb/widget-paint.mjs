@@ -99,6 +99,9 @@ export function paintChannels(node,paint) {
 }
 
 export function availablePaint(actual,expected) {
+  if (!actual || !expected || !actual.visible) return false;
+  if (expected.paint && Object.entries(expected.paint).some(
+    ([field, value]) => value === undefined || JSON.stringify(actual[field]) !== JSON.stringify(value))) return false;
   return actual.visible&&expected.channels.every(channel=>{
     if(channel.startsWith("pseudo:")){
       const p=actual.pseudo[channel.slice(7)];
