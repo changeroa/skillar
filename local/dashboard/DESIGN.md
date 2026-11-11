@@ -184,8 +184,10 @@ PR-7 complete-field parity correction: event row containers inherit the Demo's
 time/summary labels retain 12px/18px. Event rows and JSON parts use the shared
 border token even on zero-width sides. The owner 32/44px row height and visible
 keyboard ring remain the absolute sizing and focus contracts.
-Table headers use the Demo's 4px inset and 13px/20px strong text. Native single-box
-flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type with
+Table headers use the Demo's 4px inset and 13px/20px strong text.
+Workspace title buttons keep the exact 32/44px height and truncate within their
+table cell; their full text remains the accessible button name.
+Native single-box flow/heatmap/workspace cards combine Card paint and inherited 16px/24px type with
 CardHeader's 16px inset; their height remains content-driven. Analysis segments
 use the measured Tree tab's 16px inline inset, 13px line box, 600 weight and 4px
 radius. Zero-width border sides still use the border token.
@@ -193,6 +195,8 @@ Analysis segments retain the native 2px outward keyboard outline. Shared outline
 buttons retain their source inset 2px shadow, with console muted-foreground ink
 for contrast. The console suppresses the hosted site's additional global button
 outline, so local and embedded buttons have the same single indicator.
+Buttons inside Card, Chart, Empty, Alert and Callout retain the widgets'
+outward primary-accent outline instead of the standalone button shadow.
 Trace Tree/Timeline choices use the measured segmented Tabs primitive, including
 the existing disabled Graph choice; no graph or parentage data is invented.
 Timeline rows share Tree's zero-border container recipe. Native JSON summaries

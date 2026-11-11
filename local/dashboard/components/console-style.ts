@@ -18,7 +18,7 @@ export function consoleStyles() {
 .pe-icon-button{width:var(--lf-control-height);padding:var(--lf-space-2)}
 .pe-copy .lf-icon-button{width:var(--lf-control-height);height:var(--lf-control-height);min-width:var(--lf-control-height);min-height:var(--lf-control-height)}
 .pe-console{--lf-ring:var(--lf-muted-foreground)}
-.pe-console .lf-button:focus-visible{outline-style:none;outline-offset:0}
+.pe-console .lf-button:not(:where(.lf-card,.lf-chart,.lf-empty,.lf-alert,.lf-callout) *):focus-visible{outline-style:none;outline-offset:0}
 .pe-button:focus-visible,.pe-console :is(button.btn,a.btn):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}
 .pe-button:disabled,.pe-console button.btn:disabled{opacity:var(--lf-opacity-disabled)}
 :is(.analysis,.sessions-console,.trace).pe-console details>summary{height:var(--lf-control-height);min-height:var(--lf-control-height);padding-block:0}

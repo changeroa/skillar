@@ -169,7 +169,7 @@ installStyles("analysis", `
 .analysis.pe-console .analysis-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);font-weight:var(--lf-weight-strong);line-height:var(--lf-leading-sm)}
 .analysis.pe-console .analysis-table th:first-child{padding-left:var(--lf-space-2)}
 .analysis.pe-console :is(.analysis-table th button,.analysis-table td>button,.analysis-table a,.paths__skill,.ws__back,.sess__link,.pane__sum,.turn__sum){min-height:var(--lf-control-height);min-width:var(--lf-control-height)}
-.analysis.pe-console .workspace-table .wsrow__title{height:var(--lf-control-height);white-space:nowrap}
+.analysis.pe-console .workspace-table .wsrow__title{display:block;width:100%;height:var(--lf-control-height);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .analysis.pe-console :is(.seg__btn,.seg__b){height:var(--lf-control-height);min-height:var(--lf-control-height);min-width:var(--lf-control-height);padding:0 var(--lf-space-4);border:0;border-color:var(--lf-border);border-radius:var(--lf-radius-sm);font-size:var(--lf-text-sm);line-height:var(--lf-text-sm);font-weight:var(--lf-weight-strong)}
 .analysis.pe-console :is(.hmc,.flow__paths,.flow__chart){border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
 .analysis.pe-console .hmc__title{font-size:var(--lf-text-base);line-height:var(--lf-leading-base);font-weight:var(--lf-weight-strong)}
