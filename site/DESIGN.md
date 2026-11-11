@@ -1,5 +1,42 @@
 # skillar.sh
 
+## Phase B landing tokens (PR-9)
+
+The marketing landing keeps its existing markup order, document scroll owner,
+1280px shell, 48px/24px gutters, responsive breakpoints, display/body typography,
+hero/example content and first-viewport mobile CTA pair. This is token alignment,
+not a marketing redesign. Wordmark assets and their brand colors stay unchanged.
+Landing-only legacy aliases consume the shared background, muted surface,
+foreground, secondary foreground, border, radius and existing spacing tokens.
+Display sizes, 18px body and the larger marketing spacing remain unchanged.
+
+Native navigation anchors compose the PR-1 Button and Link class/anatomy contract
+directly, retaining href, modified-click, no-JavaScript and session destinations.
+No renderer or new JavaScript is needed. CTAs use primary and outline Button:
+32px mouse/44px touch, 13px/20px regular type, primary 8px padding/4px corners,
+outline 4px/12px padding/6px corners. Standalone Link targets are 32px/44px,
+12px/18px regular type with the shared muted/foreground underline states.
+The wrapping navigation row retains its original marketing line-box extent
+(14px at 1.65 plus two 12px insets), centering the smaller shared Link inside it.
+This keeps the header and hero origin identical, including at phone width.
+The theme select remains native; adopting another control is outside PR-9.
+
+Landing brand is an explicit owner override: primary fill remains #B4321C in
+light and #FF8F70 in dark; on-brand ink remains #FFFFFF/#23110C. These roles
+must not turn into the app's neutral action or purple selection palette.
+The live primary navigation anchor uses 90% hover and 80% held-active fill;
+the landing retains that state recipe with its approved brand color.
+Every landing action/link keeps a contrasting 2px brand outline with 2px offset,
+including primary actions where a same-color inset ring would be invisible.
+This accessibility override wins over the Demo's inset/native focus paint.
+Docs links on the muted surface use shared secondary foreground at rest:
+the Demo's ordinary muted link ink measures only 4.39:1 on that landing surface.
+Hover keeps the shared foreground. This prevents a measured Lighthouse
+accessibility regression without introducing a new palette value.
+No animation, layout primitive, content, route, auth or consent change is added.
+Evidence distinguishes brand/target/focus overrides from exact shared metrics,
+and records all before/after color and control-size changes.
+
 ## Phase B viewers and P1 controls (PR-8)
 
 The shared Preact viewers and controls follow the actual MIT Langfuse sources
