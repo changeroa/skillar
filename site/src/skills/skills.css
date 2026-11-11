@@ -112,7 +112,8 @@ body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep
 .library > .note:empty, .version-diff > .note:empty { display: none; }
 .skill .note:empty { display: none; }
 .search-results:empty { display: none; }
-.search-result[data-active="true"] { outline: 1px solid var(--border); background: var(--surface); }
+.search-result[data-active="true"] { outline: none; background: var(--lf-accent); color: var(--lf-accent-foreground); }
+.search-result__name { display: flex; align-items: center; gap: var(--lf-space-2); }
 .search-result code, .diff-result code { overflow-wrap: anywhere; }
 .field-error { color: var(--error); font-size: var(--small); }
 #skills-app :is(h1,h2,h3,[tabindex="-1"],a,button,input,select,textarea,summary):focus:not(.ui-peek, .ui-peek *) { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -679,3 +679,11 @@ Both applications use the same source primitives and semantic tokens in
 accessible data tables, keyboard tooltips, PR-1 controls and 32px/44px targets
 apply identically. The Callout-only pinned-MIT reference exception is recorded
 there; it does not replace real Demo references for other components.
+# PR-8 viewers and P1 controls
+
+The shared implementation contract is `site/DESIGN.md`, section
+"Phase B viewers and P1 controls (PR-8)". Both renderers consume the same
+Preact primitives, semantic tokens, 32px mouse/44px touch targets and painted
+focus indicators. Markdown is escaped text only; dates remain Asia/Seoul.
+The document owns vertical scroll; code regions own horizontal scroll and
+expanded option lists own their bounded vertical scroll.

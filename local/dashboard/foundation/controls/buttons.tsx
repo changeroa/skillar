@@ -1,6 +1,7 @@
 import type { JSX } from "preact";
 import { Glyph } from "./icons";
 import type { ControlIcon } from "./icons";
+import { Spinner } from "./feedback";
 
 type NativeButton = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "class" | "className" | "style" | "children" | "size">;
 export type ButtonProps = NativeButton & {
@@ -19,10 +20,7 @@ export function Button({ text, variant = "primary", size = "default", loading = 
     <span class="lf-button__content" data-trailing={Boolean(trailingIcon)} aria-hidden={loading || undefined}>
       {icon && <Glyph name={icon} />}{text}{trailingIcon && <Glyph name={trailingIcon} />}
     </span>
-    {loading && <span class="lf-button__busy" aria-hidden="true"><svg class="lf-spinner" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg></span>}
+    {loading && <span class="lf-button__busy" aria-hidden="true"><Spinner decorative variant="inherit" /></span>}
   </button>;
 }
 

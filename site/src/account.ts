@@ -3,6 +3,8 @@ import ky, { HTTPError, TimeoutError } from 'ky';
 import { sessionResponseSchema } from '../lib/account';
 import type { SessionUser } from '../lib/account';
 import { KST_TIME_ZONE } from './time.ts';
+import { h, render } from 'preact';
+import { Avatar } from '../../local/dashboard/foundation/controls/choices';
 
 const emptyViews = Array.from(document.querySelectorAll<HTMLElement>('.empty-state'));
 const viewLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.view-nav a'));
@@ -115,17 +117,14 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
   const renderUser = (user: SessionUser) => {
     const name = document.querySelector<HTMLElement>('#user-name');
     const email = document.querySelector<HTMLElement>('#user-email');
-    const picture = document.querySelector<HTMLImageElement>('#user-picture');
+    const avatar = document.querySelector<HTMLElement>('#user-avatar');
     const times = document.querySelector<HTMLElement>('.account-times');
     if (name) name.textContent = user.name || user.email;
     if (email) email.textContent = user.name ? user.email : '';
     for (const field of Array.from(document.querySelectorAll<HTMLElement>('[data-profile-name]'))) field.textContent = user.name || user.email;
     for (const field of Array.from(document.querySelectorAll<HTMLElement>('[data-profile-email]'))) field.textContent = user.email;
-    if (picture && user.picture.startsWith('https://')) {
-      picture.addEventListener('error', () => { picture.hidden = true; }, { once: true });
-      picture.src = user.picture;
-      picture.hidden = false;
-    }
+    if (avatar) render(h(Avatar, { displayName: user.name || user.email, email: user.email,
+      ...(user.picture.startsWith('https://') ? { src: user.picture } : {}) }), avatar);
     const created = showTime(document.querySelector<HTMLTimeElement>('#user-created'), user.createdAt);
     const last = showTime(document.querySelector<HTMLTimeElement>('#user-last'), user.lastLogin);
     if (times) times.hidden = !(created || last);

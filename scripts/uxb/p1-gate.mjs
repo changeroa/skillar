@@ -1,0 +1,163 @@
+import assert from "node:assert/strict";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { applyViewport } from "./viewport.mjs";
+import { ready } from "./trusted-keys.mjs";
+import { captureP1 } from "./p1-capture.mjs";
+import { compareP1Style, readP1Style } from "./p1-style.mjs";
+import { p1Keyboard } from "./p1-keyboard.mjs";
+import { p1Focus } from "./p1-focus.mjs";
+const [site, local, out] = process.argv.slice(2);
+if (!site || !local || !out || !process.env.OMOWRIGHT_HELPER) throw Error("site local evidence and OMOWRIGHT_HELPER required");
+const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
+const { omowright } = await loadOmowright();
+const browser = await omowright.connect("http://127.0.0.1:9333");
+const tabs = omowright.createAgentTabs(browser);
+const product = (await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } })).page;
+const source = (await tabs.create("about:blank", { viewport: { width: 1440, height: 900 } })).page;
+const expected = { Textarea: 5, Combobox: 4, MultiSelect: 3, Switch: 16, Radio: 5, Spinner: 16,
+  Toast: 6, Avatar: 13, MarkdownViewer: 3, CodeBlock: 3, DiffViewer: 2, DateRangeInput: 2, TimePeriodSelect: 1 };
+const selectors = {
+  Textarea: "textarea", Combobox: "input", MultiSelect: "input", Switch: ".lf-switch__track",
+  Radio: ".lf-radio__ring", Spinner: ".lf-loading svg", Toast: ".lf-toast", Avatar: ".lf-avatar",
+  MarkdownViewer: ".lf-markdown", CodeBlock: ".lf-codeblock", DiffViewer: ".lf-diff-scroll",
+  DateRangeInput: ".lf-date-range", TimePeriodSelect: "select",
+};
+const mitSelectors = {
+  Textarea: '[data-component="Textarea"] textarea', Switch: '[data-component="Switch"] [role=switch]',
+  Radio: '[data-component="Radio"] > span > span', Spinner: '[data-component="Spinner"] svg',
+  Avatar: '[data-component="Avatar"] .relative', Toast: '[data-sonner-toast][data-front=true]',
+};
+const examples = JSON.parse(await readFile(`${out}/viewer-examples.json`, "utf8"));
+const demo = JSON.parse(await readFile(`${out}/demo-records.json`, "utf8"));
+const [js, css, fontCss] = await Promise.all(["mit.js", "mit.css", "reference-font.css"].map(path => readFile(`${out}/${path}`, "utf8")));
+const results = [], captures = [], structure = [], keyboard = [], focus = [], errors = [];
+await mkdir(`${out}/matrix`, { recursive: true }); await mkdir(`${out}/mit-captures`, { recursive: true });
+async function mountSource(theme) {
+  const tree = await source._sendToTarget("Page.getFrameTree");
+  await source._sendToTarget("Page.setDocumentContent", { frameId: tree.frameTree.frame.id,
+    html: `<!doctype html><html class="${theme}" style="color-scheme:${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>
+      <aside>ACTUAL PINNED MIT 69181812b87169df157841fce1314ec96ecd2c5a; NOT DEMO</aside><div id="reference"></div></body></html>` });
+  await source.evaluate(({ js, css, fontCss }) => {
+    const style = document.createElement("style"); style.textContent = css + fontCss + `
+      #mit-ready>section{width:min(356px,calc(100% - 32px));margin:16px}
+      :root{--font-plex-mono:plexMono}`;
+    document.head.append(style);
+    const script = document.createElement("script"); script.type = "module"; script.textContent = js; document.body.append(script);
+  }, { js, css, fontCss });
+  await ready(source, "#mit-ready");
+}
+async function reference(component, state, theme, width) {
+  if (!mitSelectors[component]) {
+    const source = demo.find(row => row.component === component && row.theme === theme);
+    return source ? { ...source, screenshot: source.file } : null;
+  }
+  const sourceState = component === "Radio" && state === "group" ? "checked-enabled" : state;
+  await source.evaluate(settings => window.renderReference(settings), { state: sourceState, theme });
+  await source.evaluate(({ state, theme }) => new Promise((resolve, reject) => {
+    const observer = new MutationObserver(check);
+    const timer = setTimeout(() => { observer.disconnect(); reject(Error(`MIT state ${state}`)); }, 8000);
+    function check() {
+      const node = document.querySelector("#mit-ready");
+      if (node?.dataset.refState !== state || node?.dataset.refTheme !== theme) return;
+      observer.disconnect(); clearTimeout(timer); resolve();
+    }
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true }); check();
+  }), { state: sourceState, theme });
+  if (component === "Toast") {
+    await source.evaluate(variant => window.showReferenceToast(variant), state);
+    await ready(source, `[data-sonner-toast][data-front=true][data-mounted=true]${state === "default" ? ":not([data-type])" : `[data-type="${state}"]`}`);
+  }
+  await source.evaluate(async () => {
+    document.body.getBoundingClientRect();
+    await document.fonts.load("12px plexMono");
+    await document.fonts.ready;
+    for (const animation of document.getAnimations()) {
+      const end = animation.effect.getComputedTiming().endTime;
+      if (Number.isFinite(end)) animation.finish(); else { animation.pause(); animation.currentTime = 0; }
+    }
+  });
+  const selector = mitSelectors[component];
+  const style = await readP1Style(source, selector);
+  const screenshot = `${out}/mit-captures/${component}-${state}-${width}-${theme}.png`;
+  await source.evaluate(selector => {
+    const node = document.querySelector(selector);
+    node.scrollIntoView({ block: "center", inline: "nearest" });
+    const rect = node.getBoundingClientRect(), label = document.createElement("aside");
+    label.id = "mit-evidence-label"; label.textContent = "ACTUAL PINNED MIT 69181812 (not Demo)";
+    label.style.cssText = `position:fixed;left:${Math.max(4, rect.left)}px;top:${Math.max(0, rect.top - 15)}px;font:10px/12px system-ui;color:CanvasText;background:Canvas;z-index:2147483647;pointer-events:none`;
+    document.body.append(label);
+  }, selector);
+  await captureP1(source, selector, screenshot);
+  await source.evaluate(() => document.querySelector("#mit-evidence-label").remove());
+  return { provenance: "ACTUAL-PINNED-MIT", sourceSHA: "69181812b87169df157841fce1314ec96ecd2c5a",
+    component, state, theme, style, screenshot };
+}
+try {
+  for (const [surface, base] of [["site", site], ["local", local]]) {
+    for (const width of [390, 1440]) for (const theme of ["light", "dark"]) {
+      const viewport = { width, height: 900, deviceScaleFactor: width === 390 ? 3 : 1, mobile: width === 390, coarse: width === 390 };
+      await applyViewport(product, viewport); await applyViewport(source, viewport);
+      await mountSource(theme);
+      const params = new URLSearchParams({ p1: "", atomic: "", theme, code: examples.code, markdown: examples.markdown,
+        before: examples.before ?? "", after: examples.after ?? "", language: "python" });
+      await product.goto(`${base}/__gallery.html?${params}`, { waitUntil: "domcontentloaded" });
+      await applyViewport(product, viewport);
+      await ready(product, "#gallery[data-ready=true]");
+      await product.evaluate(async theme => {
+        document.documentElement.dataset.theme = theme;
+        await document.fonts.ready;
+        for (const animation of document.getAnimations()) { animation.pause(); animation.currentTime = 0; }
+      }, theme);
+      const cases = await product.evaluate(() => [...document.querySelectorAll("[data-specimen]")].map(n =>
+        ({ component: n.dataset.component, state: n.dataset.state })));
+      assert.equal(cases.length, 79);
+      for (const [component, count] of Object.entries(expected)) assert.equal(cases.filter(row => row.component === component).length, count, component);
+      const owner = await product.evaluate(() => ({
+        coarse: matchMedia("(pointer:coarse)").matches, width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+        manualPrism: window.Prism?.manual === true,
+        controls: [...document.querySelectorAll('[data-specimen] :is(button,input:not([type=hidden]),select)')].filter(n => n.checkVisibility())
+          .map(n => ({ tag: n.tagName, role: n.getAttribute("role"), height: n.getBoundingClientRect().height })),
+      }));
+      structure.push({ surface, requestedWidth: width, theme, ...owner,
+        status: owner.width === width && owner.coarse === (width === 390) &&
+          owner.scrollWidth <= width && owner.manualPrism ? "PASS" : "FAIL" });
+      for (const item of cases) {
+        const root = `[data-component="${item.component}"][data-state="${item.state}"]`;
+        const selector = `${root} ${selectors[item.component]}`;
+        try {
+          const actual = await readP1Style(product, selector);
+          const sourceRecord = await reference(item.component, item.state, theme, width);
+          const referenceStyle = sourceRecord?.style ?? null;
+          const policy = item.component === "CodeBlock" && item.state === "default" && referenceStyle
+            ? { height: `${parseFloat(referenceStyle.values.height) + (owner.coarse ? 20 : 8)}px` }
+            : item.component === "Toast" && owner.coarse && item.state !== "loading" && referenceStyle
+              ? { height: `${Math.max(parseFloat(referenceStyle.values.height),
+                parseFloat(referenceStyle.values.paddingTop) + parseFloat(referenceStyle.values.paddingBottom) +
+                parseFloat(referenceStyle.values.borderTopWidth) + parseFloat(referenceStyle.values.borderBottomWidth) + 44)}px` } : {};
+          const differences = compareP1Style(referenceStyle, actual, policy);
+          const path = `${out}/matrix/${surface}-${item.component}-${item.state}-${width}-${theme}.png`;
+          const capture = await captureP1(product, selector, path);
+          captures.push({ surface, width, theme, ...item, ...capture });
+          results.push({ surface, width, theme, ...item, reference: sourceRecord, actual, policy, differences,
+            status: differences.length ? "FAIL" : "PASS", capture: path });
+        } catch (error) {
+          errors.push({ surface, width, theme, ...item, error: String(error) });
+        }
+      }
+      await product.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+      const end = await product._sendToTarget("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+      await writeFile(`${out}/matrix/${surface}-${width}-${theme}-end.png`, Buffer.from(end.data, "base64"));
+      console.log(`P1_MATRIX ${surface} ${width} ${theme} ${results.length} cases, ${errors.length} evidence errors`);
+    }
+    try { keyboard.push({ surface, results: await p1Keyboard(product, base), status: "PASS" }); }
+    catch (error) { keyboard.push({ surface, status: "FAIL", error: String(error) }); }
+    focus.push(...await p1Focus(product, { base, out: `${out}/focus`, surface }));
+  }
+} finally {
+  await writeFile(`${out}/p1-gate.json`, JSON.stringify({ expected, results, captures, structure, keyboard, focus, errors }, null, 2));
+  await tabs.closeAll(); await browser.close();
+}
+const passed = results.filter(row => row.status === "PASS").length;
+console.log(`P1_GATE_RESULT ${passed}/${results.length} style comparisons PASS; ${captures.length} captures; ${errors.length} evidence errors`);
+process.exitCode = errors.length || passed !== results.length || keyboard.some(row => row.status !== "PASS") ||
+  structure.some(row => row.status !== "PASS") || focus.some(row => row.status !== "PASS") ? 1 : 0;

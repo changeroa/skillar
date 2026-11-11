@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_RESOURCES } from "../../../shared/dist/private-skills.js";
 import { draftIssues, ENTRYPOINT, formatBytes, mediaTypeFor, mergePickedFiles, readFrontMatter, relativePaths, removeFile } from "./model.ts";
 import type { Draft, DraftFile } from "./model.ts";
+import { Textarea } from "../../../local/dashboard/foundation/controls/textarea.ts";
 
 export type EditorProps = {
   readonly draft: Draft;
@@ -159,8 +160,8 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange, showErrors
     h("dl", { class: "account-status will-publish" },
       h("div", null, h("dt", null, "이름"), h("dd", null, front.name === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.name))),
       h("div", null, h("dt", null, "설명"), h("dd", null, front.description === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.description)))),
-    h("label", { class: "field-label document-label", for: id("document") }, `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`),
-    h("textarea", { id: id("document"), class: "document-field", rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
+    h(Textarea, { label: `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`, code: true,
+      id: id("document"), rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
       "aria-invalid": documentErrors.length > 0, "aria-describedby": documentErrors.length > 0 ? id("document-errors") : undefined,
       value: draft.document,
       onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => {

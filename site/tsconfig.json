@@ -7,7 +7,9 @@
     "paths": {
       "preact": ["./node_modules/preact"],
       "preact/*": ["./node_modules/preact/*"],
-      "zod": ["./node_modules/zod"]
+      "zod": ["./node_modules/zod"],
+      "prismjs": ["./node_modules/@types/prismjs"],
+      "prismjs/*": ["./node_modules/prismjs/*"]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "preact",

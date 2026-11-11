@@ -23,7 +23,7 @@ export default defineConfig({
   resolve: {
     // The local views live outside the site package; their bare imports must
     // resolve from site/node_modules so CI builds without local/node_modules.
-    dedupe: ['preact', 'd3-sankey', 'zod'],
+    dedupe: ['preact', 'd3-sankey', 'zod', 'prismjs'],
   },
   esbuild: { jsx: 'automatic', jsxImportSource: 'preact' },
   server: { fs: { allow: ['..'] } },

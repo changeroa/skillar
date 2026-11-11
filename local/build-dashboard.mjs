@@ -23,6 +23,9 @@ await build({
 await copyFile(new URL("dashboard/index.html", root), new URL("index.html", out));
 await copyFile(new URL("dashboard/styles.css", root), new URL("assets/styles.css", out));
 await copyFile(new URL("dashboard/foundation/tokens.css", root), new URL("assets/tokens.css", out));
+await mkdir(new URL("viewers/", out), { recursive: true });
+await copyFile(new URL("dashboard/foundation/controls/p1.css", root), new URL("assets/p1.css", out));
+await copyFile(new URL("dashboard/foundation/viewers/viewers.css", root), new URL("viewers/viewers.css", out));
 for (const [source, name] of [
   ["shell/shell.css", "shell.css"],
   ["controls/controls.css", "controls.css"],

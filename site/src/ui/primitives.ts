@@ -1,5 +1,6 @@
 import { h } from "preact";
 import type { ComponentChildren } from "preact";
+import { Toast as SharedToast } from "../../../local/dashboard/foundation/controls/feedback";
 
 export function Pill({ children, tone = "neutral" }: {
   readonly children: ComponentChildren;
@@ -28,9 +29,7 @@ export function Toast({ message, onDismiss }: {
   readonly message: string;
   readonly onDismiss: () => void;
 }) {
-  return h("div", { class: message === "" ? "ui-toast ui-toast-empty" : "ui-toast" },
-    h("p", { role: message === "" ? undefined : "status", "aria-live": "polite", "aria-atomic": "true" }, message),
-    h("button", { type: "button", class: "button secondary", hidden: message === "", onClick: onDismiss, "aria-label": "알림 닫기" }, "닫기"));
+  return h(SharedToast, { message, onDismiss });
 }
 
 export function Skeleton({ label = "불러오는 중", rows = 3 }: {

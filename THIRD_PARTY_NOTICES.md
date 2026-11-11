@@ -1,6 +1,44 @@
 Skillar third-party notices
 ==========================
 
+PR-8 viewers and P1 controls
+---------------------------
+Langfuse MIT source SHA: 69181812b87169df157841fce1314ec96ecd2c5a.
+References: web/src/components/ui/{textarea,Toaster,MarkdownView,MarkdownViewContent}.tsx,
+web/src/components/design-system/{Avatar,Radio,Switch,Spinner,Codeblock,SyntaxHighlight,DateRangeInput,MultiSelectInput}/,
+web/src/components/{DiffViewer.tsx,ui/TimePeriodSelect.tsx}.
+Destinations: local/dashboard/foundation/{viewers,controls}/ and the matching
+site consumers. Preact reimplementation; no Langfuse React or enterprise code
+is shipped. Original Langfuse MIT permission notice below applies.
+
+PrismJS 1.30.0: https://github.com/PrismJS/prism
+Copyright (c) 2012 Lea Verou. Tokenizer and bundled language grammars only;
+automatic DOM highlighting is disabled. No Prism HTML output is inserted.
+
+Sonner 2.0.7: https://github.com/emilkowalski/sonner
+Copyright (c) 2023 Emil Kowalski. Status SVG paths and loading-bar mechanism
+used in controls/toast-icon.tsx; Sonner/React itself is not a product dependency.
+
+MIT License (PrismJS and Sonner)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 Lucide control icon paths (lucide-react 0.552.0)
 ----------------------------------------------
 Source: https://github.com/lucide-icons/lucide, icons check, x, search, copy,

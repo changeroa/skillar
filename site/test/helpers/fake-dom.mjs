@@ -13,6 +13,7 @@ export class FakeEvent {
     this.type = type;
     this.bubbles = init.bubbles ?? true;
     this.key = init.key ?? "";
+    this.isComposing = init.isComposing ?? false;
     this.target = null;
     this.currentTarget = null;
     this.defaultPrevented = false;
@@ -92,11 +93,22 @@ class FakeElement extends FakeNode {
     for (let current = node; current; current = current.parentNode) if (current === this) return true;
     return false;
   }
+  querySelector(selector) {
+    for (const child of this.children) {
+      if (child.matches(selector)) return child;
+      const match = child.querySelector(selector);
+      if (match) return match;
+    }
+    return null;
+  }
   matches(selector) {
     return selector.split(",").some(part => {
       const value = part.trim();
-      const attribute = /^\[([\w-]+)=([\w-]+)\]$/.exec(value);
-      return attribute ? this.getAttribute(attribute[1]) === attribute[2] : this.localName === value;
+      const attribute = /^(?:([a-z][\w-]*))?\[([\w-]+)(?:=['"]?([^'"\]]+)['"]?)?\]$/i.exec(value);
+      if (!attribute) return this.localName === value;
+      if (attribute[1] && this.localName !== attribute[1]) return false;
+      const actual = this.getAttribute(attribute[2]);
+      return attribute[3] === undefined ? actual !== null : actual === attribute[3];
     });
   }
   closest(selector) {

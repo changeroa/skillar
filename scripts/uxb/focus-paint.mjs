@@ -6,7 +6,7 @@ export async function paintedFocus(page, selector, output) {
     const node = document.querySelector(selector);
     node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
     node.blur();
-    const paint = node.nextElementSibling?.matches(".lf-checkbox__box") ? node.nextElementSibling :
+    const paint = node.nextElementSibling?.matches(".lf-checkbox__box,.lf-radio__ring,.lf-switch__track") ? node.nextElementSibling :
       node.matches("select") ? node.closest(".lf-select-wrap") ?? node : node;
     const box = paint.getBoundingClientRect();
     const x = Math.max(0, Math.floor(box.left + scrollX - 8));

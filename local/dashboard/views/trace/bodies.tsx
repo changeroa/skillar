@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import { CodeBlock } from "../../foundation/viewers";
 import type { TraceStep } from "../../../src/types.js";
 import { api } from "../../api";
 import { RankedCandidates } from "../../components/ranked-candidates";
@@ -119,7 +120,7 @@ export function ToolArguments({ detail, name }: { readonly detail: ToolDetail; r
   const args = toolArgsPreview(detail);
   if (args === undefined) return null;
   switch (args.captured) {
-    case true: return <details class="tl__args"><summary>{name && <span class="tl__name--mono">{name} </span>}도구 인자 전체 보기</summary><pre>{detail.args}</pre></details>;
+    case true: return <details class="tl__args"><summary>{name && <span class="tl__name--mono">{name} </span>}도구 인자 전체 보기</summary><CodeBlock value={detail.args ?? ""} language="json" label="도구 인자" /></details>;
     case false: return <span class="tl__name tl__name--mono">{args.length}자 기록 생략</span>;
     default: { const exhaustive: never = args; return exhaustive; }
   }

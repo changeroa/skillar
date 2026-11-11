@@ -1,4 +1,5 @@
 /* MIT Langfuse anatomy reimplemented in Preact; see THIRD_PARTY_NOTICES.md. */
+@import "./p1.css";
 .lf-button, .lf-icon-button, .lf-field, .lf-checkbox, .lf-badge, .lf-tag, .lf-status,
 .lf-link, .lf-shortcut, .lf-skeleton, .lf-copy {
   box-sizing: border-box; font-family: var(--lf-font-sans);

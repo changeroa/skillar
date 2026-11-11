@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { DashboardProfile } from "../../../shared/dist/activity-dashboard.js";
 import { DashboardRequestError, describeFailure, isUnauthorized, readCommandStatus, submitCommand } from "./api";
 import {
-  CHECK_COPY, COMMAND_KINDS, COMMAND_KIND_COPY, ENABLE_COMMANDS_CLI, FIELD_LABELS, SYNC_CADENCE_SECONDS,
-  buildOperation, checkFailed, checked, classifyFailure, commandRequest, describeOutcome, draftFromOperation, emptyCommandDraft,
-  fromStatus, isCommandId, newSubmission, nextActions, resultEntries, sending, statusRequest, submitFailed, submitted, summarizeOperation,
+  COMMAND_KINDS, COMMAND_KIND_COPY, ENABLE_COMMANDS_CLI, SYNC_CADENCE_SECONDS,
+  buildOperation, checkFailed, checked, classifyFailure, commandRequest, draftFromOperation, emptyCommandDraft,
+  fromStatus, isCommandId, newSubmission, sending, statusRequest, submitFailed, submitted,
 } from "./commands";
 import type { CommandDraft, Submission } from "./commands";
 import { shortId } from "./status";
+
+import { KindFields } from "./command-fields";
+import { CommandItem } from "./command-item";
+
+type Patch = (next: Partial<CommandDraft>) => void;
 
 type Props = {
   readonly profile: DashboardProfile;
@@ -17,146 +22,6 @@ type Props = {
   readonly onRefreshSources: () => void;
   readonly onUnauthorized: () => void;
 };
-
-type Patch = (next: Partial<CommandDraft>) => void;
-
-function TextField({ label, value, numeric = false, busy, onInput }: {
-  readonly label: string; readonly value: string; readonly numeric?: boolean; readonly busy: boolean; readonly onInput: (next: string) => void;
-}) {
-  return (
-    <label class="field-label">{label}
-      <input class="text-field" type="text" disabled={busy} autocomplete="off" spellcheck={false} {...(numeric ? { inputMode: "numeric" as const } : {})}
-        value={value} onInput={event => onInput(event.currentTarget.value)} />
-    </label>
-  );
-}
-
-function TextArea({ label, value, busy, onInput }: { readonly label: string; readonly value: string; readonly busy: boolean; readonly onInput: (next: string) => void }) {
-  return (
-    <label class="field-label">{label}
-      <textarea class="document-field document-field--short" disabled={busy} spellcheck={false} value={value}
-        onInput={event => onInput(event.currentTarget.value)} />
-    </label>
-  );
-}
-
-function KindFields({ draft, patch, busy }: { readonly draft: CommandDraft; readonly patch: Patch; readonly busy: boolean }) {
-  switch (draft.kind) {
-    case "workflow.put":
-      return (
-        <>
-          <div class="command-form__fields">
-            <TextField busy={busy} label={FIELD_LABELS.workflowName} value={draft.workflowName} onInput={workflowName => patch({ workflowName })} />
-          </div>
-          <TextArea busy={busy} label={FIELD_LABELS.workflowSteps} value={draft.workflowSteps} onInput={workflowSteps => patch({ workflowSteps })} />
-          <p class="note">
-            각 단계에는 <code>id</code>와 <code>skills</code> 목록이 필요하고 <code>together</code>, <code>expectTools</code>, <code>doneWhen</code>은 선택입니다.
-            서로 다른 id를 가진 단계를 최대 50개까지 넣을 수 있습니다. 예: <code>{"[{\"id\":\"plan\",\"skills\":[\"skillar/plan\"]}]"}</code>
-          </p>
-        </>
-      );
-    case "flow.create":
-      return (
-        <div class="command-form__fields">
-          <TextField busy={busy} label={FIELD_LABELS.workspaceId} value={draft.workspaceId} onInput={workspaceId => patch({ workspaceId })} />
-          <TextField busy={busy} label={FIELD_LABELS.tabId} value={draft.tabId} onInput={tabId => patch({ tabId })} />
-          <TextField busy={busy} label={FIELD_LABELS.flowName} value={draft.flowName} onInput={flowName => patch({ flowName })} />
-          <TextField busy={busy} label={FIELD_LABELS.flowVersion} value={draft.flowVersion} numeric onInput={flowVersion => patch({ flowVersion })} />
-          <TextField busy={busy} label={FIELD_LABELS.label} value={draft.label} onInput={label => patch({ label })} />
-        </div>
-      );
-    case "flow.map-step":
-      return (
-        <div class="command-form__fields">
-          <TextField busy={busy} label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
-          <TextField busy={busy} label={FIELD_LABELS.paneId} value={draft.paneId} onInput={paneId => patch({ paneId })} />
-          <TextField busy={busy} label={FIELD_LABELS.stepId} value={draft.stepId} onInput={stepId => patch({ stepId })} />
-        </div>
-      );
-    case "flow.end":
-      return (
-        <div class="command-form__fields">
-          <TextField busy={busy} label={FIELD_LABELS.flowId} value={draft.flowId} onInput={flowId => patch({ flowId })} />
-        </div>
-      );
-    case "eval.add":
-      return (
-        <>
-          <TextArea busy={busy} label={FIELD_LABELS.query} value={draft.query} onInput={query => patch({ query })} />
-          <div class="command-form__fields">
-            <TextField busy={busy} label={FIELD_LABELS.expectedUri} value={draft.expectedUri} onInput={expectedUri => patch({ expectedUri })} />
-            <TextField busy={busy} label={FIELD_LABELS.fromTraceId} value={draft.fromTraceId} onInput={fromTraceId => patch({ fromTraceId })} />
-          </div>
-        </>
-      );
-    default: {
-      const exhaustive: never = draft.kind;
-      return exhaustive;
-    }
-  }
-}
-
-type ItemProps = {
-  readonly submission: Submission;
-  readonly busy: boolean;
-  readonly journalThrough: number;
-  readonly sourcesBusy: boolean;
-  readonly sourcesLoad: number;
-  readonly onRetry: () => void;
-  readonly onCheck: () => void;
-  readonly onRefresh: () => void;
-  readonly onResubmit: () => void;
-  readonly onEdit: () => void;
-};
-
-function CommandItem({ submission, busy, journalThrough, sourcesBusy, sourcesLoad, onRetry, onCheck, onRefresh, onResubmit, onEdit }: ItemProps) {
-  const copy = describeOutcome(submission);
-  const actions = nextActions(submission, journalThrough, sourcesLoad);
-  const outcome = submission.outcome;
-  const status = outcome.kind === "tracked" ? outcome.status : null;
-  const technical = outcome.kind === "refused" ? outcome.technical : outcome.kind === "tracked" ? outcome.status.error ?? outcome.technical : null;
-  const checkNote = outcome.kind === "tracked" && outcome.check !== "ok" ? CHECK_COPY[outcome.check] : "";
-  const waitingForUpload = actions.refresh && !actions.resubmit && submission.operation !== null && sourcesLoad > submission.sourcesLoad;
-  const results = resultEntries(status);
-  const titleId = `command-${submission.commandId}`;
-  return (
-    <li class="command-item" aria-labelledby={titleId}>
-      <div class="command-item__head">
-        <h4 id={titleId}>{summarizeOperation(submission.operation)}</h4>
-        <span class="source__state">{copy.label}</span>
-      </div>
-      <dl class="account-status command__facts">
-        <div><dt>명령 ID</dt><dd><code>{submission.commandId}</code></dd></div>
-        <div><dt>기준 리비전</dt><dd>저널 {submission.baseRevision}</dd></div>
-        <div data-tone={copy.tone}><dt>상태</dt><dd>{copy.explanation}</dd></div>
-        {status !== null && status.sourceRevision !== null && <div><dt>출처 리비전</dt><dd>{status.sourceRevision}</dd></div>}
-        {results.map(entry => <div key={entry.key}><dt>결과: {entry.label}</dt><dd><code>{entry.value}</code></dd></div>)}
-      </dl>
-      {copy.next !== null && <p class="note">{copy.next}</p>}
-      {waitingForUpload && (
-        <p class="note">출처를 새로 고쳤지만 여기 표시된 리비전은 아직 저널 {journalThrough}입니다. 기기의 다음 업로드를 기다린 뒤 다시 새로 고치세요.</p>
-      )}
-      {(technical !== null || results.length > 0) && (
-        <details class="command-item__technical"><summary>기술 정보</summary>
-          {technical !== null && <p><code>{technical}</code></p>}
-          {results.length > 0 && <dl class="account-status command__facts">
-            {results.map(entry => <div key={entry.key}><dt><code>{entry.key}</code></dt><dd><code>{entry.value}</code></dd></div>)}
-          </dl>}
-        </details>
-      )}
-      <div class="cluster command-item__actions">
-        {actions.retry && <button class="button secondary" type="button" disabled={busy} onClick={onRetry}>같은 ID로 다시 시도</button>}
-        {actions.check && <button class="button secondary" type="button" disabled={busy} onClick={onCheck}>상태 확인</button>}
-        {actions.refresh && <button class="button secondary" type="button" disabled={sourcesBusy} onClick={onRefresh}>출처 새로 고침</button>}
-        {actions.resubmit && (
-          <button class="button secondary" type="button" disabled={busy} onClick={onResubmit}>저널 {journalThrough} 기준으로 다시 제출</button>
-        )}
-        {actions.edit && <button class="button secondary" type="button" onClick={onEdit}>입력란에서 편집</button>}
-        <span class="note" role="status" aria-live="polite">{busy ? "처리 중\u2026" : checkNote}</span>
-      </div>
-    </li>
-  );
-}
 
 export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, onRefreshSources, onUnauthorized }: Props) {
   const [draft, setDraft] = useState<CommandDraft>(() => emptyCommandDraft());
