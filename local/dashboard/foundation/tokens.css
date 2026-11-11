@@ -137,7 +137,7 @@ html {
   --lf-qlang-number: light-dark(hsl(17.5 88.3% 40.4%), hsl(27 96% 61%));
   --lf-qlang-keyword: light-dark(hsl(224.3 76.3% 48%), hsl(213 94% 68%));
   --lf-json-value-string: light-dark(oklch(44.8% 0.119 151.328), hsl(142 40% 60%));
-  --lf-json-value-number: light-dark(oklch(42.4% 0.199 265.638), hsl(213 50% 68%));
+  --lf-json-value-number: light-dark(lab(30.2514% 27.7853 -70.2699), hsl(213 50% 68%));
   --lf-json-value-boolean: light-dark(oklch(47% 0.157 37.304), hsl(27 50% 61%));
   --lf-json-value-nullish: light-dark(oklch(55.1% 0.027 264.364), oklch(70.7% 0.022 261.325));
   --lf-sidebar-background: light-dark(var(--lf-surface-sunken), hsl(0 0% 4%));
@@ -192,7 +192,7 @@ html {
   --lf-viewer-heading-2: 20px; --lf-viewer-leading-2: 28px;
   --lf-viewer-heading-3: 16px; --lf-viewer-leading-3: 24px;
   --lf-icon-leading: 24px;
-  --lf-diff-added: oklch(72.3% .219 149.579);
+  --lf-diff-added: lab(70.5521% -66.5147 45.8073);
   --lf-radio-shadow: 0 1px 3px rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1);
   --lf-weight-strong: 600;
   --lf-radius-lg: 8px;

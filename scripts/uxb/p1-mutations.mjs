@@ -109,6 +109,47 @@ export async function p1Mutations(page, { coarse }) {
   } finally {
     await page.evaluate(selector => document.querySelector(`${selector} [data-token]`).style.removeProperty("opacity"), codeSelector);
   }
+  // A distinct oklab serialization that paints identical RGBA8 bytes must still fail:
+  // the validator compares raw computed declarations, never quantized paint.
+  for (const [name, specimen, root, target, field] of [
+    ["root", { component: "CodeBlock", state: "default" }, codeSelector, null, "backgroundColor"],
+    ["descendant", { component: "DiffViewer", state: "changed" },
+      '[data-component="DiffViewer"][data-state="changed"] .lf-diff-scroll', '[data-change="added"]', "descendants.added."],
+    ["text", { component: "DiffViewer", state: "changed" },
+      '[data-component="DiffViewer"][data-state="changed"] .lf-diff-scroll', '[data-word-change="added"]', "textPaint."],
+  ]) {
+    const original = await readP1Style(page, root, specimen);
+    const nudge = await page.evaluate(({ root, target }) => {
+      const node = target ? document.querySelector(root).querySelector(target) : document.querySelector(root);
+      const value = getComputedStyle(node).backgroundColor;
+      const match = value.match(/^oklab\(([-\d.e]+) (.*)\)$/);
+      if (!match) return { value };
+      const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const bytes = color => { context.clearRect(0, 0, 1, 1); context.fillStyle = color; context.fillRect(0, 0, 1, 1);
+        return [...context.getImageData(0, 0, 1, 1).data].join(","); };
+      for (const step of [.0005, .0002, .0001, .00005]) {
+        const candidate = `oklab(${(Number(match[1]) + step).toFixed(6)} ${match[2]})`;
+        if (bytes(candidate) === bytes(value)) {
+          node.style.setProperty("background-color", candidate, "important");
+          return { value, candidate, bytes: bytes(value), applied: getComputedStyle(node).backgroundColor };
+        }
+      }
+      return { value };
+    }, { root, target });
+    assert.ok(nudge.candidate, `${name}: needs an RGBA8-identical oklab nudge of ${nudge.value}`);
+    assert.notEqual(nudge.applied, nudge.value);
+    try {
+      const failures = compareP1Style(original, await readP1Style(page, root, specimen),
+        { inventory: p1Inventory(specimen.component, specimen.state) });
+      assert.ok(failures.some(row => row.field.includes(field) && row.field.endsWith("backgroundColor")),
+        `${name} raw color drift must fail`);
+      rows.push({ name: `${name}-raw-color-serialization-rejected`, status: "PASS", nudge, failures });
+    } finally {
+      await page.evaluate(({ root, target }) => (target ? document.querySelector(root).querySelector(target)
+        : document.querySelector(root)).style.removeProperty("background-color"), { root, target });
+    }
+  }
   const missing = structuredClone(code);
   missing.descendants = [];
   assert.ok(compareP1Style(missing, missing, { inventory: p1Inventory("CodeBlock", "default") })
