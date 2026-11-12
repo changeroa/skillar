@@ -11,6 +11,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:codex-plugin": "node build-codex-plugin.mjs",
+    "lint:skill-metadata": "node bench/validate-metadata.mjs --inventory bench/catalog.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "test": "node --test \"test/**/*.test.mjs\""

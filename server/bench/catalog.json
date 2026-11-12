@@ -47,6 +47,9 @@
     "description": "Inspect SQL query plans and index selection for slow database access.",
     "keywords": [
       "데이터베이스",
+      "DB",
+      "디비",
+      "database",
       "느린 쿼리",
       "실행 계획",
       "SQL query",
@@ -63,7 +66,10 @@
       "접근성",
       "키보드 탐색",
       "초점 순서",
+      "스크린리더",
+      "화면 낭독기",
       "screen reader",
+      "screen reader labels",
       "keyboard navigation"
     ],
     "automatic": true,
