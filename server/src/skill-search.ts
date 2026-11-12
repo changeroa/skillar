@@ -8,6 +8,9 @@ export type SearchDocument = {
 };
 
 export type SearchMode = "legacy" | "automatic" | "explicit" | "discovery";
+export type SearchMatch = { field: "name" | "keywords" | "description"; queryTerm: string; matchedText: string };
+export type SearchEvidence = { exactName: boolean; matches: SearchMatch[]; truncated?: true };
+export type SearchHit = { item: SearchDocument; evidence: SearchEvidence; descriptionTerms: string[] };
 const compareUri = (a: SearchDocument, b: SearchDocument) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0;
 const normalize = (value: string) => value.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
 const stopwords = new Set("a an the and or to of for in on with from by is are be it this that do please use using when how me my can could would should not only then after before need want help 해줘 해주세요 알려줘 작성해줘 만들어줘 확인해줘 검토해줘 필요 없어 있습니다 합니다 작업 사용 통해 대한 위한 관련 현재 다음 먼저 실제 하나 것 수 및 또는 하고 그리고 방법".split(" "));
@@ -20,7 +23,8 @@ const stem = (word: string) => {
 };
 const terms = (text: string) => [...new Set((normalize(text).match(/[\p{L}\p{N}]+/gu) ?? [])
   .filter(word => !stopwords.has(word)).map(stem).filter(word => !stopwords.has(word)))];
-type Indexed = { item: SearchDocument; name: string; keywords: string[]; nameTerms: Set<string>; weights: Map<string, number> };
+type Indexed = { item: SearchDocument; name: string; keywords: string[]; nameTerms: Set<string>;
+  weights: Map<string, number>; evidenceTerms: Map<string, SearchMatch[]> };
 // Bounded content-keyed indexes survive reconstructed request arrays without
 // mixing releases or retaining a catalog forever. No skill-name routing map.
 const indexes = new Map<string, { rows: Indexed[]; frequency: Map<string, number> }>();
@@ -32,11 +36,28 @@ function index(documents: SearchDocument[]) {
   const rows = documents.map(item => {
     const name = normalize(item.name), keywords = item.keywords.map(normalize);
     const weights = new Map<string, number>();
-    for (const [field, weight] of [[item.description, 1], [keywords.join(" "), 4], [name, 8]] as const) {
-      for (const term of terms(field)) weights.set(term, weight);
+    const evidenceTerms = new Map<string, SearchMatch[]>();
+    const fields = [
+      { field: "description" as const, value: item.description, weight: 1 },
+      ...item.keywords.map(value => ({ field: "keywords" as const, value, weight: 4 })),
+      { field: "name" as const, value: item.name, weight: 8 },
+    ];
+    for (const { field, value, weight } of fields) {
+      const fieldTerms = new Set(terms(value));
+      for (const term of fieldTerms) weights.set(term, weight);
+      for (const token of value.matchAll(/[\p{L}\p{M}\p{N}]+/gu)) {
+        const term = stem(normalize(token[0]));
+        if (!fieldTerms.has(term)) continue;
+        const found = evidenceTerms.get(term) ?? [];
+        const matchedText = field === "description" ? token[0] : value;
+        if (!found.some(match => match.field === field && match.matchedText === matchedText)) {
+          found.push({ field, queryTerm: term, matchedText });
+        }
+        evidenceTerms.set(term, found);
+      }
     }
     for (const term of weights.keys()) frequency.set(term, (frequency.get(term) ?? 0) + 1);
-    return { item: { ...item, keywords: [...item.keywords] }, name, keywords, nameTerms: new Set(terms(name)), weights };
+    return { item: { ...item, keywords: [...item.keywords] }, name, keywords, nameTerms: new Set(terms(name)), weights, evidenceTerms };
   });
   const result = { rows, frequency };
   if (indexes.size >= 8) indexes.delete(indexes.keys().next().value!);
@@ -48,20 +69,21 @@ function index(documents: SearchDocument[]) {
 // Natural-language requests may contain details absent from skill metadata. Rank
 // matched subject evidence rather than requiring every word, while abstaining
 // on no evidence. Discovery includes manual candidates but never activates them.
-export function searchSkills(documents: SearchDocument[], query: string | undefined, mode: SearchMode): SearchDocument[] {
+export function searchSkillHits(documents: SearchDocument[], query: string | undefined, mode: SearchMode,
+  exclude: readonly string[] = []): { hits: SearchHit[]; excludedMatches: number } {
   if (mode === "legacy") {
     const words = query?.toLowerCase().split(/\s+/).filter(Boolean) ?? [];
-    return documents.filter(item => {
+    return { hits: documents.filter(item => {
       const text = `${item.name} ${item.description} ${item.keywords.join(" ")}`.toLowerCase();
       return words.every(word => text.includes(word));
-    }).sort(compareUri);
+    }).sort(compareUri).map(item => ({ item, evidence: { exactName: false, matches: [] }, descriptionTerms: words })), excludedMatches: 0 };
   }
   const text = normalize(query ?? "");
   const words = terms(text);
   const { rows, frequency } = index(documents);
-  return rows.flatMap(({ item, name, keywords, nameTerms, weights }) => {
+  const scored = rows.flatMap(({ item, name, keywords, nameTerms, weights, evidenceTerms }) => {
     if (mode === "automatic" && !item.automatic) return [];
-    if (!text) return [{ item, score: 0 }];
+    if (!text) return [{ item, score: 0, evidence: { exactName: false, matches: [] }, descriptionTerms: [] }];
     let score = name === text ? 1000 : keywords.includes(text) ? 300 : 0;
     let matched = 0;
     let anchored = name === text || keywords.includes(text);
@@ -76,8 +98,23 @@ export function searchSkills(documents: SearchDocument[], query: string | undefi
     if (!score || (words.length > 1 && matched === 1 && !anchored)) return [];
     // Prefer coverage without allowing unmatched narrative details to erase a result.
     score *= 1 + matched / Math.max(words.length, 1);
-    return [{ item, score }];
-  }).sort((a, b) => b.score - a.score || compareUri(a.item, b.item)).map(({ item }) => item);
+    const allMatches = words.flatMap(word => evidenceTerms.get(word) ?? [])
+      .sort((a, b) => ({ name: 0, keywords: 1, description: 2 })[a.field] -
+        ({ name: 0, keywords: 1, description: 2 })[b.field]);
+    const descriptionTerms = [...new Set(allMatches.filter(match => match.field === "description").map(match => match.matchedText))];
+    return [{ item, score, evidence: {
+      exactName: name === text, matches: allMatches.slice(0, 8), ...(allMatches.length > 8 ? { truncated: true as const } : {}),
+    }, descriptionTerms }];
+  }).sort((a, b) => b.score - a.score || compareUri(a.item, b.item));
+  const excluded = new Set(exclude.map(normalize));
+  const hits = scored.filter(({ item }) => !excluded.has(normalize(item.name)) &&
+    !item.keywords.some(keyword => excluded.has(normalize(keyword))));
+  return { hits: hits.map(({ item, evidence, descriptionTerms }) => ({ item, evidence, descriptionTerms })),
+    excludedMatches: scored.length - hits.length };
+}
+
+export function searchSkills(documents: SearchDocument[], query: string | undefined, mode: SearchMode): SearchDocument[] {
+  return searchSkillHits(documents, query, mode).hits.map(({ item }) => item);
 }
 
 const DESCRIPTION_LIMIT = 240;

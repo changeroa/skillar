@@ -145,7 +145,8 @@ this does not modify Codex itself or guarantee automatic selection for every tas
 ## Behavior and boundaries
 
 - Search returns compact names, descriptions and exact URIs. Same-named skills remain separate. The loader searches a task subject with `mode: discovery`, checks relevance and invocation policy, and loads only selected results. Legacy mode retains all-literal-word matching and URI order; ranked modes are described below. Search reads all upstream catalog pages before applying `offset` (default 0) and `limit` (default 5, maximum 50).
-- Search responses include `totalMatches`, `offset`, and `limit`. When `nextOffset` is present, pass it as `offset` with the same `query` and `limit` to continue; its absence marks the last page. For example, start with `{"query":"review","limit":50}`, then use `{"query":"review","limit":50,"offset":50}` if `nextOffset` is 50. Catalog pages may be reused within the upstream TTL (30 seconds on skillar); additions or removals between refreshes can shift pages; restart from offset 0 if the catalog changes.
+- Search responses include `totalMatches`, `offset`, and `limit`. When `nextOffset` is present, pass it as `offset` with the same `query`, `mode`, `exclude`, `limit`, and returned `commit` to continue; its absence marks the last page. For example, start with `{"query":"review","mode":"discovery","limit":50}`, then use `{"query":"review","mode":"discovery","limit":50,"offset":50,"commit":"<returned 40-character commit>"}` if `nextOffset` is 50. Catalog pages may be reused within the upstream TTL (30 seconds on skillar); additions or removals between refreshes can shift pages; restart from offset 0 if the catalog changes.
+- Ranked requests may set `include_evidence: true` to return up to eight matching name, keyword, or description terms per candidate; the description excerpt then uses those same normalized matches. Evidence states what matched, not confidence or a probability. Omission preserves the existing response shape. To separate a positive subject from a clear exclusion, pass at most eight complete unwanted skill names or keywords (up to 128 characters each) in `exclude`, for example `{"query":"DB 병목","mode":"discovery","exclude":["API 계약"],"include_evidence":true}`. Exact exclusions filter candidates before pagination and report `filters.excludedMatches`; no description substrings are excluded. Do not infer exclusions from quoted text, ambiguous negation, or double negatives. Explicit-only skills remain candidates, not authorized actions. Legacy or omitted `mode` retains its old search contract and rejects a nonempty `exclude` or requested evidence.
 - `offset` must be a nonnegative safe integer and `limit` an integer from 1 to 50; invalid values return an MCP tool error. An offset at or beyond `totalMatches` returns an empty page without `nextOffset`, as does a search with no matches.
 - Load fetches the current manifest and only `SKILL.md`. Every file read checks
   SHA-256 and size. Frontmatter must match the manifest.
@@ -178,9 +179,11 @@ The bridge appends JSONL events to
 `${CODEX_HOME:-~/.codex}/logs/skillar/events-<YYYYMMDD>.jsonl` (UTC date). Override
 the directory with `SKILLAR_EVENT_LOG_DIR`, for example in isolated tests. Events
 include connection lifecycle, searches, loads, reads, and classified errors, with
-release/digest, byte count, and duration where available. Skill bodies and bearer
-credentials are not recorded. Logging failure is reported on stderr and does not
-prevent workflow calls.
+release/digest, byte count, and duration where available. Search events record the
+effective `mode` and boolean `mode_omitted`, so omission rates can be counted
+without recording raw search queries. Skill bodies and bearer credentials are not
+recorded. Logging failure is reported on stderr and does not prevent workflow
+calls.
 
 Each tool response includes the same `connection_id` as its event records, so
 trace exporters can join exact connections. `bridge_cwd` is the bridge process's

@@ -126,3 +126,67 @@ test("natural requests rank subject evidence, preserve identity and abstain on i
   assert.equal(searchSkills(docs, '일정 의존성', 'discovery').length, 0, 'metadata updates must not reuse an old index');
   assert.equal(searchSkills(docs, '독립 주제', 'discovery')[0].name, 'report');
 });
+
+test("ranked MCP search reports matching metadata only when evidence is requested", async t => {
+  const entries = [make("team", "database-query", ["DB 병목"]), make("team", "api-contract", ["API 계약"])];
+  entries[0].frontmatter.description = "Inspect database query bottlenecks and DB performance";
+  const server = createCodexBridge({ request: async () => ({ skills: entries }) }, "fixture", undefined, true);
+  const client = new Client({ name: "evidence-test", version: "1" });
+  const [front, back] = InMemoryTransport.createLinkedPair();
+  await server.connect(back); await client.connect(front);
+  t.after(async () => { await client.close(); await server.close(); });
+  const call = async args => {
+    const response = await client.callTool({ name: "search_skills", arguments: args });
+    assert.ok(!response.isError, JSON.stringify(response));
+    return JSON.parse(response.content[0].text);
+  };
+  const defaultResult = await call({ query: "DB 병목", mode: "discovery" });
+  assert.equal("evidence" in defaultResult.skills[0], false, "opt-in must not alter existing ranked consumers");
+  const result = await call({ query: "DB 병목", mode: "discovery", include_evidence: true });
+  assert.equal(result.skills[0].uri, entries[0].uri);
+  assert.equal(result.skills[0].evidence.exactName, false);
+  assert.ok(result.skills[0].evidence.matches.some(m => m.field === "keywords" && m.matchedText === "DB 병목"));
+  assert.ok(result.skills[0].evidence.matches.some(m => m.field === "description" && /DB/.test(m.matchedText)));
+  assert.equal("score" in result.skills[0].evidence, false, "ranking points are not probabilities");
+  const legacy = await call({ query: "DB" });
+  assert.deepEqual(Object.keys(legacy.skills[0]).sort(), ["description", "name", "uri"]);
+});
+
+test("explicit exact exclusion removes unwanted subject without changing legacy search", async t => {
+  const entries = [make("team", "api-contract", ["API 계약"]), make("team", "database-query", ["DB 병목"])];
+  const server = createCodexBridge({ request: async () => ({ skills: entries }) }, "fixture", undefined, true);
+  const client = new Client({ name: "exclusion-test", version: "1" });
+  const [front, back] = InMemoryTransport.createLinkedPair();
+  await server.connect(back); await client.connect(front);
+  t.after(async () => { await client.close(); await server.close(); });
+  // The loader extracts searchable subject terms from the user's request;
+  // only an explicit exclusion can remove the unwanted API-contract match.
+  const query = "API 계약 DB 병목";
+  const response = await client.callTool({ name: "search_skills", arguments: { query, mode: "discovery", exclude: ["API 계약"] } });
+  assert.ok(!response.isError, JSON.stringify(response));
+  const result = JSON.parse(response.content[0].text);
+  assert.deepEqual(result.skills.map(skill => skill.uri), [entries[1].uri]);
+  assert.deepEqual(result.filters, { exclude: ["API 계약"], excludedMatches: 1 });
+  const unfiltered = JSON.parse((await client.callTool({ name: "search_skills", arguments: { query, mode: "discovery" } })).content[0].text);
+  assert.ok(unfiltered.skills.some(skill => skill.uri === entries[0].uri), "quoted or ambiguous text must not be silently excluded");
+  const legacy = await client.callTool({ name: "search_skills", arguments: { query: "API", exclude: ["API 계약"] } });
+  assert.equal(legacy.isError, true, "legacy clients must opt into ranked semantics before requesting exclusions");
+});
+
+test("ranked evidence and excerpt share Unicode-normalized description matches", async t => {
+  const entry = make("team", "query-review");
+  entry.frontmatter.description = "앞부분 😀 ".repeat(60) + "느린 쿼리를 조사합니다" + "뒷부분 🧪 ".repeat(60);
+  const server = createCodexBridge({ request: async () => ({ skills: [entry] }) }, "fixture", undefined, true);
+  const client = new Client({ name: "unicode-evidence-test", version: "1" });
+  const [front, back] = InMemoryTransport.createLinkedPair();
+  await server.connect(back); await client.connect(front);
+  t.after(async () => { await client.close(); await server.close(); });
+  const response = await client.callTool({ name: "search_skills", arguments: { query: "느린 쿼리".normalize("NFD"), mode: "discovery", include_evidence: true } });
+  assert.ok(!response.isError, JSON.stringify(response));
+  const { skills } = JSON.parse(response.content[0].text);
+  assert.equal(skills.length, 1);
+  assert.ok(skills[0].evidence.matches.some(match => match.field === "description" && match.matchedText === "쿼리를"));
+  assert.match(skills[0].description, /느린 쿼리를/);
+  assert.ok(skills[0].description.isWellFormed());
+  assert.ok(Array.from(skills[0].description).length <= 240);
+});
