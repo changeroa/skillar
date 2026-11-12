@@ -1,0 +1,23 @@
+[
+  {
+    "uri": "skill://fixture.example/registration-flow/SKILL.md",
+    "name": "registration-flow",
+    "description": "Synthetic registration confirmation flow for evaluator validation.",
+    "keywords": [
+      "registration confirmation",
+      "synthetic fixture"
+    ],
+    "automatic": true,
+    "digest": "synthetic-nonprivate-registration-flow"
+  },
+  {
+    "uri": "skill://fixture.example/registration-guide/SKILL.md",
+    "name": "registration-guide",
+    "description": "Synthetic supporting guide for registration confirmation.",
+    "keywords": [
+      "registration guide"
+    ],
+    "automatic": true,
+    "digest": "synthetic-nonprivate-registration-guide"
+  }
+]
