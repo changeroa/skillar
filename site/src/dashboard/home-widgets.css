@@ -44,7 +44,7 @@
 .dashboard-page .dash-empty p { margin-top: var(--s2); }
 .dashboard-page .dash-setup-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); padding: var(--s3); margin-bottom: var(--s4); border: 1px solid var(--rule); background: var(--surface); }
 .dash-setup-strip > .panel__head { flex-basis: 100%; }
-.dash-setup-strip #dash-empty-title { font-size: var(--small); font-weight: 400; color: var(--muted); }
+.dash-setup-strip #dash-empty-title { font-size: var(--small); font-weight: 400; color: var(--lf-foreground-secondary); }
 .dashboard-page .dash-setup-strip .dash-checklist { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
 .dash-setup-strip .dash-checklist li { padding: var(--s1) var(--s2); border: 1px solid var(--rule); background: var(--bg); }
 .dash-setup-strip .dash-setup-action { margin-left: auto; }

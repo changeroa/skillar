@@ -128,6 +128,7 @@
 .lf-date-range .lf-button:focus-visible { outline: none; box-shadow: var(--lf-field-focus-shadow); }
 .lf-date-range p[role=alert] { flex-basis: 100%; margin: 0; border-color: var(--lf-border); color: var(--lf-destructive); font: var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .lf-select-badge { box-sizing: border-box; flex-shrink: 0; width: calc(2 * var(--lf-space-5)); height: var(--lf-space-5); margin-inline-end: var(--lf-space-1); padding: 0 var(--lf-space-1h); border-radius: var(--lf-radius-sm); border-color: var(--lf-border); background: var(--lf-muted); font-size: var(--lf-text-xs); line-height: var(--lf-space-5); text-align: center; pointer-events: none; }
+.lf-select-wrap .lf-select-badge { color: var(--lf-foreground-secondary); }
 @media (prefers-reduced-motion: reduce) {
   .lf-loading .lf-spinner { animation: lf-loading-progress var(--lf-spinner-duration) ease-in-out infinite alternate; }
 }
