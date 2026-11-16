@@ -18,7 +18,7 @@ body.app-shell #app-navigation a:focus-visible { outline-color:var(--lf-sidebar-
 .app-shell .app-navigation { position:fixed; inset:0 auto 0 0; width:var(--app-rail); padding:var(--lf-space-12) var(--lf-space-2) var(--lf-space-3); border-right:var(--lf-border-width) solid var(--lf-sidebar-border); z-index:4; height:100dvh; overflow:auto; display:flex; flex-direction:column; background:var(--lf-sidebar-background); color:var(--lf-sidebar-foreground); font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans); }
 .app-shell .app-navigation nav { display:flex; flex-direction:column; gap:var(--lf-space-2); }
 .app-shell .app-nav-group { display:flex; flex-direction:column; gap:var(--lf-space-1); }
-.app-shell .app-nav-group > span { display:flex; align-items:center; height:var(--lf-space-8); color:color-mix(in oklab,var(--lf-sidebar-foreground) 70%,transparent); font-size:var(--lf-text-xs); line-height:var(--lf-leading-xs); font-weight:var(--lf-weight-strong); padding:0 var(--lf-space-2); }
+.app-shell .app-nav-group > span { display:flex; align-items:center; height:var(--lf-space-8); color:color-mix(in oklab,var(--lf-sidebar-foreground) 80%,transparent); font-size:var(--lf-text-xs); line-height:var(--lf-leading-xs); font-weight:var(--lf-weight-strong); padding:0 var(--lf-space-2); }
 .app-shell .app-navigation a { display:flex; align-items:center; gap:var(--lf-space-2); height:var(--lf-control-height); min-height:var(--lf-control-height); padding:var(--lf-space-2); border-radius:var(--lf-radius-sm); text-decoration:none; color:inherit; font-size:var(--lf-text-sm); line-height:var(--lf-leading-sm); }
 .app-shell .app-navigation a:hover,.app-shell .app-navigation a:active,.app-shell .app-navigation a[aria-current="page"] { background:var(--lf-sidebar-accent); color:var(--lf-sidebar-accent-foreground); }
 .app-shell .app-navigation a[aria-current="page"] { font-weight:var(--lf-weight-strong); }
@@ -73,4 +73,7 @@ body.app-shell #app-navigation a:focus-visible { outline-color:var(--lf-sidebar-
   .app-shell .app-navigation { display:block; position:static; }
   .app-shell .app-navigation nav { display:flex; flex-wrap:wrap; }
   .app-shell .app-menu,.app-shell .app-menu-close { display:none; }
+}
+@media(max-width:479.98px) {
+  .app-shell .app-jump kbd { display:none; }
 }
