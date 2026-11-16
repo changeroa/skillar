@@ -34,7 +34,7 @@
 .trace-hero { display: grid; gap: var(--s5); padding-block: var(--s6) var(--s7); }
 .trace-hero__copy { max-width: 1100px; }
 .trace-category { color: var(--muted); font-size: var(--small); margin-bottom: var(--s3); }
-.trace-hero h1 { text-wrap: pretty; }
+.trace-hero h1 { text-wrap: pretty; font-size: clamp(28px, 4.5vw, 64px); }
 .trace-hero .intro { max-width: 62ch; margin-top: var(--s4); }
 .trace-hero__actions { min-height: var(--s6); grid-row: 2; }
 .trace-hero__actions [hidden] { display: none; }
