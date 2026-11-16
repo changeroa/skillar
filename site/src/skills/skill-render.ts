@@ -137,7 +137,7 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       { label: "현재 리비전", value: `r${detail.skill.head.revision}` },
       { label: "보관 버전 수", value: detail.versions.length },
       { label: "선택 digest", value: h("code", null, digest?.slice(0, 8)) },
-      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "연결 후 표시 · 버전별 읽기 기록이 아직 연결되지 않았습니다." },
+      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "비교 탭에서 버전별 읽기 지표를 확인합니다." },
     ] })),
     peek && detail !== null && h(KeyValueGrid, { entries: [
       { label: "스킬 ID", value: h("code", null, skillId) },
