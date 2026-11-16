@@ -54,8 +54,8 @@ test("unavailable traces do not become zero request measurements", async t => {
   const props = { route: { view: "dashboard", filter: {} }, live: { state: "paused", seq: 0 }, navigate() {} };
   const { dom, container } = await mount(t, views.DashboardView, props);
   const metrics = () => all(container, node => (node.getAttribute("class") ?? "").split(/\s+/).includes("lf-metric__value"));
-  await waitFor(dom, () => metrics().length === 4, "dashboard request metrics");
-  assert.deepEqual([metrics()[1].textContent, metrics()[2].textContent], ["미측정", "미측정"]);
+  await waitFor(dom, () => metrics().length === 5, "dashboard request metrics");
+  assert.deepEqual([metrics()[1].textContent, metrics()[2].textContent, metrics()[3].textContent], ["미측정", "미측정", "미측정"]);
 });
 
 test("unavailable traces keep weekly reads unmeasured", async t => {
