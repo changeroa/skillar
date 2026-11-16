@@ -158,8 +158,10 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
         secondary.href = '/skills/';
         secondary.textContent = '내 스킬';
       }
+      const retry = document.querySelector<HTMLAnchorElement>('#landing-retry');
+      if (retry) retry.hidden = result.kind !== 'unreachable' && result.kind !== 'unexpected';
       if (landingStatus) landingStatus.textContent = result.kind === 'unreachable' || result.kind === 'unexpected'
-        ? '로그인 상태를 확인하지 못했습니다. 계정 화면에서 다시 확인하세요.'
+        ? '계정 상태를 지금 확인할 수 없습니다. 시작하기는 계속할 수 있습니다.'
         : '';
       landingActions.hidden = false;
     }
