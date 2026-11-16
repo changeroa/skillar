@@ -125,6 +125,21 @@ body:has(#skills-app) :is(p, .note, .choice, .preview-notice) { word-break: keep
 .diff-line-number { color: var(--muted); font-variant-numeric: tabular-nums; }
 .diff-lines [data-change="added"] { background: var(--surface); color: var(--success); }
 .diff-lines [data-change="removed"] { color: var(--error); }
+.version-metrics { margin-top: var(--s4); }
+.version-metrics__period { display: flex; gap: var(--s2); margin-top: var(--s3); flex-wrap: wrap; }
+.version-metrics__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s3); margin-top: var(--s3); }
+.version-metrics__card { border: 1px solid var(--border); border-radius: 2px; padding: var(--s3); min-width: 0; display: grid; gap: var(--s2); align-content: start; }
+.version-metrics__version { font-size: var(--small); font-family: ui-monospace, monospace; margin: 0; overflow-wrap: anywhere; }
+.version-metrics__count { font-size: 22px; font-weight: 600; margin: 0; }
+.version-metrics__statuses { font-size: var(--small); margin: 0; }
+.version-metrics__sample { overflow-wrap: anywhere; }
+.version-metrics__table { width: 100%; border-collapse: collapse; font-size: var(--small); }
+.version-metrics__table th { text-align: left; color: var(--muted); font-weight: 500; padding: var(--s1) var(--s2) var(--s1) 0; border-bottom: 1px solid var(--border); }
+.version-metrics__table td { padding: var(--s1) var(--s2) var(--s1) 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.version-metrics__prompt { max-width: 24ch; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .version-metrics__table .version-metrics__prompt { max-width: 14ch; }
+}
 @media (max-width: 1023px) {
   .skill-list { grid-template-columns: minmax(0, 1fr); }
   body:has(#skills-app) .skill-breadcrumb [data-skill-name] { flex: 1 1 0; }

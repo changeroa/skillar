@@ -7,6 +7,7 @@ import { draftFromExport } from "./model.ts";
 import { lineDiff } from "./diff.ts";
 import type { DiffLine } from "./diff.ts";
 import { versionLabel } from "./version-label.ts";
+import { VersionMetricsPanel } from "./version-metrics-panel.ts";
 import { DiffViewer } from "../../../local/dashboard/foundation/viewers";
 
 type Props = {
@@ -74,6 +75,7 @@ export function VersionDiff({ detail, signal, onUnauthorized, active = true }: P
             if (value !== undefined) setAfter(value.digest);
           } }, detail.versions.map(v => h("option", { key: v.digest, value: v.digest }, versionLabel(detail, v.digest))))),
       comparison.kind === "failed" && h("button", { class: "button secondary", type: "button", onClick: () => setRetry(value => value + 1) }, "다시 시도")),
+    h(VersionMetricsPanel, { detail, before: beforeDigest, after: afterDigest, signal, onUnauthorized, active }),
     h("p", { class: "note", role: "status", "aria-live": "polite" }, busy ? "버전 비교 중…" :
       comparison.kind === "failed" ? comparison.message :
       comparison.kind === "ready" && comparison.rows.every(row => row.kind === "same") ? "두 버전의 SKILL.md 내용이 같습니다." : ""),
