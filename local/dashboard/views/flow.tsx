@@ -1,9 +1,9 @@
 import { REQUEST_STATUSES, type RequestStatus } from "../../src/request-status.js";
 import { useMemo, useState } from "preact/hooks";
-import type { AdoptionState, FlowState, Filter, FlowDto, SkillEntry } from "../../src/types.js";
+import type { FlowState, Filter, FlowDto, SkillEntry } from "../../src/types.js";
 import { api } from "../api";
 import { STATE_VALUES, Sankey, genericLabel, installStyles, nodeValue, percent, share, type FlowLink, type FlowNode, type FlowTarget } from "../charts/sankey";
-import { ADOPTION_STATES, STATE_LABEL, buildHash, serializeFilter, skillName, type Route, type ViewProps } from "../state";
+import { STATE_LABEL, buildHash, displayStatus, serializeFilter, skillName, type Route, type ViewProps } from "../state";
 import { AnalysisEmpty, AnalysisError, AnalysisToolbar, conditions, useAnalysisReport } from "../components/analysis";
 import { StatusMessage } from "../foundation/widgets/messages";
 
@@ -27,8 +27,7 @@ export function defaultMode(sessionCount: number): FlowMode {
 }
 
 export function legendText(unit: FlowUnit): string {
-  if (unit === "search_requests" || unit === "load_requests") return `띠 굵기 = ${unit === "search_requests" ? "검색" : "읽기"} 요청 수. 재시도는 각각 따로 셉니다.`;
-  return unit === "first_load" ? "띠 굵기 = 세션 수 (단위: 처음 읽은 스킬)" : "띠 굵기 = 스킬 읽기 수 (단위: 읽은 모든 스킬)";
+  return `띠 굵기 = ${unit === "search_requests" ? "검색" : "읽기"} 요청 수. 재시도는 각각 따로 셉니다.`;
 }
 
 /** Skill node values are URIs from the store; fixtures and older rows may carry a skill name, resolved through the catalog. */
@@ -48,9 +47,9 @@ function skillUri(node: FlowNode | undefined, resolve: SkillResolver): string | 
 }
 
 /** The Filter patch a click means, or undefined when the element maps to nothing filterable. */
-export function targetFilter(target: FlowTarget, nodes: FlowNode[], resolve: SkillResolver, unit?: FlowUnit): Pick<Filter, "skill" | "state" | "searchStatus" | "loadStatus"> | undefined {
-  const statusFilter = (state: FlowState): Pick<Filter, "state" | "searchStatus" | "loadStatus"> => REQUEST_STATUSES.includes(state as RequestStatus)
-    ? { [unit === "search_requests" ? "searchStatus" : "loadStatus"]: [state] } : { state: [state as AdoptionState] };
+export function targetFilter(target: FlowTarget, nodes: FlowNode[], resolve: SkillResolver, unit?: FlowUnit): Pick<Filter, "skill" | "searchStatus" | "loadStatus"> | undefined {
+  const statusFilter = (state: FlowState): Pick<Filter, "searchStatus" | "loadStatus"> =>
+    ({ [unit === "search_requests" ? "searchStatus" : "loadStatus"]: [state as RequestStatus] });
   if (target.kind === "node") {
     const { node } = target;
     if (node.other || node.column === 0) return undefined;
@@ -66,7 +65,7 @@ export function targetFilter(target: FlowTarget, nodes: FlowNode[], resolve: Ski
   return { ...(uri ? { skill: [uri] } : {}), ...statusFilter(target.link.state) };
 }
 
-export function sessionsRoute(route: Route, patch: Pick<Filter, "skill" | "state" | "searchStatus" | "loadStatus">): Route {
+export function sessionsRoute(route: Route, patch: Pick<Filter, "skill" | "searchStatus" | "loadStatus">): Route {
   return { view: "sessions", filter: { ...route.filter, ...patch } };
 }
 
@@ -88,9 +87,9 @@ const FLOW_CSS = `
 .flow__key { display: inline-flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); }
 .flow__swatch { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; }
 .flow__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); flex: none; }
-.flow__dot.is-succeeded, .flow__dot.is-loaded { background: var(--ok); }
-.flow__dot.is-in_progress, .flow__dot.is-exposed_only { background: var(--warn); }
-.flow__dot.is-failed, .flow__dot.is-no_match { background: var(--bad); }
+.flow__dot.is-succeeded { background: var(--ok); }
+.flow__dot.is-in_progress { background: var(--warn); }
+.flow__dot.is-failed { background: var(--bad); }
 .flow__chart { padding: var(--s-4); }
 .flow__paths { overflow-x: auto; }
 .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: var(--r-sm); overflow: hidden; }
@@ -138,10 +137,10 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
 function Legend({ unit, withKey }: { unit: FlowUnit; withKey: boolean }) {
   return (
     <p class="flow__legend">
-      <span>{unit.endsWith("_requests") ? `${legendText(unit)} 비율 = 경로의 요청 수 / 기간 내 요청 수.` : withKey ? legendText(unit) : `비율 = 경로의 세션 수 / 기간 내 세션 수 (단위: ${unit === "first_load" ? "처음 읽은 스킬" : "읽은 모든 스킬"})`}</span>
+      <span>{`${legendText(unit)} 비율 = 경로의 요청 수 / 기간 내 요청 수.`}</span>
       {withKey && (
         <span class="flow__key" aria-label="띠 색상">
-          {(unit.endsWith("_requests") ? REQUEST_STATUSES.filter((s) => s !== "not_attempted") : ADOPTION_STATES).map((state) => (
+          {REQUEST_STATUSES.filter((s) => s !== "not_attempted").map((state) => (
             <span class="flow__swatch" key={state}>
               <i class={`flow__dot is-${state}`} aria-hidden="true" />
               {STATE_LABEL[state]}
@@ -192,7 +191,7 @@ export function TopPathsTable({ dto, route, navigate, resolve }: { dto: FlowDto;
                     <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
                     <a class={filterable ? "paths__skill" : "paths__skill paths__skill--dim"} href={href} title={filterable ? nodeValue(row.skillNode) : undefined}>{filterable ? skillName(resolve(nodeValue(row.skillNode)) ?? row.skill) : genericLabel(row.skillNode)}</a>
                     <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
-                    <span class={`badge badge--${row.state}`}>{STATE_LABEL[row.state] ?? row.state}</span>
+                    <span class={`badge badge--${displayStatus(row.state)}`} title={displayStatus(row.state) === "unknown" && row.state !== "unknown" ? "이전 분류 값입니다. 11/02 확정 상태 모델에서는 알 수 없음으로 표시합니다." : undefined}>{STATE_LABEL[displayStatus(row.state)]}</span>
                   </span>
                 </td>
                 <td class="num">{row.count}</td>
@@ -250,7 +249,7 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
         <Legend unit={dto.unit} withKey={shown === "chart"} />
         <div class="analysis-facets" aria-label="받은 경로의 상태별 수">
           <button class="pe-button" aria-pressed={!route.facet} onClick={() => navigate({ ...route, facet: undefined })}>전체 {topPaths(dto).reduce((sum, row) => sum + row.count, 0)}</button>
-          {[...new Set(topPaths(dto).map(row => row.state))].map(state => <button class="pe-button" aria-pressed={route.facet === state} onClick={() => navigate({ ...route, flowMode: "table", facet: state })} key={state}>{STATE_LABEL[state]} {topPaths(dto).filter(row => row.state === state).reduce((sum, row) => sum + row.count, 0)}</button>)}
+          {[...new Set(topPaths(dto).map(row => row.state))].map(state => <button class="pe-button" aria-pressed={route.facet === state} onClick={() => navigate({ ...route, flowMode: "table", facet: state })} key={state}>{STATE_LABEL[displayStatus(state)]} {topPaths(dto).filter(row => row.state === state).reduce((sum, row) => sum + row.count, 0)}</button>)}
         </div>
         {(dto.requestCount ?? dto.sessionCount) === 0 ? <><p class="empty">이 필터에 기록된 {dto.unit === "search_requests" ? "검색" : "읽기"} 요청이 없습니다.</p><AnalysisEmpty route={route} navigate={navigate} /></> : shown === "chart"
           ? (

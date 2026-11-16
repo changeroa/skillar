@@ -1,6 +1,9 @@
 import type { SessionListRow } from "../../api";
 import { RUNTIME_LABEL, type SessionSort } from "../../state";
 
+// row.state is a legacy server classification kept only as a data pointer: it says which list
+// row.skills holds (loaded skills first, otherwise exposed candidates). It is never displayed -
+// shown statuses come only from the 11/02 request-status model.
 export function readSkills(row: SessionListRow): readonly string[] {
   return row.state === "loaded" ? row.skills : [];
 }
@@ -15,7 +18,6 @@ export function sortSessions(rows: readonly SessionListRow[], sort: SessionSort 
   const value = (row: SessionListRow): string | number | undefined => {
     switch (field) {
       case "runtime": return RUNTIME_LABEL[row.runtime];
-      case "state": return row.state;
       case "reads": return readSkills(row).length;
       case "duration": return row.endedAt === undefined ? undefined : row.endedAt - row.startedAt;
       default: return row.startedAt;
@@ -30,6 +32,6 @@ export function sortSessions(rows: readonly SessionListRow[], sort: SessionSort 
 }
 
 export const COLUMN_LABEL = {
-  started: "시작", runtime: "실행 환경", state: "상태", reads: "읽은 스킬", candidates: "후보",
+  started: "시작", runtime: "실행 환경", reads: "읽은 스킬", candidates: "후보",
   duration: "길이", prompt: "첫 요청", search: "검색", load: "읽기", attribution: "세션 연결", id: "세션 ID",
 } as const;

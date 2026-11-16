@@ -272,7 +272,7 @@ test("unrecognised view preference values do not become active controls", () => 
 
 test("navigation-only command destinations retain the list scope and clear entity selection", () => {
   const route = {
-    view: "trace", sessionId: "session", filter: { q: "migration", state: ["loaded"] },
+    view: "trace", sessionId: "session", filter: { q: "migration", loadStatus: ["succeeded"] },
     sort: "started", columns: ["started", "reads"], density: "comfortable", peek: "session", event: "load-id",
   };
   const next = ui.destination(route, "dashboard");

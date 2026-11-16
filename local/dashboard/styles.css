@@ -408,10 +408,6 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--badge-c); flex: none; }
-.badge--loaded { --badge-c: var(--ok); }
-.badge--exposed_only { --badge-c: var(--warn); }
-.badge--no_match { --badge-c: var(--bad); }
-.badge--aborted, .badge--not_used { --badge-c: var(--neutral); }
 .badge--matched { --badge-c: var(--ok); }
 .badge--partial, .badge--different { --badge-c: var(--warn); }
 .badge--no_skill_used, .badge--not_run { --badge-c: var(--neutral); }

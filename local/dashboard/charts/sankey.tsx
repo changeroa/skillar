@@ -1,8 +1,8 @@
-import { REQUEST_STATUSES } from "../../src/request-status.js";
+import { REQUEST_STATUSES, type RequestStatus } from "../../src/request-status.js";
 import { sankey as sankeyLayout, sankeyLinkHorizontal, type SankeyNode } from "d3-sankey";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { FlowState as AdoptionState, FlowDto } from "../../src/types.js";
-import { STATE_LABEL } from "../state";
+import { STATE_LABEL, displayStatus } from "../state";
 
 // Three-column Sankey (task type -> skill -> outcome): d3-sankey computes the layout, the SVG is
 // rendered by hand (nodes as rects, links as sankeyLinkHorizontal paths). Links take the color of
@@ -22,7 +22,9 @@ export type FlowLayout = { nodes: LaidOutNode[]; links: LaidOutLink[] };
 export type LayoutOptions = { width: number; height: number; top?: number; nodeWidth?: number; nodePadding?: number };
 
 export const COLUMN_TITLE: Record<FlowDto["columns"][number], string> = { task_type: "작업 유형", skill: "스킬", state: "결과" };
-export const STATE_VALUES: ReadonlySet<string> = new Set<AdoptionState>(["loaded", "exposed_only", "no_match", "aborted", "not_used", ...REQUEST_STATUSES]);
+// The outcome column shows only the 11/02 confirmed request statuses; the rejected mixed-axis
+// session classifications are never displayed.
+export const STATE_VALUES: ReadonlySet<string> = new Set<string>(REQUEST_STATUSES);
 
 const NODE_WIDTH = 10;
 const HEADER_HEIGHT = 24;
@@ -122,7 +124,7 @@ export function genericLabel(node: FlowNode): string {
 /** Outcome nodes carry the raw state as their label; show the same wording as the badges and the legend. */
 export function displayLabel(node: FlowNode): string {
   const value = nodeValue(node);
-  return node.column === 2 && STATE_VALUES.has(value) ? STATE_LABEL[value as AdoptionState] : genericLabel(node);
+  return node.column === 2 && STATE_VALUES.has(value) ? STATE_LABEL[value as RequestStatus] : genericLabel(node);
 }
 
 export function share(count: number, total: number): number {
@@ -260,7 +262,7 @@ function describe(dto: FlowDto, target: FlowTarget): { title: string; sub: strin
   const { link } = target;
   return {
     title: `${label.get(link.source) ?? link.source} \u2192 ${label.get(link.target) ?? link.target}`,
-    sub: `${STATE_LABEL[link.state] ?? link.state} \u00b7 ${countText(dto, link.count)} \u00b7 ${percent(link.count, (dto.requestCount ?? dto.sessionCount))}`,
+    sub: `${STATE_LABEL[displayStatus(link.state)]} \u00b7 ${countText(dto, link.count)} \u00b7 ${percent(link.count, (dto.requestCount ?? dto.sessionCount))}`,
   };
 }
 
@@ -421,7 +423,7 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const handle = handles.get(link.index);
               if (!handle || !href) return null;
               const { x, y } = handle;
-              const label = `${link.count} · ${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[link.state] ?? link.state}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
+              const label = `${link.count} · ${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[displayStatus(link.state)]}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, handle);
               return <a key={`l${link.index}`} data-flow-action={`l${link.index}`} tabindex={0} href={href} aria-label={label} onClick={activate(target, `l${link.index}`)} {...handlers}>
                   <rect class="sankey__hit" x={x - TARGET_SIZE / 2} y={y - TARGET_SIZE / 2} width={TARGET_SIZE} height={TARGET_SIZE} />
