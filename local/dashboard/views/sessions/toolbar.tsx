@@ -50,6 +50,9 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
         ...([{ value: "candidates_found", label: "후보 있음" }, { value: "no_candidates", label: "후보 없음" }] as const)
           .map(option => ({ id: option.value, label: option.label, checked: route.filter.searchResult?.includes(option.value) ?? false,
             onSelect: () => update({ searchResult: [option.value] }) })),
+        { id: "conversion-miss", label: "후보 있음·읽기 없음", separatorBefore: true,
+          checked: route.filter.searchResult?.includes("candidates_found") === true && route.filter.loadStatus?.includes("not_attempted") === true,
+          onSelect: () => update({ searchStatus: undefined, loadStatus: ["not_attempted"], searchResult: ["candidates_found"] }) },
       ]} />
       <ColumnVisibility columns={SESSION_COLUMNS.map(id => ({ id, label: COLUMN_LABEL[id] }))}
         hidden={SESSION_COLUMNS.filter(column => !columns.includes(column))} allowEmpty

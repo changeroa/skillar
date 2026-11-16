@@ -118,15 +118,6 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
         {catalog.status === "ready" && skills.length === 0 && <a class="home-link" href="/skills/">첫 스킬 게시하기</a>}
       </Widget>
     </div>
-    <Widget title="연결 상태">
-      <a class="home-link" href="/connections/">연결 관리</a>
-      {(devices.data !== null || mcp.data !== null) && <DataTable caption="기기 + MCP 등록 상태 · 온라인 여부나 사용량이 아닙니다." rows={rows}
-        columns={connectionColumns} rowId={row => `${row.kind}:${row.id}`}
-        initialSort={homeSort(new URL(location.href), "connections", connectionColumns.map(column => column.id),
-          { column: "name", direction: "ascending" })} onSort={sort => saveHomeSort("connections", sort)} />}
-      <ReadNotice state={devices} onRetry={onRetryDevices} />
-      {mcp.status !== "ready" && <p class="note">MCP 등록 상태는 {mcp.status === "loading" ? "확인 중" : "조회 실패"}입니다.</p>}
-    </Widget>
     <section class="home-consent" aria-labelledby="home-consent-title">
       <h2 id="home-consent-title">기기 업로드 동의 후 표시</h2>
       <p class="note">보유 자산과 별도로 수집하는 사용량입니다. 미측정은 0건이 아닙니다.</p>
@@ -142,5 +133,14 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
         </section>)}
       </div>
     </section>
+    <Widget title="연결 상태">
+      <a class="home-link" href="/connections/">연결 관리</a>
+      {(devices.data !== null || mcp.data !== null) && <DataTable caption="기기 + MCP 등록 상태 · 온라인 여부나 사용량이 아닙니다." rows={rows}
+        columns={connectionColumns} rowId={row => `${row.kind}:${row.id}`}
+        initialSort={homeSort(new URL(location.href), "connections", connectionColumns.map(column => column.id),
+          { column: "name", direction: "ascending" })} onSort={sort => saveHomeSort("connections", sort)} />}
+      <ReadNotice state={devices} onRetry={onRetryDevices} />
+      {mcp.status !== "ready" && <p class="note">MCP 등록 상태는 {mcp.status === "loading" ? "확인 중" : "조회 실패"}입니다.</p>}
+    </Widget>
   </section>;
 }

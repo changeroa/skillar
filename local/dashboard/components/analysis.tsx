@@ -107,7 +107,7 @@ installStyles("analysis", `
 .analysis-toolbar label{display:grid;gap:4px;font-size:12px;color:var(--ink-2)}
 .analysis-toolbar select:not(.lf-select){min-width:100px;min-height:44px}
 .analysis-scope{font-size:12px;color:var(--ink-2);margin:0;overflow-wrap:anywhere}
-.analysis-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.analysis-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .analysis-tile,.analysis-widget{border:1px solid var(--line);padding:16px;min-width:0;background:var(--bg)}
 .analysis-tile h2,.analysis-widget h2{font-size:14px;margin:0 0 8px;font-weight:600}
 .analysis-number{font-size:28px;line-height:1.4;font-weight:600;font-variant-numeric:tabular-nums;margin:0 0 8px}
@@ -167,6 +167,7 @@ installStyles("analysis", `
 .analysis.pe-console .analysis-tile{padding:0;border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card);box-shadow:var(--lf-widget-shadow)}
 .analysis.pe-console .analysis-tile>.pe-muted{padding:0 var(--lf-space-4) var(--lf-space-4);font-size:var(--lf-text-xs)}
 .analysis-widget-shell{min-width:0;display:flex}.analysis-widget-shell>.lf-card{width:100%}
+.analysis>.analysis-widget-shell{grid-column:1/-1;margin-block-end:12px}
 .analysis.pe-console :is(.analysis-table th,.analysis-table td){height:var(--lf-control-height);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm);border-color:var(--lf-border)}
 .analysis.pe-console .analysis-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);font-weight:var(--lf-weight-strong);line-height:var(--lf-leading-sm);background:var(--lf-background)}
 .analysis.pe-console .analysis-table th:first-child{padding-left:var(--lf-space-2)}

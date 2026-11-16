@@ -4,7 +4,7 @@ import { summarizeRequests } from "../../src/request-status.js";
 import { AnalysisEmpty, AnalysisError, AnalysisToolbar, AnalysisWidget, Metric, conditions, useAnalysisReport } from "../components/analysis";
 import { Bars } from "../charts/bars";
 import { durationDistribution, observedRequests, requestSeries, requestsInRange } from "./analysis-data";
-import { DashboardActivity, DashboardFlow } from "./dashboard-widgets";
+import { DashboardActivity, DashboardFlow, DashboardRecentSessions } from "./dashboard-widgets";
 import { StatusMessage } from "../foundation/widgets/messages";
 
 export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
@@ -17,6 +17,7 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
   const requestsMeasured = (data?.traces.results.length ?? 0) > 0;
   const records = data ? requestsInRange(data.traces.results.flatMap(result => result.requests), data.filter) : [];
   const summary = summarizeRequests(records);
+  const conversion = (data?.traces.results ?? []).reduce((total, result) => ({ searches: total.searches + result.conversion.searches, converted: total.converted + result.conversion.converted }), { searches: 0, converted: 0 });
   const durations = durationDistribution(data?.rows ?? []);
   const average = durations.values.length ? durations.values.reduce((sum, value) => sum + value, 0) / durations.values.length / 60000 : undefined;
   const reads = new Map<string, number>();
@@ -40,10 +41,15 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
     <AnalysisError error={report.error} title="세션 활동을 불러올 수 없습니다" retry={report.refresh} />
     {data && <><p class="analysis-scope" data-result-conditions>{api.mode === "fixtures" ? "예시 데이터 · " : ""}{conditions(data.filter)} · {coverage}</p>
       {data.rows.length === 0 ? <AnalysisEmpty route={route} navigate={navigate} /> : <>
+        <AnalysisWidget title="최근 세션" id="recent-sessions" wide>
+          <DashboardRecentSessions rows={data.rows} skills={data.skills} traces={data.traces.results} route={route} />
+          <p class="pe-muted">시작 최신 5개 · 스킬 뒤 @다이제스트는 읽은 버전 · 세션을 열면 요청 기록이 함께 보입니다 · 한국 시간</p>
+        </AnalysisWidget>
         <div class="analysis-tiles">
           <Metric label="세션" value={data.rows.length}>세션 시작 기준 · 수신 범위</Metric>
           <Metric label="검색 요청" value={requestsMeasured ? summary.search.total : null}>{requestsMeasured ? <>후보 있음 {summary.search.results.candidates_found} · 후보 없음 {summary.search.results.no_candidates}<br />조회한 세션 추적 기준</> : "추적 조회 실패로 요청 수를 확인할 수 없습니다."}</Metric>
           <Metric label="읽기 요청" value={requestsMeasured ? summary.load.total : null}>{requestsMeasured ? <>성공 {summary.load.counts.succeeded} · 고유 읽은 스킬 {reads.size}<br />후보와 자료 읽기 제외</> : "추적 조회 실패로 읽기 수를 확인할 수 없습니다."}</Metric>
+          <Metric label="후보→읽기 전환" value={requestsMeasured && conversion.searches ? conversion.converted : null} suffix={conversion.searches ? `/${conversion.searches}` : undefined}>{requestsMeasured ? (conversion.searches ? <>{Math.round(conversion.converted / conversion.searches * 100)}% · 후보를 표시한 검색 기준<br />같은 세션에서 후보를 본 뒤 첫 읽기에 귀속 · 읽기 1건은 검색 1건에만 · 작업 성공률이 아닙니다</> : "후보를 표시한 검색이 관찰되지 않았습니다.") : "추적 조회 실패로 전환을 확인할 수 없습니다."}</Metric>
           <Metric label="평균 세션 길이" value={average === undefined ? null : Math.round(average * 10) / 10} suffix="분">종료 기록 {durations.values.length}세션 · 미종료 {data.rows.length - durations.values.length} 제외</Metric>
         </div>
         <div class="analysis-widgets">
