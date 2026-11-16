@@ -1,5 +1,5 @@
 import { REQUEST_STATUSES, hasStatus, type RequestStatus, type SearchResult } from "../src/request-status.js";
-import type { AdoptionState, Attribution, FindingLabel, Filter, RuntimeId, SessionRow, TurnBasis } from "../src/types.js";
+import type { Attribution, FindingLabel, Filter, RuntimeId, SessionRow, TurnBasis } from "../src/types.js";
 import type { StepStatus } from "../src/workflow/compare.js";
 import type { LiveState, SessionListRow } from "./api";
 
@@ -14,14 +14,13 @@ import type { LiveState, SessionListRow } from "./api";
 // comma lists; dow,hour,hourSpan ints; q), so the same string feeds /api/* calls.
 
 export const RUNTIME_IDS: readonly RuntimeId[] = ["claude-code", "codex", "gemini", "cursor", "omo", "gajae", "openclaw", "unknown"];
-export const ADOPTION_STATES: readonly AdoptionState[] = ["loaded", "exposed_only", "no_match", "aborted", "not_used"];
-export const FILTER_KEYS = ["from", "to", "runtime", "skill", "state", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
+export const FILTER_KEYS = ["from", "to", "runtime", "skill", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
 export type View = "dashboard" | "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "not-found";
-export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "state", "-state", "reads", "-reads", "duration", "-duration"] as const;
+export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "reads", "-reads", "duration", "-duration"] as const;
 export type SessionSort = (typeof SESSION_SORTS)[number];
-export const SESSION_COLUMNS = ["started", "runtime", "state", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
+export const SESSION_COLUMNS = ["started", "runtime", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
 export type SessionColumn = (typeof SESSION_COLUMNS)[number];
 export type SessionDensity = "compact" | "normal" | "comfortable";
 export type Route = {
@@ -44,17 +43,16 @@ export const RUNTIME_LABEL: Record<RuntimeId, string> = {
 export const RUNTIME_MARK: Record<RuntimeId, string> = {
   "claude-code": "CC", codex: "CX", gemini: "GM", cursor: "CU", omo: "OM", gajae: "GJ", openclaw: "OC", unknown: "??",
 };
-export const STATE_LABEL: Record<import("../src/types.js").FlowState, string> = {
+// Displayed statuses come only from the 11/02 confirmed request-status model (PR #46): search and
+// load are judged separately and a session never gets a single winning status. The rejected mixed
+// axis (loaded/exposed_only/no_match/aborted/not_used) is never displayed.
+export const STATE_LABEL: Record<RequestStatus, string> = {
   not_attempted: "요청 없음", in_progress: "진행 중", succeeded: "성공", failed: "실패", cancelled: "취소됨", unknown: "알 수 없음",
-  loaded: "읽음", exposed_only: "후보만 표시", no_match: "후보 없음", aborted: "중단됨", not_used: "사용 기록 없음",
 };
-export const STATE_TITLE: Record<AdoptionState, string> = {
-  loaded: "loaded: 이 세션에서 스킬을 읽었습니다.",
-  exposed_only: "exposed_only: 후보를 표시했지만 읽은 스킬은 없습니다.",
-  no_match: "no_match: 검색에서 후보가 나오지 않았습니다.",
-  aborted: "aborted: 이전 세션 분류입니다. 읽기 요청의 실패나 취소를 뜻하지 않습니다.",
-  not_used: "not_used: 이 세션에는 스킬 검색 기록이 없습니다.",
-};
+/** Any flow value to a displayable request status; rejected mixed-axis values read as unknown. */
+export function displayStatus(value: string): RequestStatus {
+  return REQUEST_STATUSES.includes(value as RequestStatus) ? (value as RequestStatus) : "unknown";
+}
 export const ATTRIBUTION_LABEL: Record<Attribution["method"], string> = {
   runtime_id: "실행 환경 ID", vendor_meta: "제공자 메타데이터", trace_handle: "검색 추적 ID", window: "시간 구간", none: "미연결",
 };
@@ -101,7 +99,6 @@ export const STEP_STATUS_TITLE: Record<StepStatus, string> = {
 };
 
 const RUNTIME_SET = new Set<string>(RUNTIME_IDS);
-const STATE_SET = new Set<string>(ADOPTION_STATES);
 
 function decode(raw: string): string {
   try {
@@ -168,11 +165,6 @@ export function parseFilter(input: string | URLSearchParams): Filter {
       case "searchResult": {
         const results = list(raw).filter((value): value is SearchResult => value === "candidates_found" || value === "no_candidates");
         if (results.length) filter.searchResult = results;
-        break;
-      }
-      case "state": {
-        const states = list(raw).filter((s): s is AdoptionState => STATE_SET.has(s));
-        if (states.length) filter.state = states;
         break;
       }
       case "dow": filter.dow = intIn(raw, 0, 6); break;
@@ -306,7 +298,6 @@ export function matchesFilter(row: SessionRow, filter: Filter): boolean {
   if (filter.from !== undefined && row.startedAt < filter.from) return false;
   if (filter.to !== undefined && row.startedAt > filter.to) return false;
   if (filter.runtime && !filter.runtime.includes(row.runtime)) return false;
-  if (filter.state && !filter.state.includes(row.state)) return false;
   if (filter.searchStatus?.length && !filter.searchStatus.some((s) => row.requests ? hasStatus(row.requests.search, s) : s === "unknown")) return false;
   if (filter.loadStatus?.length && !filter.loadStatus.some((s) => row.requests ? hasStatus(row.requests.load, s) : s === "unknown")) return false;
   if (filter.searchResult?.length && !filter.searchResult.some((r) => (row.requests?.search.results[r] ?? 0) > 0)) return false;

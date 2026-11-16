@@ -53,9 +53,9 @@ test("defaultMode: the top-paths table is the default below 30 sessions, the cha
 });
 
 test("legend is one line and names the unit", () => {
-  assert.equal(flow.legendText("first_load"), "띠 굵기 = 세션 수 (단위: 처음 읽은 스킬)");
-  assert.ok(flow.legendText("all_loads").includes("읽은 모든 스킬"));
-  assert.ok(!flow.legendText("all_loads").includes("\n"));
+  assert.equal(flow.legendText("search_requests"), "띠 굵기 = 검색 요청 수. 재시도는 각각 따로 셉니다.");
+  assert.ok(flow.legendText("load_requests").includes("읽기 요청 수"));
+  assert.ok(!flow.legendText("load_requests").includes("\n"));
 });
 
 test("flow labels preserve recorded names that resemble generic bucket labels", () => {
@@ -86,26 +86,29 @@ test("topPaths derives one row per task -> skill -> outcome from the task->skill
   assert.deepEqual(flow.topPaths(EMPTY), []);
 });
 
-test("targetFilter maps skill nodes to `skill`, outcome nodes to `state`, bands to both, and nothing else to q", () => {
+test("targetFilter maps skill nodes to `skill`, outcome nodes to the unit's operation status filter, bands to both, and the rejected axis to nothing", () => {
   const skillNode = { id: `s:${PR_REVIEW}`, column: 1, label: "pr-review-ko", count: 5 };
-  const stateNode = { id: "a:no_match", column: 2, label: "no_match", count: 6 };
+  const stateNode = { id: "a:succeeded", column: 2, label: "succeeded", count: 6 };
+  const legacyNode = { id: "a:no_match", column: 2, label: "no_match", count: 6 };
   const taskNode = { id: "t:review", column: 0, label: "코드 리뷰", count: 7 };
   const noneNode = { id: "s:(none)", column: 1, label: "(no skill)", count: 11 };
   const otherNode = { id: "s:__other__", column: 1, label: "Other (3)", count: 4, other: true };
-  const nodes = [skillNode, stateNode, taskNode, noneNode, otherNode];
+  const nodes = [skillNode, stateNode, legacyNode, taskNode, noneNode, otherNode];
   const node = (n) => ({ kind: "node", node: n });
 
-  assert.deepEqual(flow.targetFilter(node(skillNode), nodes, identity), { skill: [PR_REVIEW] });
-  assert.deepEqual(flow.targetFilter(node(stateNode), nodes, identity), { state: ["no_match"] });
-  assert.equal(flow.targetFilter(node(taskNode), nodes, identity), undefined);
-  assert.equal(flow.targetFilter(node(noneNode), nodes, identity), undefined);
-  assert.equal(flow.targetFilter(node(otherNode), nodes, identity), undefined);
+  assert.deepEqual(flow.targetFilter(node(skillNode), nodes, identity, "load_requests"), { skill: [PR_REVIEW] });
+  assert.deepEqual(flow.targetFilter(node(stateNode), nodes, identity, "search_requests"), { searchStatus: ["succeeded"] });
+  assert.deepEqual(flow.targetFilter(node(stateNode), nodes, identity, "load_requests"), { loadStatus: ["succeeded"] });
+  assert.equal(flow.targetFilter(node(legacyNode), nodes, identity, "load_requests"), undefined);
+  assert.equal(flow.targetFilter(node(taskNode), nodes, identity, "load_requests"), undefined);
+  assert.equal(flow.targetFilter(node(noneNode), nodes, identity, "load_requests"), undefined);
+  assert.equal(flow.targetFilter(node(otherNode), nodes, identity, "load_requests"), undefined);
 
   const band = (source, target, st) => ({ kind: "link", link: { source, target, count: 1, state: st }, index: 0 });
-  assert.deepEqual(flow.targetFilter(band("t:review", `s:${PR_REVIEW}`, "loaded"), nodes, identity), { skill: [PR_REVIEW], state: ["loaded"] });
-  assert.deepEqual(flow.targetFilter(band(`s:${PR_REVIEW}`, "a:no_match", "no_match"), nodes, identity), { skill: [PR_REVIEW], state: ["no_match"] });
-  assert.deepEqual(flow.targetFilter(band("t:review", "s:(none)", "not_used"), nodes, identity), { state: ["not_used"] });
-  assert.deepEqual(flow.targetFilter(band("t:review", "s:__other__", "aborted"), nodes, identity), { state: ["aborted"] });
+  assert.deepEqual(flow.targetFilter(band("t:review", `s:${PR_REVIEW}`, "succeeded"), nodes, identity, "load_requests"), { skill: [PR_REVIEW], loadStatus: ["succeeded"] });
+  assert.deepEqual(flow.targetFilter(band(`s:${PR_REVIEW}`, "a:failed", "failed"), nodes, identity, "search_requests"), { skill: [PR_REVIEW], searchStatus: ["failed"] });
+  assert.deepEqual(flow.targetFilter(band("t:review", "s:(none)", "cancelled"), nodes, identity, "load_requests"), { loadStatus: ["cancelled"] });
+  assert.deepEqual(flow.targetFilter(band("t:review", "s:__other__", "unknown"), nodes, identity, "search_requests"), { searchStatus: ["unknown"] });
 });
 
 test("fixture skill nodes carry names; skillResolver maps them to catalog URIs and the state node prefix is ignored", () => {
@@ -116,18 +119,19 @@ test("fixture skill nodes carry names; skillResolver maps them to catalog URIs a
   const fixtureSkill = FLOW.nodes.find((n) => n.id === "s:pr-review-ko");
   assert.deepEqual(flow.targetFilter({ kind: "node", node: fixtureSkill }, FLOW.nodes, resolve), { skill: [PR_REVIEW] });
   assert.equal(flow.targetFilter({ kind: "node", node: fixtureSkill }, FLOW.nodes, flow.skillResolver([])), undefined);
+  // Legacy mixed-axis state nodes (from first_load/all_loads responses) are never filterable.
   const fixtureState = FLOW.nodes.find((n) => n.id === "st:loaded");
-  assert.deepEqual(flow.targetFilter({ kind: "node", node: fixtureState }, FLOW.nodes, resolve), { state: ["loaded"] });
+  assert.equal(flow.targetFilter({ kind: "node", node: fixtureState }, FLOW.nodes, resolve), undefined);
 });
 
-test("sessionsRoute keeps the current filter, replaces skill/state, and builds a #/sessions hash with skill=", () => {
+test("sessionsRoute keeps the current filter, replaces skill/status, and builds a #/sessions hash with skill=", () => {
   const route = { view: "flow", filter: { runtime: ["codex"], skill: ["skill://local/agents/old/SKILL.md"], hour: 9, hourSpan: 2 } };
-  const next = flow.sessionsRoute(route, { skill: [PR_REVIEW], state: ["loaded"] });
-  assert.deepEqual(next, { view: "sessions", filter: { runtime: ["codex"], skill: [PR_REVIEW], state: ["loaded"], hour: 9, hourSpan: 2 } });
+  const next = flow.sessionsRoute(route, { skill: [PR_REVIEW], loadStatus: ["succeeded"] });
+  assert.deepEqual(next, { view: "sessions", filter: { runtime: ["codex"], skill: [PR_REVIEW], loadStatus: ["succeeded"], hour: 9, hourSpan: 2 } });
   const hash = state.buildHash(next);
   assert.ok(hash.startsWith("#/sessions?"), hash);
   assert.ok(hash.includes("skill=skill://local/agents/pr-review-ko/SKILL.md"), hash);
-  assert.ok(hash.includes("state=loaded"), hash);
+  assert.ok(hash.includes("loadStatus=succeeded"), hash);
   assert.deepEqual(state.parseHash(hash), next);
 });
 

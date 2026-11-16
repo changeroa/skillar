@@ -41,7 +41,7 @@ export function sessionsStyles() {
 .session-table-frame{overflow-x:auto}.session-table th,.session-table td{padding:0 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 .session-table th{height:44px;font-weight:500;color:var(--ink-2)}.session-table th>button{display:flex;align-items:center;justify-content:space-between;gap:4px;background:none;border:0;padding:0;color:inherit;min-height:44px;width:100%;cursor:pointer}
 .session-table td{height:44px}.session-table[data-density=normal] td{height:52px}.session-table[data-density=comfortable] td{height:64px}
-.session-table .cell-started{width:112px}.session-table .cell-runtime{width:106px}.session-table .cell-state{width:90px}
+.session-table .cell-started{width:112px}.session-table .cell-runtime{width:106px}
 .session-table .cell-reads,.session-table .cell-candidates{width:118px}.session-table .cell-duration{width:76px}
 .session-table .cell-search,.session-table .cell-load{width:125px}.session-table .cell-attribution{width:115px}.session-table .cell-id{width:160px}
 .session-table .cell-prompt{width:auto;min-width:160px}.session-table .rowlink{display:flex;align-items:center;min-height:44px;color:var(--ink);font-size:12px;text-decoration:none;overflow:hidden}
@@ -59,7 +59,7 @@ export function sessionsStyles() {
 .session-table-frame.lf-table-surface .session-table td{height:var(--lf-table-row-height)}
 .session-table__skills{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px 0}
 .session-table__skills .pe-pill{max-width:100%}.session-table__skills code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.session-table [data-state=loaded]{color:var(--ok)}.session-table [data-state=exposed_only]{color:var(--warn)}.session-table [data-state=aborted]{color:var(--bad)}
+
 .session-facets-toggle{display:none}.sessions-console[data-peek=true] .sessions-body{display:block}
 .sessions-console[data-peek=true] .session-facets,.sessions-console[data-peek=true] .session-histogram{display:none}
 .sessions-console[data-peek=true] .session-table .cell-candidates{display:none}
@@ -75,8 +75,8 @@ export function sessionsStyles() {
  .session-table td{display:none;border:0;height:auto!important;padding:0;width:auto!important;min-width:0}
  .session-table-frame.lf-table-surface .session-table td{border-bottom:0}
  .session-table-frame.lf-table-surface .session-table :is(th,td){padding:0}
- .session-table .cell-started,.session-table .cell-runtime,.session-table .cell-state,.session-table .cell-duration{display:block;font-size:12px}
- .session-table .cell-started{grid-column:1}.session-table .cell-runtime{grid-column:2}.session-table .cell-state{grid-column:3}.session-table .cell-duration{grid-column:4;text-align:right}
+ .session-table .cell-started,.session-table .cell-runtime,.session-table .cell-duration{display:block;font-size:12px}
+ .session-table .cell-started{grid-column:1}.session-table .cell-runtime{grid-column:2}.session-table .cell-duration{grid-column:4;text-align:right}
  .session-table .cell-runtime .pe-pill{font-size:11px;padding:0 4px}.session-table .cell-runtime code{display:none}
  .session-table .cell-prompt{display:block;grid-column:1/-1;grid-row:2}.session-table .rowlink{min-height:44px;font-size:14px}
  .session-table .cell-reads{display:block;grid-column:1/-1;grid-row:3}.session-table .cell-reads::before{content:"읽은 스킬 ";color:var(--ink-2)}

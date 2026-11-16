@@ -49,7 +49,6 @@ export function conditions(filter: Filter) {
     filter.searchStatus?.map(value => `검색 ${STATE_LABEL[value]}`).join(", "),
     filter.loadStatus?.map(value => `읽기 ${STATE_LABEL[value]}`).join(", "),
     filter.searchResult?.map(value => value === "candidates_found" ? "후보 있음" : "후보 없음").join(", "),
-    filter.state?.map(value => STATE_LABEL[value]).join(", "),
     filter.dow === undefined ? undefined : `${DOW_LABEL[filter.dow]}요일`,
     filter.hour === undefined ? undefined : `${filter.hour}시부터 ${filter.hourSpan ?? 1}시간`,
   ].filter(Boolean).join(" · ");

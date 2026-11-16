@@ -58,7 +58,6 @@ function chipsFor(filter: Filter): Chip[] {
       case "searchStatus": chips.push({ key, label: "검색 상태", value: filter.searchStatus!.map(s => STATE_LABEL[s]).join(", ") }); break;
       case "loadStatus": chips.push({ key, label: "읽기 상태", value: filter.loadStatus!.map(s => STATE_LABEL[s]).join(", ") }); break;
       case "searchResult": chips.push({ key, label: "검색 결과", value: filter.searchResult!.map(result => result === "candidates_found" ? "후보 있음" : "후보 없음").join(", ") }); break;
-      case "state": chips.push({ key, label: "상태", value: filter.state!.map((s) => STATE_LABEL[s]).join(", ") }); break;
       case "dow": chips.push({ key, label: "요일", value: DOW_LABEL[value as number] ?? String(value) }); break;
       case "hour": {
         const span = filter.hourSpan ?? 1;

@@ -46,7 +46,6 @@ const FULL_FILTER = {
   to: 1791800000000,
   runtime: ["codex", "claude-code"],
   skill: [SKILL_A, SKILL_B],
-  state: ["loaded", "exposed_only"],
   dow: 1,
   hour: 9,
   hourSpan: 2,
@@ -55,8 +54,10 @@ const FULL_FILTER = {
   searchStatus: ["succeeded", "failed"], loadStatus: ["unknown"], searchResult: ["no_candidates"],
 };
 
-test("FILTER_KEYS covers every Filter field exactly once", () => {
-  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "loadStatus", "q", "runtime", "searchResult", "searchStatus", "skill", "state", "to"]);
+test("FILTER_KEYS covers every dashboard Filter field exactly once", () => {
+  // Filter.state is a legacy server-side field for old API clients; the dashboard never produces it
+  // (the 11/02 request-status model judges search and load separately), so it stays out of URL state.
+  assert.deepEqual([...FILTER_KEYS].sort(), ["automated", "dow", "from", "hour", "hourSpan", "loadStatus", "q", "runtime", "searchResult", "searchStatus", "skill", "to"]);
 });
 
 test("every Filter field round-trips through serialize -> parse", () => {
@@ -91,7 +92,6 @@ test("parse accepts URLSearchParams input and the same query string the server r
 test("invalid or unknown values are dropped instead of poisoning the filter", () => {
   assert.deepEqual(parseFilter("runtime=codex,nope&state=loaded,bogus&dow=7&hour=24&hourSpan=0&from=abc&to=-5&q=%20%20&zzz=1&automated=yes"), {
     runtime: ["codex"],
-    state: ["loaded"],
   });
   assert.deepEqual(parseFilter(""), {});
   assert.deepEqual(parseFilter("runtime=,,"), {});
@@ -153,9 +153,8 @@ test("matchesFilter applies every field client-side", () => {
   const started = new Date(2026, 9, 12, 9, 30).getTime();
   const row = { id: "ses_1", runtime: "codex", startedAt: started, endedAt: started + 60e3, firstPrompt: "주문 테이블에 상태 컬럼 추가", skills: [SKILL_A], state: "loaded", attribution: "vendor_meta" };
   assert.equal(matchesFilter(row, {}), true);
-  assert.equal(matchesFilter(row, { runtime: ["codex"], state: ["loaded"], skill: [SKILL_A] }), true);
+  assert.equal(matchesFilter(row, { runtime: ["codex"], skill: [SKILL_A] }), true);
   assert.equal(matchesFilter(row, { runtime: ["gemini"] }), false);
-  assert.equal(matchesFilter(row, { state: ["no_match"] }), false);
   assert.equal(matchesFilter(row, { skill: [SKILL_B] }), false);
   assert.equal(matchesFilter(row, { from: started + 1 }), false);
   assert.equal(matchesFilter(row, { to: started - 1 }), false);
