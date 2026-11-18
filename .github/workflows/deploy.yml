@@ -54,9 +54,14 @@ jobs:
         run: npm ci
         working-directory: local
       - if: inputs.target == 'pages'
+        run: npm ci
+        working-directory: site
+      # The theme build resolves the Astryx CLI from site node_modules, so it
+      # must run after site npm ci (local node_modules has no CLI package).
+      - if: inputs.target == 'pages'
         run: node scripts/build-theme.mjs
       - if: inputs.target == 'pages'
-        run: npm ci && npm test && npm run build
+        run: npm test && npm run build
         working-directory: site
       - if: inputs.target != 'pages'
         run: npm ci && npm run typecheck && npm test
