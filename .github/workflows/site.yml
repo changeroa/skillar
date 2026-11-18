@@ -35,6 +35,7 @@ jobs:
         working-directory: shared
       - run: npm ci
         working-directory: site
+      - run: node scripts/build-theme.mjs
       - run: npm test
         working-directory: site
       - run: npm run build
