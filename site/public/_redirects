@@ -1,0 +1,2 @@
+/connect /connections/ 301!
+/connect/* /connections/ 301!

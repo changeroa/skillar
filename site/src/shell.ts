@@ -31,7 +31,7 @@ const desktop = window.matchMedia('(min-width: 1024px)');
 if (navigation && drawer && menu && closeButton) {
   const header = navigation.parentElement;
   const links = Array.from(navigation.querySelectorAll<HTMLAnchorElement>('a[href]'));
-  const path = window.location.pathname.startsWith('/connect/') ? '/connections/' : window.location.pathname;
+  const path = window.location.pathname;
   const syncCurrent = () => {
     const session = path.startsWith('/dashboard/') && window.location.hash.startsWith('#/sessions');
     const current = links.find(link => path.startsWith(link.pathname) &&
