@@ -3,7 +3,7 @@ import type { Filter, HeatmapDto, SkillWeekDto, TraceStep } from "../../src/type
 import { api, type SessionListRow } from "../api";
 import { skillName } from "../state";
 import { DAY_MS, kstDay, kstIsoWeek, kstWeekStart } from "../time";
-import { loadDigests, searchLoadConversion, type SearchLoadConversion } from "./conversion";
+import { loadDigests, searchCandidateCounts } from "./conversion";
 
 export function traceRequests(steps: readonly TraceStep[]) {
   return requestRecords(steps.map((step, index) => ({ id: `event-${index}`, ts: step.ts, kind: step.kind, data: step.detail })));
@@ -11,7 +11,7 @@ export function traceRequests(steps: readonly TraceStep[]) {
 
 export type ObservedSession = {
   readonly session: string; readonly events: number; readonly requests: readonly RequestRecord[];
-  readonly conversion: SearchLoadConversion; readonly digests: ReadonlyMap<string, string>;
+  readonly candidates: ReadonlyMap<string, number>; readonly digests: ReadonlyMap<string, string>;
 };
 
 export async function observedRequests(rows: readonly SessionListRow[]) {
@@ -21,7 +21,7 @@ export async function observedRequests(rows: readonly SessionListRow[]) {
   // Bound trace reads so opening analysis cannot saturate a local daemon.
   await Promise.all(Array.from({ length: Math.min(4, rows.length) }, async () => {
     for (let row = queue.shift(); row; row = queue.shift()) {
-      try { const steps = await api.trace(row.id); results.push({ session: row.id, events: steps.length, requests: traceRequests(steps), conversion: searchLoadConversion(steps), digests: loadDigests(steps) }); }
+      try { const steps = await api.trace(row.id); results.push({ session: row.id, events: steps.length, requests: traceRequests(steps), candidates: searchCandidateCounts(steps), digests: loadDigests(steps) }); }
       catch { failed.push(row.id); }
     }
   }));

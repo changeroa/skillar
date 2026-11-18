@@ -33,7 +33,7 @@ All paths are under `local/src/` unless noted. Shared types live in `types.ts`.
 | `server.ts` | Composition root: wires catalog, search, store, ingest, MCP, and routes; handles shutdown and retention. |
 | `packs/` | One pack per runtime: detect it, plan config edits (MCP entry, OTel export, hooks), and doctor checks. Pack assets live in `local/packs/`. |
 | `cli/` | `serve`, `open`, `init` (plan, diff, backup, apply, rollback), `doctor`, `service`, `mcp-stdio`, `export`/`import`, `eval`. |
-| `local/dashboard/` | Preact single-page dashboard: sessions list, trace with search candidates, flow Sankey, heatmaps. |
+| `local/dashboard/` | React single-page dashboard: skills overview, sessions list, per-session trace with search candidates (old flow/heatmap/workspace hashes redirect). |
 
 ## HTTP surface
 

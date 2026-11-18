@@ -7,6 +7,26 @@ import { KST_TIME_ZONE } from './time.ts';
 import {createElement as h} from 'react';
 import { Avatar } from '../../local/dashboard/foundation/controls/choices';
 
+// 로그인 페이지: ?next=/skills 등을 Google 로그인 returnTo로 연결합니다.
+// 서버 측 허용 경로(loginReturnPathSchema)와 동일한 목록입니다.
+if (window.location.pathname === '/login/') {
+  const nextTargets: Readonly<Record<string, string>> = {
+    '/connections': '/connections/', '/skills': '/skills/', '/dashboard': '/dashboard/',
+  };
+  const next = new URLSearchParams(window.location.search).get('next');
+  const returnTo = next === null ? undefined : nextTargets[next];
+  if (returnTo !== undefined) {
+    const href = `/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/auth/google"]').forEach(link => { link.href = href; });
+    const recoveryForm = document.querySelector<HTMLFormElement>('form[action="/auth/google"]');
+    if (recoveryForm && recoveryForm.querySelector('input[name="returnTo"]') === null) {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = 'returnTo'; input.value = returnTo;
+      recoveryForm.appendChild(input);
+    }
+  }
+}
+
 const emptyViews = Array.from(document.querySelectorAll<HTMLElement>('.empty-state'));
 const viewLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.view-nav a'));
 const recovery = document.querySelector<HTMLElement>('#view-recovery');
@@ -185,7 +205,8 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
       return;
     }
     if (result.kind === 'signed-out') {
-      sessionStatus.textContent = '로그인하지 않았습니다.';
+      // declutter login-1: the Google button already says the state.
+      sessionStatus.textContent = '';
     } else if (result.kind === 'unreachable') {
       sessionStatus.textContent = '계정 서비스에 연결할 수 없습니다. 연결을 확인하고 새로고침해 로그인 상태를 확인하세요.';
     } else {

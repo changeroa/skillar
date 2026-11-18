@@ -6,10 +6,10 @@ import type { LiveState, SessionListRow } from "./api";
 // URL state for the dashboard. Routes live in location.hash so the daemon only serves "/":
 //   #/sessions?runtime=codex,gemini&state=loaded&q=review
 //   #/sessions/<id>?from=...      (trace view keeps the list filter so "back" restores it)
-//   #/workspaces?from=...          (herdr flows and workspaces)
-//   #/workspaces/<flow id>         (one flow; an unregistered workspace is addressed as "ws:<id>")
-//   #/flow?skill=skill://local/agents/pr-review-ko/SKILL.md
-//   #/heatmap?dow=1&hour=9&hourSpan=2
+//   #/dashboard                   (skills view: KPIs + most-read skills table)
+// Old hashes redirect so bookmarks keep working: #/flow and #/heatmap land on #/dashboard
+// (their numbers moved into skill table columns), #/workspaces[/<id>] lands on #/sessions
+// (workspace filtering lives in the session list).
 // The query part uses exactly the server's Filter params (from,to epoch ms; runtime,skill,state
 // comma lists; dow,hour,hourSpan ints; q), so the same string feeds /api/* calls.
 
@@ -17,20 +17,20 @@ export const RUNTIME_IDS: readonly RuntimeId[] = ["claude-code", "codex", "gemin
 export const FILTER_KEYS = ["from", "to", "runtime", "skill", "dow", "hour", "hourSpan", "q", "automated", "searchStatus", "loadStatus", "searchResult"] as const satisfies readonly (keyof Filter)[];
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
-export type View = "dashboard" | "sessions" | "trace" | "workspaces" | "workspace" | "flow" | "heatmap" | "not-found";
-export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "reads", "-reads", "duration", "-duration"] as const;
+export type View = "dashboard" | "sessions" | "trace" | "not-found";
+export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "reads", "-reads"] as const;
 export type SessionSort = (typeof SESSION_SORTS)[number];
-export const SESSION_COLUMNS = ["started", "runtime", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
+// 2차 declutter: 열 선택 UI를 없애고 승인된 다섯 열(시작·실행 환경·읽은 스킬·첫 요청·검색)로 고정.
+export const SESSION_COLUMNS = ["started", "runtime", "reads", "prompt", "search"] as const;
 export type SessionColumn = (typeof SESSION_COLUMNS)[number];
 export type SessionDensity = "compact" | "normal" | "comfortable";
 export type Route = {
-  view: View; sessionId?: string; flowId?: string; filter: Filter;
+  view: View; sessionId?: string; filter: Filter;
   readonly sort?: SessionSort; readonly peek?: string;
-  readonly columns?: readonly SessionColumn[]; readonly density?: SessionDensity;
-  readonly event?: string; readonly traceTab?: "tree" | "timeline";
+  readonly workspace?: string; readonly density?: SessionDensity;
+  readonly event?: string;
   readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
   readonly analysisSort?: string; readonly analysisQuery?: string; readonly facet?: string;
-  readonly flowUnit?: "search_requests" | "load_requests"; readonly flowMode?: "chart" | "table";
 };
 /** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
@@ -224,36 +224,31 @@ export function parseHash(hash: string): Route {
   const filter = parseFilter(query);
   const params = new URLSearchParams(query);
   const sort = SESSION_SORTS.find(value => value === params.get("sort"));
-  const columns = params.has("columns")
-    ? SESSION_COLUMNS.filter(value => params.get("columns")?.split(",").includes(value))
-    : undefined;
   const density = params.get("density");
-  const traceTab = params.get("tab"), format = params.get("format");
+  const format = params.get("format");
   const ui = {
     ...(params.get("asort") ? { analysisSort: params.get("asort") ?? undefined } : {}),
     ...(params.get("aq") ? { analysisQuery: params.get("aq") ?? undefined } : {}),
     ...(params.get("facet") ? { facet: params.get("facet") ?? undefined } : {}),
-    ...(params.get("unit") === "search_requests" || params.get("unit") === "load_requests" ? { flowUnit: params.get("unit") === "search_requests" ? "search_requests" : "load_requests" } : {}),
-    ...(params.get("mode") === "chart" || params.get("mode") === "table" ? { flowMode: params.get("mode") === "chart" ? "chart" : "table" } : {}),
     ...(sort ? { sort } : {}),
     ...(params.get("peek") ? { peek: params.get("peek") ?? undefined } : {}),
-    ...(columns ? { columns } : {}),
+    ...(params.get("ws") ? { workspace: params.get("ws") ?? undefined } : {}),
     ...(density === "compact" || density === "normal" || density === "comfortable" ? { density } : {}),
     ...(params.get("event") ? { event: params.get("event") ?? undefined } : {}),
-    ...(traceTab === "tree" || traceTab === "timeline" ? { traceTab } : {}),
     ...(format === "formatted" || format === "raw" ? { format } : {}),
     ...(params.get("attributes") === "1" ? { attributes: true } : {}),
   } satisfies Partial<Route>;
   const segments = path ? path.split("/").map(decode) : [];
+  // "workspaces/<id>"은 옛 작업 공간 상세 주소: 리다이렉트 대상이라 not-found로 보내지 않는다.
   if (segments.length > 2 || (segments.length > 1 && segments[0] !== "sessions" && segments[0] !== "workspaces")) {
     return { ...ui, view: "not-found", filter };
   }
   switch (segments[0]) {
     case "dashboard": return { ...ui, view: "dashboard", filter };
-    case "flow": return { ...ui, view: "flow", filter };
-    case "heatmap": return { ...ui, view: "heatmap", filter };
-    case "workspaces":
-      return segments[1] ? { ...ui, view: "workspace", flowId: segments[1], filter } : { ...ui, view: "workspaces", filter };
+    // 2차 declutter: 삭제된 화면의 옛 해시는 새 위치로 보낸다(북마크 보존).
+    case "flow": return { ...ui, view: "dashboard", filter };
+    case "heatmap": return { ...ui, view: "dashboard", filter };
+    case "workspaces": return { ...ui, view: "sessions", filter };
     case "sessions":
       return segments[1] ? { ...ui, view: "trace", sessionId: segments[1], filter } : { ...ui, view: "sessions", filter };
     case undefined: return { ...ui, view: "sessions", filter };
@@ -264,21 +259,16 @@ export function parseHash(hash: string): Route {
 export function buildHash(route: Route): string {
   const path = route.view === "trace"
     ? `/sessions/${encodeURIComponent(route.sessionId ?? "")}`
-    : route.view === "workspace"
-      ? `/workspaces/${encodeURIComponent(route.flowId ?? "")}`
-      : `/${route.view}`;
+    : `/${route.view}`;
   const parts = [serializeFilter(route.filter)];
   if (route.sort) parts.push(`sort=${route.sort}`);
-  if (route.columns) parts.push(`columns=${route.columns.join(",")}`);
+  if (route.workspace) parts.push(`ws=${encodeURIComponent(route.workspace)}`);
   if (route.density) parts.push(`density=${route.density}`);
-  if ((route.view === "sessions" || route.view === "workspaces") && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
+  if (route.view === "sessions" && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
   if (route.analysisSort) parts.push(`asort=${encodeURIComponent(route.analysisSort)}`);
   if (route.analysisQuery) parts.push(`aq=${encodeURIComponent(route.analysisQuery)}`);
   if (route.facet) parts.push(`facet=${encodeURIComponent(route.facet)}`);
-  if (route.flowUnit) parts.push(`unit=${route.flowUnit}`);
-  if (route.flowMode) parts.push(`mode=${route.flowMode}`);
   if ((route.view === "sessions" || route.view === "trace") && route.event) parts.push(`event=${encodeURIComponent(route.event)}`);
-  if (route.traceTab) parts.push(`tab=${route.traceTab}`);
   if (route.format) parts.push(`format=${route.format}`);
   if (route.attributes) parts.push("attributes=1");
   const query = parts.filter(Boolean).join("&");

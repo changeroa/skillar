@@ -18,11 +18,18 @@ function run(command, args) {
   assert.equal(result.status, 0, `${command} ${args.join(" ")} failed:\n${result.stderr}`);
 }
 
+// The prunable stylesheet follows the entry that embeds the local dashboard
+// views (원문82: /skills/?tab=evidence), so pick the largest CSS asset.
 async function dashboardCss() {
-  const names = (await readdir(assets)).filter(name => /^dashboard-[\w-]+\.css$/.test(name));
-  assert.equal(names.length, 1, "exactly one dashboard CSS asset");
-  const path = fileURLToPath(new URL(names[0], assets));
-  return { name: names[0], size: (await stat(path)).size, text: await readFile(path, "utf8") };
+  const names = (await readdir(assets)).filter(name => name.endsWith(".css"));
+  assert.ok(names.length > 0, "at least one CSS asset");
+  let best = null;
+  for (const name of names) {
+    const path = fileURLToPath(new URL(name, assets));
+    const info = { name, size: (await stat(path)).size, text: await readFile(path, "utf8") };
+    if (best === null || info.size > best.size) best = info;
+  }
+  return best;
 }
 
 test("pruned build emits the dashboard CSS under a different content hash", async t => {

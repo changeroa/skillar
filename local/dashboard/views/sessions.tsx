@@ -1,6 +1,6 @@
 import { kstDay } from "../time";
 import { useEffect, useMemo, useState } from "react";
-import type { RuntimeId } from "../../src/types.js";
+import type { FlowListEntry, RuntimeId } from "../../src/types.js";
 import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
 import {
@@ -8,7 +8,6 @@ import {
   buildHash, isEmptyFilter, matchesFilter, serializeFilter, type Route, type ViewProps,
 } from "../state";
 import { SessionFacets } from "./sessions/facets";
-import { SessionHistogram } from "./sessions/histogram";
 import { SessionTable } from "./sessions/table";
 import { SessionToolbar } from "./sessions/toolbar";
 import { readSkills, sortSessions } from "./sessions/model";
@@ -50,31 +49,6 @@ export function attributionRates(stats: Pick<Stats, "attributionRate" | "lastEve
     .map((id) => ({ runtime: id, text: formatRate(stats.attributionRate[id]), known: (stats.attributionRate[id] ?? null) !== null }));
 }
 
-function UsageNote({ stats }: { stats: Stats }) {
-  const orphan = unattributedText(stats.unattributed);
-  const rates = attributionRates(stats);
-  if (!orphan && rates.length === 0) return null;
-  return (
-    <footer className="sessions__foot">
-      <p className="usage">
-        {orphan && (
-          <span className="usage__item" data-usage="unattributed">
-            <span>{orphan}</span>
-            <span className="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>세션 연결 방식</span>
-          </span>
-        )}
-        {rates.length > 0 && (
-          <span className="usage__item" data-usage="rates" title="실행 환경별 MCP 이벤트 중 세션과 연결된 비율입니다. -는 보낸 MCP 이벤트가 없다는 뜻입니다.">
-            <span className="usage__key">MCP 세션 연결률</span>
-            {rates.map((r) => (
-              <span key={r.runtime} className={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
-            ))}
-          </span>
-        )}
-      </p>
-    </footer>
-  );
-}
 
 const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
 const dateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric" });
@@ -178,6 +152,7 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   const [facetsOpen, setFacetsOpen] = useState(false);
   const narrow = useNarrow();
   const [stats, setStats] = useState<Stats>();
+  const [flows, setFlows] = useState<readonly FlowListEntry[]>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(true);
@@ -196,12 +171,19 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
     let cancelled = false;
     setBusy(true);
     const scope = { from: route.filter.from, to: route.filter.to, automated: route.filter.automated };
-    Promise.all([api.sessions(detail ? route.filter : scope), api.stats(route.filter)])
-      .then(([nextRows, nextStats]) => {
+    Promise.all([api.sessions(detail ? route.filter : scope), api.stats(route.filter),
+      // flows 는 선택 기능(클라우드 mock 등 미구현 허용): 호출 자체가 실패해도 목록은 그대로 둔다.
+      Promise.resolve().then(() => api.flows({ automated: route.filter.automated })).catch(() => undefined)])
+      .then(([nextRows, nextStats, nextFlows]) => {
         if (cancelled) return;
+        // 작업 공간 필터: 선택한 흐름/작업 공간의 세션 ID 목록으로 좁힌다(구 작업 공간 화면 병합분).
+        const entry = route.workspace ? nextFlows?.flows.find(item => item.id === route.workspace) : undefined;
+        const workspaceIds = entry ? new Set(entry.sessionIds) : undefined;
+        setFlows(nextFlows?.flows);
         setFacetRows(nextRows);
-        setRows(detail ? nextRows : nextRows.filter(row => matchesFilter(row, route.filter)
-          && (!route.filter.skill || readSkills(row).some(uri => route.filter.skill?.includes(uri)))));
+        setRows(nextRows.filter(row => (detail || matchesFilter(row, route.filter)
+          && (!route.filter.skill || readSkills(row).some(uri => route.filter.skill?.includes(uri))))
+          && (!workspaceIds || workspaceIds.has(row.id))));
         setStats(nextStats);
         setError(undefined);
       })
@@ -286,14 +268,12 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
       {failure}
       {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
       <div className="sessions-body" data-facets-open={facetsOpen}>
-        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
+        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} flows={flows} />}
         <Results className="session-results" aria-label="세션 기록" tabIndex={-1}>
-          {rows && <SessionHistogram rows={rows} filter={route.filter} />}
           {body}
         </Results>
       </div>
-      {rows !== undefined && stats && <UsageNote stats={stats} />}
-      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
+      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} flows={flows} close={() => setFacetsOpen(false)} />}
     </section>
   );
 }

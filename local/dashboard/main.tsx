@@ -9,11 +9,8 @@ import {
   DOW_LABEL, FILTER_KEYS, RUNTIME_LABEL, STATE_LABEL, buildHash, parseHash, skillName, withoutFilterKey,
   type FilterKey, type LiveInfo, type Route, type View,
 } from "./state";
-import { FlowView } from "./views/flow";
-import { HeatmapView } from "./views/heatmap";
 import { SessionsView } from "./views/sessions";
 import { TraceView } from "./views/trace";
-import { WorkspaceView, WorkspacesView } from "./views/workspaces";
 import { DashboardView } from "./views/dashboard";
 import { LocalShell } from "./components/local-shell";
 import { SessionPeek } from "./views/session-peek";
@@ -118,18 +115,17 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
 }
 
 const VIEW_LABEL: Record<View, string> = {
-  dashboard: "대시보드", sessions: "세션", trace: "세션", workspaces: "작업 공간", workspace: "작업 공간", flow: "흐름", heatmap: "활동", "not-found": "페이지를 찾을 수 없습니다",
+  dashboard: "스킬", sessions: "세션", trace: "세션", "not-found": "페이지를 찾을 수 없습니다",
 };
+
 const TABS: { view: View; label: string }[] = [
   { view: "sessions", label: VIEW_LABEL.sessions },
-  { view: "flow", label: VIEW_LABEL.flow },
-  { view: "workspaces", label: VIEW_LABEL.workspaces },
-  { view: "heatmap", label: VIEW_LABEL.heatmap },
+  { view: "dashboard", label: VIEW_LABEL.dashboard },
 ];
 
-/** The tab a detail route belongs to, so opening a trace or a flow keeps its list tab marked current. */
+/** The tab a detail route belongs to, so opening a trace keeps its list tab marked current. */
 export const TAB_OF: Record<View, View> = {
-  dashboard: "dashboard", sessions: "sessions", trace: "sessions", workspaces: "workspaces", workspace: "workspaces", flow: "flow", heatmap: "heatmap", "not-found": "not-found",
+  dashboard: "dashboard", sessions: "sessions", trace: "sessions", "not-found": "not-found",
 };
 
 export type AppOptions = { embedded?: boolean };
@@ -154,7 +150,7 @@ export function App({ embedded = false }: AppOptions = {}) {
     content.style.scrollMarginTop = `${header.getBoundingClientRect().height}px`;
     content.scrollIntoView({ block: "start" });
     content.focus({ preventScroll: true });
-  }, [embedded, route.view, route.sessionId, route.flowId]);
+  }, [embedded, route.view, route.sessionId]);
   useLayoutEffect(() => {
     const content = contentRef.current;
     if (!embedded || content === null) return;
@@ -262,7 +258,6 @@ export function App({ embedded = false }: AppOptions = {}) {
         <div className="wrap"><p className="local-location" aria-label="현재 위치">
           <span>출처: {embedded ? "선택한 출처" : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
           {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
-          {route.view === "workspace" && <> › <code>{route.flowId}</code></>}
         </p></div>
       </Header>}
       <Content className={embedded ? "page wrap" : "pe-content"}
@@ -280,11 +275,7 @@ export function App({ embedded = false }: AppOptions = {}) {
             {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
           </div>
         )}
-        {route.view === "workspaces" && <WorkspacesView {...props} />}
         {route.view === "dashboard" && <DashboardView {...props} />}
-        {route.view === "workspace" && <WorkspaceView {...props} />}
-        {route.view === "flow" && <FlowView {...props} />}
-        {route.view === "heatmap" && <HeatmapView {...props} />}
         {route.view === "not-found" && <section className="empty">
           {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
           <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>

@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Filter } from "../../../src/types.js";
 import { REQUEST_STATUSES } from "../../../src/request-status.js";
-import { FILTER_KEYS, SESSION_COLUMNS, STATE_LABEL, withoutFilterKey, type ViewProps } from "../../state";
+import { FILTER_KEYS, STATE_LABEL, withoutFilterKey, type ViewProps } from "../../state";
 import { Icon } from "../../components/icons";
-import { COLUMN_LABEL } from "./model";
-import { DEFAULT_COLUMNS } from "./table";
 import { kstPeriodStart } from "../../time";
 import { Button } from "../../foundation/controls/buttons";
 import { SearchInput } from "../../foundation/controls/fields";
 import { TimePeriodSelect } from "../../foundation/controls/date-range";
 import { DropdownMenu } from "../../foundation/overlays/menu";
-import { ColumnVisibility, TableDensity } from "../../foundation/table/controls";
+import { TableDensity } from "../../foundation/table/controls";
 import { TableToolbar } from "../../foundation/table/parts";
 
 export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacets, sheet }: Pick<ViewProps, "route" | "navigate"> & {
@@ -19,7 +17,6 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
   const [draft, setDraft] = useState(route.filter.q ?? "");
   useEffect(() => setDraft(route.filter.q ?? ""), [route.filter.q]);
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
-  const columns = route.columns ?? DEFAULT_COLUMNS;
   return <>
     <div className="session-toolbar"><TableToolbar>
       <SearchInput id="session-search" label="요청문과 스킬 검색" value={draft} placeholder="요청문 · 스킬 · 세션 ID"
@@ -45,19 +42,10 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
             label: `${key === "searchStatus" ? "검색" : "읽기"} ${STATE_LABEL[value]}`,
             checked: route.filter[key]?.includes(value) ?? false, onSelect: () => update({ [key]: [value] }) })),
         ]),
-        { id: "result-all", label: "검색 결과 전체", separatorBefore: true, checked: !route.filter.searchResult?.length,
-          onSelect: () => update({ searchResult: undefined }) },
-        ...([{ value: "candidates_found", label: "후보 있음" }, { value: "no_candidates", label: "후보 없음" }] as const)
-          .map(option => ({ id: option.value, label: option.label, checked: route.filter.searchResult?.includes(option.value) ?? false,
-            onSelect: () => update({ searchResult: [option.value] }) })),
         { id: "conversion-miss", label: "후보 있음·읽기 없음", separatorBefore: true,
           checked: route.filter.searchResult?.includes("candidates_found") === true && route.filter.loadStatus?.includes("not_attempted") === true,
           onSelect: () => update({ searchStatus: undefined, loadStatus: ["not_attempted"], searchResult: ["candidates_found"] }) },
       ]} />
-      <ColumnVisibility columns={SESSION_COLUMNS.map(id => ({ id, label: COLUMN_LABEL[id] }))}
-        hidden={SESSION_COLUMNS.filter(column => !columns.includes(column))} allowEmpty
-        onReset={() => navigate({ ...route, columns: undefined })}
-        onChange={hidden => navigate({ ...route, columns: SESSION_COLUMNS.filter(column => !hidden.includes(column)) })} />
       <TableDensity value={route.density ?? "compact"} comfortable onChange={value => {
         if (value === "compact" || value === "normal" || value === "comfortable") navigate({ ...route, density: value });
       }} />

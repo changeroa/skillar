@@ -4,9 +4,9 @@ import { useLayoutEffect, useState } from "react";
 import { CommandPalette } from "../../local/dashboard/foundation/shell/command-palette";
 
 const destinations = [
-  ["dashboard", "대시보드", "/dashboard/"],
-  ["sessions", "세션", "/dashboard/#/sessions"],
+  ["sessions", "세션", "/skills/?tab=evidence#/sessions"],
   ["skills", "스킬", "/skills/"],
+  ["evidence", "읽기 근거", "/skills/?tab=evidence"],
   ["connections", "연결", "/connections/"],
   ["account", "계정", "/login/"],
 ] as const;

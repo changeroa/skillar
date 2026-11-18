@@ -58,7 +58,6 @@ function SearchBody({ detail }: { detail: SearchDetail }) {
         <span className="tl__mode" title={`검색 모드: ${detail.mode}`}>{MODE_LABEL[detail.mode] ?? detail.mode}</span>
       <span>{detail.elapsedMs === undefined ? "측정 안 됨" : formatMs(detail.elapsedMs)}</span>
         <span>{countText}</span>
-        {detail.traceId && <span className="tl__id" title="추적 ID">{detail.traceId}</span>}
       </p>
       <blockquote className="tl__query">{detail.query || <span className="tl__dim">(검색어 없음)</span>}</blockquote>
       {detail.abstained ? (

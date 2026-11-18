@@ -52,15 +52,17 @@ function useLoad<T>(
 }
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
+  if (phase.kind === "signed-out") {
+    location.replace("/login/?next=/skills");
+    return null;
+  }
   const text = phase.kind === "expired" ? "세션이 끝나 이 페이지의 활동 내용을 지웠습니다. 계속하려면 다시 로그인하세요." :
-    phase.kind === "signed-out" ? "로그인되어 있지 않습니다. 활동은 로그인한 뒤에만 표시됩니다." :
     phase.kind === "unreachable" ? "계정 서비스에 연결할 수 없습니다. 연결 상태를 확인하고 페이지를 새로 고치세요." :
     "계정 서비스의 응답 형식 오류입니다. 페이지를 새로 고쳐 다시 시도하세요.";
   return (
     <div className="auth-actions dash-signed-out">
       <p className="note session-status" role="status" aria-live="polite">{text}</p>
       <a className="button primary" href="/auth/google">Google로 계속하기 <span aria-hidden="true">{"\u2192"}</span></a>
-      <p className="note">Google은 자체 페이지에서 동의를 요청합니다. 그 뒤 skillar는 Google ID, 이메일, 이름, 프로필 사진, 첫 로그인 시각과 최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키이며, Google 토큰은 보관하지 않습니다.</p>
     </div>
   );
 }
@@ -179,6 +181,12 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     close();
     setPhase({ kind: "expired" });
   }, [close]);
+  // The breadcrumb source switcher only makes sense signed in: signed out
+  // there is no source to switch to.
+  useEffect(() => {
+    const switcher = document.querySelector<HTMLElement>(".app-breadcrumb details");
+    if (switcher) switcher.hidden = phase.kind !== "signed-in";
+  }, [phase.kind]);
   useEffect(() => {
     readSession(signal).then(setPhase, (error: unknown) => {
       if (!isAbort(error)) setPhase({ kind: "unexpected" });

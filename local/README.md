@@ -94,7 +94,7 @@ skillar serve                         # default port 8799
 skillar serve --port 8800
 ```
 
-Open the dashboard (sessions, per-session trace, flow, and weekday-by-hour heatmap):
+Open the dashboard (skills overview, sessions list, and per-session trace):
 
 ```sh
 skillar open                          # opens the browser

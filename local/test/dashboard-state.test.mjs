@@ -104,15 +104,22 @@ test("hash routes carry the view, the session id, and the filter", () => {
   for (const hash of ["", "#", "#/", "#/sessions"]) {
     assert.deepEqual(parseHash(hash), { view: "sessions", filter: {} }, `hash "${hash}"`);
   }
-  assert.deepEqual(parseHash("#/flow?runtime=codex"), { view: "flow", filter: { runtime: ["codex"] } });
-  assert.deepEqual(parseHash("#/heatmap?dow=3&hour=14&hourSpan=4"), { view: "heatmap", filter: { dow: 3, hour: 14, hourSpan: 4 } });
   assert.deepEqual(parseHash("#/sessions/ses_01?q=review"), { view: "trace", sessionId: "ses_01", filter: { q: "review" } });
   assert.deepEqual(parseHash("#/sessions/a%2Fb"), { view: "trace", sessionId: "a/b", filter: {} });
 });
 
+test("deleted screens' old hashes redirect to their new home so bookmarks keep working", () => {
+  // 흐름·활동은 스킬(구 대시보드) 화면으로, 작업 공간은 세션 목록으로 흡수됐다.
+  assert.deepEqual(parseHash("#/flow?runtime=codex"), { view: "dashboard", filter: { runtime: ["codex"] } });
+  assert.deepEqual(parseHash("#/heatmap?dow=3&hour=14&hourSpan=4"), { view: "dashboard", filter: { dow: 3, hour: 14, hourSpan: 4 } });
+  assert.deepEqual(parseHash("#/workspaces"), { view: "sessions", filter: {} });
+  assert.deepEqual(parseHash("#/workspaces?automated=include"), { view: "sessions", filter: { automated: "include" } });
+  assert.deepEqual(parseHash("#/workspaces/flow_1"), { view: "sessions", filter: {} });
+});
+
 test("unknown and extra hash segments resolve to not-found while preserving filters", () => {
   // Given
-  const hashes = ["#/unknown-view", "#/sessions/a/extra", "#/flow/extra", "#/heatmap/extra"];
+  const hashes = ["#/unknown-view", "#/sessions/a/extra", "#/flow/a/extra", "#/heatmap/a/extra"];
   // When / Then
   for (const hash of hashes) assert.deepEqual(parseHash(`${hash}?q=review`), { view: "not-found", filter: { q: "review" } });
 });
@@ -122,8 +129,8 @@ test("buildHash -> parseHash round-trips every view and keeps the filter query s
     { view: "sessions", filter: {} },
     { view: "sessions", filter: FULL_FILTER },
     { view: "trace", sessionId: "ses_abc/1", filter: { runtime: ["gajae"] } },
-    { view: "flow", filter: { skill: [SKILL_A] } },
-    { view: "heatmap", filter: { dow: 0, hour: 0, hourSpan: 1 } },
+    { view: "dashboard", filter: { skill: [SKILL_A] } },
+    { view: "dashboard", filter: { dow: 0, hour: 0, hourSpan: 1 } },
   ];
   for (const route of routes) {
     const hash = buildHash(route);

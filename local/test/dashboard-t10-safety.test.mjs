@@ -6,29 +6,15 @@ const views = await loadViews(`
   export { api, configureApi } from "./local/dashboard/api.ts";
   export { SessionsView } from "./local/dashboard/views/sessions.tsx";
   export { TraceView, searchDetail } from "./local/dashboard/views/trace.tsx";
-  export { WorkspacesView, WorkspaceView, Session, Header } from "./local/dashboard/views/workspaces.tsx";
-  export { HeatmapView } from "./local/dashboard/views/heatmap.tsx";
-  export { FlowView } from "./local/dashboard/views/flow.tsx";
 `);
 const live = { seq: 0, state: "paused" };
-const props = { route: { view: "sessions", filter: {}, sessionId: "test", flowId: "test" }, live, navigate() {} };
+const props = { route: { view: "sessions", filter: {}, sessionId: "test" }, live, navigate() {} };
 const report = {
   kind: "workflow", workspaceId: "workspace-test", label: "test", generatedAt: 1800000000000,
   flow: { registeredMs: 1800000000000, endedMs: null }, tree: { tabs: [], sessions: [] },
   finding: { sessions: [], aggregate: { labels: {} } }, usage: { sessions: [], skills: [] },
   unattributedLoads: { count: 1, uris: ["skill://fixture"] }, excludedSessions: [],
 };
-
-test("CV-017 snapshots without end evidence expose unknown session status", async t => {
-  // Given
-  const session = { id: "test", runtime: "codex", startedAt: 1800000000000, endedAt: null, turns: [] };
-  // When
-  const { container } = await mount(t, views.Session, {
-    session, route: props.route, findings: new Map(), usageBySpan: new Map(),
-  });
-  // Then
-  assert.equal(all(container, node => node.hasAttribute("data-session-status"))[0].getAttribute("data-session-status"), "unknown");
-});
 
 test("CV-020 missing elapsed time differs from measured zero", () => {
   // Given
@@ -64,8 +50,6 @@ test("CV-023 report refresh failure preserves the last good attribution report",
 for (const [name, Component, methods] of [
   ["sessions", views.SessionsView, ["sessions", "stats"]],
   ["trace", views.TraceView, ["trace", "sessions", "skillReport"]],
-  ["workspaces", views.WorkspacesView, ["flows"]],
-  ["heatmap", views.HeatmapView, ["heatmap", "skillWeek"]],
 ]) {
   test(`CV-056 ${name} stops being busy when the first query fails`, async t => {
     // Given
@@ -82,8 +66,6 @@ for (const [name, Component, methods] of [
 
 for (const [name, Component, method] of [
   ["sessions", views.SessionsView, "sessions"], ["trace", views.TraceView, "trace"],
-  ["workspaces", views.WorkspacesView, "flows"], ["workspace", views.WorkspaceView, "flowReport"],
-  ["heatmap", views.HeatmapView, "heatmap"], ["flow", views.FlowView, "flow"],
 ]) {
   test(`CV-057 ${name} retries the failed query`, async t => {
     // Given

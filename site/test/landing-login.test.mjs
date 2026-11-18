@@ -12,13 +12,13 @@ const bundle = await build({
 const source = bundle.outputFiles[0].text;
 const user = { sub: "fixture", email: "fixture@example.test", name: "예시 계정", picture: "", createdAt: 1800000000, lastLogin: 1800000000 };
 
-function page(t, { login = false, search = "" } = {}) {
+function page(t, { login = false, search = "", pathname = "/", anchors = [] } = {}) {
   const response = Promise.withResolvers();
   const settled = Promise.withResolvers();
   const requested = Promise.withResolvers();
   const elements = new Map();
   for (const id of login
-    ? ["session-status", "auth-result", "auth-recovery", "signed-in", "signed-out", "account-title"]
+    ? ["session-status", "auth-result", "auth-recovery", "signed-in", "signed-out"]
     : ["landing-actions", "landing-session-status", "landing-primary", "landing-secondary"]) {
     elements.set(`#${id}`, { hidden: id === "signed-in" || id === "auth-recovery" || id === "landing-actions", textContent: "", href: "" });
   }
@@ -41,11 +41,11 @@ function page(t, { login = false, search = "" } = {}) {
   t.after(() => clearTimeout(timeout));
   const document = {
     querySelector: selector => elements.get(selector) ?? null,
-    querySelectorAll: () => [],
+    querySelectorAll: selector => selector === 'a[href^="/auth/google"]' ? anchors : [],
     title: "",
   };
   runInNewContext(source, {
-    document, window: { location: { search } },
+    document, window: { location: { search, pathname } },
     Request: class extends Request {
       constructor(input, options) { super(typeof input === "string" ? new URL(input, "https://skillar.test") : input, options); }
     },
@@ -109,7 +109,7 @@ test("callback errors expose recovery without reflecting the query value", async
   await fixture.settled;
 });
 
-test("signed-in login shows the account title and hides anonymous recovery", async t => {
+test("signed-in login shows the account block and hides anonymous recovery", async t => {
   // Given
   const fixture = page(t, { login: true, search: "?error=cancelled" });
   await fixture.requested;
@@ -120,5 +120,22 @@ test("signed-in login shows the account title and hides anonymous recovery", asy
   assert.equal(fixture.elements.get("#signed-out").hidden, true);
   assert.equal(fixture.elements.get("#signed-in").hidden, false);
   assert.equal(fixture.elements.get("#auth-recovery").hidden, true);
-  assert.equal(fixture.elements.get("#account-title").textContent, "계정");
+});
+
+test("login forwards an allowed next target as the Google return path", t => {
+  // Given a login page reached from the signed-out skills redirect.
+  const link = { href: "/auth/google" };
+  // When the module runs.
+  page(t, { login: true, search: "?next=/skills", pathname: "/login/", anchors: [link] });
+  // Then the Google button returns to the skills screen after sign-in.
+  assert.equal(link.href, "/auth/google?returnTo=%2Fskills%2F");
+});
+
+test("login ignores a next target outside the allowed screens", t => {
+  // Given a login page with an off-site next parameter.
+  const link = { href: "/auth/google" };
+  // When the module runs.
+  page(t, { login: true, search: "?next=https://attacker.test/", pathname: "/login/", anchors: [link] });
+  // Then the Google button keeps its default destination.
+  assert.equal(link.href, "/auth/google");
 });

@@ -501,11 +501,22 @@ for (const saved of [null, { path: '/connections/', expires: now }, { path: '//a
 test('Google return paths reject open redirects, unrelated routes, fragments and oversized input', async t => {
   const f = await fixture(t);
   for (const path of ['https://attacker.test/', '//attacker.test/', '/\\attacker.test/',
-    '/dashboard/', '/connections/?next=elsewhere', '/oauth/authorize', '/connections/#x',
+    '/settings/', '/skills', '/dashboard', '/connections/?next=elsewhere', '/oauth/authorize', '/connections/#x',
+    '/skills/?next=elsewhere', '/dashboard/#x',
     `/oauth/authorize?state=${'x'.repeat(8192)}`]) {
     assert.equal(loginReturnPathSchema.safeParse(path).success, false);
     assert.equal((await f.request(`/auth/google?returnTo=${encodeURIComponent(path)}`)).status, 400);
   }
   assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM google_login_returns').get().n, 0);
   assert.deepEqual(f.outbound, []);
+});
+
+test('Google return paths accept the account, skills and dashboard screens', async t => {
+  const f = await fixture(t);
+  for (const path of ['/connections/', '/skills/', '/dashboard/']) {
+    const parsed = loginReturnPathSchema.safeParse(path);
+    assert.equal(parsed.success, true);
+    const response = await f.request(`/auth/google?returnTo=${encodeURIComponent(path)}`);
+    assert.equal(response.status, 303);
+  }
 });

@@ -7,7 +7,7 @@ import { CommandJump, DESTINATIONS, destination } from "./command-jump";
 import { Icon } from "./icons";
 import { useNarrow } from "./use-narrow";
 import { Sheet } from "../foundation/overlays/dialog";
-import { Sidebar, NavGroup, NavItem, Breadcrumb, Topbar } from "../foundation/shell/navigation";
+import { Sidebar, NavItem, Breadcrumb, Topbar } from "../foundation/shell/navigation";
 import { Button, IconButton, Link } from "../foundation/controls/buttons";
 import { KeyboardShortcut } from "../foundation/controls/labels";
 
@@ -53,19 +53,17 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     return () => removeEventListener("keydown", key);
   }, [embedded]);
   if (embedded) return <>{children}</>;
-  const active = route.view === "trace" ? "sessions" : route.view === "workspace" ? "workspaces" : route.view;
+  const active = route.view === "trace" ? "sessions" : route.view;
   const label = DESTINATIONS.find(item => item.view === active)?.label ?? "페이지를 찾을 수 없습니다";
   const source = api.mode === "fixtures" ? "예시 기록" : "이 기기";
   const sourceInfo = <div className="pe-source"><strong>{source}</strong>
     <span className={`live live--${live.state}`} role="status"><span className="live__dot" aria-hidden="true" />{LIVE_TEXT[live.state]}</span></div>;
-  const links = () => ["관찰", "분석"].map(group => <NavGroup key={group} label={group}>
-    {DESTINATIONS.filter(item => item.group === group).map(item => <NavItem key={item.view}
-      href={buildHash(destination(route, item.view))} label={item.label} current={active === item.view}
-      icon={<Icon name={item.icon} />} />)}
-  </NavGroup>);
+  const links = () => <>{DESTINATIONS.map(item => <NavItem key={item.view}
+    href={buildHash(destination(route, item.view))} label={item.label} current={active === item.view}
+    icon={<Icon name={item.icon} />} />)}</>;
   const crumbs = [{ label: source, href: buildHash(destination(route, "sessions")) },
     { label, href: buildHash(destination(route, active)) },
-    ...((route.sessionId || route.flowId) ? [{ label: route.sessionId ?? route.flowId ?? "" }] : [])];
+    ...(route.sessionId ? [{ label: route.sessionId }] : [])];
   return <div className="pe-shell">
     <div id={narrow ? undefined : "app-navigation"} className="pe-sidebar">
     <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}
