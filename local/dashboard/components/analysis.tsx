@@ -166,7 +166,7 @@ installStyles("analysis", `
 .analysis.pe-console .analysis-toolbar label{display:block}
 .analysis.pe-console .analysis-tile{padding:0;border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card);box-shadow:var(--lf-widget-shadow)}
 .analysis.pe-console .analysis-tile>.pe-muted{padding:0 var(--lf-space-4) var(--lf-space-4);font-size:var(--lf-text-xs)}
-.analysis-widget-shell{min-width:0;display:flex}.analysis-widget-shell>.lf-card{width:100%}
+.analysis-widget-shell{min-width:0;display:flex}
 .analysis>.analysis-widget-shell{grid-column:1/-1;margin-block-end:12px}
 .analysis.pe-console :is(.analysis-table th,.analysis-table td){height:var(--lf-control-height);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm);border-color:var(--lf-border)}
 .analysis.pe-console .analysis-table th{height:calc(var(--lf-control-height) + var(--lf-space-2));padding:var(--lf-space-1);font-weight:var(--lf-weight-strong);line-height:var(--lf-leading-sm);background:var(--lf-background)}
@@ -181,7 +181,7 @@ installStyles("analysis", `
 .hm-stack.analysis.pe-console{--hm-l1:color-mix(in srgb,var(--lf-chart-1) 24%,transparent);--hm-l2:color-mix(in srgb,var(--lf-chart-1) 46%,transparent);--hm-l3:color-mix(in srgb,var(--lf-chart-1) 70%,transparent);--hm-l4:var(--lf-chart-1)}
 .ws.analysis.pe-console .card{padding:var(--lf-space-4);border-color:var(--lf-border);border-radius:var(--lf-radius-lg);background:var(--lf-card)}
 .analysis.pe-console :is(.hmc,.flow__chart),.ws.analysis.pe-console .card{font-size:var(--lf-text-lg);line-height:var(--lf-space-6);box-shadow:var(--lf-widget-shadow)}
-.analysis.pe-console :is(.hmc__title,.lf-card__title,.lf-card__header,.lf-card__content,.lf-metric__value){border-color:var(--lf-border)}
+.analysis.pe-console :is(.hmc__title,.lf-metric__value){border-color:var(--lf-border)}
 .ws.analysis.pe-console>section.card>h2{font:var(--lf-weight-strong) var(--lf-text-base)/var(--lf-leading-base) var(--lf-font-sans);color:var(--lf-foreground);letter-spacing:-.025em}
 .analysis.pe-console .workspace-peek{border-color:var(--lf-border);background:var(--lf-modal);box-shadow:var(--lf-shadow-peek)}
 .analysis.pe-console :is(.pe-button,summary,.seg__btn,.seg__b,.analysis-table button,.analysis-table a):focus-visible{outline:var(--lf-focus-width) solid var(--lf-ring);outline-offset:var(--lf-focus-offset)}

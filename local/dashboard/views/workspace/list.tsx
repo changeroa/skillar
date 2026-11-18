@@ -6,7 +6,7 @@ import { AnalysisError, AnalysisToolbar, conditions, useAnalysisReport } from ".
 import { flowTitle, flowsQuery, formatStarted, workspaceFilter } from "./model";
 import { SpecTag } from "./row-parts";
 import { WorkspaceView } from "./detail";
-import { Input } from "../../foundation/controls/fields";
+import { SearchInput } from "../../foundation/controls/fields";
 import { SortButton } from "../../foundation/table/parts";
 import { tableStyles } from "../../foundation/table/styles";
 import { StatusMessage } from "../../foundation/widgets/messages";
@@ -59,7 +59,9 @@ export function WorkspacesView(props: ViewProps) {
   return <section className="analysis pe-console" aria-busy={report.busy}>
     <header className="page-title">{embedded ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}<p>작업 공간별 패널과 연결된 세션을 확인합니다.</p></header>
     <AnalysisToolbar route={{ ...route, filter: workspaceFilter(query) }} navigate={navigate} refresh={report.refresh} busy={report.busy} workspace />
-    <Input label="작업 공간 검색" type="search" value={search} onInput={event => navigate({ ...route, analysisQuery: event.currentTarget.value || undefined, peek: undefined })} />
+    <SearchInput label="작업 공간 검색" value={search}
+      onChange={next => navigate({ ...route, analysisQuery: next || undefined, peek: undefined })}
+      onSubmit={next => navigate({ ...route, analysisQuery: next || undefined, peek: undefined })} />
     <AnalysisError error={report.error} title="작업 공간을 불러올 수 없습니다" retry={report.refresh} />
     {report.busy && <StatusMessage level="DEFAULT" announce message={current ? `갱신 중: ${conditions(workspaceFilter(query))}` : "작업 공간 불러오는 중…"} />}
     {current && <p className="analysis-scope" data-result-conditions>{conditions(current.filter)} · {formatStarted(current.dto.generatedAt)} 기준 · 받은 {current.dto.flows.length}개 내부 정렬{current.dto.nextCursor ? " · 추가 작업 공간 있음" : ""}</p>}

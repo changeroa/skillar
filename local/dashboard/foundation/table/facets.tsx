@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "../controls/buttons";
-import { Checkbox, Input } from "../controls/fields";
+import { Checkbox, TextInput } from "../controls/fields";
 import { tableStyles } from "./styles";
 
 export type FacetChoice<T extends string> = { readonly value: T; readonly label: string; readonly count: number };
@@ -25,8 +25,8 @@ export function TableFacet<T extends string>({ label, choices, selected = [], ch
         <Button text="텍스트" variant="ghost" aria-pressed={mode === "text"} onClick={() => setMode("text")} />
       </div>
       <div className="lf-facet-values">
-        <Input label={`${label} 값 찾기`} type={mode === "text" ? "text" : "search"} icon={mode === "text" ? false : "search"} placeholder={mode === "text" ? "포함하는 값 찾기" : "값 찾기"}
-          value={query} onInput={event => setQuery(event.currentTarget.value)} />
+        <TextInput label={`${label} 값 찾기`} type={mode === "text" ? "text" : "search"} placeholder={mode === "text" ? "포함하는 값 찾기" : "값 찾기"}
+          value={query} onChange={setQuery} />
         {shown.map(choice => <div className="lf-facet-choice" key={choice.value}>
           <Checkbox size="sm" label={choice.label} title={choice.value} checked={selected.includes(choice.value)}
             onChange={event => {
