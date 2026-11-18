@@ -31,22 +31,24 @@ for (const [name, Component, method] of [
   assert.equal(calls, embedded ? 2 : 1);
 });
 
-for (const reject of [false, true]) test(`flow preserves fetched conditions through ${reject ? "failed" : "pending"} unit replacement`, async t => {
+for (const reject of [false, true]) test(`flow preserves fetched report through ${reject ? "failed" : "pending"} unit replacement`, async t => {
   const initial = { ...fixtures.flow, nodes: [], links: [], unit: "search_requests", requestCount: 0 };
   const held = Promise.withResolvers();
   let calls = 0;
-  views.configureApi({ ...base(), flow: async () => ++calls === 1 ? initial : held.promise });
+  const filters = [];
+  views.configureApi({ ...base(), flow: async (filter) => { filters.push(filter); return ++calls === 1 ? initial : held.promise; } });
   const props = { route: { view: "flow", filter: {}, flowUnit: "search_requests" }, live: { state: "paused", seq: 0 }, navigate() {} };
   const { dom, container, show } = await mount(t, views.FlowView, props);
-  await waitFor(dom, () => all(container, node => node.hasAttribute("data-result-conditions"))[0], "initial conditions");
-  const before = all(container, node => node.hasAttribute("data-result-conditions"))[0].textContent;
+  const emptyText = () => all(container, node => (node.textContent ?? "").includes("요청이 없습니다"))[0];
+  await waitFor(dom, emptyText, "initial report settled");
   await show({ ...props, route: { ...props.route, flowUnit: "load_requests" } });
   assert.equal(calls, 2);
+  assert.deepEqual(filters[1], filters[0]);
   if (reject) {
     await act(() => held.reject(new Error("synthetic replacement failure")));
     await waitFor(dom, () => all(container, node => node.getAttribute("role") === "alert")[0], "replacement failed");
   }
-  assert.equal(all(container, node => node.hasAttribute("data-result-conditions"))[0].textContent, before);
+  assert.ok(emptyText(), "fetched report remains visible");
 });
 
 test("unavailable traces do not become zero request measurements", async t => {

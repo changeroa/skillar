@@ -245,12 +245,11 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
             {orphanLoads !== undefined && orphanLoads > 0 && <span>{` · 세션에 연결되지 않은 읽기 ${orphanLoads}건 별도`}</span>}
           </span>
         </div>
-        <p className="analysis-scope" data-result-conditions>{UNIT_LABEL[resultUnit]} · {conditions(filter)}</p>
-        <Legend unit={dto.unit} withKey={shown === "chart"} />
-        <div className="analysis-facets" aria-label="받은 경로의 상태별 수">
+        {shown === "chart" && <Legend unit={dto.unit} withKey />}
+        {new Set(topPaths(dto).map(row => row.state)).size >= 2 && <div className="analysis-facets" aria-label="받은 경로의 상태별 수">
           <button className="pe-button" aria-pressed={!route.facet} onClick={() => navigate({ ...route, facet: undefined })}>전체 {topPaths(dto).reduce((sum, row) => sum + row.count, 0)}</button>
           {[...new Set(topPaths(dto).map(row => row.state))].map(state => <button className="pe-button" aria-pressed={route.facet === state} onClick={() => navigate({ ...route, flowMode: "table", facet: state })} key={state}>{STATE_LABEL[displayStatus(state)]} {topPaths(dto).filter(row => row.state === state).reduce((sum, row) => sum + row.count, 0)}</button>)}
-        </div>
+        </div>}
         {(dto.requestCount ?? dto.sessionCount) === 0 ? <><p className="empty">이 필터에 기록된 {dto.unit === "search_requests" ? "검색" : "읽기"} 요청이 없습니다.</p><AnalysisEmpty route={route} navigate={navigate} /></> : shown === "chart"
           ? (
             <div className="card flow__chart">
@@ -264,7 +263,7 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
 
   return (
     <section className="analysis pe-console" aria-busy={report.busy} data-mode={dto ? shown : undefined} data-top={top} data-unit={unit}>
-      <header className="page-title">{embedded ? <h2>흐름</h2> : <h1>흐름</h1>}<p>작업 유형에서 스킬과 요청 상태로 이어지는 기록</p></header>
+      <header className="page-title">{embedded ? <h2>흐름</h2> : <h1>흐름</h1>}</header>
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
       <Segmented label="단위" value={unit} options={FLOW_UNITS.map(value => ({ value, label: UNIT_LABEL[value] }))} onChange={setUnit} />
       {report.busy && <StatusMessage level="DEFAULT" announce message={dto ? `갱신 중: ${UNIT_LABEL[unit]} · ${conditions(route.filter)}` : "사용 흐름 집계 중…"} />}
