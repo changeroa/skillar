@@ -6,7 +6,7 @@ import { PACKAGE_ROOT } from "./_helpers.mjs";
 
 async function load(path) {
   const result = await build({ entryPoints: [fileURLToPath(new URL(path, PACKAGE_ROOT))],
-    bundle: true, write: false, format: "esm", platform: "browser", jsx: "automatic", jsxImportSource: "preact", logLevel: "silent" });
+    bundle: true, write: false, format: "esm", platform: "browser", jsx: "automatic", jsxImportSource: "react", logLevel: "silent" });
   return import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 }
 const [bars, data, state, workspace, flow, clock, histogram] = await Promise.all([

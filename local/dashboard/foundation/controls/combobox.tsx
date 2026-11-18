@@ -1,5 +1,5 @@
-import { useId, useRef, useState } from "preact/hooks";
-import type { JSX, Ref } from "preact";
+import { useId, useRef, useState } from "react";
+import type {JSX, Ref} from "react";
 import { Glyph } from "./icons";
 import type { SelectOption } from "./fields";
 
@@ -14,9 +14,9 @@ type ListProps = SelectionProps & {
   readonly onSelectAll?: (values: readonly string[]) => void;
 };
 
-export function ComboboxInput({ inputRef, ...props }: Omit<JSX.InputHTMLAttributes<HTMLInputElement>,
+export function ComboboxInput({ inputRef, ...props }: Omit<React.InputHTMLAttributes<HTMLInputElement>,
   "class" | "className" | "style"> & { readonly inputRef?: Ref<HTMLInputElement> }) {
-  return <input {...props} {...(inputRef ? { ref: inputRef } : {})} class="lf-combobox__control" role="combobox" />;
+  return <input {...props} ref={inputRef ?? null} className="lf-combobox__control" role="combobox" />;
 }
 
 /** DOM focus stays on the search input; active and selected are separate states. */
@@ -56,8 +56,8 @@ function ChoiceList({ label, options, disabled, error, placeholder = "선택", e
     setActiveValue(next?.value ?? null);
     if (next) requestAnimationFrame(() => document.getElementById(optionId(options.indexOf(next)))?.scrollIntoView({ block: "nearest" }));
   };
-  const keydown = (event: JSX.TargetedKeyboardEvent<HTMLInputElement>) => {
-    if (event.isComposing) return;
+  const keydown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return;
     switch (event.key) {
       case "ArrowDown":
       case "ArrowUp":
@@ -82,12 +82,12 @@ function ChoiceList({ label, options, disabled, error, placeholder = "선택", e
     }
   };
   const summary = options.filter(option => selected.includes(option.value)).map(option => option.label).join(", ");
-  return <div ref={root} class="lf-field lf-combobox" onBlur={event => {
+  return <div ref={root} className="lf-field lf-combobox" onBlur={event => {
     if (!(event.relatedTarget instanceof Node) || !root.current?.contains(event.relatedTarget)) close();
   }}>
-    <label for={fieldId}>{label}</label>
-    <div class="lf-combobox__input" data-expanded={expanded}>
-      <ComboboxInput inputRef={input} id={fieldId} type="text" autocomplete="off"
+    <label htmlFor={fieldId}>{label}</label>
+    <div className="lf-combobox__input" data-expanded={expanded}>
+      <ComboboxInput inputRef={input} id={fieldId} type="text" autoComplete="off"
         disabled={disabled} aria-placeholder={placeholder}
         value={expanded ? search : summary} aria-expanded={expanded}
         aria-controls={listId} aria-autocomplete="list"
@@ -97,18 +97,18 @@ function ChoiceList({ label, options, disabled, error, placeholder = "선택", e
         onInput={event => { setSearch(event.currentTarget.value); setOpen(true); setActiveValue(null); }}
         onKeyDown={keydown} />
       {/* The closed value and every placeholder are painted as text, like the source trigger; typed search stays native. */}
-      <span class="lf-combobox__value" aria-hidden="true" data-placeholder={(expanded ? search : summary) === ""}>
+      <span className="lf-combobox__value" aria-hidden="true" data-placeholder={(expanded ? search : summary) === ""}>
         {expanded ? (search === "" ? placeholder : "") : summary || placeholder}</span>
       <span aria-hidden="true"><Glyph name="chevron" /></span>
     </div>
-    {expanded && <div class="lf-combobox__popup">
-      {multiple && search === "" && enabled.length > 0 && <button type="button" class="lf-combobox__all" tabIndex={-1}
+    {expanded && <div className="lf-combobox__popup">
+      {multiple && search === "" && enabled.length > 0 && <button type="button" className="lf-combobox__all" tabIndex={-1}
         aria-pressed={enabled.every(option => selected.includes(option.value))}
         onClick={() => {
           selectAll();
           input.current?.focus();
         }}><Indicator multiple checked={enabled.every(option => selected.includes(option.value))} />
-        <span class="lf-combobox__label">{enabled.every(option => selected.includes(option.value)) ? "전체 해제" : "전체 선택"}</span></button>}
+        <span className="lf-combobox__label">{enabled.every(option => selected.includes(option.value)) ? "전체 해제" : "전체 선택"}</span></button>}
       <ul id={listId} role="listbox" aria-label={label} aria-multiselectable={multiple || undefined}>
         {filtered.map(option => {
           const index = options.indexOf(option);
@@ -118,21 +118,21 @@ function ChoiceList({ label, options, disabled, error, placeholder = "선택", e
             onPointerMove={() => { if (!option.disabled) setActiveValue(option.value); }}
             onMouseDown={event => event.preventDefault()}
             onClick={() => { if (!option.disabled) choose(option.value); }}>
-            <Indicator multiple={multiple} checked={checked} /><span class="lf-combobox__label">{option.label}</span>
+            <Indicator multiple={multiple} checked={checked} /><span className="lf-combobox__label">{option.label}</span>
           </li>;
         })}
       </ul>
       {filtered.length === 0 && <p role="status">{emptyMessage}</p>}
     </div>}
-    {error && <span id={`${fieldId}-error`} class="lf-field-error">{error}</span>}
+    {error && <span id={`${fieldId}-error`} className="lf-field-error">{error}</span>}
   </div>;
 }
 
 /** Single choice shows a radio mark, multiple choice a small checkbox, matching the source dropdown options. */
 function Indicator({ multiple, checked }: { readonly multiple: boolean; readonly checked: boolean }) {
-  return <span class="lf-combobox__mark" aria-hidden="true">{multiple
-    ? <span class="lf-combobox__box" data-checked={checked}>{checked && <Glyph name="check" small />}</span>
-    : <span class="lf-combobox__radio" data-checked={checked}>{checked && <span />}</span>}</span>;
+  return <span className="lf-combobox__mark" aria-hidden="true">{multiple
+    ? <span className="lf-combobox__box" data-checked={checked}>{checked && <Glyph name="check" small />}</span>
+    : <span className="lf-combobox__radio" data-checked={checked}>{checked && <span />}</span>}</span>;
 }
 
 export function Combobox({ value, onChange, ...props }: SelectionProps & {

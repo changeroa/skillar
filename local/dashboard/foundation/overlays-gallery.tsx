@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { Button, Input } from "./controls";
 import { ConfirmDialog, Dialog, DropdownMenu, Sheet, Tooltip } from "./overlays";
 
@@ -18,7 +18,7 @@ export function OverlaysGallery() {
   ] as const;
   return <section id="overlays-gallery" aria-labelledby="overlays-title">
     <h2 id="overlays-title">오버레이</h2>
-    <div class="lf-gallery__cluster">
+    <div className="lf-gallery__cluster">
       <Button id="open-dialog" text="대화상자 열기" onClick={() => setDialog(true)} />
       <Button id="open-confirm" text="삭제 확인" variant="outline" onClick={() => setConfirm(true)} />
       <Button id="open-sheet" text="사이드 패널 열기" variant="outline" onClick={() => setSheet(true)} />
@@ -44,7 +44,7 @@ export function OverlaysGallery() {
       onClose={() => { setConfirm(false); setBusy(false); setError(false); }}
       busy={busy} error={error ? "삭제하지 못했습니다. 다시 시도하세요." : undefined}
       onConfirm={() => { setResult("삭제됨"); setConfirm(false); }} />
-    <div class="lf-gallery__cluster">
+    <div className="lf-gallery__cluster">
       <Button id="confirm-loading" text="처리 중 상태" variant="outline" onClick={() => { setBusy(true); setConfirm(true); }} />
       <Button id="confirm-error" text="오류 상태" variant="outline" onClick={() => { setError(true); setConfirm(true); }} />
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "react";
 import type { DashboardProfile } from "../../../shared/dist/activity-dashboard.js";
 import { DashboardRequestError, describeFailure, isUnauthorized, readCommandStatus, submitCommand } from "./api";
 import {
@@ -100,7 +100,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
       update(submission.commandId, current => checkFailed(current, failure));
     }
   });
-  const submit = (event: Event) => {
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (sendingDraft.current || busy.size > 0) return;
     const built = buildOperation(draft);
@@ -129,7 +129,7 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
     setMessage(`명령 ${shortId(submission.commandId)}의 내용을 입력란에 복사했습니다. 대기열에 넣으면 새 명령으로 보냅니다.`);
     form.current?.querySelector<HTMLElement>("select")?.focus();
   };
-  const lookUp = (event: Event) => {
+  const lookUp = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const commandId = lookup.trim().toLowerCase();
     if (!isCommandId(commandId)) {
@@ -162,44 +162,44 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
   };
 
   return (
-    <details class="commands">
+    <details className="commands">
       <summary>이 출처에 보내는 원격 명령</summary>
-      <p class="note">
+      <p className="note">
         기기 {shortId(profile.deviceId)}에 보낼 명령을 skillar가 대기열에 넣습니다. 기기의 로컬 데몬은 기존 {SYNC_CADENCE_SECONDS}초 동기화 때 명령을 적용하되,
         그 기기에서 <code>{ENABLE_COMMANDS_CLI}</code>를 실행한 뒤에만 적용합니다. 원격 명령은 기본적으로 꺼져 있고, 오프라인이거나
         원격 명령을 켜지 않은 기기에서는 대기 상태로 남습니다. 상태는 직접 확인할 때만 갱신됩니다.
       </p>
-      <form class="command-form" ref={form} onSubmit={submit} aria-describedby={id("base")}>
-        <label class="field-label">명령
-          <select class="text-field" disabled={busy.size > 0} value={draft.kind} onChange={event => {
+      <form className="command-form" ref={form} onSubmit={submit} aria-describedby={id("base")}>
+        <label className="field-label">명령
+          <select className="text-field" disabled={busy.size > 0} value={draft.kind} onChange={event => {
             const kind = COMMAND_KINDS.find(candidate => candidate === event.currentTarget.value);
             if (kind !== undefined) patch({ kind });
           }}>
             {COMMAND_KINDS.map(kind => <option value={kind} key={kind}>{kind} {"\u2014"} {COMMAND_KIND_COPY[kind].label}</option>)}
           </select>
         </label>
-        <p class="note">{COMMAND_KIND_COPY[draft.kind].detail}</p>
+        <p className="note">{COMMAND_KIND_COPY[draft.kind].detail}</p>
         <KindFields draft={draft} patch={patch} busy={busy.size > 0} />
-        <p class="note" id={id("base")}>
+        <p className="note" id={id("base")}>
           기준 리비전: 저널 {profile.journalThrough} (마지막 출처 읽기 기준). 기기는 데이터가 아직 이 리비전에 있을 때만 명령을 적용합니다.
           갱신하려면 출처를 새로 고치세요.
         </p>
         {problems.length > 0 && (
-          <ul class="problems" role="alert">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>
+          <ul className="problems" role="alert">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>
         )}
-        <div class="cluster">
-          <button class="button primary" type="submit" disabled={busy.size > 0}>명령 대기열에 넣기</button>
-          <button class="button secondary" type="button" onClick={onRefreshSources} disabled={sourcesBusy}>출처 새로 고침</button>
-          <span class="note" role="status" aria-live="polite">{message}</span>
+        <div className="cluster">
+          <button className="button primary" type="submit" disabled={busy.size > 0}>명령 대기열에 넣기</button>
+          <button className="button secondary" type="button" onClick={onRefreshSources} disabled={sourcesBusy}>출처 새로 고침</button>
+          <span className="note" role="status" aria-live="polite">{message}</span>
         </div>
       </form>
       <h3 id={id("list")}>이 페이지에서 보낸 명령</h3>
-      <p class="note">
+      <p className="note">
         이 기록이 열려 있는 동안만 표시됩니다. 기록을 닫거나 출처를 바꾸거나 로그아웃하면 목록이 지워집니다. 상태는 skillar에 남아 있어
         명령 ID로 조회할 수 있습니다.
       </p>
-      {submissions.length === 0 ? <p class="note">이 페이지에서 대기열에 넣은 명령이 없습니다.</p> : (
-        <ul class="command-list" aria-labelledby={id("list")}>
+      {submissions.length === 0 ? <p className="note">이 페이지에서 대기열에 넣은 명령이 없습니다.</p> : (
+        <ul className="command-list" aria-labelledby={id("list")}>
           {submissions.map(submission => (
             <CommandItem key={submission.commandId} submission={submission} busy={busy.has(submission.commandId)}
               journalThrough={profile.journalThrough} sourcesBusy={sourcesBusy} sourcesLoad={sourcesLoad}
@@ -208,14 +208,14 @@ export function CommandsDisclosure({ profile, sourcesBusy, sourcesLoad, signal, 
           ))}
         </ul>
       )}
-      <form class="command-lookup" onSubmit={lookUp}>
-        <label class="field-label">명령 ID
-          <input class="text-field" type="text" autocomplete="off" spellcheck={false} value={lookup}
+      <form className="command-lookup" onSubmit={lookUp}>
+        <label className="field-label">명령 ID
+          <input className="text-field" type="text" autoComplete="off" spellCheck={false} value={lookup}
             onInput={event => setLookup(event.currentTarget.value)} />
         </label>
-        <div class="cluster">
-          <button class="button secondary" type="submit" disabled={busy.has(lookup.trim().toLowerCase())}>명령 ID로 확인</button>
-          <span class="note" role="status" aria-live="polite">{lookupMessage}</span>
+        <div className="cluster">
+          <button className="button secondary" type="submit" disabled={busy.has(lookup.trim().toLowerCase())}>명령 ID로 확인</button>
+          <span className="note" role="status" aria-live="polite">{lookupMessage}</span>
         </div>
       </form>
     </details>

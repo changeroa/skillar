@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { ConfirmDialog, Dialog, DropdownMenu, Sheet, Tooltip } from "./overlays";
 import { Button, IconButton } from "./controls";
 import "./demo-overlays.css";
@@ -32,17 +32,17 @@ export function DemoOverlays() {
   </Tooltip>;
   const body = state === "empty" ? null : state === "error" ? <p role="alert">Could not load the content.</p>
     : state === "loading" ? <p role="status">Loading content…</p> : <>
-      <h3 class="reference-content-heading">Content</h3><div class="reference-content-grid"><section><p>v1</p><pre>{"Answer the following questions: {{question}} "}</pre></section>
+      <h3 className="reference-content-heading">Content</h3><div className="reference-content-grid"><section><p>v1</p><pre>{"Answer the following questions: {{question}} "}</pre></section>
         <section><p>v2</p><pre>{"Answer the following questions: {{question}} one word only"}</pre></section></div>
-      <h3 class="reference-content-heading">Config</h3><p>No changes</p>
+      <h3 className="reference-content-heading">Config</h3><p>No changes</p>
       {state === "scroll" && Array.from({ length: 60 }, (_, index) => <p key={index}>Recorded item {index + 1}</p>)}
       {state === "nested" && nested}
     </>;
   const actions = <Button id="reference-done" text="Close" variant={control === "dialog" && size === "comparison" ? "primary" : "outline"} disabled={state === "disabled"}
     loading={state === "loading"} onClick={() => setOpen(false)} />;
-  return <main class="lf-gallery" id="gallery" data-ready="true">
+  return <main className="lf-gallery" id="gallery" data-ready="true">
     <h1>Overlay reference fixtures</h1>
-    <div class="reference-host">
+    <div className="reference-host">
     {control === "menu" || control === "actions" ? state === "nested" ?
       <Dialog id="reference-menu-parent" open title="Read-only preview" onClose={noAction}>{nested}</Dialog> : <DropdownMenu id="reference-menu"
       label={state === "disabled-trigger" ? "New skill" : control === "actions" ? "More actions" : "Filter options"} disabled={state === "disabled-trigger"}

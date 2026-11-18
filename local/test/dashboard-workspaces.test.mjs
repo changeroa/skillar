@@ -14,7 +14,7 @@ async function loadModule(relative) {
   const result = await build({
     entryPoints: [fileURLToPath(new URL(relative, PACKAGE_ROOT))],
     bundle: true, write: false, format: "esm", platform: "node", target: "es2022",
-    jsx: "automatic", jsxImportSource: "preact", logLevel: "silent",
+    jsx: "automatic", jsxImportSource: "react", logLevel: "silent",
   });
   return import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 }

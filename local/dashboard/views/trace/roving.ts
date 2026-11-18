@@ -1,11 +1,11 @@
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type {JSX} from "react";
+import { useState } from "react";
 
 /** Chronological leaves have no fabricated parents; the timeline has one cell per row. */
 export function useEventRoving(keys: readonly string[], selected?: string) {
   const [focused, setFocused] = useState<string>();
   const active = keys.find(key => key === focused) ?? keys.find(key => key === selected) ?? keys[0];
-  const onKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLOListElement>) => {
+  const onKeyDown = (event: React.KeyboardEvent<HTMLOListElement>) => {
     if (!(event.target instanceof HTMLElement) || !event.target.matches("[data-event-kind]")) return;
     const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-event-kind]"));
     const index = nodes.indexOf(event.target);

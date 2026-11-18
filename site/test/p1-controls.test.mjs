@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { act, all, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
 const { Textarea, Avatar, Spinner, Toast, Combobox, MultiSelect, DateRangeFields, DateRangeInput, parseKstDateTime, formatKstDateTime,
   MarkdownViewer, DiffViewer, TimePeriodSelect } = await loadViews(`

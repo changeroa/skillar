@@ -1,220 +1,163 @@
-// A deliberately small DOM for rendering Preact components under node:test without a browser.
-// It implements what Preact 10 touches (createElementNS, createTextNode, insertBefore, removeChild,
-// nextSibling, childNodes, data, attributes, event listeners) plus focus, click, keyboard and input
-// dispatch, so interaction contracts can be asserted. Layout and CSS are out of scope.
+// A small jsdom-backed DOM harness for rendering React components under node:test without a browser.
+// (Replaces the previous hand-rolled fake DOM, which only supported the old renderer.)
 
+import { JSDOM, VirtualConsole } from "jsdom";
 import { FakeEvent } from "./fake-event.mjs";
+
+// Node's own Event/EventTarget, captured before jsdom's globals are installed. Tests also
+// build plain node EventTargets as window stand-ins; let those accept jsdom-dispatched events.
+const NodeEvent = globalThis.Event;
+const NodeEventTarget = globalThis.EventTarget;
 export { FakeEvent };
 
-const XHTML = "http://www.w3.org/1999/xhtml";
-const FORM_CONTROLS = new Set(["button", "input", "textarea", "select"]);
-const FOCUSABLE = new Set(["button", "input", "textarea", "select", "a", "summary"]);
-const HANDLER_PROPERTIES = ["onclick", "oninput", "onkeydown", "onkeyup", "onchange", "onsubmit", "onfocus", "onblur"];
+// React evaluates canUseDOM and input-event support once at module load, so a global
+// document must exist before react-dom is imported. Install one at module evaluation;
+// tests then get fresh documents from installFakeDom as before.
+installFakeDom();
 
-class FakeNode {
-  constructor(document, nodeType) {
-    this.ownerDocument = document;
-    this.nodeType = nodeType;
-    this.parentNode = null;
-  }
-  get isConnected() {
-    let node = this;
-    while (node.parentNode) node = node.parentNode;
-    return node === this.ownerDocument;
-  }
-  get nextSibling() {
-    const siblings = this.parentNode?.childNodes;
-    return siblings ? siblings[siblings.indexOf(this) + 1] ?? null : null;
-  }
-  get previousSibling() {
-    const siblings = this.parentNode?.childNodes;
-    return siblings ? siblings[siblings.indexOf(this) - 1] ?? null : null;
-  }
-}
-
-class FakeText extends FakeNode {
-  constructor(document, data) {
-    super(document, 3);
-    this.dataValue = String(data);
-  }
-  get data() { return this.dataValue; }
-  set data(value) {
-    this.dataValue = String(value);
-    this.ownerDocument.changed();
-  }
-  get textContent() { return this.dataValue; }
-}
-
-class FakeElement extends FakeNode {
-  constructor(document, localName, namespace = XHTML) {
-    super(document, 1);
-    this.localName = localName;
-    this.namespaceURI = namespace;
-    this.childNodes = [];
-    this.attributes = new Map();
-    this.listeners = [];
-    this.style = {};
-    this.id = "";
-    this.hidden = false;
-    for (const name of HANDLER_PROPERTIES) this[name] = null;
-    if (FORM_CONTROLS.has(localName)) {
-      this.disabled = false;
-      this.value = "";
-      this.name = "";
-      this.type = localName === "button" ? "submit" : "text";
-    }
-    if (localName === "input" || localName === "textarea") {
-      this.checked = false;
-      this.readOnly = false;
-      this.spellcheck = true;
-      this.autocomplete = "";
-      this.autocapitalize = "";
-      this.placeholder = "";
-      this.rows = 2;
-    }
-  }
-  get firstChild() { return this.childNodes[0] ?? null; }
-  get lastChild() { return this.childNodes[this.childNodes.length - 1] ?? null; }
-  get children() { return this.childNodes.filter(child => child.nodeType === 1); }
-  get textContent() { return this.childNodes.map(child => child.textContent).join(""); }
-  contains(node) {
-    for (let current = node; current; current = current.parentNode) if (current === this) return true;
-    return false;
-  }
-  querySelector(selector) {
-    for (const child of this.children) {
-      if (child.matches(selector)) return child;
-      const match = child.querySelector(selector);
-      if (match) return match;
-    }
-    return null;
-  }
-  matches(selector) {
-    return selector.split(",").some(part => {
-      const value = part.trim();
-      const attribute = /^(?:([a-z][\w-]*))?\[([\w-]+)(?:=['"]?([^'"\]]+)['"]?)?\]$/i.exec(value);
-      if (!attribute) return this.localName === value;
-      if (attribute[1] && this.localName !== attribute[1]) return false;
-      const actual = this.getAttribute(attribute[2]);
-      return attribute[3] === undefined ? actual !== null : actual === attribute[3];
-    });
-  }
-  closest(selector) {
-    for (let node = this; node?.nodeType === 1; node = node.parentNode)
-      if (node.matches(selector)) return node;
-    return null;
-  }
-  insertBefore(node, reference) {
-    if (node.parentNode) node.parentNode.removeChild(node);
-    const index = reference ? this.childNodes.indexOf(reference) : -1;
-    if (reference && index === -1) throw new Error("insertBefore: the reference node is not a child.");
-    if (index === -1) this.childNodes.push(node);
-    else this.childNodes.splice(index, 0, node);
-    node.parentNode = this;
-    this.ownerDocument.changed();
-    return node;
-  }
-  appendChild(node) { return this.insertBefore(node, null); }
-  removeChild(node) {
-    const index = this.childNodes.indexOf(node);
-    if (index === -1) throw new Error("removeChild: the node is not a child.");
-    this.childNodes.splice(index, 1);
-    node.parentNode = null;
-    const active = this.ownerDocument.activeElement;
-    if (active === node || (node.nodeType === 1 && node.contains(active))) this.ownerDocument.activeElement = this.ownerDocument.body;
-    this.ownerDocument.changed();
-    return node;
-  }
-  remove() { this.parentNode?.removeChild(this); }
-  setAttribute(name, value) {
-    this.attributes.set(this.namespaceURI === XHTML ? name.toLowerCase() : name, String(value));
-    this.ownerDocument.changed();
-  }
-  removeAttribute(name) {
-    this.attributes.delete(this.namespaceURI === XHTML ? name.toLowerCase() : name);
-    this.ownerDocument.changed();
-  }
-  getAttribute(name) {
-    const key = this.namespaceURI === XHTML ? name.toLowerCase() : name;
-    if (this.attributes.has(key)) return this.attributes.get(key);
-    return key === "id" && this.id !== "" ? this.id : null;
-  }
-  hasAttribute(name) { return this.attributes.has(this.namespaceURI === XHTML ? name.toLowerCase() : name); }
-  addEventListener(type, listener, options = false) {
-    this.listeners.push({ type, listener, capture: options === true || options?.capture === true });
-  }
-  removeEventListener(type, listener, options = false) {
-    const capture = options === true || options?.capture === true;
-    this.listeners = this.listeners.filter(entry => !(entry.type === type && entry.listener === listener && entry.capture === capture));
-  }
-  invoke(event, capture) {
-    event.currentTarget = this;
-    for (const entry of [...this.listeners]) {
-      if (entry.type === event.type && entry.capture === capture) entry.listener.call(this, event);
-    }
-  }
-  dispatchEvent(event) {
-    event.target = this;
-    const path = [];
-    for (let node = this; node && node.nodeType === 1; node = node.parentNode) path.push(node);
-    for (const node of [...path].reverse()) {
-      if (event.propagationStopped) break;
-      node.invoke(event, true);
-    }
-    for (const node of path) {
-      if (event.propagationStopped) break;
-      node.invoke(event, false);
-      if (!event.bubbles) break;
-    }
-    return !event.defaultPrevented;
-  }
-  /** Like a browser: disabled and detached controls cannot take focus, and only focusable elements do. */
-  focus() {
-    if (this.disabled === true || !this.isConnected) return;
-    if (!FOCUSABLE.has(this.localName) && !this.attributes.has("tabindex")) return;
-    this.ownerDocument.activeElement = this;
-  }
-  blur() {
-    if (this.ownerDocument.activeElement === this) this.ownerDocument.activeElement = this.ownerDocument.body;
-  }
-  /** Like a browser: a disabled control swallows the click and no listener runs. */
-  click() {
-    if (this.disabled === true) return;
-    this.dispatchEvent(new FakeEvent("click"));
-  }
-}
-
-class FakeDocument {
-  constructor() {
-    this.nodeType = 9;
-    this.parentNode = null;
-    this.mutationListeners = new Set();
-    this.documentElement = new FakeElement(this, "html");
-    this.documentElement.parentNode = this;
-    this.body = new FakeElement(this, "body");
-    this.documentElement.childNodes.push(this.body);
-    this.body.parentNode = this.documentElement;
-    this.activeElement = this.body;
-  }
-  createElement(localName) { return new FakeElement(this, localName.toLowerCase()); }
-  createElementNS(namespace, localName) { return new FakeElement(this, namespace === XHTML ? localName.toLowerCase() : localName, namespace); }
-  createTextNode(data) { return new FakeText(this, data); }
-  getElementById(id) { return all(this.documentElement, node => node.id === id)[0] ?? null; }
-  changed() {
-    for (const listener of [...this.mutationListeners]) listener();
-  }
-  onMutation(listener) {
-    this.mutationListeners.add(listener);
-    return () => this.mutationListeners.delete(listener);
-  }
-}
-
-/** Installs a fresh document as the global Preact renders into and returns it. */
+/** Installs a fresh jsdom document as the global React renders into and returns it. */
 export function installFakeDom() {
-  const document = new FakeDocument();
-  globalThis.document = document;
-  globalThis.Element = FakeElement;
-  return document;
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on("jsdomError", error => {
+    // Surface listener exceptions that jsdom would otherwise swallow silently.
+    const original = error.detail?.detail ?? error.detail ?? error;
+    console.error("jsdom listener error:", original && original.cause ? original.cause.stack : original?.detail?.stack ?? original?.stack ?? original);
+  });
+  const dom = new JSDOM("<!doctype html><html><head></head><body></body></html>", {
+    url: "https://skillar.sh/skills/",
+    pretendToBeVisual: true,
+    virtualConsole,
+  });
+  const { window } = dom;
+  // Browsers expose GlobalEventHandlers on Document; jsdom does not. React probes
+  // "oninput" in document once to decide its modern change-event path.
+  if (!("oninput" in window.document)) {
+    Object.defineProperty(window.document, "oninput", { value: null, writable: true, configurable: true });
+  }
+  // Tests may install their own window/location/history/matchMedia doubles before mounting;
+  // only replace globals that are unset or still owned by a previous installFakeDom call.
+  const HARNESS = "__skillarHarness";
+  const setGlobal = (key, value) => {
+    const current = globalThis[key];
+    if (current === undefined || current === null || current[HARNESS] === true) {
+      try { value[HARNESS] = true; } catch { /* non-extensible */ }
+      globalThis[key] = value;
+    }
+  };
+  setGlobal("window", window);
+  const globals = ["document", "Element", "Node", "HTMLElement", "HTMLInputElement", "HTMLTextAreaElement",
+    "HTMLButtonElement", "HTMLSelectElement", "HTMLAnchorElement", "HTMLFormElement", "SVGElement", "SVGSVGElement",
+    "Event", "KeyboardEvent", "MouseEvent", "PointerEvent", "CustomEvent", "InputEvent", "FocusEvent",
+    "SubmitEvent", "MutationObserver", "navigator", "getComputedStyle", "DocumentFragment", "Text", "Comment",
+    "XMLSerializer", "DOMParser", "NodeFilter", "Range", "File", "Blob", "FormData", "CustomEvent",
+    "requestAnimationFrame", "cancelAnimationFrame", "Document", "HTMLDialogElement"];
+  for (const key of globals) {
+    if (window[key] !== undefined) {
+      try { globalThis[key] = window[key]; } catch { /* read-only global */ }
+    }
+  }
+  setGlobal("matchMedia", window.matchMedia);
+  setGlobal("location", window.location);
+  setGlobal("history", window.history);
+  // Polyfills for browser APIs jsdom lacks but components and tests touch.
+  if (!window.matchMedia) window.matchMedia = query => ({
+    matches: false, media: query, onchange: null,
+    addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
+    dispatchEvent: () => false,
+  });
+  if (!window.Element.prototype.scrollIntoView) window.Element.prototype.scrollIntoView = function scrollIntoView() {};
+  if (window.HTMLDialogElement) {
+    if (!window.HTMLDialogElement.prototype.showModal) window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+    if (!window.HTMLDialogElement.prototype.show) window.HTMLDialogElement.prototype.show = function show() { this.open = true; };
+    if (!window.HTMLDialogElement.prototype.close) window.HTMLDialogElement.prototype.close = function close() { this.open = false; };
+  }
+  // Browsers fire focusin/focusout alongside focus/blur; jsdom's manual dispatch does not.
+  const rawDispatch = window.EventTarget.prototype.dispatchEvent;
+  window.EventTarget.prototype.dispatchEvent = function dispatchEvent(event) {
+    const result = rawDispatch.call(this, event);
+    if (event.type === "focus") rawDispatch.call(this, new window.FocusEvent("focusin", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (event.type === "blur") rawDispatch.call(this, new window.FocusEvent("focusout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    // React derives enter/leave from over/out; pair the synthetic enter/leave the way a browser visit does.
+    if (/^mouseenter$/i.test(event.type)) rawDispatch.call(this, new window.MouseEvent("mouseover", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^mouseleave$/i.test(event.type)) rawDispatch.call(this, new window.MouseEvent("mouseout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^pointerenter$/i.test(event.type)) rawDispatch.call(this, new window.PointerEvent("pointerover", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^pointerleave$/i.test(event.type)) rawDispatch.call(this, new window.PointerEvent("pointerout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    return result;
+  };
+  // Record listener registrations so tests can inspect what a component wired up.
+  const originalAdd = window.EventTarget.prototype.addEventListener;
+  const originalRemove = window.EventTarget.prototype.removeEventListener;
+  window.EventTarget.prototype.addEventListener = function addEventListener(type, listener, options) {
+    if (listener) {
+      this.listeners = this.listeners ?? [];
+      this.listeners.push({ type, listener, capture: options === true || (options && options.capture === true) });
+    }
+    return originalAdd.call(this, type, listener, options);
+  };
+  window.EventTarget.prototype.removeEventListener = function removeEventListener(type, listener, options) {
+    const capture = options === true || (options && options.capture === true);
+    if (this.listeners) this.listeners = this.listeners.filter(
+      entry => !(entry.type === type && entry.listener === listener && entry.capture === capture));
+    return originalRemove.call(this, type, listener, options);
+  };
+  for (const name of ["every", "map", "filter", "some", "find", "reduce", "flatMap", "at"]) {
+    if (!window.HTMLCollection.prototype[name]) {
+      window.HTMLCollection.prototype[name] = function (...args) { return Array.prototype[name].apply([...this], args); };
+    }
+  }
+  // File inputs: jsdom enforces the browser's no-programmatic-files rule; tests replace selections.
+  const probeInput = window.document.createElement("input");
+  probeInput.type = "file";
+  const emptyFileList = probeInput.files;
+  Object.defineProperty(window.HTMLInputElement.prototype, "files", {
+    get() { return this._mockFiles ?? emptyFileList; },
+    set(value) { this._mockFiles = value; },
+    configurable: true,
+  });
+  const valueDescriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+  Object.defineProperty(window.HTMLInputElement.prototype, "value", {
+    get() {
+      if (this.type === "file" && this._mockValue !== undefined) return this._mockValue;
+      return valueDescriptor.get.call(this);
+    },
+    set(value) {
+      if (this.type === "file") { this._mockValue = String(value); return; }
+      this._mockValue = undefined;
+      valueDescriptor.set.call(this, value);
+    },
+    configurable: true,
+  });
+  for (const name of ["every", "map", "filter", "some", "find", "reduce", "flatMap"]) {
+    if (!window.NodeList.prototype[name]) {
+      window.NodeList.prototype[name] = function (...args) { return Array.prototype[name].apply([...this], args); };
+    }
+  }
+  if (!window.NodeList.prototype.at) window.NodeList.prototype.at = function at(index) {
+    return this[index < 0 ? this.length + index : index] ?? undefined;
+  };
+  if (!window.NamedNodeMap.prototype.keys) {
+    window.NamedNodeMap.prototype.keys = function* keys() { for (let i = 0; i < this.length; i++) yield this[i].name; };
+    window.NamedNodeMap.prototype.values = function* values() { for (let i = 0; i < this.length; i++) yield this[i].value; };
+    window.NamedNodeMap.prototype.entries = function* entries() { for (let i = 0; i < this.length; i++) yield [this[i].name, this[i].value]; };
+  }
+  if (NodeEventTarget && !NodeEventTarget.prototype.__skillarCrossRealm) {
+    const originalDispatch = NodeEventTarget.prototype.dispatchEvent;
+    NodeEventTarget.prototype.dispatchEvent = function dispatchEvent(event) {
+      if (NodeEvent && !(event instanceof NodeEvent)) {
+        const converted = new NodeEvent(event.type, { bubbles: event.bubbles, cancelable: event.cancelable });
+        for (const key of Object.getOwnPropertyNames(event)) {
+          if (key === "type" || key === "target" || key === "currentTarget" || key === "srcElement" || key === "eventPhase" || key === "defaultPrevented" || key === "bubbles" || key === "cancelable" || key === "timeStamp" || key === "isTrusted" || key === "NONE" || key === "AT_TARGET" || key === "BUBBLING_PHASE" || key === "CAPTURING_PHASE") continue;
+          try { converted[key] = event[key]; } catch { /* read-only */ }
+        }
+        const result = originalDispatch.call(this, converted);
+        if (converted.defaultPrevented) event.preventDefault();
+        return result;
+      }
+      return originalDispatch.call(this, event);
+    };
+    NodeEventTarget.prototype.__skillarCrossRealm = true;
+  }
+  return window.document;
 }
 
 /** Every element under root (root included) matching the predicate, in document order. */
@@ -245,12 +188,12 @@ export function buttonNamed(root, label) {
 export function waitFor(document, predicate, description, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     let settled = false;
-    let unsubscribe = () => {};
+    const observer = new (document.defaultView.MutationObserver)(() => queueMicrotask(check));
     const finish = (complete, value) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      unsubscribe();
+      observer.disconnect();
       complete(value);
     };
     const check = () => {
@@ -259,7 +202,7 @@ export function waitFor(document, predicate, description, timeoutMs = 5000) {
       if (value) finish(resolve, value);
     };
     const timer = setTimeout(() => finish(reject, new Error(`Timed out waiting for ${description}.`)), timeoutMs);
-    unsubscribe = document.onMutation(() => queueMicrotask(check));
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
     check();
   });
 }

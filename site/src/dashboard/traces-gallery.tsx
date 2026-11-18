@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import {createElement as h} from "react";
+import { render } from "../react-mount";
 import { TracesGallery } from "../../../local/dashboard/foundation/traces-gallery";
 
 const parameters = new URLSearchParams(location.search);

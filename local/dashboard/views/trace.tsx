@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TraceStep, SessionSkillReportDto } from "../../src/types.js";
 import { api, ApiError, type SessionListRow } from "../api";
 import { RequestDetails } from "../components/requests";
@@ -20,11 +20,11 @@ export * from "./trace/plan";
 function NotFound({ sessionId, backHref, embedded }: { sessionId: string; backHref: string; readonly embedded: boolean }) {
   const Title = embedded ? "h2" : "h1";
   return (
-    <section class="trace pe-console empty--trace">
-      <Title class="trace__title">{sessionId}</Title>
+    <section className="trace pe-console empty--trace">
+      <Title className="trace__title">{sessionId}</Title>
       <EmptyState title="이 세션을 찾을 수 없습니다"
         description={`${sessionId}에 기록된 이벤트가 없습니다. 보존 기간이 지나 삭제되었거나 오래된 링크일 수 있습니다.`}
-        action={<a class="pe-button" href={backHref}>세션으로 돌아가기</a>} />
+        action={<a className="pe-button" href={backHref}>세션으로 돌아가기</a>} />
     </section>
   );
 }
@@ -97,10 +97,10 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
 
   if (steps === undefined) {
     return (
-      <section class="trace pe-console" aria-busy={busy}>
+      <section className="trace pe-console" aria-busy={busy}>
         <Header sessionId={sessionId} steps={[]} backHref={backHref} embedded={embedded} />
         {busy && <StatusMessage level="DEFAULT" announce message="추적 기록 불러오는 중…" />}
-        {error && <Alert variant="destructive" announce action={<button type="button" class="btn"
+        {error && <Alert variant="destructive" announce action={<button type="button" className="btn"
           onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>}>{error}</Alert>}
       </section>
     );
@@ -110,14 +110,14 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
   const bounds = sessionBounds(steps, row);
   const counts = traceCounts(steps);
   const source = timelineKeys(steps);
-  if (presentation === "peek") return <section class="trace pe-console" aria-busy={busy}>
+  if (presentation === "peek") return <section className="trace pe-console" aria-busy={busy}>
     <SessionSummary sessionId={sessionId} steps={steps} row={row} peek embedded backHref={backHref} />
-    {error && <Alert variant="destructive" announce action={<button class="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button>}>{error}</Alert>}
+    {error && <Alert variant="destructive" announce action={<button className="pe-button" onClick={() => setRefresh(value => value + 1)}>다시 시도</button>}>{error}</Alert>}
     <CompactTree items={source} startedAt={bounds.startedAt} endedAt={bounds.endedAt} route={route} navigate={navigate} />
   </section>;
   return (
-    <section class="trace trace-console pe-console" data-pe-screen="session-detail" aria-busy={busy}>
-      {error && <Alert variant="destructive" announce action={<button type="button" class="btn"
+    <section className="trace trace-console pe-console" data-pe-screen="session-detail" aria-busy={busy}>
+      {error && <Alert variant="destructive" announce action={<button type="button" className="btn"
         onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>}>실시간 갱신 실패: {error}</Alert>}
       <SessionSummary sessionId={sessionId} row={row} steps={steps} backHref={backHref} embedded={embedded} peek={false} />
       {busy && <StatusMessage level="DEFAULT" announce message="추적 기록 불러오는 중…" />}

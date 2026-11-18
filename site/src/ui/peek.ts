@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { ComponentChildren, JSX } from "preact";
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {ReactNode as ComponentChildren, JSX} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export function peekUrl(href: string, parameter: string, selectedId: string | null): string {
   const url = new URL(href);
@@ -68,8 +68,8 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
       if (returnFocus?.isConnected) returnFocus.focus();
     };
   }, [selectedId, returnFocus]);
-  return h("dialog", { id, ref: dialog, class: "ui-peek", "aria-labelledby": `${id}-title`,
-    onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLDialogElement>) => {
+  return h("dialog", { id, ref: dialog, className: "ui-peek", "aria-labelledby": `${id}-title`,
+    onKeyDown: (event: React.KeyboardEvent<HTMLDialogElement>) => {
       const panel = event.currentTarget;
       if (event.defaultPrevented || event.key !== "Tab" || !panel.matches(":modal")) return;
       const nodes = Array.from(panel.querySelectorAll<HTMLElement>(
@@ -83,11 +83,11 @@ export function PeekPanel({ id, selectedId, title, fullPageHref, returnFocus, on
         event.preventDefault(); first.focus();
       }
     },
-    onCancel: event => { event.preventDefault(); if (!closeDisabled) onClose(); } },
+    onCancel: (event: React.SyntheticEvent) => { event.preventDefault(); if (!closeDisabled) onClose(); } },
     h("header", null, h("h2", { id: `${id}-title` }, title),
-      fullPageHref && h("a", { class: "button secondary", href: fullPageHref, onClick: onFullPage
-        ? (event: JSX.TargetedMouseEvent<HTMLAnchorElement>) => { event.preventDefault(); onFullPage(); } : undefined }, "전체 페이지로 열기"),
+      fullPageHref && h("a", { className: "button secondary", href: fullPageHref, onClick: onFullPage
+        ? (event: React.MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); onFullPage(); } : undefined }, "전체 페이지로 열기"),
       actions,
-      h("button", { ref: close, type: "button", class: "button secondary", disabled: closeDisabled, onClick: onClose }, "닫기")),
-    h("div", { class: "ui-peek-body" }, children));
+      h("button", { ref: close, type: "button", className: "button secondary", disabled: closeDisabled, onClick: onClose }, "닫기")),
+    h("div", { className: "ui-peek-body" }, children));
 }

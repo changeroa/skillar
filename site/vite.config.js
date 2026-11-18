@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import prefixSelector from 'postcss-prefix-selector';
 
 // local/dashboard/styles.css styles a whole document; on skillar.sh it must only
@@ -7,6 +8,7 @@ const localDashboardStyles = /[\\/]local[\\/]dashboard[\\/]styles\.css$/;
 const embedPrefix = '.dash-embed';
 
 export default defineConfig({
+  plugins: [react()],
   build: {
     rollupOptions: {
       input: {
@@ -23,9 +25,8 @@ export default defineConfig({
   resolve: {
     // The local views live outside the site package; their bare imports must
     // resolve from site/node_modules so CI builds without local/node_modules.
-    dedupe: ['preact', 'd3-sankey', 'zod', 'prismjs'],
+    dedupe: ['react', 'react-dom', 'd3-sankey', 'zod', 'prismjs'],
   },
-  esbuild: { jsx: 'automatic', jsxImportSource: 'preact' },
   server: { fs: { allow: ['..'] } },
   css: {
     postcss: {

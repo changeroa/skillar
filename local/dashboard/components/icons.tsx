@@ -42,8 +42,8 @@ export const EVENT_ICON: Record<EventKind, IconName> = {
   tool_call: "tool", error: "error", skill_request: "braces",
 };
 
-export function Icon({ name, class: className = "" }: { readonly name: IconName; readonly class?: string }) {
-  return <svg class={`pe-icon ${className}`} width="14" height="14" viewBox="0 0 24 24"
+export function Icon({ name, className = "" }: { readonly name: IconName; readonly className?: string }) {
+  return <svg className={`pe-icon ${className}`} width="14" height="14" viewBox="0 0 24 24"
     aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round"><path d={paths[name]} /></svg>;
 }

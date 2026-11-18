@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { DataTable } from "./table/data-table";
 import { TableFacet } from "./table/facets";
 import { TablePagination } from "./table/pagination";
@@ -26,8 +26,8 @@ export function TablesGallery() {
   return <section data-component="Tables" aria-labelledby="tables-title">
     <h2 id="tables-title">데이터 표</h2>
     <p>수신 범위 정렬, 선택, 밀도, 열 표시, 필터와 페이지. 변경은 이 예시에만 적용됩니다.</p>
-    <div class="lf-tables-gallery">
-      <aside class="lf-facet-panel" data-component="FacetPanel" aria-label="예시 필터">
+    <div className="lf-tables-gallery">
+      <aside className="lf-facet-panel" data-component="FacetPanel" aria-label="예시 필터">
         <TableFacet label="실행 환경" choices={[
           { value: "Codex", label: "Codex", count: 12 }, { value: "Claude Code", label: "Claude Code", count: 11 },
           { value: "Gemini", label: "Gemini", count: 0 },

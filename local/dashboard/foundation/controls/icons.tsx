@@ -1,4 +1,4 @@
-import type { ComponentChildren } from "preact";
+import type {ReactNode as ComponentChildren} from "react";
 
 const paths = {
   panelLeft: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></>,

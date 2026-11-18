@@ -1,5 +1,6 @@
 import { mountGallery } from "./foundation/gallery";
-import { h, render } from "preact";
+import { render } from "./react-mount";
+import {createElement as h} from "react";
 import { TracesGallery } from "./foundation/traces-gallery";
 import "./foundation/tokens.css";
 import "./foundation/gallery.css";

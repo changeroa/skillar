@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 import type { PrivateSkillHead } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, readSkill } from "./api.ts";
 import { isAbort } from "./skill-notes.ts";

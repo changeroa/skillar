@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { ComponentChildren, JSX } from "preact";
-import { useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {ReactNode as ComponentChildren, JSX} from "react";
+import { useRef, useState } from "react";
 import { parsePrivateSkillUri } from "../../../shared/dist/private-skills.js";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, searchSkills, technicalDetail } from "./api.ts";
@@ -83,8 +83,8 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, qu
       setBusy(false);
     }
   };
-  const navigate = (event: JSX.TargetedKeyboardEvent<HTMLInputElement>) => {
-    if (event.isComposing) return;
+  const navigate = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return;
     const candidates = result?.candidates ?? [];
     const enabled = candidates.flatMap((candidate, index) => skillIdOf(candidate) === null ? [] : [index]);
     if (event.key === "Escape") {
@@ -117,53 +117,53 @@ export function SearchBox({ skills, signal, onOpen, onUnauthorized, children, qu
       }
     }
   };
-  const searchProps = { id: searchId, type: "search", autocomplete: "off", value: query, disabled: busy,
+  const searchProps = { id: searchId, type: "search", autoComplete: "off", value: query, disabled: busy,
     placeholder: "이름·설명·문서에서 검색",
     role: "combobox", "aria-label": "내 스킬 검색", "aria-autocomplete": "list",
     "aria-expanded": expanded, "aria-controls": listId,
     "aria-activedescendant": expanded && active >= 0 ? `${optionPrefix}-${active}` : undefined,
-    onKeyDown: navigate, onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+    onKeyDown: navigate, onInput: (event: React.SyntheticEvent<HTMLInputElement>) => {
       setQuery(event.currentTarget.value); setActive(-1); setExpanded(false);
     },
-  } satisfies JSX.InputHTMLAttributes<HTMLInputElement>;
-  return h("form", { class: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-label": "내 스킬 검색" },
-    h("div", { class: "search__row" },
+  } satisfies React.InputHTMLAttributes<HTMLInputElement>;
+  return h("form", { className: compact ? "search search--compact" : "search", onSubmit: submit, role: "search", "aria-label": "내 스킬 검색" },
+    h("div", { className: "search__row" },
       compact ? h(Input, { ...searchProps, inputRef: input, label: "내 스킬 검색" })
-        : h("label", { id: "search-title", class: "field-label", for: searchId }, "내 스킬 검색",
+        : h("label", { id: "search-title", className: "field-label", for: searchId }, "내 스킬 검색",
           h(ComboboxInput, { ...searchProps, inputRef: input })),
       compact ? h(Button, { text: failed ? "다시 시도" : "검색", variant: "outline", type: "submit", disabled: busy })
-        : h("button", { class: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
+        : h("button", { className: "button secondary", type: "submit", disabled: busy }, failed ? "다시 시도" : "검색"),
       children),
-    (!compact || result !== null) && h("p", { class: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
-    h("p", { class: "note", role: "status", "aria-live": "polite" }, message),
+    (!compact || result !== null) && h("p", { className: "note" }, "결과 선택은 ↑↓, 열기는 ", h("code", null, "Enter"), ". 정렬은 보관함에만 적용됩니다."),
+    h("p", { className: "note", role: "status", "aria-live": "polite" }, message),
     result !== null && result.candidates.length === 0 && result.abstained === undefined &&
-      h("button", { class: "button secondary", type: "button", onClick: () => {
+      h("button", { className: "button secondary", type: "button", onClick: () => {
         setQuery(""); setResult(null); setMessage(""); setActive(-1); input.current?.focus();
       } }, "검색어 지우기"),
-    result?.abstained !== undefined && h("button", { class: "button secondary", type: "button",
+    result?.abstained !== undefined && h("button", { className: "button secondary", type: "button",
       onClick: () => input.current?.focus() }, "검색어 다시 쓰기"),
-    technical !== null && h("details", { class: "technical" }, h("summary", null, "기술 정보"), h("code", null, technical)),
-    result !== null && h("p", { class: "search__query" }, "검색한 문장: ", h("q", null, result.query)),
-    h("ul", { id: listId, class: "search-results", role: "listbox", "aria-label": "검색 후보", hidden: !expanded },
+    technical !== null && h("details", { className: "technical" }, h("summary", null, "기술 정보"), h("code", null, technical)),
+    result !== null && h("p", { className: "search__query" }, "검색한 문장: ", h("q", null, result.query)),
+    h("ul", { id: listId, className: "search-results", role: "listbox", "aria-label": "검색 후보", hidden: !expanded },
       result?.candidates.map((candidate, index) => {
         const skillId = skillIdOf(candidate);
         const relation = candidateHead(candidate, skills);
-        return h("li", { key: candidate.uri, id: `${optionPrefix}-${index}`, class: "search-result", role: "option",
+        return h("li", { key: candidate.uri, id: `${optionPrefix}-${index}`, className: "search-result", role: "option",
           "aria-selected": active === index, "aria-disabled": skillId === null || undefined, "data-active": active === index,
           "aria-label": `${candidate.rank}위 ${candidate.name} 현재 버전 열기`, "aria-describedby": `${optionPrefix}-${index}-detail`,
           onPointerMove: () => { if (skillId !== null) setActive(index); } },
-          h("div", { id: `${optionPrefix}-${index}-detail`, class: "search-result__text" },
-            h("span", { class: "note" }, `순위 ${candidate.rank} · ${{ automatic: "자동 추천 가능", explicit: "직접 지정 전용" }[candidate.invocation]}`),
-            h("strong", { class: "search-result__name" }, active === index && h(Glyph, { name: "check" }), candidate.name),
+          h("div", { id: `${optionPrefix}-${index}-detail`, className: "search-result__text" },
+            h("span", { className: "note" }, `순위 ${candidate.rank} · ${{ automatic: "자동 추천 가능", explicit: "직접 지정 전용" }[candidate.invocation]}`),
+            h("strong", { className: "search-result__name" }, active === index && h(Glyph, { name: "check" }), candidate.name),
             h("span", null, candidate.description),
-            candidate.matched.length > 0 && h("span", { class: "note" }, "일치 항목: ", candidate.matched.join(", ")),
-            h("p", { class: "note" }, "URI: ", h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))),
-            h("p", { class: "note" }, "검색 당시 digest: ", h("code", null, candidate.digest.slice(0, 8))),
-            h("p", { class: "note" }, { current: "현재 버전과 같습니다.", different: "현재 버전과 다릅니다.", unknown: "현재 버전과의 일치 여부를 확인하지 못했습니다." }[relation])),
+            candidate.matched.length > 0 && h("span", { className: "note" }, "일치 항목: ", candidate.matched.join(", ")),
+            h("p", { className: "note" }, "URI: ", h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))),
+            h("p", { className: "note" }, "검색 당시 digest: ", h("code", null, candidate.digest.slice(0, 8))),
+            h("p", { className: "note" }, { current: "현재 버전과 같습니다.", different: "현재 버전과 다릅니다.", unknown: "현재 버전과의 일치 여부를 확인하지 못했습니다." }[relation])),
           skillId === null ? h("code", null, candidate.uri.replace(/[a-f0-9]{64}/g, digest => digest.slice(0, 8)))
-            : h("button", { class: "button secondary", type: "button", tabIndex: -1, "aria-hidden": "true",
+            : h("button", { className: "button secondary", type: "button", tabIndex: -1, "aria-hidden": "true",
               onMouseDown: (event: MouseEvent) => event.preventDefault(),
               onClick: () => onOpen(skillId) }, "현재 버전 열기"));
       })),
-    result !== null && h("p", { class: "note" }, "검색 후보는 작업 성공의 근거가 아닙니다. ‘현재 버전 열기’는 검색 당시 버전이 아닌 보관함의 현재 버전을 엽니다."));
+    result !== null && h("p", { className: "note" }, "검색 후보는 작업 성공의 근거가 아닙니다. ‘현재 버전 열기’는 검색 당시 버전이 아닌 보관함의 현재 버전을 엽니다."));
 }

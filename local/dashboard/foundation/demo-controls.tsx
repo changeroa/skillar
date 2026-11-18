@@ -1,5 +1,5 @@
-import type { ComponentChildren } from "preact";
-import { useState } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useState } from "react";
 import { Badge, Button, Checkbox, CopyButton, IconButton, Input, KeyboardShortcut,
   Link, SearchInput, Select, Skeleton, StatusBadge, Tag } from "./controls";
 

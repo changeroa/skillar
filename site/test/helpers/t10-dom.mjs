@@ -1,26 +1,47 @@
+// fake-dom must evaluate first: it installs the global document react-dom probes at load.
+import { all, byTag, buttonNamed, FakeEvent, installFakeDom, waitFor } from "./fake-dom.mjs";
 import { build } from "esbuild";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { h, render } from "preact";
-import { act } from "preact/test-utils";
-import { all, byTag, buttonNamed, FakeEvent, installFakeDom, waitFor } from "./fake-dom.mjs";
+import { createElement as h, act } from "react";
+import { createRoot } from "react-dom/client";
 
-export { h, render, act, all, byTag, buttonNamed, FakeEvent, waitFor };
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-// Use the same Preact instance as the DOM renderer, even for the bundled local views.
+const roots = new WeakMap();
+
+/** Mount helper preserving the previous render(node, container) call shape. */
+export function render(node, container) {
+  if (node === null) {
+    const root = roots.get(container);
+    roots.delete(container);
+    root?.unmount();
+    return;
+  }
+  let root = roots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    roots.set(container, root);
+  }
+  root.render(node);
+}
+
+export { h, act, all, byTag, buttonNamed, FakeEvent, waitFor };
+
+// Use the same React instance as the DOM renderer, even for the bundled local views.
 export async function loadViews(exports, instrument = {}) {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
   const result = await build({
     stdin: { contents: exports, resolveDir: root, loader: "ts" },
     bundle: true, write: false, format: "esm", platform: "node", target: "es2022",
     banner: { js: `import { createRequire as testCreateRequire } from "node:module"; const require = testCreateRequire(${JSON.stringify(`${root}/site/package.json`)});` },
-    jsx: "automatic", jsxImportSource: "preact", logLevel: "silent",
+    jsx: "automatic", jsxImportSource: "react", logLevel: "silent",
     loader: { ".css": "empty" },
     nodePaths: [`${root}/site/node_modules`],
     plugins: [{
       name: "test-boundaries",
       setup(builder) {
-        builder.onResolve({ filter: /^preact(?:\/.*)?$/ }, args => ({ path: import.meta.resolve(args.path), external: true }));
+        builder.onResolve({ filter: /^(react|react-dom|scheduler)(\/.*)?$/ }, args => ({ path: import.meta.resolve(args.path), external: true }));
         if (instrument.cloud) builder.onLoad({ filter: /local\/dashboard\/cloud\.ts$/ }, () => ({
           contents: "export const createCloudApi = (...args) => globalThis.__t10Cloud(...args);", loader: "ts",
         }));
@@ -38,20 +59,6 @@ export async function loadViews(exports, instrument = {}) {
 
 export async function mount(t, Component, props) {
   const dom = installFakeDom();
-  const prototype = Object.getPrototypeOf(dom.body);
-  const textContent = Object.getOwnPropertyDescriptor(prototype, "textContent");
-  if (textContent.set === undefined) Object.defineProperty(prototype, "textContent", {
-    get: textContent.get,
-    set(value) {
-      for (const child of [...this.childNodes]) this.removeChild(child);
-      this.appendChild(this.ownerDocument.createTextNode(value));
-    },
-    configurable: true,
-  });
-  globalThis.location ??= { origin: "https://skillar.sh", hash: "", href: "https://skillar.sh/skills/" };
-  dom.head = dom.createElement("head");
-  dom.head.append = child => dom.head.appendChild(child);
-  dom.documentElement.appendChild(dom.head);
   const container = dom.createElement("div");
   dom.body.appendChild(container);
   t.after(() => act(() => render(null, container)));
@@ -60,9 +67,26 @@ export async function mount(t, Component, props) {
   return { dom, container, show };
 }
 
+// React tracks input values with its own setter; go through the prototype setter so
+// a programmatic value change is seen as a genuine edit when the event dispatches.
+function setNativeValue(field, value) {
+  const prototype = field instanceof globalThis.HTMLTextAreaElement
+    ? globalThis.HTMLTextAreaElement.prototype
+    : field instanceof globalThis.HTMLSelectElement
+      ? globalThis.HTMLSelectElement.prototype
+      : globalThis.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(prototype, "value").set.call(field, value);
+}
+
+// React derives onChange for checkboxes and radios from the click activation, and the
+// browser's activation behavior updates checkedness outside React's value tracker.
+export async function choose(field) {
+  await act(() => { field.click(); });
+}
+
 export async function input(field, value, type = "input") {
   await act(() => {
-    field.value = value;
+    setNativeValue(field, value);
     field.dispatchEvent(new FakeEvent(type));
   });
 }

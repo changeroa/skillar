@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Model } from "./mcp-connections";
 import { connectionStatus } from "./mcp-connections";
 import { readProfiles, describeFailure, isUnauthorized } from "./dashboard/api";
@@ -108,7 +108,7 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
   const current = rows.find(row => row.id === selected);
   const columns: readonly TableColumn<Row>[] = [
     { id: "name", label: "이름 / 토큰", value: row => row.name, render: row =>
-      h("button", { type: "button", class: "connection-row", "data-id": row.id, "data-name": "",
+      h("button", { type: "button", className: "connection-row", "data-id": row.id, "data-name": "",
         onClick: (event: MouseEvent) => {
           if (event.currentTarget instanceof HTMLElement) setOpener(event.currentTarget);
           select(row.id);
@@ -123,20 +123,20 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
     onUnauthorized,
   };
   return h("div", null,
-    h("div", { class: "connections-toolbar" },
+    h("div", { className: "connections-toolbar" },
       h("h2", { id: "connections-title" }, "토큰 / 기기"),
-      h("label", { class: "connections-search" }, "연결 검색",
+      h("label", { className: "connections-search" }, "연결 검색",
         h("input", { type: "search", value: view.q, onInput: event => change({ ...view, q: event.currentTarget.value }) })),
-      h("button", { type: "button", id: "connections-show-revoked", class: "button secondary",
+      h("button", { type: "button", id: "connections-show-revoked", className: "button secondary",
         "aria-pressed": view.showRevoked, disabled: !countKnown,
         onClick: () => change({ ...view, showRevoked: !view.showRevoked, status: view.showRevoked ? ["활성"] : [] }),
       }, countKnown ? `해제됨 보기 (${revoked})` : "해제됨 보기")),
-    h("p", { class: "note" }, "받은 목록 안에서 검색·정렬합니다. 활성은 온라인 상태가 아닙니다."),
-    failure && h("p", { role: "status", class: "note" }, failure,
-      h("button", { type: "button", class: "button secondary", onClick: common.onChanged }, "기기 다시 불러오기")),
+    h("p", { className: "note" }, "받은 목록 안에서 검색·정렬합니다. 활성은 온라인 상태가 아닙니다."),
+    failure && h("p", { role: "status", className: "note" }, failure,
+      h("button", { type: "button", className: "button secondary", onClick: common.onChanged }, "기기 다시 불러오기")),
     busy && h(Skeleton, { label: "연결 목록을 불러오는 중", rows: 2 }),
-    !busy && h("div", { class: "connections-grid" },
-      h("details", { class: "connections-filters" },
+    !busy && h("div", { className: "connections-grid" },
+      h("details", { className: "connections-filters" },
         h("summary", null, "필터"),
         h(FacetPanel, { title: "연결 필터", scope: countKnown ? `받은 전체 목록 ${rows.length}개 기준` : "일부 목록을 확인하지 못했습니다.",
           groups: [
@@ -147,9 +147,9 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
       h(DataTable<Row>, { caption: countKnown
         ? `연결 ${filtered.length}개${hiddenRevoked ? ` · 해제됨 ${hiddenRevoked}개 숨김` : ""}` : "연결 수 확인 불가",
         rows: filtered, columns, rowId: row => row.id, sort: view.sort, onSort: sort => change({ ...view, sort }) })),
-    countKnown && rows.length === 0 && h("p", { class: "ui-empty" },
-      "아직 연결이 없습니다. ", h("a", { class: "button secondary", href: "#endpoint-title" }, "MCP 설정으로 연결하기")),
-    h("details", { class: "connections-pairing" }, h("summary", null, "새 기기 연결"),
+    countKnown && rows.length === 0 && h("p", { className: "ui-empty" },
+      "아직 연결이 없습니다. ", h("a", { className: "button secondary", href: "#endpoint-title" }, "MCP 설정으로 연결하기")),
+    h("details", { className: "connections-pairing" }, h("summary", null, "새 기기 연결"),
       h(ConnectDevice, { ...common, origin: location.origin })),
     selected !== null && (opener !== null || !loading) && h(PeekPanel, {
       children: null,
@@ -157,7 +157,7 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
       returnFocus: opener,
       onClose: () => select(null),
     }, current ? h("div", { "data-id": current.id },
-      operationMessage && h("p", { role: "status", class: "note", "data-operation-status": "" }, operationMessage),
+      operationMessage && h("p", { role: "status", className: "note", "data-operation-status": "" }, operationMessage),
       h(KeyValueGrid, { entries: [
         { label: "식별자", value: h("code", null, current.id) },
         { label: "종류", value: current.kind }, { label: "상태", value: h(Pill, null, current.status) },
@@ -170,11 +170,11 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
         ] : []),
       ] }),
       current.device && h(DeviceCard, { ...common, key: current.device.deviceId, device: current.device, ingestEnabled }),
-      current.mcp && current.status !== "해제됨" && h("div", { class: "cluster connection__actions" },
+      current.mcp && current.status !== "해제됨" && h("div", { className: "cluster connection__actions" },
         model.confirming === current.id ? [
-          h("button", { class: "button secondary", type: "button", "data-action": "keep" }, "연결 유지"),
-          h("button", { class: "button danger", type: "button", "data-action": "confirm", disabled: model.revoking !== null }, "연결 해제 확인"),
-          h("p", { class: "note" }, "이 연결을 사용하는 에이전트의 접근이 즉시 중단됩니다. 되돌릴 수 없으며 이미 기록된 활동은 대시보드에 남습니다."),
-        ] : h("button", { class: "button danger", type: "button", "data-action": "revoke", disabled: model.revoking !== null }, "연결 해제…")))
+          h("button", { className: "button secondary", type: "button", "data-action": "keep" }, "연결 유지"),
+          h("button", { className: "button danger", type: "button", "data-action": "confirm", disabled: model.revoking !== null }, "연결 해제 확인"),
+          h("p", { className: "note" }, "이 연결을 사용하는 에이전트의 접근이 즉시 중단됩니다. 되돌릴 수 없으며 이미 기록된 활동은 대시보드에 남습니다."),
+        ] : h("button", { className: "button danger", type: "button", "data-action": "revoke", disabled: model.revoking !== null }, "연결 해제…")))
       : h("p", null, "이 연결이 받은 목록에 없습니다. 필터를 닫거나 목록을 다시 확인하세요.")));
 }

@@ -37,7 +37,7 @@ function ConsentFacts({ consent, revoked }: { readonly consent: Consent; readonl
       break;
     default: { const exhaustive: never = consent; return exhaustive; }
   }
-  return <dl class="account-status dash-permission-facts">
+  return <dl className="account-status dash-permission-facts">
     <div><dt>읽기</dt><dd>{revoked ? "기기 연결 철회됨" : "기기 연결은 업로드 동의가 아닙니다. 비공개 스킬 읽기 권한은 이 동의 응답에 포함되지 않습니다."}</dd></div>
     <div><dt>기록</dt><dd>{revoked ? "새 업로드 불가" : recording}</dd></div>
     <div><dt>서버 처리</dt><dd>{revoked ? "새 업로드 불가" : processing}</dd></div>
@@ -50,16 +50,16 @@ export function PermissionSummary({ devices, onRetry }: {
   readonly devices: ReadState<readonly DeviceState[]>;
   readonly onRetry: () => void;
 }) {
-  return <section class="dash-permissions" aria-labelledby="dash-permissions-title">
+  return <section className="dash-permissions" aria-labelledby="dash-permissions-title">
     <h2 id="dash-permissions-title">권한 요약</h2>
-    <p class="note">저장된 기기별 동의만 표시합니다. 연결 상태로 동의를 추정하지 않으며 여기서는 권한을 바꾸지 않습니다.</p>
+    <p className="note">저장된 기기별 동의만 표시합니다. 연결 상태로 동의를 추정하지 않으며 여기서는 권한을 바꾸지 않습니다.</p>
     {devices.status === "loading" ? <p role="status">권한 확인 중</p> :
       devices.status === "failed" ? <>
         <p role="alert">{devices.message}</p>
         {devices.technical !== "" && <details><summary>기술 정보</summary><code>{devices.technical}</code></details>}
-        <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>
+        <button className="button secondary" type="button" onClick={onRetry}>다시 시도</button>
       </> : devices.data?.length === 0 ? <p>연결된 기기가 없습니다. 읽기·기록·서버 처리·과거 데이터 권한을 확인할 기기가 아직 없습니다.</p> :
-        <ul class="dash-permission-list">{devices.data?.map(device => <li key={device.deviceId}>
+        <ul className="dash-permission-list">{devices.data?.map(device => <li key={device.deviceId}>
           <h3>{device.revokedAt !== null ? "해제된 기기" : <>기기 <code title={device.deviceId}>{shortId(device.deviceId)}</code></>}</h3>
           <ConsentFacts consent={device.consent} revoked={device.revokedAt !== null} />
         </li>)}</ul>}

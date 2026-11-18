@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "preact/hooks";
+import { useEffect, useId, useState } from "react";
 import { Button } from "../controls/buttons";
 import { EmptyState } from "./messages";
 import { chartLayout } from "./chart-layout";
@@ -39,23 +39,23 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
     root.addEventListener("keydown", escape);
     return () => root.removeEventListener("keydown", escape);
   }, [tooltip]);
-  return <figure class="lf-chart" data-kind={kind} onMouseLeave={() => setHovered(null)}>
+  return <figure className="lf-chart" data-kind={kind} onMouseLeave={() => setHovered(null)}>
     <figcaption>{title}</figcaption>
     {!measured ? <EmptyState title={data.labels.length ? "미측정" : "표시할 데이터가 없습니다"}
       description="측정값이 있는 범위에서 차트를 표시합니다." /> :
-      <div class="lf-chart__scroll">
+      <div className="lf-chart__scroll">
         <svg width="100%" height={layout.height} role="group" aria-label={title}
           style={{ minWidth: Math.max(280, data.labels.length * 72) }}
           onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); dismiss(); } }}>
           <title>{title}</title>
           <desc>{data.labels.map((label, index) => data.series.map(series => describe(label, series.label, series.values[index] ?? null)).join(", ")).join("; ")}</desc>
-          {[0, .5, 1].map(ratio => <line key={ratio} class="lf-chart__grid"
+          {[0, .5, 1].map(ratio => <line key={ratio} className="lf-chart__grid"
             x1={x(layout.left)} x2={x(layout.right)} y1={layout.y(layout.max * ratio)} y2={layout.y(layout.max * ratio)} />)}
-          <line data-zero-baseline class="lf-chart__axis" x1={x(layout.left)} x2={x(layout.right)} y1={layout.baseline} y2={layout.baseline} />
-          <text x={x(layout.left - 12)} y={layout.baseline + 4} text-anchor="end">0</text>
-          <text x={x(layout.left - 12)} y={layout.top + 4} text-anchor="end">{layout.max}</text>
+          <line data-zero-baseline className="lf-chart__axis" x1={x(layout.left)} x2={x(layout.right)} y1={layout.baseline} y2={layout.baseline} />
+          <text x={x(layout.left - 12)} y={layout.baseline + 4} textAnchor="end">0</text>
+          <text x={x(layout.left - 12)} y={layout.top + 4} textAnchor="end">{layout.max}</text>
           {line ? data.series.map((series, seriesIndex) =>
-            <g key={series.label} class={`lf-chart__series lf-chart__series--${seriesIndex % 8 + 1}`} hidden={hidden.includes(seriesIndex)}>
+            <g key={series.label} className={`lf-chart__series lf-chart__series--${seriesIndex % 8 + 1}`} {...({ hidden: hidden.includes(seriesIndex) || undefined } as unknown as React.SVGProps<SVGGElement>)}>
               <svg width="100%" height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`}
                 preserveAspectRatio="none" aria-hidden="true">
                 <path fill="none" d={series.values.map((value, index, values) => value === null ? "" :
@@ -65,7 +65,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
                 const value = series.values[index] ?? null;
                 if (value === null) return null;
                 const text = describe(label, series.label, value);
-                return <g key={label} tabindex={0} role="img" data-chart-point aria-label={text}
+                return <g key={label} tabIndex={0} role="img" data-chart-point aria-label={text}
                   aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                   onFocus={() => setFocused({ label, series: series.label })} onBlur={() => setFocused(null)}
                   onMouseEnter={() => setHovered({ label, series: series.label })}>
@@ -76,8 +76,8 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
             </g>) :
             layout.bars.map((bar, index) => {
               const text = describe(bar.label, bar.series, bar.value);
-              return <g key={index} class={`lf-chart__series lf-chart__series--${bar.seriesIndex % 8 + 1}`}
-                hidden={hidden.includes(bar.seriesIndex)} tabindex={bar.value === null ? undefined : 0}
+              return <g key={index} className={`lf-chart__series lf-chart__series--${bar.seriesIndex % 8 + 1}`}
+                {...({ hidden: hidden.includes(bar.seriesIndex) || undefined } as unknown as React.SVGProps<SVGGElement>)} tabIndex={bar.value === null ? undefined : 0}
                 role={bar.value === null ? undefined : "img"} data-chart-point={bar.value !== null || undefined} aria-label={bar.value === null ? undefined : text}
                 aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                 onFocus={() => setFocused({ label: bar.label, series: bar.series })} onBlur={() => setFocused(null)}
@@ -91,25 +91,25 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
                 </>}
               </g>;
             })}
-          {data.labels.map((label, index) => <text key={label} class="lf-chart__label"
+          {data.labels.map((label, index) => <text key={label} className="lf-chart__label"
             x={x(layout.left + (index + .5) * layout.groupWidth)} y={layout.baseline + 28} text-anchor="middle">
             {label.split("\n").map((line, row) => <tspan key={row} x={x(layout.left + (index + .5) * layout.groupWidth)} dy={row === 0 ? 0 : 16}>{line}</tspan>)}
           </text>)}
         </svg>
       </div>}
-    {tooltip && <div role="tooltip" id={`${id}-tooltip`} class="lf-chart__tooltip">{tooltip}</div>}
-    <div class="lf-chart__legend" role="group" aria-label={`${title} 계열`}>
-      {data.series.map((series, index) => <span key={series.label} class={`lf-chart__legend-item lf-chart__series--${index % 8 + 1}`}
+    {tooltip && <div role="tooltip" id={`${id}-tooltip`} className="lf-chart__tooltip">{tooltip}</div>}
+    <div className="lf-chart__legend" role="group" aria-label={`${title} 계열`}>
+      {data.series.map((series, index) => <span key={series.label} className={`lf-chart__legend-item lf-chart__series--${index % 8 + 1}`}
         data-hidden={hidden.includes(index)}>
-        <span class="lf-chart__swatch" aria-hidden="true" />
+        <span className="lf-chart__swatch" aria-hidden="true" />
         <Button text={`${series.label}${series.values.some(value => value === null)
         ? series.values.every(value => value === null) ? " · 미측정" : " · 일부 미측정" : ""}`}
         variant="ghost" icon={hidden.includes(index) ? "minus" : "check"} aria-pressed={!hidden.includes(index)}
         onClick={() => { setHidden(previous => previous.includes(index) ? previous.filter(value => value !== index) : [...previous, index]); dismiss(); }} />
       </span>)}
     </div>
-    <details class="lf-chart__data"><summary>데이터 표 보기 · {title}</summary>
-      <div class="lf-chart__data-scroll"><table>
+    <details className="lf-chart__data"><summary>데이터 표 보기 · {title}</summary>
+      <div className="lf-chart__data-scroll"><table>
         <caption>{title} · 전체 측정값</caption>
         <thead><tr><th scope="col">구간</th>{data.series.map(series => <th scope="col" key={series.label}>{series.label}</th>)}</tr></thead>
         <tbody>{data.labels.map((label, index) => <tr key={label}><th scope="row">{label}</th>

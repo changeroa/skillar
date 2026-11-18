@@ -164,8 +164,8 @@ const FAILURE_TEXT: Record<Failure, string> = {
   other: "요청을 완료하지 못했습니다.",
 };
 async function mount(): Promise<void> {
-  const [{ h, render: renderView }, { ConnectionsWorkspace }, { Skeleton, Toast }] = await Promise.all([
-    import("preact"), import("./connections-workspace"), import("./ui"),
+  const [{ createElement: h }, { render: renderView }, { ConnectionsWorkspace }, { Skeleton, Toast }] = await Promise.all([
+    import("react"), import("./react-mount"), import("./connections-workspace"), import("./ui"),
   ]);
   const q = <T extends Element>(selector: string): T => {
     const element = document.querySelector<T>(selector);

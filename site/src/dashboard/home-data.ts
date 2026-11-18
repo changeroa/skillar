@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 import type { PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { readCatalog, SkillsRequestError } from "../skills/api";
 import { ConnectionsRequestError, readConnections } from "../mcp-connections";

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "preact/hooks";
+import { useEffect, useId, useState } from "react";
 import { Select } from "./fields";
 import type { SelectOption } from "./fields";
 import { Button } from "./buttons";
@@ -22,7 +22,7 @@ export function TimePeriodSelect({ label = "기간", options, value, onChange, d
   readonly label?: string; readonly options: readonly SelectOption[]; readonly value: string;
   readonly onChange: (value: string) => void; readonly disabled?: boolean;
 }) {
-  return <div class="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled}
+  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled}
     onChange={event => onChange(event.currentTarget.value)} /></div>;
 }
 
@@ -61,7 +61,7 @@ export function DateRangeInput({ label = "기간", range, onChange, disabled = f
     if (from > to) { setError("시작은 종료보다 늦을 수 없습니다."); return; }
     onChange({ from, to }); setError("");
   };
-  return <fieldset class="lf-date-range" disabled={disabled} aria-describedby={error ? `${id}-error` : undefined}>
+  return <fieldset className="lf-date-range" disabled={disabled} aria-describedby={error ? `${id}-error` : undefined}>
     <legend>{label} · KST</legend>
     <DateRangeFields value={{ from: fromText, to: toText }} step="0.001" invalid={Boolean(error)} onChange={patch => {
       if (patch.from !== undefined) setFromText(patch.from);

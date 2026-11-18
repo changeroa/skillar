@@ -1,5 +1,5 @@
-import type { ComponentChildren } from "preact";
-import { useState } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useState } from "react";
 import { ColumnVisibility, TableDensity } from "./controls";
 import { RowCheckbox, SortButton, TableRow, TableToolbar } from "./parts";
 import { TablePagination, type TablePage } from "./pagination";
@@ -39,16 +39,16 @@ export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onS
       direction: sort?.column === column && sort.direction === "ascending" ? "descending" : "ascending" };
     setSort(next); onSort?.(next);
   };
-  return <section class="ui-table lf-table-surface" data-density={density} aria-busy={busy}>
+  return <section className="ui-table lf-table-surface" data-density={density} aria-busy={busy}>
     {controls && <TableToolbar>
       {toolbar}
       <ColumnVisibility columns={columns} hidden={hidden} onChange={next => { setHidden(next); onHiddenChange?.(next); }} />
       <TableDensity value={density} onChange={next => { setDensity(next); onDensityChange?.(next); }} />
     </TableToolbar>}
-    <div class="ui-table-scroll lf-table-scroll" tabIndex={0} role="region" aria-label={caption}>
+    <div className="ui-table-scroll lf-table-scroll" tabIndex={0} role="region" aria-label={caption}>
       <table><caption>{caption}</caption>
         <thead><tr>
-          {selection && <th scope="col" class="lf-table-select"><RowCheckbox label="현재 페이지 전체 선택"
+          {selection && <th scope="col" className="lf-table-select"><RowCheckbox label="현재 페이지 전체 선택"
             checked={ids.length > 0 && chosen.length === ids.length} mixed={chosen.length > 0 && chosen.length < ids.length}
             disabled={ids.length === 0} onChange={checked => selection.onChange(checked
               ? [...new Set([...selection.ids, ...ids])] : selection.ids.filter(id => !ids.includes(id)))} /></th>}
@@ -60,14 +60,14 @@ export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onS
         </tr></thead>
         <tbody>{busy && !rows.length ? Array.from({ length: 5 }, (_, index) => <tr key={index} aria-hidden="true">
           {Array.from({ length: visible.length + (selection ? 1 : 0) }, (_, cell) =>
-            <td key={cell}><span class="lf-table-placeholder" /></td>)}
-        </tr>) : !shown.length ? <tr><td class="ui-empty lf-table-empty" role="status"
+            <td key={cell}><span className="lf-table-placeholder" /></td>)}
+        </tr>) : !shown.length ? <tr><td className="ui-empty lf-table-empty" role="status"
           colSpan={Math.max(1, visible.length + (selection ? 1 : 0))}>조건에 맞는 항목이 없습니다.</td></tr> : shown.map(row => {
           const id = rowId(row), checked = selection?.ids.includes(id) ?? false;
           return <TableRow key={id} id={id} selected={selectedId === id || checked}
             aria-selected={selection ? checked : undefined}
             {...(onRowOpen ? { onOpen: (target: HTMLTableRowElement) => onRowOpen(row, target) } : {})}>
-            {selection && <td class="lf-table-select"><RowCheckbox label={`${id} 선택`} checked={checked}
+            {selection && <td className="lf-table-select"><RowCheckbox label={`${id} 선택`} checked={checked}
               onChange={next => selection.onChange(next ? [...selection.ids, id] : selection.ids.filter(value => value !== id))} /></td>}
             {visible.map(column => <td key={column.id} data-column={column.id}>
               {column.render ? column.render(row) : column.value(row) ?? "미측정"}
@@ -76,7 +76,7 @@ export function DataTable<Row>({ caption, rows, columns, rowId, initialSort, onS
         })}</tbody>
       </table>
     </div>
-    {busy && <p class="lf-table-loading" role="status">받은 범위를 불러오는 중입니다.</p>}
+    {busy && <p className="lf-table-loading" role="status">받은 범위를 불러오는 중입니다.</p>}
     {page && <TablePagination {...page} index={index} total={rows.length} busy={busy} />}
   </section>;
 }

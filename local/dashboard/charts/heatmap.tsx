@@ -1,5 +1,5 @@
 import type { Filter, HeatmapDto, SkillUri, SkillWeekDto } from "../../src/types.js";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { DOW_LABEL } from "../state";
 
 // Colors derive from the DESIGN.md tokens: one hue (--accent) at five alphas for data cells, ink at
@@ -287,7 +287,7 @@ export function selectionCount(grid: HeatGrid, selection: HourSelection): number
   return sum(grid.rows[r]!.filter((cell) => cellSelected(selection, cell)).map((cell) => cell.count));
 }
 
-export type CellClick = (cell: HeatCell, event: MouseEvent) => void;
+export type CellClick = (cell: HeatCell, event: React.MouseEvent) => void;
 
 export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { grid: HeatGrid; selection?: HourSelection; onCellClick: CellClick; label: string }) {
   const cols = grid.hours.length;
@@ -296,26 +296,26 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
   const [focused, setFocused] = useState({ dow: grid.dows[0] ?? 1, hour: grid.hours[0] ?? 0 });
   const active = grid.dows.includes(focused.dow) && grid.hours.includes(focused.hour) ? focused : { dow: grid.dows[0] ?? 1, hour: grid.hours[0] ?? 0 };
   return (
-    <div class={`hm hm--cols-${cols}`} role="grid" aria-label={label} style={`--hm-cols:${cols}`}>
-      <div class="hm__row" role="row">
-        <div class="hm__corner" role="columnheader">요일</div>
+    <div className={`hm hm--cols-${cols}`} role="grid" aria-label={label} style={{ "--hm-cols": cols } as React.CSSProperties}>
+      <div className="hm__row" role="row">
+        <div className="hm__corner" role="columnheader">요일</div>
         {grid.hours.map((hour, c) => (
-          <div key={hour} class="hm__h" role="columnheader" title={hourRangeLabel(hour, grid.bucketHours)}>{labels[c]}</div>
+          <div key={hour} className="hm__h" role="columnheader" title={hourRangeLabel(hour, grid.bucketHours)}>{labels[c]}</div>
         ))}
-        <div class="hm__h hm__h--total" role="columnheader">합계</div>
+        <div className="hm__h hm__h--total" role="columnheader">합계</div>
       </div>
       {grid.rows.map((cells, r) => {
         const dow = grid.dows[r]!;
         const rowTotal = grid.rowTotals[r]!;
         return (
-          <div class="hm__row" role="row" key={dow}>
-            <div class="hm__d" role="rowheader">{DOW_LABEL[dow]}</div>
+          <div className="hm__row" role="row" key={dow}>
+            <div className="hm__d" role="rowheader">{DOW_LABEL[dow]}</div>
             {cells.map((cell, c) => {
               const selected = cellSelected(selection, cell);
               const tip = cellTip(cell, grid.bucketHours, grid.total);
               const cls = `hm__cell hm__cell--l${cell.level}${selected ? " hm__cell--selected" : ""}${c >= flipFrom ? " hm__cell--end" : ""}`;
               return (
-                <div class="hm__c" role="gridcell" key={cell.hour}>
+                <div className="hm__c" role="gridcell" key={cell.hour}>
                   <button
                     type="button"
                     tabIndex={active.dow === cell.dow && active.hour === cell.hour ? 0 : -1}
@@ -336,7 +336,7 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
                       const nextHour = grid.hours[Math.max(0, Math.min(grid.hours.length - 1, column))];
                       event.currentTarget.closest(".hm")?.querySelector<HTMLButtonElement>(`[data-dow="${nextDow}"][data-hour="${nextHour}"]`)?.focus();
                     }}
-                    class={cls}
+                    className={cls}
                     data-tip={tip}
                     data-dow={dow}
                     data-hour={cell.hour}
@@ -349,20 +349,20 @@ export function WeekdayHourHeatmap({ grid, selection, onCellClick, label }: { gr
                 </div>
               );
             })}
-            <div class="hm__rt" role="cell" title={`${DOW_LABEL[dow]}요일: ${plural(rowTotal, "session")}`}>
-              <span class="hm__n">{rowTotal}</span>
+            <div className="hm__rt" role="cell" title={`${DOW_LABEL[dow]}요일: ${plural(rowTotal, "session")}`}>
+              <span className="hm__n">{rowTotal}</span>
             </div>
           </div>
         );
       })}
-      <div class="hm__row hm__row--foot" role="row">
-        <div class="hm__d hm__d--total" role="rowheader">합계</div>
+      <div className="hm__row hm__row--foot" role="row">
+        <div className="hm__d hm__d--total" role="rowheader">합계</div>
         {grid.colTotals.map((n, c) => (
-          <div class="hm__ct" role="cell" key={grid.hours[c]} title={`${hourRangeLabel(grid.hours[c]!, grid.bucketHours)}: ${plural(n, "session")}`}>
-            <span class="hm__n">{n}</span>
+          <div className="hm__ct" role="cell" key={grid.hours[c]} title={`${hourRangeLabel(grid.hours[c]!, grid.bucketHours)}: ${plural(n, "session")}`}>
+            <span className="hm__n">{n}</span>
           </div>
         ))}
-        <div class="hm__grand" role="cell">{grid.total}</div>
+        <div className="hm__grand" role="cell">{grid.total}</div>
       </div>
     </div>
   );
@@ -375,26 +375,26 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
   const activeRow = Math.max(0, Math.min(grid.rows.length - 1, focused.row));
   const activeColumn = Math.max(0, Math.min(cols - 1, focused.column));
   return (
-    <div class={`hm hm--skills hm--cols-${cols}`} role="grid" aria-label={label} style={`--hm-cols:${cols}`}>
-      <div class="hm__row" role="row">
-        <div class="hm__corner" role="columnheader">스킬</div>
+    <div className={`hm hm--skills hm--cols-${cols}`} role="grid" aria-label={label} style={{ "--hm-cols": cols } as React.CSSProperties}>
+      <div className="hm__row" role="row">
+        <div className="hm__corner" role="columnheader">스킬</div>
         {grid.weeks.map((week) => {
           const { short, range } = formatWeek(week);
           return (
-            <div key={week} class="hm__h hm__wk" role="columnheader" title={`${week} (${range})`}>
-              <span><span class="hm__wk__w">{short.slice(0, 1)}</span>{short.slice(1)}</span>
+            <div key={week} className="hm__h hm__wk" role="columnheader" title={`${week} (${range})`}>
+              <span><span className="hm__wk__w">{short.slice(0, 1)}</span>{short.slice(1)}</span>
               <small>{range.split(/\s[-\u2013]\s|~/)[0]}</small>
             </div>
           );
         })}
-        <div class="hm__h hm__h--total" role="columnheader">합계</div>
+        <div className="hm__h hm__h--total" role="columnheader">합계</div>
       </div>
       {grid.rows.map((row, rowIndex) => {
         const active = activeSkills.includes(row.uri);
         return (
-          <div class="hm__row" role="row" key={row.uri}>
-            <div class="hm__d hm__d--skill" role="rowheader">
-              <button type="button" class="hm__skill" title={row.uri} aria-pressed={active} onClick={() => onRowClick(row.uri)}>{active ? "✓ " : ""}{row.name}</button>
+          <div className="hm__row" role="row" key={row.uri}>
+            <div className="hm__d hm__d--skill" role="rowheader">
+              <button type="button" className="hm__skill" title={row.uri} aria-pressed={active} onClick={() => onRowClick(row.uri)}>{active ? "✓ " : ""}{row.name}</button>
             </div>
             {row.counts.map((count, c) => {
               const week = grid.weeks[c]!;
@@ -403,7 +403,7 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
                 ? `${row.name} \u00b7 ${short} (${range}) \u00b7 ${plural(count, "load")} \u00b7 ${formatShare(count, grid.total)}`
                 : `${row.name} \u00b7 ${short} (${range}) \u00b7 읽기 없음`;
               return (
-                <div class="hm__c" role="gridcell" key={week}>
+                <div className="hm__c" role="gridcell" key={week}>
                   <button
                     type="button"
                     tabIndex={activeRow === rowIndex && activeColumn === c ? 0 : -1}
@@ -426,7 +426,7 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
                       column = Math.max(0, Math.min(cols - 1, column));
                       event.currentTarget.closest(".hm")?.querySelector<HTMLButtonElement>(`[data-week-row="${r}"][data-week-column="${column}"]`)?.focus();
                     }}
-                    class={`hm__cell hm__cell--l${row.levels[c]}${c >= flipFrom ? " hm__cell--end" : ""}`}
+                    className={`hm__cell hm__cell--l${row.levels[c]}${c >= flipFrom ? " hm__cell--end" : ""}`}
                     data-tip={tip}
                     data-week={week}
                     data-count={count}
@@ -436,20 +436,20 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
                 </div>
               );
             })}
-            <div class="hm__rt" role="cell" title={`${row.name}: ${plural(row.total, "load")}`}>
-              <span class="hm__n">{row.total}</span>
+            <div className="hm__rt" role="cell" title={`${row.name}: ${plural(row.total, "load")}`}>
+              <span className="hm__n">{row.total}</span>
             </div>
           </div>
         );
       })}
-      <div class="hm__row hm__row--foot" role="row">
-        <div class="hm__d hm__d--total" role="rowheader">합계</div>
+      <div className="hm__row hm__row--foot" role="row">
+        <div className="hm__d hm__d--total" role="rowheader">합계</div>
         {grid.colTotals.map((n, c) => (
-          <div class="hm__ct" role="cell" key={grid.weeks[c]} title={`${grid.weeks[c]}: ${plural(n, "load")}`}>
-            <span class="hm__n">{n}</span>
+          <div className="hm__ct" role="cell" key={grid.weeks[c]} title={`${grid.weeks[c]}: ${plural(n, "load")}`}>
+            <span className="hm__n">{n}</span>
           </div>
         ))}
-        <div class="hm__grand" role="cell">{grid.total}</div>
+        <div className="hm__grand" role="cell">{grid.total}</div>
       </div>
     </div>
   );
@@ -458,10 +458,10 @@ export function SkillWeekHeatmap({ grid, activeSkills, onRowClick, label }: { gr
 export function HeatLegend({ ranges, unit }: { ranges: string[]; unit: string }) {
   const describe = (range: string) => (range === "-" ? "현재 기준에서는 쓰이지 않음" : plural(range, unit));
   return (
-    <div class="hm__legend">
+    <div className="hm__legend">
       <span>적음</span>
       {ranges.map((range, level) => (
-        <span key={level}><span class={`hm__sw hm__cell--l${level}`} role="img" title={describe(range)} aria-label={`${level}단계: ${describe(range)}`} /> {range}</span>
+        <span key={level}><span className={`hm__sw hm__cell--l${level}`} role="img" title={describe(range)} aria-label={`${level}단계: ${describe(range)}`} /> {range}</span>
       ))}
       <span>많음</span>
     </div>

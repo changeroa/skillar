@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { PrivateSkillDetail, PrivateSkillHead, PrivateSkillPackage } from "../../../shared/dist/private-skills.js";
 import { isUnauthorized, readExport } from "./api.ts";
 import { useDraftGuard } from "./editor.ts";

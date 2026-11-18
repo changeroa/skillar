@@ -63,20 +63,20 @@ export const INVOCATION_TITLE: Record<Candidate["invocation"], string> = {
 function CheckIcon() {
   // Lucide "check"
   return (
-    <svg class="cand__check" viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="이 검색 후 읽음" focusable="false">
+    <svg className="cand__check" viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="이 검색 후 읽음" focusable="false">
       <path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   );
 }
 
 export function Candidates({ candidates, chosen, query }: CandidatesProps) {
-  if (!candidates.length) return <p class="cands__none">반환된 후보가 없습니다.</p>;
+  if (!candidates.length) return <p className="cands__none">반환된 후보가 없습니다.</p>;
   const picked = chosenUris(candidates, chosen);
   const roots = rootHints(candidates);
   return (
     <>
-    <p class="cands__legend">일치도 = 순위 점수 {"\u00d7"} 일치한 검색어 단어 비율</p>
-    <ol class="cands" aria-label="검색 후보">
+    <p className="cands__legend">일치도 = 순위 점수 {"\u00d7"} 일치한 검색어 단어 비율</p>
+    <ol className="cands" aria-label="검색 후보">
       {orderCandidates(candidates).map((candidate) => {
         const isChosen = picked.has(candidate.uri);
         const root = roots.get(candidate.uri);
@@ -84,32 +84,32 @@ export function Candidates({ candidates, chosen, query }: CandidatesProps) {
         return (
           <li
             key={candidate.uri}
-            class={isChosen ? "cand cand--chosen" : "cand"}
+            className={isChosen ? "cand cand--chosen" : "cand"}
             data-uri={candidate.uri}
             data-score={formatScore(candidate.score)}
             data-chosen={isChosen ? "true" : "false"}
           >
-            <span class="cand__rank" aria-label={`순위 ${candidate.rank}`}>{candidate.rank}</span>
-            <span class="cand__name" title={candidate.uri}>
-              <span class="cand__nm">{candidate.name}</span>
-              {root ? <span class="cand__root" data-root={root}>{root}</span> : null}
+            <span className="cand__rank" aria-label={`순위 ${candidate.rank}`}>{candidate.rank}</span>
+            <span className="cand__name" title={candidate.uri}>
+              <span className="cand__nm">{candidate.name}</span>
+              {root ? <span className="cand__root" data-root={root}>{root}</span> : null}
             </span>
-            <span class="cand__inv" title={INVOCATION_TITLE[candidate.invocation] ?? candidate.invocation}>
+            <span className="cand__inv" title={INVOCATION_TITLE[candidate.invocation] ?? candidate.invocation}>
               {INVOCATION_LABEL[candidate.invocation] ?? candidate.invocation}
             </span>
-            <span class="cand__bar" role="img" title="일치도" aria-label={`일치도 ${formatScore(candidate.score)}${coverage ? `, ${coverage}` : ""}`}>
-              <span class="cand__fill" style={{ width: scoreWidth(candidate.score) }} />
+            <span className="cand__bar" role="img" title="일치도" aria-label={`일치도 ${formatScore(candidate.score)}${coverage ? `, ${coverage}` : ""}`}>
+              <span className="cand__fill" style={{ width: scoreWidth(candidate.score) }} />
             </span>
-            <span class="cand__score">{formatScore(candidate.score)}</span>
-            <span class="cand__cov">{coverage ?? ""}</span>
-            <span class="cand__pick">{isChosen ? <CheckIcon /> : null}</span>
-            <details class="cand__desc">
+            <span className="cand__score">{formatScore(candidate.score)}</span>
+            <span className="cand__cov">{coverage ?? ""}</span>
+            <span className="cand__pick">{isChosen ? <CheckIcon /> : null}</span>
+            <details className="cand__desc">
               <summary>후보 내용 보기</summary>
               <p>{candidate.name}</p>
               <code>{candidate.uri}</code>
               <p>
               {candidate.description}
-              {candidate.matched?.length ? <span class="cand__matched"> {"\u00b7"} 일치 단어 {candidate.matched.join(", ")}</span> : null}
+              {candidate.matched?.length ? <span className="cand__matched"> {"\u00b7"} 일치 단어 {candidate.matched.join(", ")}</span> : null}
               </p>
             </details>
           </li>

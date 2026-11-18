@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { act, all, buttonNamed, byTag, FakeEvent, h, loadViews, mount, waitFor } from "./helpers/t10-dom.mjs";
+import { act, all, buttonNamed, byTag, choose, FakeEvent, h, loadViews, mount, waitFor } from "./helpers/t10-dom.mjs";
 import { installFakeDom } from "./helpers/fake-dom.mjs";
 
 const { connectionRows, ConnectionsWorkspace } = await loadViews('export { connectionRows, ConnectionsWorkspace } from "./site/src/connections-workspace.ts";');
@@ -72,10 +72,9 @@ test("switching devices clears the previous consent draft and revoke confirmatio
   await act(() => row("device-a").click());
   const consent = all(container, node => node.getAttribute("class") === "device__consent")[0];
   consent.open = true;
-  await act(() => byTag(consent, "input").find(field => field.value === "managed-content")
-    .dispatchEvent(new FakeEvent("change")));
+  await choose(byTag(consent, "input").find(field => field.value === "managed-content"));
   const processing = byTag(consent, "input").filter(field => field.type === "checkbox").at(-1);
-  await act(() => { processing.checked = true; processing.dispatchEvent(new FakeEvent("change")); });
+  await choose(processing);
   await act(() => buttonNamed(container, "기기 연결 해제…")[0].click());
   assert.equal(buttonNamed(container, "연결 해제 확인").length, 1);
   assert.equal(processing.checked, true);

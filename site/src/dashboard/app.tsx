@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DashboardProfile, DashboardProfiles, DashboardReportStatus } from "../../../shared/dist/activity-dashboard.js";
 import { configureApi } from "../../../local/dashboard/api";
 import { createCloudApi } from "../../../local/dashboard/cloud";
@@ -57,10 +57,10 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     phase.kind === "unreachable" ? "계정 서비스에 연결할 수 없습니다. 연결 상태를 확인하고 페이지를 새로 고치세요." :
     "계정 서비스의 응답 형식 오류입니다. 페이지를 새로 고쳐 다시 시도하세요.";
   return (
-    <div class="auth-actions dash-signed-out">
-      <p class="note session-status" role="status" aria-live="polite">{text}</p>
-      <a class="button primary" href="/auth/google">Google로 계속하기 <span aria-hidden="true">{"\u2192"}</span></a>
-      <p class="note">Google은 자체 페이지에서 동의를 요청합니다. 그 뒤 skillar는 Google ID, 이메일, 이름, 프로필 사진, 첫 로그인 시각과 최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키이며, Google 토큰은 보관하지 않습니다.</p>
+    <div className="auth-actions dash-signed-out">
+      <p className="note session-status" role="status" aria-live="polite">{text}</p>
+      <a className="button primary" href="/auth/google">Google로 계속하기 <span aria-hidden="true">{"\u2192"}</span></a>
+      <p className="note">Google은 자체 페이지에서 동의를 요청합니다. 그 뒤 skillar는 Google ID, 이메일, 이름, 프로필 사진, 첫 로그인 시각과 최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키이며, Google 토큰은 보관하지 않습니다.</p>
     </div>
   );
 }
@@ -112,20 +112,20 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     stale={hasViewableSources} onManage={() => { if (management.current) management.current.open = true; }} />;
   return (
     <>
-      <div class="dash-account">
-        <div class="account-user">
+      <div className="dash-account">
+        <div className="account-user">
           <div>
-            <p class="note">로그인 계정</p>
-            <p class="account-name">{user.name === "" ? user.email : user.name}</p>
-            {user.name !== "" && <p class="account-email">{user.email}</p>}
+            <p className="note">로그인 계정</p>
+            <p className="account-name">{user.name === "" ? user.email : user.name}</p>
+            {user.name !== "" && <p className="account-email">{user.email}</p>}
           </div>
         </div>
-        <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
+        <form method="post" action="/auth/logout"><button className="button secondary" type="submit">로그아웃</button></form>
       </div>
-      <div class={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
-        {selected !== null && profiles.status !== "ready" && <div class="dash-refresh">{checklist}</div>}
-        {hasViewableSources && <aside class="dash-sources" aria-label="활동 출처">
-          <details ref={sourcePicker} class="dash-source-picker">
+      <div className={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
+        {selected !== null && profiles.status !== "ready" && <div className="dash-refresh">{checklist}</div>}
+        {hasViewableSources && <aside className="dash-sources" aria-label="활동 출처">
+          <details ref={sourcePicker} className="dash-source-picker">
             <summary ref={sourceSummary}>{selected === null ? "출처 선택" : <>출처 변경 및 상세 <code title={selected.sourceDomain}>{shortId(selected.sourceDomain)}</code></>}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
               message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => {
@@ -134,7 +134,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
               }} onReload={reload} />
           </details>
         </aside>}
-        <div class="dash-activity">
+        <div className="dash-activity">
           {selected === null && needsSourceGuidance && checklist}
           {selected === null && <HomeWidgets signal={signal} devices={devices} onRetryDevices={reloadDevices} onUnauthorized={onUnauthorized} />}
           {selected === null && !needsSourceGuidance && checklist}
@@ -150,7 +150,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
         </div>
       </div>
       <PermissionSummary devices={devices} onRetry={reloadDevices} />
-      <details ref={management} id="dashboard-management" class="dash-management">
+      <details ref={management} id="dashboard-management" className="dash-management">
         <summary>기기 및 비공개 팩 관리</summary>
         <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
           settled={devices.status === "ready"} message={loadMessage(devices, "기기를 읽는 중\u2026")}
@@ -242,7 +242,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     configureApi(api);
     setSelected(profile);
   };
-  if (phase.kind === "checking") return <p class="note session-status" role="status" aria-live="polite">계정을 확인하는 중{"\u2026"}</p>;
+  if (phase.kind === "checking") return <p className="note session-status" role="status" aria-live="polite">계정을 확인하는 중{"\u2026"}</p>;
   if (phase.kind !== "signed-in") return <SignedOut phase={phase} />;
   return (
     <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failures.values().next().value ?? null} onSelect={select}

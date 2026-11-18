@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { installStyles } from "../charts/sankey";
 import type { SessionListRow } from "../api";
 import { CopyButton } from "../components/copy-button";
@@ -46,7 +46,7 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
     const row = rows[index + offset];
     if (row) navigate({ ...route, peek: row.id, event: undefined });
   };
-  return <aside class="session-peek pe-console" data-pe-screen="sessions-peek" role="dialog" aria-modal={narrow ? true : undefined}
+  return <aside className="session-peek pe-console" data-pe-screen="sessions-peek" role="dialog" aria-modal={narrow ? true : undefined}
     aria-labelledby="session-peek-title" onKeyDown={event => {
       if (!narrow || event.key !== "Tab") return;
       const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a[href],button:not([disabled]),summary,[tabindex='0']"))
@@ -55,16 +55,16 @@ export function SessionPeek({ route, navigate, live, rows }: ViewProps & { reado
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-    <h2 id="session-peek-title" class="sr-only">세션 미리보기</h2>
-    <div class="session-peek__actions" aria-label="세션 미리보기 작업">
-      <a class="pe-button" href={buildHash({ ...route, view: "trace", sessionId: route.peek, peek: undefined })}>전체 화면<Icon name="external" /></a>
+    <h2 id="session-peek-title" className="sr-only">세션 미리보기</h2>
+    <div className="session-peek__actions" aria-label="세션 미리보기 작업">
+      <a className="pe-button" href={buildHash({ ...route, view: "trace", sessionId: route.peek, peek: undefined })}>전체 화면<Icon name="external" /></a>
       <span>{index < 0 ? "—" : index + 1}/{rows.length}</span>
-      <button class="pe-button pe-icon-button" aria-label="이전 세션" disabled={index <= 0} onClick={() => move(-1)}><Icon name="previous" /></button>
-      <button class="pe-button pe-icon-button" aria-label="다음 세션" disabled={index < 0 || index >= rows.length - 1} onClick={() => move(1)}><Icon name="next" /></button>
+      <button className="pe-button pe-icon-button" aria-label="이전 세션" disabled={index <= 0} onClick={() => move(-1)}><Icon name="previous" /></button>
+      <button className="pe-button pe-icon-button" aria-label="다음 세션" disabled={index < 0 || index >= rows.length - 1} onClick={() => move(1)}><Icon name="next" /></button>
       <CopyButton value={route.peek ?? ""} />
-      <button ref={closeButton} class={`pe-button${narrow ? "" : " pe-icon-button"}`} aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "닫기" : ""}</button>
+      <button ref={closeButton} className={`pe-button${narrow ? "" : " pe-icon-button"}`} aria-label="세션 미리보기 닫기" onClick={close}><Icon name="close" />{narrow ? "닫기" : ""}</button>
     </div>
-    <div class="session-peek__body">
+    <div className="session-peek__body">
       <TraceView key={route.peek} route={{ ...route, view: "trace", sessionId: route.peek }}
         navigate={next => navigate({ ...next, view: "sessions", sessionId: undefined, peek: route.peek })}
         live={live} embedded presentation="peek" />

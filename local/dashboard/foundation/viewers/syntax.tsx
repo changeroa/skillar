@@ -5,7 +5,7 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-toml";
-import type { ComponentChildren } from "preact";
+import type {ReactNode as ComponentChildren} from "react";
 
 /** Token trees contain strings, not trusted HTML. Every leaf is a Preact text node. */
 function tokenNodes(tokens: Prism.TokenStream): ComponentChildren {

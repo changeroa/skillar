@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PrivateSkillCatalog, PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import type { SessionUser } from "../../lib/account.ts";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
@@ -28,20 +28,20 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     phase.kind === "signed-out" ? "로그인하지 않았습니다. 비공개 스킬은 로그인한 뒤에만 볼 수 있습니다." :
     phase.kind === "unreachable" ? "계정 서비스에 연결하지 못했습니다. 연결을 확인하고 새로고침하세요." :
     "계정 서비스의 응답을 확인할 수 없습니다. 나중에 다시 시도하세요.";
-  return h("div", { class: "auth-actions dash-signed-out" },
-    h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, text),
-    h("a", { class: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")),
-    h("p", { class: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
+  return h("div", { className: "auth-actions dash-signed-out" },
+    h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, text),
+    h("a", { className: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")),
+    h("p", { className: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
 }
 
 function AccountLine({ user }: { readonly user: SessionUser }) {
-  return h("div", { class: "dash-account" },
-    h("div", { class: "account-user" }, h("div", null,
-      h("p", { class: "note" }, "로그인 계정"),
-      h("p", { class: "account-name" }, user.name === "" ? user.email : user.name),
-      user.name !== "" && h("p", { class: "account-email" }, user.email))),
+  return h("div", { className: "dash-account" },
+    h("div", { className: "account-user" }, h("div", null,
+      h("p", { className: "note" }, "로그인 계정"),
+      h("p", { className: "account-name" }, user.name === "" ? user.email : user.name),
+      user.name !== "" && h("p", { className: "account-email" }, user.email))),
     h("form", { method: "post", action: "/auth/logout" },
-      h("button", { class: "button secondary", type: "submit" }, "로그아웃")));
+      h("button", { className: "button secondary", type: "submit" }, "로그아웃")));
 }
 
 export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
@@ -137,13 +137,13 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   };
 
   if (phase.kind === "checking") return h("div", null, h(SkillsHeading, { name: "스킬" }),
-    h("p", { class: "note session-status", role: "status", "aria-live": "polite" }, "계정 확인 중\u2026"));
+    h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, "계정 확인 중\u2026"));
   if (phase.kind !== "signed-in") return h("div", null, h(SkillsHeading, { name: "스킬" }), h(SignedOut, { phase }));
   if (catalog.status === "unavailable") {
     return h("div", null,
       h(AccountLine, { user: phase.user }),
       h(SkillsHeading, { name: "스킬" }),
-      h("p", { class: "note skills-unavailable", role: "status", "aria-live": "polite" },
+      h("p", { className: "note skills-unavailable", role: "status", "aria-live": "polite" },
         "이 배포에서는 아직 비공개 스킬을 이용할 수 없습니다. 업로드한 내용이나 이 화면에서 저장한 내용은 없습니다."));
   }
   const skills = catalog.catalog === null ? [] : sortByUpdated(catalog.catalog);
@@ -159,7 +159,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     h(AccountLine, { user: phase.user }),
     h(SkillsHeading, { name: !view.full ? "스킬" : resolved !== null && resolved.skillId === selected ? resolved.name
       : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
-    h("div", { hidden: view.full && selected !== null, class: selected !== null ? "skills-list-workspace skills-list-workspace--peek" : "skills-list-workspace" },
+    h("div", { hidden: view.full && selected !== null, className: selected !== null ? "skills-list-workspace skills-list-workspace--peek" : "skills-list-workspace" },
       h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
         onReload: reload, onOpen: open, onUnauthorized: expire, view, onViewChange: next => navigate(next, true) })),
     selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,

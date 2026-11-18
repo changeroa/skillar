@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { act, byTag, FakeEvent, h, loadViews, mount } from "./helpers/t10-dom.mjs";
+import { act, byTag, choose, FakeEvent, h, loadViews, mount } from "./helpers/t10-dom.mjs";
 
 const { DataTable } = await loadViews('export { DataTable } from "./site/src/ui/table.ts";');
 const { LibraryPanel } = await loadViews('export { LibraryPanel } from "./site/src/skills/library.ts";');
@@ -40,7 +40,7 @@ test("select all adds only the current page while preserving other selected rows
   });
   const checkbox = byTag(byTag(container, "thead")[0], "input")[0];
   // When
-  await act(() => { checkbox.checked = true; checkbox.dispatchEvent(new FakeEvent("change")); });
+  await choose(checkbox);
   // Then
   assert.deepEqual(selected, ["outside", "a", "b"]);
 });

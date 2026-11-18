@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
-import type { ComponentChildren } from "preact";
+import { useState } from "react";
+import type {ReactNode as ComponentChildren} from "react";
 import type { PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { BarChart, DataTable, Pill } from "../ui";
 import { Card, Metric } from "../../../local/dashboard/foundation/widgets/cards";
@@ -39,10 +39,10 @@ const skillColumns: readonly TableColumn<PrivateSkillSummary>[] = [
 
 function ReadNotice({ state, onRetry }: { readonly state: ReadState<unknown>; readonly onRetry: () => void }) {
   if (state.status === "ready") return null;
-  return <div class="home-read-notice" role="status">
+  return <div className="home-read-notice" role="status">
     <p>{state.status === "loading" ? "확인 중 · 아직 측정값이 아닙니다." : state.message}</p>
     {state.data !== null && <p>마지막으로 확인한 값이며 최신 정보가 아닐 수 있습니다.</p>}
-    {state.status === "failed" && <button class="button secondary" type="button" onClick={onRetry}>자산·연결 다시 읽기</button>}
+    {state.status === "failed" && <button className="button secondary" type="button" onClick={onRetry}>자산·연결 다시 읽기</button>}
   </div>;
 }
 
@@ -78,8 +78,8 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
       consent: connection.recordActivity ? "MCP 활동 동의됨 · 기기 동의와 별개" : "MCP 활동 동의 없음" })),
   ];
   const retry = () => { reloadCatalog(); reloadMcp(); onRetryDevices(); };
-  return <section class="home-widgets" aria-label="자산·연결 요약" data-home-variant="B">
-    <div class="home-number-tiles">
+  return <section className="home-widgets" aria-label="자산·연결 요약" data-home-variant="B">
+    <div className="home-number-tiles">
       <Metric label="스킬 수" value={catalog.data?.skills.length ?? null} note="보관함 전체 · 현재 등록된 스킬" />
       <Metric label="이번 주 변경 수" value={catalog.data === null ? null : weeklyChanges}
         note="최근 변경 시각 기준 · 최근 7일 · KST" />
@@ -89,7 +89,7 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
         note="미철회·만료 전 PAT만 · OAuth 제외" />
     </div>
     <ReadNotice state={catalog} onRetry={retry} /><ReadNotice state={mcp} onRetry={retry} />
-    <div class="home-range"><TimePeriodSelect value={String(range)} options={[
+    <div className="home-range"><TimePeriodSelect value={String(range)} options={[
       { value: "3", label: "최근 3일", badge: "3d" }, { value: "5", label: "최근 5일", badge: "5d" },
       { value: "7", label: "최근 7일", badge: "7d" },
     ]} onChange={value => {
@@ -99,14 +99,14 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
     }} />
       <span>{dates[0]} – {dates.at(-1)} · KST · 양끝 포함</span>
     </div>
-    <div class="home-widget-grid">
-      <section class="home-widget home-changes" aria-label="일별 변경 수">
+    <div className="home-widget-grid">
+      <section className="home-widget home-changes" aria-label="일별 변경 수">
         <BarChart title="일별 변경 수 · KST" data={{ labels: dates.map(date => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}\nKST`), series: [
           { label: "스킬 마지막 변경", values: catalog.data === null ? dates.map(() => null) : changes.counts },
           { label: "보관 버전 생성", values: dates.map(() => catalog.data?.skills.length === 0 ? 0 : null) },
         ] }} />
-        <p class="note">스킬의 마지막 변경일별 개수이며 전체 변경 이력이 아닙니다. 두 계열을 더하지 않습니다.</p>
-        <p class="note">{catalog.data?.skills.length === 0 ? "보관된 스킬이 없어 보관 버전 생성 수도 0개입니다." :
+        <p className="note">스킬의 마지막 변경일별 개수이며 전체 변경 이력이 아닙니다. 두 계열을 더하지 않습니다.</p>
+        <p className="note">{catalog.data?.skills.length === 0 ? "보관된 스킬이 없어 보관 버전 생성 수도 0개입니다." :
           "버전 생성 수는 미측정입니다. 보관 버전의 생성 시각은 각 스킬 상세에서 확인할 수 있습니다."}</p>
       </section>
       <Widget title="최근 변경된 스킬">
@@ -114,33 +114,33 @@ export function HomeWidgets({ signal, devices, onRetryDevices, onUnauthorized }:
           rows={changes.recent} columns={skillColumns} rowId={skill => skill.skillId} controls={false}
           initialSort={homeSort(new URL(location.href), "recent", skillColumns.map(column => column.id),
             { column: "updatedAt", direction: "descending" })} onSort={sort => saveHomeSort("recent", sort)} />}
-        {catalog.data === null && <p class="note">미측정 · 보관함을 확인한 뒤 표시합니다.</p>}
-        {catalog.status === "ready" && skills.length === 0 && <a class="home-link" href="/skills/">첫 스킬 게시하기</a>}
+        {catalog.data === null && <p className="note">미측정 · 보관함을 확인한 뒤 표시합니다.</p>}
+        {catalog.status === "ready" && skills.length === 0 && <a className="home-link" href="/skills/">첫 스킬 게시하기</a>}
       </Widget>
     </div>
-    <section class="home-consent" aria-labelledby="home-consent-title">
+    <section className="home-consent" aria-labelledby="home-consent-title">
       <h2 id="home-consent-title">기기 업로드 동의 후 표시</h2>
-      <p class="note">보유 자산과 별도로 수집하는 사용량입니다. 미측정은 0건이 아닙니다.</p>
-      <div class="home-consent-slots">
+      <p className="note">보유 자산과 별도로 수집하는 사용량입니다. 미측정은 0건이 아닙니다.</p>
+      <div className="home-consent-slots">
         {[
           { title: "일별 읽기 / 검색", reason: "기기 업로드 동의와 출처 선택 후 성공 load·검색 요청을 확인할 수 있습니다." },
           { title: "읽기 수 상위 스킬", reason: "업로드 동의와 버전별 읽기 기록을 연결한 뒤 표시합니다." },
           { title: "검색 결과 비중", reason: "업로드 동의 후 후보 있음·없음·실패·기타를 같은 범위에서 집계해야 합니다." },
-        ].map(slot => <section key={slot.title} class="home-consent-slot">
+        ].map(slot => <section key={slot.title} className="home-consent-slot">
           <header><h3>{slot.title}</h3><Pill>미측정</Pill></header>
-          <p class="note">{slot.reason}</p>
-          <a class="home-link" href="/connections/" aria-label={`${slot.title} 업로드 동의 설정`}>업로드 동의 설정 →</a>
+          <p className="note">{slot.reason}</p>
+          <a className="home-link" href="/connections/" aria-label={`${slot.title} 업로드 동의 설정`}>업로드 동의 설정 →</a>
         </section>)}
       </div>
     </section>
     <Widget title="연결 상태">
-      <a class="home-link" href="/connections/">연결 관리</a>
+      <a className="home-link" href="/connections/">연결 관리</a>
       {(devices.data !== null || mcp.data !== null) && <DataTable caption="기기 + MCP 등록 상태 · 온라인 여부나 사용량이 아닙니다." rows={rows}
         columns={connectionColumns} rowId={row => `${row.kind}:${row.id}`}
         initialSort={homeSort(new URL(location.href), "connections", connectionColumns.map(column => column.id),
           { column: "name", direction: "ascending" })} onSort={sort => saveHomeSort("connections", sort)} />}
       <ReadNotice state={devices} onRetry={onRetryDevices} />
-      {mcp.status !== "ready" && <p class="note">MCP 등록 상태는 {mcp.status === "loading" ? "확인 중" : "조회 실패"}입니다.</p>}
+      {mcp.status !== "ready" && <p className="note">MCP 등록 상태는 {mcp.status === "loading" ? "확인 중" : "조회 실패"}입니다.</p>}
     </Widget>
   </section>;
 }

@@ -34,52 +34,52 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
     ["진행 중", summary.search.counts.in_progress],
     ["결과 미상 성공", summary.search.counts.succeeded - summary.search.results.candidates_found - summary.search.results.no_candidates],
   ] as const;
-  return <section class="analysis pe-console" data-analysis-dashboard aria-busy={report.busy}>
-    <header class="page-title">{embedded ? <h2>대시보드</h2> : <h1>대시보드</h1>}<p>이 기기의 세션·검색·읽기 요약</p></header>
+  return <section className="analysis pe-console" data-analysis-dashboard aria-busy={report.busy}>
+    <header className="page-title">{embedded ? <h2>대시보드</h2> : <h1>대시보드</h1>}<p>이 기기의 세션·검색·읽기 요약</p></header>
     <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
     {report.busy && <StatusMessage level="DEFAULT" announce message={data ? `갱신 중: ${conditions(route.filter)}` : "세션 활동 집계 중…"} />}
     <AnalysisError error={report.error} title="세션 활동을 불러올 수 없습니다" retry={report.refresh} />
-    {data && <><p class="analysis-scope" data-result-conditions>{api.mode === "fixtures" ? "예시 데이터 · " : ""}{conditions(data.filter)} · {coverage}</p>
+    {data && <><p className="analysis-scope" data-result-conditions>{api.mode === "fixtures" ? "예시 데이터 · " : ""}{conditions(data.filter)} · {coverage}</p>
       {data.rows.length === 0 ? <AnalysisEmpty route={route} navigate={navigate} /> : <>
         <AnalysisWidget title="최근 세션" id="recent-sessions" wide>
           <DashboardRecentSessions rows={data.rows} skills={data.skills} traces={data.traces.results} route={route} />
-          <p class="pe-muted">시작 최신 5개 · 스킬 뒤 @다이제스트는 읽은 버전 · 세션을 열면 요청 기록이 함께 보입니다 · 한국 시간</p>
+          <p className="pe-muted">시작 최신 5개 · 스킬 뒤 @다이제스트는 읽은 버전 · 세션을 열면 요청 기록이 함께 보입니다 · 한국 시간</p>
         </AnalysisWidget>
-        <div class="analysis-tiles">
+        <div className="analysis-tiles">
           <Metric label="세션" value={data.rows.length}>세션 시작 기준 · 수신 범위</Metric>
           <Metric label="검색 요청" value={requestsMeasured ? summary.search.total : null}>{requestsMeasured ? <>후보 있음 {summary.search.results.candidates_found} · 후보 없음 {summary.search.results.no_candidates}<br />조회한 세션 추적 기준</> : "추적 조회 실패로 요청 수를 확인할 수 없습니다."}</Metric>
           <Metric label="읽기 요청" value={requestsMeasured ? summary.load.total : null}>{requestsMeasured ? <>성공 {summary.load.counts.succeeded} · 고유 읽은 스킬 {reads.size}<br />후보와 자료 읽기 제외</> : "추적 조회 실패로 읽기 수를 확인할 수 없습니다."}</Metric>
           <Metric label="후보→읽기 전환" value={requestsMeasured && conversion.searches ? conversion.converted : null} suffix={conversion.searches ? `/${conversion.searches}` : undefined}>{requestsMeasured ? (conversion.searches ? <>{Math.round(conversion.converted / conversion.searches * 100)}% · 후보를 표시한 검색 기준<br />같은 세션에서 후보를 본 뒤 첫 읽기에 귀속 · 읽기 1건은 검색 1건에만 · 작업 성공률이 아닙니다</> : "후보를 표시한 검색이 관찰되지 않았습니다.") : "추적 조회 실패로 전환을 확인할 수 없습니다."}</Metric>
           <Metric label="평균 세션 길이" value={average === undefined ? null : Math.round(average * 10) / 10} suffix="분">종료 기록 {durations.values.length}세션 · 미종료 {data.rows.length - durations.values.length} 제외</Metric>
         </div>
-        <div class="analysis-widgets">
+        <div className="analysis-widgets">
           <AnalysisWidget title="읽기·검색 요청" id="requests" wide>
             {records.length ? <Bars title="일별 요청 · 한국 시간" groups={requestSeries(records, data.filter)} labels={["검색 요청", "읽기 요청"]} /> : <p>{requestsMeasured ? "조회한 추적에 요청 기록이 없습니다." : "요청 기록 미측정 · 추적을 불러올 수 없습니다."}</p>}
-            <p class="pe-muted">한국 시간 · 요청 시작(없으면 종료) 시각 · {coverage} · 자료 읽기는 별도</p>
+            <p className="pe-muted">한국 시간 · 요청 시작(없으면 종료) 시각 · {coverage} · 자료 읽기는 별도</p>
           </AnalysisWidget>
           <AnalysisWidget title="많이 읽힌 스킬" id="top-skills">
-            <table class="analysis-table"><thead><tr>{order("name", "스킬")}{order("reads", "읽기")}</tr></thead>
-              <tbody>{top.slice(0, 5).map(row => <tr key={row.uri}><td><a href={buildHash({ view: "sessions", filter: { ...data.filter, skill: [row.uri], loadStatus: ["succeeded"] } })} title={row.uri}>{row.name}</a></td><td class="num">{row.count}</td></tr>)}</tbody></table>
-            {!top.length && <p>{requestsMeasured ? "읽은 스킬이 없습니다." : "읽은 스킬 미측정 · 추적 조회 실패"}</p>}<p class="pe-muted">성공한 읽기 요청 · 상위 5개 · {coverage}</p>
+            <table className="analysis-table"><thead><tr>{order("name", "스킬")}{order("reads", "읽기")}</tr></thead>
+              <tbody>{top.slice(0, 5).map(row => <tr key={row.uri}><td><a href={buildHash({ view: "sessions", filter: { ...data.filter, skill: [row.uri], loadStatus: ["succeeded"] } })} title={row.uri}>{row.name}</a></td><td className="num">{row.count}</td></tr>)}</tbody></table>
+            {!top.length && <p>{requestsMeasured ? "읽은 스킬이 없습니다." : "읽은 스킬 미측정 · 추적 조회 실패"}</p>}<p className="pe-muted">성공한 읽기 요청 · 상위 5개 · {coverage}</p>
           </AnalysisWidget>
           <AnalysisWidget title="검색 결과 비율" id="outcomes">
-            <table class="analysis-table"><thead><tr><th scope="col">요청 결과</th><th scope="col">건수</th><th scope="col">비율</th></tr></thead>
-              <tbody>{outcomes.map(([label, count]) => <tr key={label}><td>{label}</td><td class="num">{requestsMeasured ? count : "미측정"}</td><td class="num">{!requestsMeasured ? "미측정" : summary.search.total ? `${(count / summary.search.total * 100).toFixed(0)}%` : "—"}</td></tr>)}</tbody></table>
-            <p class="pe-muted">분모: 검색 요청 {requestsMeasured ? `${summary.search.total}건` : "미측정"} · 후보 있음은 읽음이나 작업 성공이 아닙니다.</p>
+            <table className="analysis-table"><thead><tr><th scope="col">요청 결과</th><th scope="col">건수</th><th scope="col">비율</th></tr></thead>
+              <tbody>{outcomes.map(([label, count]) => <tr key={label}><td>{label}</td><td className="num">{requestsMeasured ? count : "미측정"}</td><td className="num">{!requestsMeasured ? "미측정" : summary.search.total ? `${(count / summary.search.total * 100).toFixed(0)}%` : "—"}</td></tr>)}</tbody></table>
+            <p className="pe-muted">분모: 검색 요청 {requestsMeasured ? `${summary.search.total}건` : "미측정"} · 후보 있음은 읽음이나 작업 성공이 아닙니다.</p>
           </AnalysisWidget>
           <AnalysisWidget title="세션 길이 분포" id="duration">
             <Bars title="종료된 세션 · 분 단위" groups={durations.groups} labels={["세션"]} />
-            <p class="pe-muted">종료−시작 · 종료 기록 {durations.values.length}세션 · 미종료는 0분이 아닙니다.</p>
+            <p className="pe-muted">종료−시작 · 종료 기록 {durations.values.length}세션 · 미종료는 0분이 아닙니다.</p>
           </AnalysisWidget>
-          <AnalysisWidget title="읽기 지연" id="latency"><div class="analysis-unmeasured"><strong>미측정</strong><p>읽기 시작·종료 측정의 검증된 표본이 없습니다. 검색 지연을 읽기 지연으로 대체하지 않습니다.</p></div>
-            <h2>스킬 구간</h2><p class="pe-muted">미측정 · 활성 구간은 읽기 수행 시간이나 후속 작업의 인과 효과가 아닙니다.</p>
+          <AnalysisWidget title="읽기 지연" id="latency"><div className="analysis-unmeasured"><strong>미측정</strong><p>읽기 시작·종료 측정의 검증된 표본이 없습니다. 검색 지연을 읽기 지연으로 대체하지 않습니다.</p></div>
+            <h2>스킬 구간</h2><p className="pe-muted">미측정 · 활성 구간은 읽기 수행 시간이나 후속 작업의 인과 효과가 아닙니다.</p>
           </AnalysisWidget>
           <AnalysisWidget title="요일·시간대 활동" id="activity" wide><DashboardActivity rows={data.rows} tz="Asia/Seoul" />
-            <a class="pe-button" href={buildHash({ view: "heatmap", filter: data.filter })}>활동 전체 보기</a>
+            <a className="pe-button" href={buildHash({ view: "heatmap", filter: data.filter })}>활동 전체 보기</a>
           </AnalysisWidget>
           <AnalysisWidget title="흐름" id="flow"><DashboardFlow dto={data.flow} skills={data.skills} />
-            <p class="pe-muted">세션에 연결되지 않은 검색 {data.stats.unattributed?.searches ?? "미측정"} · 읽기 {data.stats.unattributed?.loads ?? "미측정"} · 별도 범위</p>
-            <a class="pe-button" href={buildHash({ view: "flow", filter: data.filter })}>흐름 전체 보기</a>
+            <p className="pe-muted">세션에 연결되지 않은 검색 {data.stats.unattributed?.searches ?? "미측정"} · 읽기 {data.stats.unattributed?.loads ?? "미측정"} · 별도 범위</p>
+            <a className="pe-button" href={buildHash({ view: "flow", filter: data.filter })}>흐름 전체 보기</a>
           </AnalysisWidget>
         </div>
       </>}

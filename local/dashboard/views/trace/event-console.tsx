@@ -1,5 +1,5 @@
-import { createRef, type RefObject } from "preact";
-import { useRef } from "preact/hooks";
+import {createRef, type RefObject} from "react";
+import { useRef } from "react";
 import type { SessionSkillReportDto, TraceStep } from "../../../src/types.js";
 import { EVENT_ICON, Icon } from "../../components/icons";
 import { useNarrow } from "../../components/use-narrow";
@@ -18,7 +18,7 @@ type EventProps = Pick<ViewProps, "route" | "navigate"> & {
   readonly item: TimelineItem; readonly selected: boolean; readonly narrow: boolean;
   readonly bounds: ReturnType<typeof sessionBounds>; readonly point?: ReturnType<typeof ganttViewport>["points"][number];
   readonly argumentIds?: ReadonlySet<string>;
-  readonly trigger: RefObject<HTMLButtonElement>;
+  readonly trigger: RefObject<HTMLButtonElement | null>;
   readonly index?: number; readonly count?: number;
   readonly active?: boolean; readonly onFocus?: () => void;
 };
@@ -29,18 +29,18 @@ function EventRow({ item, selected, bounds, point, trigger, route, navigate, ind
   const ts = item.kind === "step" ? item.step.ts : item.span.startedAt;
   const summary = item.kind === "step" ? item.step.summary : item.span.name;
   const timeline = route.traceTab === "timeline";
-  return <li class="trace-event" role={timeline ? "row" : "none"} aria-rowindex={timeline ? index : undefined} data-kind={kind} data-event-id={item.key}>
-    <button ref={trigger} class="trace-event-row" data-event-kind={kind}
+  return <li className="trace-event" role={timeline ? "row" : "none"} aria-rowindex={timeline ? index : undefined} data-kind={kind} data-event-id={item.key}>
+    <button ref={trigger} className="trace-event-row" data-event-kind={kind}
       role={timeline ? "gridcell" : "treeitem"} aria-selected={selected} aria-level={timeline ? undefined : 1}
       aria-posinset={timeline ? undefined : index} aria-setsize={timeline ? undefined : count}
       aria-colindex={timeline ? 1 : undefined} tabIndex={active ? 0 : -1} onFocus={onFocus}
       onClick={() => navigate({ ...route, event: item.key })}>
-      <Icon name={step ? EVENT_ICON[step.kind] : "book"} /><span class="trace-event-row__kind">{title}</span>
-      <code class="trace-event-row__summary" title={summary}>{summary}</code>
-      <time class="pe-muted" dateTime={new Date(ts).toISOString()}>{bounds.startedAt === undefined ? "미측정" : formatOffset(ts - bounds.startedAt)}</time>
-      {route.traceTab === "timeline" && point?.outside && <span class="pe-muted">시간 범위 밖</span>}
-      {route.traceTab === "timeline" && point && !point.outside && <span class="event-gantt-track" aria-label={`${point.offsetMs}ms${point.bounded ? " · 측정된 구간" : " · 시점"}`}>
-        {point.inView && <span class={point.bounded ? "event-gantt-bar" : "event-gantt-point"} style={`left:${point.x}%;width:${point.width}%`}
+      <Icon name={step ? EVENT_ICON[step.kind] : "book"} /><span className="trace-event-row__kind">{title}</span>
+      <code className="trace-event-row__summary" title={summary}>{summary}</code>
+      <time className="pe-muted" dateTime={new Date(ts).toISOString()}>{bounds.startedAt === undefined ? "미측정" : formatOffset(ts - bounds.startedAt)}</time>
+      {route.traceTab === "timeline" && point?.outside && <span className="pe-muted">시간 범위 밖</span>}
+      {route.traceTab === "timeline" && point && !point.outside && <span className="event-gantt-track" aria-label={`${point.offsetMs}ms${point.bounded ? " · 측정된 구간" : " · 시점"}`}>
+        {point.inView && <span className={point.bounded ? "event-gantt-bar" : "event-gantt-point"} style={{ left: `${point.x}%`, width: `${point.width}%` }}
           data-offset={point.offsetMs} data-bounded={point.bounded} />}
       </span>}
     </button>
@@ -52,7 +52,7 @@ function EventBody({ item, selected, narrow, bounds, argumentIds, trigger, route
   const title = item.kind === "step" ? KIND_LABEL[item.step.kind] : "스킬 구간";
   return <EventInspector id={item.key} kind={kind} title={title} value={item.kind === "step" ? item.step : item.span}
       selected={selected} narrow={narrow} trigger={trigger} route={route} navigate={navigate}>
-      {item.kind === "step" ? <StepBody step={item.step} bounds={bounds} /> : <ol class="tl"><SpanGroup item={item} bounds={bounds} argumentIds={argumentIds} /></ol>}
+      {item.kind === "step" ? <StepBody step={item.step} bounds={bounds} /> : <ol className="tl"><SpanGroup item={item} bounds={bounds} argumentIds={argumentIds} /></ol>}
     </EventInspector>;
 }
 
@@ -79,7 +79,7 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
   readonly source: readonly KeyedStep[]; readonly report?: SessionSkillReportDto; readonly bounds: ReturnType<typeof sessionBounds>; readonly prefix?: string;
 }) {
   const narrow = useNarrow();
-  const triggers = useRef(new Map<string, RefObject<HTMLButtonElement>>());
+  const triggers = useRef(new Map<string, RefObject<HTMLButtonElement | null>>());
   const triggerFor = (key: string) => {
     let ref = triggers.current.get(key);
     if (!ref) { ref = createRef<HTMLButtonElement>(); triggers.current.set(key, ref); }
@@ -101,14 +101,14 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
   const roving = useEventRoving(items.map(item => item.key), selected);
   const Heading = embedded ? "h3" : "h2";
   const TreeRoot = embedded ? "div" : "main";
-  return <section class="event-console" data-component="linked-event-console">
+  return <section className="event-console" data-component="linked-event-console">
     <EventViewTabs route={route} navigate={navigate} prefix={prefix} />
     {route.event !== undefined && selected === undefined && <p role="status">선택한 이벤트를 찾을 수 없습니다. 목록에서 다시 선택하세요.</p>}
-    {tab === "timeline" && graph?.points.some(point => point.outside) && <p class="pe-muted event-range-note" role="status">세션 시간 범위 밖의 보고서 구간은 축에 표시하지 않습니다.</p>}
-    <div class="event-console__split">
-      <TreeRoot class="event-console__tree" aria-label="세션 이벤트" tabIndex={-1} data-component="event-tree">
+    {tab === "timeline" && graph?.points.some(point => point.outside) && <p className="pe-muted event-range-note" role="status">세션 시간 범위 밖의 보고서 구간은 축에 표시하지 않습니다.</p>}
+    <div className="event-console__split">
+      <TreeRoot className="event-console__tree" aria-label="세션 이벤트" tabIndex={-1} data-component="event-tree">
        <div id={`${prefix}-tree-panel`} role="tabpanel" aria-labelledby={`${prefix}-${tab}-tab`}>
-        <div class="event-console__heading"><Heading>이벤트 순서</Heading><span class="pe-muted">{source.length}개{spans.length ? ` · 구간 ${spans.length}개` : ""}</span></div>
+        <div className="event-console__heading"><Heading>이벤트 순서</Heading><span className="pe-muted">{source.length}개{spans.length ? ` · 구간 ${spans.length}개` : ""}</span></div>
         {tab === "timeline" && graph && <GanttControls graph={graph} window={window} />}
         <ol aria-label="세션 이벤트 순서" role={tab === "timeline" ? "grid" : "tree"}
           aria-rowcount={tab === "timeline" ? items.length : undefined} aria-colcount={tab === "timeline" ? 1 : undefined}
@@ -118,7 +118,7 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
         {!items.length && <p>이 세션에 수집된 이벤트가 없습니다.</p>}
        </div>
       </TreeRoot>
-      <aside class="event-console__inspector" aria-label="선택한 이벤트 상세">
+      <aside className="event-console__inspector" aria-label="선택한 이벤트 상세">
         {items.map(item => <EventBody key={item.key} item={item} selected={selected === item.key} narrow={narrow}
           bounds={bounds} argumentIds={argumentsBySpan.get(item.key)} trigger={triggerFor(item.key)} route={route} navigate={navigate} />)}
       </aside>

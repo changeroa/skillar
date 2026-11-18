@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 import type { Filter } from "../../../src/types.js";
 import { REQUEST_STATUSES } from "../../../src/request-status.js";
 import { FILTER_KEYS, SESSION_COLUMNS, STATE_LABEL, withoutFilterKey, type ViewProps } from "../../state";
@@ -21,7 +21,7 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
   const columns = route.columns ?? DEFAULT_COLUMNS;
   return <>
-    <div class="session-toolbar"><TableToolbar>
+    <div className="session-toolbar"><TableToolbar>
       <SearchInput id="session-search" label="요청문과 스킬 검색" value={draft} placeholder="요청문 · 스킬 · 세션 ID"
         onChange={setDraft} onSubmit={value => update({ q: value.trim() || undefined })} />
       <TimePeriodSelect label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
@@ -32,8 +32,8 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
           const to = Date.now();
           update(days === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(to, Number(days)), to });
         }} />
-      <span class="session-toolbar__count">{count === undefined ? "집계 중" : `세션 ${count}개`}</span>
-      <span class="session-facets-toggle"><Button text="필터" variant="outline"
+      <span className="session-toolbar__count">{count === undefined ? "집계 중" : `세션 ${count}개`}</span>
+      <span className="session-facets-toggle"><Button text="필터" variant="outline"
         aria-controls={sheet ? "session-filter-sheet" : "session-facets"} aria-expanded={facetsOpen}
         aria-haspopup={sheet ? "dialog" : undefined} onClick={toggleFacets} /></span>
       <DropdownMenu id="session-request-state" label="요청 상태" width="wide" items={[
@@ -62,14 +62,14 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
         if (value === "compact" || value === "normal" || value === "comfortable") navigate({ ...route, density: value });
       }} />
     </TableToolbar></div>
-    <div class="session-applied" role="group" aria-label="적용된 필터">
+    <div className="session-applied" role="group" aria-label="적용된 필터">
       {FILTER_KEYS.filter(key => route.filter[key] !== undefined && key !== "hourSpan").map(key => {
         const value = route.filter[key];
         const text = Array.isArray(value) ? value.join(", ") : String(value);
-        return <button key={key} class="pe-button session-filter-pill" onClick={() => navigate({ ...route, peek: undefined, filter: withoutFilterKey(route.filter, key) })}
+        return <button key={key} className="pe-button session-filter-pill" onClick={() => navigate({ ...route, peek: undefined, filter: withoutFilterKey(route.filter, key) })}
           aria-label={`${key} ${text} 필터 해제`}><code>{key}</code>{" "}<code>{text}</code><Icon name="close" /></button>;
       })}
-      {FILTER_KEYS.some(key => route.filter[key] !== undefined) && <button class="pe-button" onClick={() => navigate({ ...route, peek: undefined, filter: {} })}>전체 해제</button>}
+      {FILTER_KEYS.some(key => route.filter[key] !== undefined) && <button className="pe-button" onClick={() => navigate({ ...route, peek: undefined, filter: {} })}>전체 해제</button>}
     </div>
   </>;
 }

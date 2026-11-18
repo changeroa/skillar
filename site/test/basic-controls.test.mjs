@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { act, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
 
 const { Button, Badge, Tag, StatusBadge, Input, SearchInput, Select, Checkbox, Link, KeyboardShortcut, CopyButton } = await loadViews(
@@ -130,7 +130,7 @@ test("select reports native changes and retains disabled options", async t => {
   await input(byTag(container, "select")[0], "b", "change");
   // Then
   assert.equal(chosen, "b");
-  assert.equal(byTag(container, "option")[3].getAttribute("disabled"), "true");
+  assert.equal(byTag(container, "option")[3].disabled, true);
 });
 
 test("compact select retains a native popup and decorative double chevron", async t => {
