@@ -5,7 +5,7 @@ import {createRoot} from 'react-dom/client';
 import {Theme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
-import {TextField} from '@astryxdesign/core/TextInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {skillarTheme} from '../src/design/skillar-theme/dist/skillar.js';
 
 function Spike() {

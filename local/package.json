@@ -36,7 +36,11 @@
     "start": "node dist/cli/main.js serve"
   },
   "dependencies": {
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-neutral": "^0.7.16",
+    "@stylexjs/stylex": "^0.19.2",
     "express": "^5.2.1",
+    "lucide-react": "^1.75.0",
     "yaml": "^2.9.0",
     "zod": "^4.1.11"
   },
