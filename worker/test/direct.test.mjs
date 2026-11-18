@@ -105,6 +105,10 @@ test("native HTTP and GJC's real stdio proxy preserve discovery, load errors, an
     const found = await call("search_skills", { query: "R2 workflow", mode: "discovery" });
     assert.equal(found.skills[0].uri, uri);
     assert.equal(found.skills[0].invocation, "automatic");
+    const legacy = await call("search_skills", { query: "R2 workflow" });
+    assert.equal(legacy.skills[0].uri, uri);
+    assert.equal(legacy.skills[0].invocation, undefined);
+    assert.equal(legacy.skills[0].digest, undefined);
     await activate(bucket, b.identity, 2);
     const loaded = await call("load_skill", { uri, commit: found.commit });
     assert.equal(loaded.markdown, a.markdown);

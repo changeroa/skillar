@@ -58,6 +58,36 @@ test("Codex bridge searches metadata, loads exact identity and pins supporting f
   } finally { await client.close(); await server.close(); }
 });
 
+test("Codex search telemetry records mode omission without query content", async t => {
+  const uri = "skill://gisul/gisul/review/SKILL.md";
+  const query = "private task subject must not enter event logs";
+  const events = [];
+  const server = createCodexBridge({
+    request: async () => ({ skills: [{ uri, frontmatter: { name: "review", description: query }, resources: [{ uri, size: 0, digest: `sha256:${createHash("sha256").update("").digest("hex")}` }] }] }),
+    readResource: async () => assert.fail("search must not read skill bodies"),
+  }, "fixture", { connectionId: "test-connection", emit: event => events.push(event), flush: async () => {} }, true);
+  const client = new Client({ name: "telemetry-test", version: "1" });
+  const [front, back] = InMemoryTransport.createLinkedPair();
+  await server.connect(back); await client.connect(front);
+  t.after(async () => { await client.close(); await server.close(); });
+  const results = [];
+  for (const arguments_ of [{ query }, { query, mode: "discovery" }]) {
+    const result = await client.callTool({ name: "search_skills", arguments: arguments_ });
+    assert.ok(!result.isError, JSON.stringify(result));
+    results.push(JSON.parse(result.content[0].text));
+  }
+  assert.equal(results[0].skills[0].invocation, undefined);
+  assert.equal(results[0].skills[0].digest, undefined);
+  assert.equal(results[1].skills[0].invocation, "automatic");
+  const searches = events.filter(event => event.event === "search");
+  assert.deepEqual(searches.map(({ mode, mode_omitted }) => ({ mode, mode_omitted })), [
+    { mode: "legacy", mode_omitted: true },
+    { mode: "discovery", mode_omitted: false },
+  ]);
+  assert.ok(searches.every(event => !Object.hasOwn(event, "query")));
+  assert.ok(!JSON.stringify(events).includes(query));
+});
+
 test("Codex search exposes every filtered match across upstream and result pages", async () => {
   const entries = Array.from({ length: 125 }, (_, index) => {
     const uri = `skill://skillar/root${String(index).padStart(3, "0")}/review/SKILL.md`;

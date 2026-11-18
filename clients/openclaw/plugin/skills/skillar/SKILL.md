@@ -14,6 +14,14 @@ user ban on external access or skill lookup. If results are empty or unrelated,
 retry once with a shorter subject, retaining the returned `commit`. Do not guess
 skill names or enumerate the catalog to force a match.
 
+Place only positive subject/outcome terms in `query`; use `exclude` only when a
+complete skill name or authored keyword is clearly unwanted. Quoted examples,
+ambiguous negation, and double negatives are not reliable exclusions: omit the
+filter when unsure and inspect candidates. `include_evidence: true` shows matched
+metadata, not a confidence score. Keep `mode`, `exclude`, and `commit` on continuation
+pages. A filtered candidate still requires the user's request if `invocation` is
+`explicit`.
+
 Search does not activate a skill. Check concrete relevance and `invocation`
 independently; `explicit` requires the user to request that specific skill.
 Briefly explain the selected skill's remote origin and why it fits. Load the

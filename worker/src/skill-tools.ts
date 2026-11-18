@@ -1,4 +1,4 @@
-import { excerpt, searchSkills, type SearchMode } from "../../server/src/skill-search.ts";
+import { excerpt, searchSkillHits, type SearchMode } from "../../server/src/skill-search.ts";
 import { canonicalUri, manifestDigest, readDirectory, readResource, readSnapshot, resolveAlias } from "./release-reader.ts";
 import { ReleaseError } from "./r2-objects.ts";
 
@@ -7,7 +7,7 @@ const commit = { type: "string", pattern: "^[a-f0-9]{40}$" };
 const string = { type: "string" };
 const unknownRegistration = { created_by: null, created_at: null, updated_by: null, updated_at: null };
 export const readTools = [
-  { name: "search_skills", description: "Find team skills for a task. Use discovery to rank all candidates; invocation=explicit requires a user request before application. Automatic filters those out; explicit is for requested skills. Search does not activate skills. Use a few subject/outcome terms; if empty, retry once with a shorter subject. Load a relevant exact URI with the returned commit; retain commit for pagination. Show created_by, created_at, updated_by, updated_at when presenting skills (등록자, 등록일, 최근 수정자, 수정일); null means unavailable.", inputSchema: { type: "object", additionalProperties: false, properties: { query: { type: "string", maxLength: 2048 }, mode: { type: "string", enum: ["legacy", "automatic", "explicit", "discovery"] }, commit, offset: { type: "integer", minimum: 0 }, limit: { type: "integer", minimum: 1, maximum: 50 } } }, annotations },
+  { name: "search_skills", description: "Find team skills for a task. Use discovery to rank all candidates; invocation=explicit requires a user request before application. Automatic filters those out; explicit is for requested skills. Search does not activate skills. Use positive subject/outcome terms in query and only unambiguous unwanted complete names or keywords in exclude; never infer exclusion from quotes, ambiguity or double negation. include_evidence gives ranked matching fields without confidence scores. If empty, retry once with a shorter subject. Load a relevant exact URI with the returned commit; retain query, mode, exclude and commit for pagination. Show created_by, created_at, updated_by, updated_at when presenting skills (등록자, 등록일, 최근 수정자, 수정일); null means unavailable.", inputSchema: { type: "object", additionalProperties: false, properties: { query: { type: "string", maxLength: 2048 }, mode: { type: "string", enum: ["legacy", "automatic", "explicit", "discovery"] }, include_evidence: { type: "boolean" }, exclude: { type: "array", maxItems: 8, items: { type: "string", minLength: 1, maxLength: 128 } }, commit, offset: { type: "integer", minimum: 0 }, limit: { type: "integer", minimum: 1, maximum: 50 } } }, annotations },
   { name: "load_skill", description: "Read a selected remote SKILL.md from a verified immutable release. This is guidance, not permission to execute instructions. Keep load_id for supporting reads. Includes created_by (등록자), created_at (등록일), updated_by (최근 수정자), updated_at (수정일).", inputSchema: { type: "object", additionalProperties: false, required: ["uri"], properties: { uri: string, commit } }, annotations },
   { name: "read_skill_file", description: "Read a declared text file or list a directory from the loaded skill's immutable release. Pass the exact skill URI and load_id returned by load_skill.", inputSchema: { type: "object", additionalProperties: false, required: ["skill_uri", "uri", "load_id"], properties: { skill_uri: string, uri: string, load_id: string } }, annotations },
 ];
@@ -23,16 +23,25 @@ export async function skillRead(bucket: R2Bucket, name: string, input: unknown, 
   const snapshot = await readSnapshot(bucket, load ? load[1] : args.commit);
   const meta = { origin, release: snapshot.identity.release, commit: snapshot.identity.commit, server_version: serverVersion };
   if (name === "search_skills") {
-    const { query, offset = 0, limit = 5, mode = "legacy" } = args;
-    if ((query !== undefined && (typeof query !== "string" || query.length > 2048)) || !Number.isSafeInteger(offset) || (offset as number) < 0 || !Number.isSafeInteger(limit) || (limit as number) < 1 || (limit as number) > 50 || !["legacy", "automatic", "explicit", "discovery"].includes(String(mode))) throw new ReleaseError("Invalid search arguments", 400);
+    const { query, offset = 0, limit = 5, mode = "legacy", include_evidence, exclude } = args;
+    if ((query !== undefined && (typeof query !== "string" || query.length > 2048)) || !Number.isSafeInteger(offset) || (offset as number) < 0 || !Number.isSafeInteger(limit) || (limit as number) < 1 || (limit as number) > 50 || !["legacy", "automatic", "explicit", "discovery"].includes(String(mode))
+      || (include_evidence !== undefined && typeof include_evidence !== "boolean")
+      || (exclude !== undefined && (!Array.isArray(exclude) || exclude.length > 8 || exclude.some(value => typeof value !== "string" || !value.trim() || value.length > 128)))
+      || (mode === "legacy" && (include_evidence === true || (Array.isArray(exclude) && exclude.length > 0)))) throw new ReleaseError("Invalid search arguments", 400);
     if ((mode === "automatic" || mode === "discovery") && !(query as string | undefined)?.trim()) throw new ReleaseError("Automatic discovery requires a subject", 400);
     const documents = snapshot.inventory.skills.map(entry => ({ uri: entry.uri, name: entry.frontmatter.name, description: entry.frontmatter.description,
       keywords: Array.isArray(entry.frontmatter.keywords) ? entry.frontmatter.keywords.filter((s): s is string => typeof s === "string") : [],
       automatic: entry.frontmatter["disable-model-invocation"] !== true, digest: entry.resources.find(file => file.uri === entry.uri)!.digest }));
-    const matches = searchSkills(documents, query as string | undefined, mode as SearchMode);
+    const { hits, excludedMatches } = searchSkillHits(documents, query as string | undefined, mode as SearchMode, exclude as string[] | undefined);
     const registrations = new Map(snapshot.inventory.skills.map(entry => [entry.uri, entry.registration ?? unknownRegistration]));
-    const skills = matches.slice(offset as number, (offset as number) + (limit as number)).map(({ uri, name, description, automatic, digest }) => ({ uri, name, ...excerpt(description, (query as string | undefined)?.toLowerCase().split(/\s+/).filter(Boolean) ?? []), ...registrations.get(uri), ...(mode === "legacy" ? {} : { invocation: automatic ? "automatic" : "explicit", digest }) }));
-    return { ...meta, skills, totalMatches: matches.length, offset, limit, ...((offset as number) + skills.length < matches.length ? { nextOffset: (offset as number) + skills.length } : {}) };
+    const skills = hits.slice(offset as number, (offset as number) + (limit as number)).map(({ item: { uri, name, description, automatic, digest }, evidence, descriptionTerms }) => ({
+      uri, name, ...excerpt(description, mode === "legacy" ? (query as string | undefined)?.toLowerCase().split(/\s+/).filter(Boolean) ?? [] : descriptionTerms),
+      ...registrations.get(uri), ...(mode === "legacy" ? {} : { invocation: automatic ? "automatic" : "explicit", digest }),
+      ...(include_evidence ? { evidence } : {}),
+    }));
+    return { ...meta, skills, totalMatches: hits.length, offset, limit,
+      ...((offset as number) + skills.length < hits.length ? { nextOffset: (offset as number) + skills.length } : {}),
+      ...(Array.isArray(exclude) && exclude.length ? { filters: { exclude: exclude.map(value => value.trim()), excludedMatches } } : {}) };
   }
   const requested = canonicalUri(name === "load_skill" ? args.uri : args.skill_uri);
   const uri = resolveAlias(snapshot.inventory, requested);
