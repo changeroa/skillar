@@ -50,10 +50,14 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "ê
   // its clear button returns focus to the field. onEnter passes no value, so
   // submit the live field value (tests set input.value directly).
   const ref = useRef<HTMLInputElement>(null);
-  return <AxTextInput ref={ref} type="search" id={id} label={label} value={value}
-    onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
-    size={size === "large" ? "lg" : "md"} hasClear enterKeyHint="search"
-    onEnter={() => onSubmit(ref.current?.value ?? value)} />;
+  // The lf-field wrapper preserves the layout contract the toolbar CSS keys
+  // on (flex child + context label hiding); Astryx renders label + control.
+  return <div className="lf-field">
+    <AxTextInput ref={ref} type="search" id={id} label={label} value={value} width="100%"
+      onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
+      size={size === "large" ? "lg" : "md"} hasClear enterKeyHint="search"
+      onEnter={() => onSubmit(ref.current?.value ?? value)} />
+  </div>;
 }
 
 /** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */
