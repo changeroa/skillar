@@ -34,7 +34,8 @@ const jsAssets = (await readdir(new URL("assets/", out))).filter(name => name.en
 const pruneStats = await pruneAstryxCss(
   fileURLToPath(new URL("dashboard/design/astryx-vendor/astryx.css", root)),
   jsAssets.map(name => fileURLToPath(new URL(`assets/${name}`, out))),
-  fileURLToPath(new URL("assets/astryx.css", out)));
+  fileURLToPath(new URL("assets/astryx.css", out)),
+  ["index.html", "__gallery.html"].map(name => fileURLToPath(new URL(`dashboard/${name}`, root))));
 console.log(`Pruned astryx.css: ${pruneStats.rawBefore} -> ${pruneStats.rawAfter} bytes (${pruneStats.kept} kept, ${pruneStats.dropped} dropped, ${pruneStats.rescued ?? 0} var rescues)`);
 await copyFile(new URL("dashboard/design/skillar-theme/dist/theme.css", root), new URL("assets/skillar-theme.css", out));
 await mkdir(new URL("viewers/", out), { recursive: true });
