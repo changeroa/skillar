@@ -48,19 +48,13 @@
 .trace-events li + li { border-left: 1px solid var(--rule); }
 .trace-events p + p { margin-top: var(--s2); }
 .trace-step { font-weight: 600; font-size: var(--ui); }
-.trace-example__foot { max-width: none; padding: var(--s4); border-top: 1px solid var(--rule); }
-.landing-section, .landing-docs { padding-block: var(--s7); }
-.landing-section { border-top: 1px solid var(--rule); }
-.value-list { list-style: none; margin: var(--s5) 0 0; padding: 0; }
-.value-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--s4); padding-block: var(--s5); border-top: 1px solid var(--rule); }
-.landing-docs { background: var(--surface); }
+.landing-docs { padding-block: var(--s7); background: var(--surface); }
 .landing-docs h2 + p { margin-top: var(--s4); }
 .docs-links { display: grid; justify-items: start; gap: var(--s3); }
 .docs-links .text-link { margin: 0; }
 @media (max-width: 760px) {
   .trace-hero { padding-top: var(--s5); }
-  .trace-events, .value-list li { grid-template-columns: 1fr; }
+  .trace-events { grid-template-columns: 1fr; }
   .trace-events li + li { border-left: 0; border-top: 1px solid var(--rule); }
   .trace-hero__actions .cluster { display: grid; }
-  .value-list li { gap: var(--s3); }
 }

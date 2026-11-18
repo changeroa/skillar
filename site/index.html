@@ -36,14 +36,12 @@
     <header class="shell header">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
       <nav aria-label="주요 메뉴">
-        <a class="lf-link" href="#values"><span>활용 방법</span></a>
         <a class="lf-link" href="#local-setup"><span>설치</span></a>
       </nav>
     </header>
     <main id="main">
       <section class="shell trace-hero" aria-labelledby="hero-title">
         <div class="trace-hero__copy">
-          <p class="trace-category">에이전트 스킬 사용 기록</p>
           <h1 id="hero-title">에이전트 세션이 어떤 스킬 버전을 읽었고 그 뒤 무슨 일이 있었는지 기록합니다</h1>
           <p class="intro">스킬을 읽었다는 사실과 작업의 성공은 다릅니다. 세션에서 읽은 지침과 이후 기록을 함께 살펴보세요.</p>
         </div>
@@ -59,24 +57,13 @@
         <section id="example" class="trace-example" aria-labelledby="example-title">
           <div class="trace-example__head">
             <div><p class="trace-category" data-example-label>예시 데이터</p><h2 id="example-title">배포 전 변경 사항 검토</h2></div>
-            <p class="note">설명을 위한 가상 세션 · 실제 계정 기록이 아닙니다.</p>
           </div>
           <ol class="trace-events">
             <li><p class="trace-step">세션 요청</p><p>“배포 전에 변경 사항과 확인할 항목을 정리해 줘.”</p></li>
             <li><p class="trace-step">검색 → 버전 읽기</p><p><code>deploy-checklist / SKILL.md · v3</code></p><p class="note">배포 점검 지침을 읽은 이벤트</p></li>
             <li><p class="trace-step">읽은 뒤의 기록</p><p>변경 사항을 요약하고 확인할 항목을 작성했습니다.</p><p class="note">작업 성공 여부: 평가 안 됨</p></li>
           </ol>
-          <p class="trace-example__foot note">이 예시는 흐름을 설명하는 정적 데이터입니다. 버전 연결과 후속 결과의 표시 범위는 수집된 기록에 따라 다릅니다. 읽기는 적용이나 성공의 증거가 아닙니다.</p>
         </section>
-      </section>
-      <section id="values" class="shell landing-section" aria-labelledby="values-title">
-        <p class="trace-category">기록을 읽는 세 가지 관점</p>
-        <h2 id="values-title">스킬 목록에서 끝나지 않는 근거.</h2>
-        <ol class="value-list">
-          <li><h3>트레이스</h3><p>세션에서 어떤 스킬을 읽었는지 살펴보세요. 읽기 이벤트와 이후 기록을 구분하면 무엇을 확인해야 할지 보입니다.</p></li>
-          <li><h3>측정되는 검색</h3><p>검색어, 후보와 읽기 기록을 함께 검토하세요. 검색 결과에 나타난 것과 실제로 읽은 것은 다릅니다.</p></li>
-          <li><h3>근거와 함께 공유</h3><p>판단에 사용한 세션과 버전을 짚어 설명하세요. 공개 증거 링크와 팀 공유 기능은 아직 제공하지 않습니다.</p></li>
-        </ol>
       </section>
       <section id="local-setup" class="landing-docs" aria-label="설치">
         <div class="shell">
@@ -85,7 +72,7 @@
       </section>
     </main>
     <footer class="shell footer">
-      <div class="footer-top"><p>skillar · 읽은 지침과 남은 기록을 구분합니다.</p><div class="cluster"><a class="lf-link" href="https://github.com/changeroa/skillar"><span>소스 ↗</span></a><a class="lf-link" href="https://github.com/changeroa/skillar#documentation"><span>문서 ↗</span></a><a class="lf-link" href="/login/"><span>계정</span></a><a class="lf-link" href="/NOTICE"><span>오픈소스 고지</span></a></div></div>
+      <div class="footer-top"><p>skillar</p><div class="cluster"><a class="lf-link" href="https://github.com/changeroa/skillar"><span>소스 ↗</span></a><a class="lf-link" href="https://github.com/changeroa/skillar#documentation"><span>문서 ↗</span></a><a class="lf-link" href="/login/"><span>계정</span></a><a class="lf-link" href="/NOTICE"><span>오픈소스 고지</span></a></div></div>
     </footer>
     <script type="module" src="/src/account.ts"></script>
   </body>
