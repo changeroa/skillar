@@ -131,6 +131,24 @@ test("login forwards an allowed next target as the Google return path", t => {
   assert.equal(link.href, "/auth/google?returnTo=%2Fskills%2F");
 });
 
+test("login forwards the evidence tab and hash route in the return path", t => {
+  // Given a login page reached from the signed-out evidence tab redirect.
+  const link = { href: "/auth/google" };
+  // When the module runs with the preserved view in next.
+  page(t, { login: true, search: `?next=${encodeURIComponent("/skills/?tab=evidence#/sessions")}`, pathname: "/login/", anchors: [link] });
+  // Then the Google button returns to the same tab and hash route after sign-in.
+  assert.equal(link.href, `/auth/google?returnTo=${encodeURIComponent("/skills/?tab=evidence#/sessions")}`);
+});
+
+test("login ignores a next target with a disallowed query", t => {
+  // Given a login page whose next carries a query outside the allow list.
+  const link = { href: "/auth/google" };
+  // When the module runs.
+  page(t, { login: true, search: `?next=${encodeURIComponent("/skills/?tab=other")}`, pathname: "/login/", anchors: [link] });
+  // Then the Google button keeps its default destination.
+  assert.equal(link.href, "/auth/google");
+});
+
 test("login ignores a next target outside the allowed screens", t => {
   // Given a login page with an off-site next parameter.
   const link = { href: "/auth/google" };

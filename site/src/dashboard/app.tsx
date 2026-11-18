@@ -53,7 +53,8 @@ function useLoad<T>(
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
   if (phase.kind === "signed-out") {
-    location.replace("/login/?next=/skills");
+    // 읽기 근거 탭과 해시 라우트(#/sessions 등)까지 보존해 로그인 뒤 같은 뷰로 돌아온다.
+    location.replace(`/login/?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`);
     return null;
   }
   const text = phase.kind === "expired" ? "세션이 끝나 이 페이지의 활동 내용을 지웠습니다. 계속하려면 다시 로그인하세요." :
