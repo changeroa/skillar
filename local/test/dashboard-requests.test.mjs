@@ -5,7 +5,7 @@ import { build } from "esbuild";
 import { PACKAGE_ROOT } from "./_helpers.mjs";
 import { installDom, descendants } from "./helpers/dashboard-dom.mjs";
 
-const bundle = await build({ stdin: { contents: 'export * from "./dashboard/components/requests"; export {TopPathsTable, targetFilter} from "./dashboard/views/flow"; export {h,render} from "react";',
+const bundle = await build({ stdin: { contents: 'export * from "./dashboard/components/requests"; export {TopPathsTable, targetFilter} from "./dashboard/views/flow"; export {createElement as h} from "react"; export {render} from "./dashboard/react-mount";',
   resolveDir: fileURLToPath(PACKAGE_ROOT), loader: "tsx" }, bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react", logLevel: "silent" });
 const ui = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`);
 const newRoot = installDom();
@@ -31,9 +31,9 @@ test("the rendered flow table uses requests for percentages and links to the cor
       { id: "a:succeeded", column: 2, label: "succeeded", count: 1 }, { id: "a:failed", column: 2, label: "failed", count: 1 }],
     links: [{ source: "t:review", target: "s:(none)", state: "succeeded", count: 1 }, { source: "t:review", target: "s:(none)", state: "failed", count: 1 }] };
   ui.render(ui.h(ui.TopPathsTable, { dto, route: { view: "flow", filter: {} }, navigate() {}, resolve: () => undefined }), root);
-  const shares = descendants(root).filter((n) => n.attrs.class === "paths__share");
+  const shares = descendants(root).filter((n) => n.getAttribute("class") === "paths__share");
   assert.deepEqual(shares.map((n) => n.textContent), ["50%", "50%"]);
-  const hrefs = descendants(root).filter((n) => n.localName === "a").map((n) => n.attrs.href);
+  const hrefs = descendants(root).filter((n) => n.localName === "a").map((n) => n.getAttribute("href"));
   assert.ok(hrefs.some((href) => href.includes("searchStatus=failed")));
   assert.ok(hrefs.every((href) => !href.includes("loadStatus") && !href.includes("?state=")));
   assert.deepEqual(ui.targetFilter({ kind: "node", node: dto.nodes[3] }, dto.nodes, () => undefined, "load_requests"), { loadStatus: ["failed"] });

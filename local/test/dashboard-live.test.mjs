@@ -9,7 +9,7 @@ import { channel, fakeScheduler, fakeTransport, fakeVisibility, modules, ready, 
 
 const bundled = await build({
   stdin: {
-    contents: 'export {App} from "./dashboard/main.tsx"; export {configureApi} from "./dashboard/api.ts"; export {h, render} from "react"; export {act} from "react";',
+    contents: 'export {App} from "./dashboard/main.tsx"; export {configureApi} from "./dashboard/api.ts"; export {createElement as h} from "react"; export {render} from "./dashboard/react-mount"; export {act} from "react";',
     resolveDir: new URL("../", import.meta.url).pathname, loader: "tsx",
   },
   bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react",
@@ -98,7 +98,7 @@ const find = (root, predicate) => {
   assert.ok(node, `expected node in ${root.textContent}`);
   return node;
 };
-const classed = (root, name) => find(root, (node) => (node.attrs.class ?? "").split(" ").includes(name));
+const classed = (root, name) => find(root, (node) => (node.getAttribute("class") ?? "").split(" ").includes(name));
 const click = (node) => node.listeners.click.call(node, { type: "click", target: node, currentTarget: node });
 
 test("cloud transport states have distinct accessible labels and recover their live label", async (t) => {
@@ -128,29 +128,29 @@ test("a live update preserves a populated Flow's selected unit and mounted contr
   // Given
   const h = host(t, "#/flow");
   await h.mount();
-  const group = find(h.root, (node) => node.attrs["aria-label"] === "단위");
-  const search = find(group, (node) => node.localName === "button" && node.attrs["aria-pressed"] === "false");
+  const group = find(h.root, (node) => node.getAttribute("aria-label") === "단위");
+  const search = find(group, (node) => node.localName === "button" && node.getAttribute("aria-pressed") === "false");
   await ui.act(async () => click(search));
-  const section = find(h.root, (node) => node.attrs["data-unit"] === "search_requests");
+  const section = find(h.root, (node) => node.getAttribute("data-unit") === "search_requests");
   // When
   await h.refresh();
   // Then
-  assert.ok(find(h.root, (node) => node.attrs["data-unit"] === "search_requests") === section);
-  assert.ok(find(h.root, (node) => node.attrs["aria-label"] === "단위") === group);
+  assert.ok(find(h.root, (node) => node.getAttribute("data-unit") === "search_requests") === section);
+  assert.ok(find(h.root, (node) => node.getAttribute("aria-label") === "단위") === group);
 });
 
 test("a live update keeps the Sessions search node and its unsubmitted draft", async (t) => {
   // Given
   const h = host(t, "#/sessions");
   await h.mount();
-  const input = find(h.root, (node) => node.attrs.id === "session-search");
+  const input = find(h.root, (node) => node.getAttribute("id") === "session-search");
   input.value = "unsubmitted fixture query";
   input.focus();
   await ui.act(() => input.listeners.input?.call(input, { type: "input", target: input, currentTarget: input }));
   // When
   await h.refresh();
   // Then
-  assert.ok(find(h.root, (node) => node.attrs.id === "session-search") === input);
+  assert.ok(find(h.root, (node) => node.getAttribute("id") === "session-search") === input);
   assert.equal(input.value, "unsubmitted fixture query");
 });
 
@@ -170,7 +170,7 @@ test("generic refresh replaces trace data without discarding its existing disclo
   await h.refresh();
   // Then
   assert.ok(classed(h.root, "foldbtn") === disclosure);
-  assert.equal(disclosure.attrs["aria-expanded"], "true");
+  assert.equal(disclosure.getAttribute("aria-expanded"), "true");
   assert.ok(h.root.textContent.includes("new uploaded prompt"));
 });
 
@@ -209,7 +209,7 @@ for (const rejectFirst of [false, true]) test(`generic refresh reconciles a work
     })).json,
   });
   await h.mount();
-  const disclosure = find(h.root, (node) => node.attrs["data-pane"] !== undefined);
+  const disclosure = find(h.root, (node) => node.getAttribute("data-pane") !== undefined);
   disclosure.open = false;
   const replacement = Promise.withResolvers();
   const selected = channel("new workspace report");
@@ -221,7 +221,7 @@ for (const rejectFirst of [false, true]) test(`generic refresh reconciles a work
   if (rejectFirst) {
     replacement.reject(new Error("fixture background report failure"));
     await refreshed;
-    assert.ok(find(h.root, (node) => node.attrs["data-pane"] !== undefined) === disclosure);
+    assert.ok(find(h.root, (node) => node.getAttribute("data-pane") !== undefined) === disclosure);
     assert.equal(disclosure.open, false);
     assert.ok(h.root.textContent.includes("fixture background report failure"));
     h.read("flowReport", async () => ({ ...report, label: "updated workspace fixture" }));
@@ -232,7 +232,7 @@ for (const rejectFirst of [false, true]) test(`generic refresh reconciles a work
   }
   // Then
   assert.equal(classed(h.root, "ws__title").textContent, "updated workspace fixture");
-  assert.ok(find(h.root, (node) => node.attrs["data-pane"] !== undefined) === disclosure);
+  assert.ok(find(h.root, (node) => node.getAttribute("data-pane") !== undefined) === disclosure);
   assert.equal(disclosure.open, false);
 });
 
