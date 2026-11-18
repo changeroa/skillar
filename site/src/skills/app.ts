@@ -25,13 +25,12 @@ function isAbort(error: unknown): boolean {
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
   const text = phase.kind === "expired" ? "로그인이 만료되어 이 화면에서 스킬 정보를 지웠습니다. 계속하려면 다시 로그인하세요." :
-    phase.kind === "signed-out" ? "로그인하지 않았습니다. 비공개 스킬은 로그인한 뒤에만 볼 수 있습니다." :
+    phase.kind === "signed-out" ? "" :
     phase.kind === "unreachable" ? "계정 서비스에 연결하지 못했습니다. 연결을 확인하고 새로고침하세요." :
     "계정 서비스의 응답을 확인할 수 없습니다. 나중에 다시 시도하세요.";
   return h("div", { className: "auth-actions dash-signed-out" },
-    h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, text),
-    h("a", { className: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")),
-    h("p", { className: "note" }, "Google 페이지에서 동의를 받습니다. 이후 skillar는 Google ID, 이메일, 이름, 사진과 최초·최근 로그인 시각을 저장합니다. 로그인 상태는 서명된 보안 쿠키로 유지하며, Google 토큰은 보관하지 않습니다."));
+    text !== "" && h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, text),
+    h("a", { className: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")));
 }
 
 function AccountLine({ user }: { readonly user: SessionUser }) {
