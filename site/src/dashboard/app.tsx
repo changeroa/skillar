@@ -52,8 +52,11 @@ function useLoad<T>(
 }
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
+  if (phase.kind === "signed-out") {
+    location.replace("/login/?next=/dashboard");
+    return null;
+  }
   const text = phase.kind === "expired" ? "세션이 끝나 이 페이지의 활동 내용을 지웠습니다. 계속하려면 다시 로그인하세요." :
-    phase.kind === "signed-out" ? "로그인되어 있지 않습니다. 활동은 로그인한 뒤에만 표시됩니다." :
     phase.kind === "unreachable" ? "계정 서비스에 연결할 수 없습니다. 연결 상태를 확인하고 페이지를 새로 고치세요." :
     "계정 서비스의 응답 형식 오류입니다. 페이지를 새로 고쳐 다시 시도하세요.";
   return (

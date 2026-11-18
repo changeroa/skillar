@@ -24,12 +24,15 @@ function isAbort(error: unknown): boolean {
 }
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
+  if (phase.kind === "signed-out") {
+    location.replace("/login/?next=/skills");
+    return null;
+  }
   const text = phase.kind === "expired" ? "로그인이 만료되어 이 화면에서 스킬 정보를 지웠습니다. 계속하려면 다시 로그인하세요." :
-    phase.kind === "signed-out" ? "" :
     phase.kind === "unreachable" ? "계정 서비스에 연결하지 못했습니다. 연결을 확인하고 새로고침하세요." :
     "계정 서비스의 응답을 확인할 수 없습니다. 나중에 다시 시도하세요.";
   return h("div", { className: "auth-actions dash-signed-out" },
-    text !== "" && h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, text),
+    h("p", { className: "note session-status", role: "status", "aria-live": "polite" }, text),
     h("a", { className: "button primary", href: "/auth/google" }, "Google로 계속 ", h("span", { "aria-hidden": "true" }, "\u2192")));
 }
 

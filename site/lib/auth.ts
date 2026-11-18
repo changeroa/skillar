@@ -27,7 +27,7 @@ export const loginReturnPathSchema = z.string().max(8192).refine(value => {
   const url = new URL(value, 'https://return.invalid');
   return url.origin === 'https://return.invalid' && url.hash === '' &&
     ((url.pathname === '/oauth/authorize' && url.search !== '') ||
-      (url.pathname === '/connections/' && url.search === ''));
+      (url.pathname === '/connections/' || url.pathname === '/skills/' || url.pathname === '/dashboard/') && url.search === '');
 }).transform(value => {
   const url = new URL(value, 'https://return.invalid');
   return url.pathname + url.search;

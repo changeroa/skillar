@@ -190,11 +190,15 @@ async function mount(): Promise<void> {
   };
   const render = () => {
     const phase = model.phase;
+    if (phase === "signed-out") {
+      location.replace("/login/?next=/connections");
+      return;
+    }
     status.hidden = phase === "ready";
     status.textContent = phase === "checking" ? "연결을 확인하는 중…" : phase === "loading" ? "연결을 불러오는 중…"
       : phase === "ready" ? "연결 목록을 불러왔습니다." : FAILURE_TEXT[phase];
     retry.hidden = ["checking", "loading", "ready", "signed-out", "disabled"].includes(phase);
-    signedOut.hidden = phase !== "signed-out";
+    signedOut.hidden = true;
     disabled.hidden = phase !== "disabled";
     app.hidden = model.resource === null;
     renderView(phase === "checking" || phase === "loading" ? h(Skeleton, { label: "연결을 불러오는 중", rows: 4 }) : null, skeleton);
