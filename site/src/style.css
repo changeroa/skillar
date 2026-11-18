@@ -1,24 +1,87 @@
 @import "../../local/dashboard/foundation/tokens.css";
 
+/* ============================================================
+   Design tokens — Astryx(neutral) 토큰 구조를 참조해 역할 기반으로 재편.
+   계산값은 PR-9와 동일(시각 변화 없음). 매핑 근거: DESIGN.md "Astryx 토큰 매핑".
+   ============================================================ */
 :root {
   color-scheme: light dark;
-  --bg: #FFFFFF; --surface: #F3F5F2; --ink: #20231E; --muted: #565C51;
-  --accent: #B4321C; --on-accent: #FFFFFF;
-  --code-bg: #F3F5F2; --code-ink: #20231E; --code-muted: #565C51; --syntax: #B4321C;
-  --success: #23603B; --warn: #805000; --error: #AC2045; --border: #7D8279; --rule: #D9DDD6;
-  --body: 18px; --ui: 16px; --small: 14px; --subhead: 22px; --radius: 2px;
-  --display: clamp(36px, 4.5vw, 64px); --heading: clamp(28px, 3vw, 36px);
-  --s1: 8px; --s2: 12px; --s3: 16px; --s4: 24px; --s5: 32px;
-  --s6: 48px; --s7: 64px; --s8: 96px; --s9: 128px;
+  /* 색 역할 (Astryx --color-*) */
+  --color-background-body: #FFFFFF;
+  --color-background-surface: #F3F5F2;
+  --color-text-primary: #20231E;
+  --color-text-secondary: #565C51;
+  --color-accent: #B4321C;
+  --color-on-accent: #FFFFFF;
+  --color-text-success: #23603B;
+  --color-text-warning: #805000;
+  --color-text-error: #AC2045;
+  --color-border: #7D8279;
+  --color-border-subtle: #D9DDD6;
+  --color-background-code: #F3F5F2;
+  --color-text-code: #20231E;
+  --color-text-code-muted: #565C51;
+  --color-syntax: var(--color-accent);
+  /* 타이포 스케일 (Astryx --font-size-*) */
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-3xl: clamp(28px, 3vw, 36px);
+  --font-size-5xl: clamp(36px, 4.5vw, 64px);
+  /* 스페이싱 스케일 (Astryx 4px 그리드) */
+  --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px; --spacing-6: 24px;
+  --spacing-8: 32px; --spacing-12: 48px; --spacing-16: 64px; --spacing-24: 96px; --spacing-32: 128px;
+  /* radius 역할 (Astryx --radius-*) */
+  --radius-element: 2px;
+  /* elevation (Astryx neutral, PR-b 공통 부품에서 사용 예정) */
+  --shadow-low: 0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 25%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 40%)), inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 8%));
+  --shadow-med: 0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 35%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 12%));
+  --shadow-high: 0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 70%)), inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 15%));
+  /* 포커스 링 (Astryx --focus-*) */
+  --focus-outline-width: 2px;
+  --focus-outline-style: solid;
+  --focus-outline-color: var(--color-accent);
+  --focus-outline-offset: 2px;
+  /* 기존 이름 별칭 — 사용처 계산값 동일 */
+  --bg: var(--color-background-body); --surface: var(--color-background-surface);
+  --ink: var(--color-text-primary); --muted: var(--color-text-secondary);
+  --accent: var(--color-accent); --on-accent: var(--color-on-accent);
+  --code-bg: var(--color-background-code); --code-ink: var(--color-text-code); --code-muted: var(--color-text-code-muted);
+  --syntax: var(--color-syntax);
+  --success: var(--color-text-success); --warn: var(--color-text-warning); --error: var(--color-text-error);
+  --border: var(--color-border); --rule: var(--color-border-subtle);
+  --body: var(--font-size-lg); --ui: var(--font-size-base); --small: var(--font-size-sm); --subhead: var(--font-size-xl);
+  --display: var(--font-size-5xl); --heading: var(--font-size-3xl);
+  --radius: var(--radius-element);
+  --s1: var(--spacing-2); --s2: var(--spacing-3); --s3: var(--spacing-4); --s4: var(--spacing-6); --s5: var(--spacing-8);
+  --s6: var(--spacing-12); --s7: var(--spacing-16); --s8: var(--spacing-24); --s9: var(--spacing-32);
   font-family: "Helvetica Neue", "Apple SD Gothic Neo", system-ui, sans-serif; color: var(--ink); background: var(--bg);
   font-synthesis: none;
 }
+/* 다크 모드: 색 역할만 재정의하면 별칭이 따라감 */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --error: var(--lf-dark-red); --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
+  :root:not([data-theme="light"]) {
+    --color-background-body: #171916; --color-background-surface: #22261F;
+    --color-text-primary: #F0F1E9; --color-text-secondary: #B3BAAA;
+    --color-accent: #FF8F70; --color-on-accent: #23110C;
+    --color-text-success: var(--lf-dark-green); --color-text-warning: var(--lf-dark-yellow); --color-text-error: var(--lf-dark-red);
+    --color-border: #7A8273; --color-border-subtle: #3C4336;
+    --color-background-code: #22261F; --color-text-code: #F0F1E9; --color-text-code-muted: #B3BAAA;
+    color-scheme: dark;
+  }
   :root:not([data-theme="light"]) .wordmark-light { display: none; }
   :root:not([data-theme="light"]) .wordmark-dark { display: block; }
 }
-:root[data-theme="dark"] { --bg: #171916; --surface: #22261F; --ink: #F0F1E9; --muted: #B3BAAA; --accent: #FF8F70; --on-accent: #23110C; --code-bg: #22261F; --code-ink: #F0F1E9; --code-muted: #B3BAAA; --syntax: #FF8F70; --success: var(--lf-dark-green); --warn: var(--lf-dark-yellow); --error: var(--lf-dark-red); --border: #7A8273; --rule: #3C4336; color-scheme: dark; }
+:root[data-theme="dark"] {
+  --color-background-body: #171916; --color-background-surface: #22261F;
+  --color-text-primary: #F0F1E9; --color-text-secondary: #B3BAAA;
+  --color-accent: #FF8F70; --color-on-accent: #23110C;
+  --color-text-success: var(--lf-dark-green); --color-text-warning: var(--lf-dark-yellow); --color-text-error: var(--lf-dark-red);
+  --color-border: #7A8273; --color-border-subtle: #3C4336;
+  --color-background-code: #22261F; --color-text-code: #F0F1E9; --color-text-code-muted: #B3BAAA;
+  color-scheme: dark;
+}
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] .wordmark-light { display: none; }
 :root[data-theme="dark"] .wordmark-dark { display: block; }
@@ -29,7 +92,7 @@ h1, h2, h3 { overflow-wrap: anywhere; }
 button, input, select { font: inherit; }
 button, select, summary { cursor: pointer; }
 button:disabled, input:disabled { cursor: not-allowed; opacity: 1; }
-a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color); outline-offset: var(--focus-outline-offset); }
 a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .shell { width: min(100% - var(--s8), 1280px); margin-inline: auto; }
 .header { display: flex; align-items: center; gap: var(--s3) var(--s5); min-height: var(--s8); flex-wrap: wrap; padding-block: var(--s4); }

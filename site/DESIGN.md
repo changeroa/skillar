@@ -1,5 +1,75 @@
 # skillar.sh
 
+## Astryx 토큰 매핑 (PR-a, 2026-11-18)
+
+Meta Astryx(MIT)를 참조 시스템으로 채택한다. 패키지 의존은 두지 않는다: preact/compat
+spike(2026-11-18)에서 실행은 확인됐으나 랜딩 번들 증가가 약 +162KB gzip
+(JS ~112KB + CSS ~50KB)로 예산(~60KB)을 초과했으므로, Astryx의 토큰 구조와 부품
+규칙만 우리 토큰으로 옮긴다. 참조 테마는 neutral. 이 PR은 구조 재편만 하며 계산값은
+PR-9와 동일하다(시각 변화 없음). 브랜드 오버라이드(--color-accent #B4321C 라이트 /
+#FF8F70 다크, --color-on-accent #FFFFFF / #23110C)는 그대로 유지한다.
+
+### 색 역할
+
+| Astryx 역할 | skillar 토큰 | 라이트 | 다크 | 비고 |
+| --- | --- | --- | --- | --- |
+| --color-background-body | --color-background-body | #FFFFFF | #171916 | |
+| --color-background-surface | --color-background-surface | #F3F5F2 | #22261F | 카드·코드 표면 |
+| --color-text-primary | --color-text-primary | #20231E | #F0F1E9 | |
+| --color-text-secondary | --color-text-secondary | #565C51 | #B3BAAA | |
+| --color-accent | --color-accent | #B4321C | #FF8F70 | 브랜드 유지 |
+| (on-accent) | --color-on-accent | #FFFFFF | #23110C | 브랜드 유지 |
+| --color-text-success/-warning/-error | --color-text-success/-warning/-error | #23603B / #805000 / #AC2045 | --lf-dark-green / --lf-dark-yellow / --lf-dark-red | |
+| --color-border | --color-border | #7D8279 | #7A8273 | |
+| --color-border (subtle) | --color-border-subtle | #D9DDD6 | #3C4336 | 구분선(rule) |
+| (code surface) | --color-background-code / --color-text-code / --color-text-code-muted | #F3F5F2 / #20231E / #565C51 | #22261F / #F0F1E9 / #B3BAAA | Astryx syntax 토큰에 대응 |
+| --color-syntax-* | --color-syntax | accent와 동일 | accent와 동일 | 단일 강조색 |
+
+기존 --bg/--surface/--ink/--muted/--accent/--code-*/--success/--warn/--error/
+--border/--rule은 위 역할을 가리키는 별칭으로 남긴다(사용처 무수정).
+
+### 스페이싱 (Astryx 4px 그리드)
+
+| skillar | Astryx | 값 |
+| --- | --- | --- |
+| --s1..--s9 | --spacing-2/3/4/6/8/12/16/24/32 | 8/12/16/24/32/48/64/96/128px |
+
+Astryx 원본은 4px 단위 --spacing-0..12(최대 48px). 마케팅 랜딩의 큰 간격(64~128px)은
+스케일을 12 이상으로 연장해 표기한다. 별칭 --s1..--s9 유지.
+
+### 타이포 스케일
+
+| skillar | Astryx 대응 | 값 | 비고 |
+| --- | --- | --- | --- |
+| --small | --font-size-sm | 14px | |
+| --ui | --font-size-base | 16px | Astryx base는 14px — 우리는 유지 |
+| --body | --font-size-lg | 18px | |
+| --subhead | --font-size-xl | 22px | |
+| --heading | --font-size-3xl | clamp(28px, 3vw, 36px) | |
+| --display | --font-size-5xl | clamp(36px, 4.5vw, 64px) | |
+
+Astryx 원본 스케일은 6/7/8/10/12/14/17/20/24/29/35/42px(4xs..5xl). 랜딩 타이포는
+현행 유지, 대시보드 밀도형 화면에서 원본 스케일을 참조한다.
+
+### radius / elevation / 포커스 링
+
+| 항목 | Astryx | skillar (이 PR) | 후속 |
+| --- | --- | --- | --- |
+| radius | inner 4 / element 8 / container 12 / page 28 | --radius-element: 2px (현행) | PR-b에서 element 값 조정 검토 |
+| elevation | --shadow-low/med/high | 동일 값 신규 도입(미사용) | PR-b 카드·오버레이에 적용 |
+| 포커스 링 | 2px solid accent, offset 3px | 2px solid accent, offset 2px (현행) | offset 3px 조정 검토 |
+
+### 다크 모드 전략
+
+Astryx는 light-dark() 튜플, skillar는 data-theme + prefers-color-scheme 이중 경로를
+쓴다(수동 테마 선택기 존재). 현행 전략 유지, 다크 블록은 색 역할만 재정의한다.
+
+### 후속 PR
+
+- PR-b 공통 부품: Button/Link/Card/Input의 아나토미·상태(hover/active/disabled/focus)를
+  Astryx 대응 부품 규칙에 맞춘다(radius, elevation, 상태색 포함).
+- PR-c 랜딩 개편: 히어로·소개·예시·CTA·푸터를 새 토큰/부품으로 시각 개편.
+
 ## Phase B landing tokens (PR-9)
 
 The marketing landing keeps its existing markup order, document scroll owner,
