@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TraceStep, SessionSkillReportDto } from "../../src/types.js";
 import { api, ApiError, type SessionListRow } from "../api";
-import { RequestDetails } from "../components/requests";
 import { UnresolvedLoadNotice } from "../components/skill-evidence";
 import { buildHash, type ViewProps } from "../state";
 import { sessionBounds, traceCounts } from "./trace/model";
@@ -98,7 +97,7 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
   if (steps === undefined) {
     return (
       <section className="trace pe-console" aria-busy={busy}>
-        <Header sessionId={sessionId} steps={[]} backHref={backHref} embedded={embedded} />
+        <Header sessionId={sessionId} steps={[]} embedded={embedded} />
         {busy && <StatusMessage level="DEFAULT" announce message="추적 기록 불러오는 중…" />}
         {error && <Alert variant="destructive" announce action={<button type="button" className="btn"
           onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>}>{error}</Alert>}
@@ -124,7 +123,6 @@ export function TraceView({ route, navigate, live, embedded = false, presentatio
       {report && <UnresolvedLoadNotice loads={report.unattributedLoads} />}
       {counts.searches === 0 && (report?.unattributedLoads.count ?? 0) === 0 && <NeverConsulted counts={counts} />}
       <EventConsole source={source} report={report} bounds={bounds} route={route} navigate={navigate} embedded={embedded} />
-      <RequestDetails steps={steps} />
     </section>
   );
 }

@@ -28,7 +28,7 @@ export type Route = {
   view: View; sessionId?: string; filter: Filter;
   readonly sort?: SessionSort; readonly peek?: string;
   readonly workspace?: string; readonly density?: SessionDensity;
-  readonly event?: string; readonly traceTab?: "tree" | "timeline";
+  readonly event?: string;
   readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
   readonly analysisSort?: string; readonly analysisQuery?: string; readonly facet?: string;
 };
@@ -225,7 +225,7 @@ export function parseHash(hash: string): Route {
   const params = new URLSearchParams(query);
   const sort = SESSION_SORTS.find(value => value === params.get("sort"));
   const density = params.get("density");
-  const traceTab = params.get("tab"), format = params.get("format");
+  const format = params.get("format");
   const ui = {
     ...(params.get("asort") ? { analysisSort: params.get("asort") ?? undefined } : {}),
     ...(params.get("aq") ? { analysisQuery: params.get("aq") ?? undefined } : {}),
@@ -235,7 +235,6 @@ export function parseHash(hash: string): Route {
     ...(params.get("ws") ? { workspace: params.get("ws") ?? undefined } : {}),
     ...(density === "compact" || density === "normal" || density === "comfortable" ? { density } : {}),
     ...(params.get("event") ? { event: params.get("event") ?? undefined } : {}),
-    ...(traceTab === "tree" || traceTab === "timeline" ? { traceTab } : {}),
     ...(format === "formatted" || format === "raw" ? { format } : {}),
     ...(params.get("attributes") === "1" ? { attributes: true } : {}),
   } satisfies Partial<Route>;
@@ -270,7 +269,6 @@ export function buildHash(route: Route): string {
   if (route.analysisQuery) parts.push(`aq=${encodeURIComponent(route.analysisQuery)}`);
   if (route.facet) parts.push(`facet=${encodeURIComponent(route.facet)}`);
   if ((route.view === "sessions" || route.view === "trace") && route.event) parts.push(`event=${encodeURIComponent(route.event)}`);
-  if (route.traceTab) parts.push(`tab=${route.traceTab}`);
   if (route.format) parts.push(`format=${route.format}`);
   if (route.attributes) parts.push("attributes=1");
   const query = parts.filter(Boolean).join("&");

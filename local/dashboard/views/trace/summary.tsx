@@ -23,19 +23,13 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
   const bounds = sessionBounds(steps, row), counts = traceCounts(steps), facts = summaryFacts(steps);
   const Title = embedded || peek ? "h2" : "h1";
   const prompt = firstPromptOf(steps, row);
-  const duration = bounds.startedAt === undefined ? "미측정" : bounds.endedAt !== undefined
-    ? formatDuration(bounds.endedAt - bounds.startedAt)
-    : bounds.lastTs !== undefined ? `${formatDuration(bounds.lastTs - bounds.startedAt)} (종료 기록 없음)` : "종료 미기록";
+  // 2차 declutter: 길이·검색 수·오류 수는 제거(이벤트 목록이 같은 정보를 보여준다).
   const line = [
     { id: "runtime", label: "실행 환경", hidden: true, value: <span className="pe-pill">{row ? RUNTIME_LABEL[row.runtime] : "미측정"}</span> },
     { id: "started", label: "시작", hidden: true, value: bounds.startedAt === undefined ? "미측정" : <time dateTime={new Date(bounds.startedAt).toISOString()}>{date.format(bounds.startedAt)}</time> },
-    { id: "duration", label: "소요 시간", hidden: true, value: duration },
     { id: "reads", label: "읽은 스킬", value: `${facts.reads.length}개` },
-    { id: "searches", label: "검색", value: <>{counts.searches}회{facts.unmeasuredSearches > 0 && <span> · 지연 시간 {facts.unmeasuredSearches}회 <span>측정 안 됨</span></span>}</> },
-    { id: "errors", label: "오류", value: `${counts.errors}건` },
   ];
   return <header className="trace-summary" data-component="session-summary">
-    {!peek && <a className="trace__back" href={backHref}><Icon name="chevron" className="trace-back-icon" />세션 목록</a>}
     <div className="trace-summary__title"><Title className="trace__title"><code>{sessionId}</code></Title>{!peek && <CopyButton value={sessionId} />}</div>
     <dl className="trace-summary__line trace__meta" aria-label="세션 요약">
       {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt><dd>{fact.value}</dd></div>)}
@@ -43,7 +37,6 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
     {facts.reads.length > 0 && <div className="trace-summary__reads">{facts.reads.map(uri => <span className="pe-pill" key={uri} title={uri}><code>{skillName(uri)}</code></span>)}</div>}
     {peek && <dl className="trace-summary__kv">
       <div><dt>시작</dt><dd>{bounds.startedAt === undefined ? "미측정" : date.format(bounds.startedAt)}</dd></div>
-      <div><dt>길이</dt><dd>{duration}</dd></div>
       <div><dt>이벤트</dt><dd>{counts.steps}개</dd></div>
       <div><dt>읽기</dt><dd>{counts.loads}회</dd></div>
       <div><dt>세션 연결</dt><dd>{row ? ATTRIBUTION_LABEL[row.attribution] : "미측정"}</dd></div>

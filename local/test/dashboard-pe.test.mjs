@@ -9,59 +9,21 @@ const ui = await loadViews(`
   export { readSkills, candidateSkills, sortSessions } from "./local/dashboard/views/sessions/model.ts";
   export { SessionTable } from "./local/dashboard/views/sessions/table.tsx";
   export { createTimelineKeys } from "./local/dashboard/views/trace/plan.ts";
-  export { ganttGeometry, ganttViewport } from "./local/dashboard/views/trace/geometry.ts";
   export { EventConsole } from "./local/dashboard/views/trace/event-console.tsx";
   export { summaryFacts } from "./local/dashboard/views/trace/summary.tsx";
   export { RankedCandidates } from "./local/dashboard/components/ranked-candidates.tsx";
   export { JsonViewer } from "./local/dashboard/components/json-viewer.tsx";
-  export { EventViewTabs } from "./local/dashboard/views/trace/view-tabs.tsx";
 `);
 
 test("local view preferences round-trip without leaking into API filters", () => {
   const route = {
     view: "sessions", filter: { runtime: ["codex"], q: "request & skill", from: 100, automated: "include" },
     sort: "-reads", density: "compact", workspace: "ws:team space",
-    peek: "session/with space", event: "source:event/1", traceTab: "timeline", format: "raw", attributes: true,
+    peek: "session/with space", event: "source:event/1", format: "raw", attributes: true,
   };
   assert.deepEqual(ui.parseHash(ui.buildHash(route)), route);
   assert.equal(ui.serializeFilter(route.filter), "from=100&runtime=codex&q=request%20%26%20skill&automated=include");
   assert.ok(!ui.serializeFilter(route.filter).includes("peek"));
-});
-
-test("Gantt geometry uses actual offsets and only explicitly bounded intervals", () => {
-  const items = [
-    { kind: "step", key: "first", step: { kind: "prompt", ts: 100, detail: {} } },
-    { kind: "step", key: "tool", step: { kind: "tool_call", ts: 125, detail: { durationMs: 9000 } } },
-    { kind: "span", key: "span:activation", span: { startedAt: 150, endedAt: 200 } },
-  ];
-  const graph = ui.ganttGeometry(items, 100, 200);
-  assert.deepEqual(graph.points.map(point => [point.x, point.width, point.offsetMs, point.bounded]), [
-    [0, 0, 0, false], [25, 0, 25, false], [50, 50, 50, true],
-  ]);
-  assert.equal(ui.ganttGeometry([], 100, 200), undefined);
-  const outside = ui.ganttGeometry([...items, { kind: "span", key: "outside", span: { startedAt: 1000, endedAt: 2000 } }], 100, 200);
-  assert.equal(outside.end, 200);
-  assert.equal(outside.points.at(-1).outside, true);
-  assert.deepEqual(outside.points.slice(0, 3), graph.points);
-});
-
-test("source event selection IDs reproduce across reloads and remain session scoped", () => {
-  const source = [
-    { kind: "prompt", ts: 100, summary: "a", detail: { kind: "prompt", text: "a" } },
-    { kind: "tool_call", ts: 200, summary: "A", detail: { kind: "tool_call", args: "first" } },
-    { kind: "tool_call", ts: 200, summary: "B", detail: { kind: "tool_call", args: "second" } },
-    { kind: "search", ts: 300, summary: "q", detail: { kind: "search", traceId: "immutable-search", chosen: [] } },
-  ];
-  const first = ui.createTimelineKeys("session-a")(source);
-  const reloaded = ui.createTimelineKeys("session-a")(structuredClone(source));
-  assert.deepEqual(first.map(item => item.key), reloaded.map(item => item.key));
-  assert.notEqual(first[1].key, first[2].key);
-  const updated = structuredClone(source);
-  updated[3].detail.chosen = ["skill://read"];
-  assert.equal(ui.createTimelineKeys("session-a")(updated)[3].key, first[3].key);
-  assert.notEqual(ui.createTimelineKeys("session-b")(source)[0].key, first[0].key);
-  const route = { view: "trace", sessionId: "session-a", filter: {}, event: first[2].key };
-  assert.equal(ui.parseHash(ui.buildHash(route)).event, reloaded[2].key);
 });
 
 test("every daily histogram bar shares the baseline, including labelled zero ticks", () => {
@@ -117,92 +79,47 @@ test("the fixed session columns always render a keyboard-accessible session link
 });
 
 
-test("tree/timeline selection retains event and filters", async t => {
-  const source = ui.createTimelineKeys("event-session")([{ kind: "prompt", ts: 100, summary: "captured", detail: { kind: "prompt", text: "captured" } }]);
+test("event selection retains filters on the single tree view", async t => {
+  // 2차 declutter: 트리/타임라인 전환이 사라지고 트리만 남는다.
+  const source = ui.createTimelineKeys("event-session")([
+    { kind: "prompt", ts: 100, summary: "captured", detail: { kind: "prompt", text: "captured" } },
+    { kind: "search", ts: 200, summary: "query", detail: { kind: "search", query: "q", candidates: [] } },
+  ]);
   const route = { view: "trace", sessionId: "event-session", filter: { q: "scope" }, event: source[0].key };
   let next;
   const { container } = await mount(t, ui.EventConsole, { source, bounds: { startedAt: 100 }, route, navigate(value) { next = value; } });
-  const timeline = all(container, node => node.getAttribute("data-view") === "timeline")[0];
-  await act(() => timeline.click());
-  assert.deepEqual(next, { ...route, traceTab: "timeline" });
+  assert.equal(all(container, node => node.getAttribute("role") === "tablist").length, 0);
+  const rows = all(container, node => node.getAttribute("role") === "treeitem");
+  assert.equal(rows.length, 2);
+  await act(() => rows[1].click());
+  assert.deepEqual(next, { ...route, event: source[1].key });
 });
 
-test("event navigation keeps one tab stop and preserves rows between tree and grid", async t => {
-  // Given chronological leaves without causal edges.
+test("event navigation keeps one tab stop on the tree", async t => {
   const source = ui.createTimelineKeys("roving")([100, 200].map(ts => ({
     kind: "prompt", ts, summary: String(ts), detail: { kind: "prompt", text: String(ts) },
   })));
   const route = { view: "trace", filter: {}, event: source[0].key };
   const props = { source, bounds: { startedAt: 100, endedAt: 200 }, route, prefix: "roving", navigate() {} };
-  const { container, show } = await mount(t, ui.EventConsole, props);
+  const { container } = await mount(t, ui.EventConsole, props);
   const rows = all(container, node => node.getAttribute("role") === "treeitem");
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map(node => node.getAttribute("tabindex")), ["0", "-1"]);
-  assert.equal(all(container, node => node.getAttribute("role") === "tabpanel")[0].getAttribute("id"), `${props.prefix}-tree-panel`);
-  // When the same console switches representation.
-  await show({ ...props, route: { ...route, traceTab: "timeline" } });
-  // Then the live row identities and single entry point survive.
-  const cells = all(container, node => node.getAttribute("role") === "gridcell");
-  assert.deepEqual(cells, rows);
-  assert.deepEqual(cells.map(node => node.getAttribute("tabindex")), ["0", "-1"]);
-  assert.equal(all(container, node => node.getAttribute("role") === "grid").length, 1);
+  assert.equal(all(container, node => node.getAttribute("role") === "grid").length, 0);
 });
 
-test("summary reads and selected-load digest come only from captured reads", async t => {
-  const digest = "sha256:" + "a".repeat(64);
-  const search = { kind: "search", ts: 100, summary: "q", detail: { kind: "search", chosen: ["skill://candidate"] } };
-  assert.deepEqual(ui.summaryFacts([search]).reads, []);
-  const load = { kind: "load", ts: 200, summary: "loaded", detail: { kind: "load", uri: "skill://actual", manifestDigest: digest } };
-  assert.deepEqual(ui.summaryFacts([search, load]).reads, ["skill://actual"]);
-  const source = ui.createTimelineKeys("digest-session")([load]);
-  const { container } = await mount(t, ui.EventConsole, {
-    source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {}, event: source[0].key }, navigate() {},
-  });
-  assert.equal(all(container, node => node.hasAttribute("data-read-digest"))[0].textContent, digest);
-});
-
-test("an unavailable event URL never silently selects another captured event", async t => {
-  const source = ui.createTimelineKeys("event-session")([{ kind: "prompt", ts: 100, summary: "captured", detail: { kind: "prompt", text: "captured" } }]);
-  const { container } = await mount(t, ui.EventConsole, {
-    source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {}, event: "unavailable" }, navigate() {},
-  });
-  assert.equal(all(container, node => node.hasAttribute("data-event-kind") && node.getAttribute("aria-selected") === "true").length, 0);
-  assert.ok(all(container, node => node.getAttribute("role") === "status").length);
-});
-
-test("ranked candidates retain root disambiguation for identical recorded names", async t => {
-  const candidates = ["agents", "claude"].map((root, index) => ({
-    uri: `skill://local/${root}/same/SKILL.md`, name: "same", description: "captured",
-    rank: index + 1, score: 1 - index / 10, invocation: "automatic",
-  }));
-  const { container } = await mount(t, ui.RankedCandidates, { candidates });
-  assert.deepEqual(all(container, node => node.hasAttribute("data-root")).map(node => node.getAttribute("data-root")), ["agents", "claude"]);
-});
-
-test("Gantt zoom clips the displayed window without changing measured offsets or source keys", () => {
-  const source = ui.createTimelineKeys("zoom")([
-    { ts: 1250, kind: "prompt", summary: "point", detail: { kind: "prompt", text: "captured" } },
-    { ts: 1400, kind: "tool", summary: "interval", detail: { kind: "tool", toolName: "Bash", durationMs: 200, startedAt: 1400, endedAt: 1600 } },
+test("event rows carry request status and the skill path tooltip the removed request table had", async t => {
+  // 2차 declutter: 아래 "검색 및 읽기 요청" 표를 지운 대신 행에 상태와 스킬 경로 툴팁을 둔다.
+  const source = ui.createTimelineKeys("row-status")([
+    { kind: "load", ts: 100, summary: "read", detail: { kind: "load", uri: "skill://agents/deploy-checklist/SKILL.md", currentStatus: "succeeded" } },
+    { kind: "search", ts: 200, summary: "query", detail: { kind: "search", query: "q", candidates: [], currentStatus: "failed" } },
   ]);
-  const graph = ui.ganttGeometry(source, 1000, 2000);
-  const left = ui.ganttViewport(graph, 2, 0), right = ui.ganttViewport(graph, 2, 1);
-  assert.deepEqual([left.start, left.end, right.start, right.end], [1000, 1500, 1500, 2000]);
-  assert.deepEqual(right.points.map(point => [point.key, point.offsetMs]), graph.points.map(point => [point.key, point.offsetMs]));
-  assert.equal(left.points[0].x, 50);
-  assert.equal(right.points[0].inView, false);
-  assert.deepEqual([left.points[1].x, left.points[1].width], [80, 20]);
-  assert.deepEqual([right.points[1].x, right.points[1].width], [0, 20]);
-  assert.deepEqual(ui.ganttViewport(graph, 1, 0).points.map(({ inView, ...point }) => point), graph.points);
-});
-
-test("shared peek tabs preserve list scope", async t => {
-  const route = { view: "sessions", filter: { q: "captured", runtime: ["codex"] }, peek: "session", sort: "-reads", event: "immutable" };
-  let next;
-  const { container } = await mount(t, ui.EventViewTabs, { route, navigate(value) { next = value; }, prefix: "peek-event" });
-  const buttons = all(container, node => node.localName === "button");
-  await act(() => buttons.find(node => node.getAttribute("data-view") === "timeline").click());
-  assert.deepEqual(next, { ...route, traceTab: "timeline" });
-  assert.equal(buttons.find(node => node.getAttribute("data-view") === "tree").getAttribute("aria-selected"), "true");
+  const { container } = await mount(t, ui.EventConsole, { source, bounds: { startedAt: 100 }, route: { view: "trace", filter: {} }, navigate() {} });
+  const badges = all(container, node => (node.getAttribute("class") ?? "").includes("badge--"));
+  assert.deepEqual(badges.map(node => node.textContent.trim()), ["성공", "실패"]);
+  const tips = all(container, node => node.getAttribute("title") === "skill://agents/deploy-checklist/SKILL.md");
+  assert.equal(tips.length, 1);
+  assert.equal(tips[0].textContent, "deploy-checklist");
 });
 
 test("raw JSON has native nested disclosures and preserves every captured primitive", async t => {

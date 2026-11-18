@@ -188,26 +188,6 @@ test("generic refresh replaces trace data without discarding its existing disclo
   assert.ok(h.root.textContent.includes("new uploaded prompt"));
 });
 
-test("a healthy cloud event transport does not change an unended historical trace's duration", async (t) => {
-  // Given
-  const steps = fixtures.traces[sessionId].filter((step) => step.kind !== "session_end");
-  const h = host(t, `#/sessions/${sessionId}`, {
-    trace: async () => steps,
-    sessions: async () => fixtures.sessions.map((row) => row.id === sessionId ? { ...row, endedAt: undefined } : row),
-    events(next) { next.onState("offline"); return () => {}; },
-  });
-  await h.mount();
-  const duration = () => {
-    const metadata = classed(h.root, "trace__meta");
-    return find(metadata, (node) => node.localName === "div" && node.firstChild?.textContent === "소요 시간").textContent;
-  };
-  const historicalDuration = duration();
-  // When
-  await h.state("live");
-  // Then
-  assert.equal(duration(), historicalDuration);
-});
-
 test("bootstrap reconciles the final upload after head adoption and ignores the older pinned report completing last", async (t) => {
   // Given
   const head = Promise.withResolvers();

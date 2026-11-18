@@ -1,7 +1,4 @@
-import { useState } from "react";
 import type { Operation, OperationSummary, RequestRecord, RequestSummary, SearchResult } from "../../src/request-status.js";
-import { requestRecords } from "../../src/request-status.js";
-import type { TraceStep } from "../../src/types.js";
 import { STATE_LABEL } from "../state";
 
 const OPERATION_LABEL: Record<Operation, string> = { search: "검색", load: "읽기" };
@@ -23,21 +20,4 @@ export function RequestCounts({ summary }: { summary?: RequestSummary }) {
     <div><strong>{OPERATION_LABEL.search}</strong> <OperationCounts summary={summary?.search} /></div>
     <div><strong>{OPERATION_LABEL.load}</strong> <OperationCounts summary={summary?.load} /></div>
   </div>;
-}
-
-export function RequestDetails({ steps }: { steps: TraceStep[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const active = new Set(steps.filter((s) => s.detail.currentStatus === "in_progress").map((s) => String(s.detail.requestId)));
-  const records = requestRecords(steps.map((step, i) => ({ id: `trace-${i}`, ts: step.ts, kind: step.kind, data: step.detail,
-    ...(typeof step.detail.uri === "string" ? { skillUri: step.detail.uri } : {}) })), active);
-  if (!records.length) return null;
-  return <section className="card request-details" aria-label="검색 및 읽기 요청">
-    <h2>검색 및 읽기 요청</h2>
-    <table><thead><tr><th scope="col">작업</th><th scope="col">상태</th><th scope="col">결과 / 사유</th><th scope="col">스킬</th></tr></thead>
-      <tbody>{(expanded ? records : records.slice(0, 20)).map((r) => <tr key={r.id}>
-        <td data-label="작업">{OPERATION_LABEL[r.operation]}</td><td data-label="상태"><span className={`badge badge--${r.status}`}>{STATE_LABEL[r.status]}</span></td>
-        <td data-label="결과 / 사유">{[r.result && RESULT_LABEL[r.result], r.reason, r.errorCode].filter(Boolean).join(" · ") || "—"}</td><td data-label="스킬">{r.uri ?? "—"}</td>
-      </tr>)}</tbody></table>
-    {records.length > 20 && <button type="button" className="btn" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? "요청 접기" : `요청 ${records.length}건 모두 보기`}</button>}
-  </section>;
 }
