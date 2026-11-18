@@ -60,6 +60,23 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   </div>;
 }
 
+export function TextInput({ label, value, onChange, placeholder, id, type = "text", disabled = false,
+  size = "default" }: {
+  readonly label: string; readonly value: string; readonly onChange: (value: string) => void;
+  readonly placeholder?: string; readonly id?: string; readonly type?: "text" | "search";
+  readonly disabled?: boolean; readonly size?: "default" | "large";
+}) {
+  // Astryx TextInput for plain text/search callers (D-12): live onChange
+  // filtering with the same focus ring and clear button as SearchInput.
+  // Native Input stays for date/time (date-range), prefix/valuePrefix and
+  // the command-palette combobox, which TextInput cannot express.
+  return <div className="lf-field">
+    <AxTextInput type={type} id={id} label={label} value={value} width="100%"
+      onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
+      size={size === "large" ? "lg" : "md"} hasClear />
+  </div>;
+}
+
 /** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */
 export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean; readonly badge?: string };
 export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", ...props }: FieldLabel & {

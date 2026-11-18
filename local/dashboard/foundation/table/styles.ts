@@ -79,10 +79,7 @@ export function tableStyles(): void {
 .lf-facet-choice>span{color:var(--lf-muted-foreground);font-variant-numeric:tabular-nums}
 .lf-facet-values>.lf-field{margin-block:var(--lf-space-1)}
 .lf-facet-values>[role=status]{margin:0;padding:var(--lf-space-1) 0;text-align:center;color:var(--lf-muted-foreground);font-size:var(--lf-text-sm);line-height:var(--lf-leading-sm)}
-.lf-facet-values .lf-input{padding-inline-end:var(--lf-space-2);font-family:var(--lf-font-sans);font-size:var(--lf-text-xs);line-height:var(--lf-leading-xs);border-color:var(--lf-input)}
-.lf-facet-values .lf-input[type=search]{font-family:var(--lf-font-mono)}
-.lf-facet-values .lf-input[type=text]{padding-inline:var(--lf-space-2)}
-.lf-facet-values>.lf-field>label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.lf-facet-values .lf-field label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:768px){.lf-table-pagination{justify-content:flex-start;gap:var(--lf-space-2)}.lf-table-pagination .lf-table-total{flex-basis:100%}}
 @media(forced-colors:active){.lf-table-surface :is(.lf-table-scroll,[tabindex],a,button):focus-visible{outline-color:CanvasText}}
 `;
