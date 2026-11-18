@@ -274,6 +274,16 @@ export const neutralTheme = defineTheme({
   },
 
   components: {
+    // The unchecked indicator boundary used the global emphasized border,
+    // which fell below the 3:1 non-text contrast guideline in both modes
+    // (light #d4d4d4 ≈ 1.46:1 on white; dark #525252 ≈ 2.28:1 on the
+    // near-black surface). Raise only this component: #919191 ≈ 3.15:1 in
+    // light, #6a6a6a ≈ 3.29:1 in dark.
+    'checkbox-indicator': {
+      base: {
+        '--color-border-emphasized': `light-dark(${neutral.light[60]}, ${neutral.dark[45]})`,
+      },
+    },
     // In dark mode, secondary text falls under 4.5:1 on the selected fill
     // and under its hover. Selected rows use the next stop that clears both.
     item: {
