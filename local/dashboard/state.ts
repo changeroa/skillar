@@ -18,15 +18,16 @@ export const FILTER_KEYS = ["from", "to", "runtime", "skill", "dow", "hour", "ho
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
 export type View = "dashboard" | "sessions" | "trace" | "not-found";
-export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "reads", "-reads", "duration", "-duration"] as const;
+export const SESSION_SORTS = ["-started", "started", "runtime", "-runtime", "reads", "-reads"] as const;
 export type SessionSort = (typeof SESSION_SORTS)[number];
-export const SESSION_COLUMNS = ["started", "runtime", "reads", "candidates", "duration", "prompt", "search", "load", "attribution", "id"] as const;
+// 2차 declutter: 열 선택 UI를 없애고 승인된 다섯 열(시작·실행 환경·읽은 스킬·첫 요청·검색)로 고정.
+export const SESSION_COLUMNS = ["started", "runtime", "reads", "prompt", "search"] as const;
 export type SessionColumn = (typeof SESSION_COLUMNS)[number];
 export type SessionDensity = "compact" | "normal" | "comfortable";
 export type Route = {
   view: View; sessionId?: string; filter: Filter;
   readonly sort?: SessionSort; readonly peek?: string;
-  readonly columns?: readonly SessionColumn[]; readonly density?: SessionDensity;
+  readonly workspace?: string; readonly density?: SessionDensity;
   readonly event?: string; readonly traceTab?: "tree" | "timeline";
   readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
   readonly analysisSort?: string; readonly analysisQuery?: string; readonly facet?: string;
@@ -223,9 +224,6 @@ export function parseHash(hash: string): Route {
   const filter = parseFilter(query);
   const params = new URLSearchParams(query);
   const sort = SESSION_SORTS.find(value => value === params.get("sort"));
-  const columns = params.has("columns")
-    ? SESSION_COLUMNS.filter(value => params.get("columns")?.split(",").includes(value))
-    : undefined;
   const density = params.get("density");
   const traceTab = params.get("tab"), format = params.get("format");
   const ui = {
@@ -234,7 +232,7 @@ export function parseHash(hash: string): Route {
     ...(params.get("facet") ? { facet: params.get("facet") ?? undefined } : {}),
     ...(sort ? { sort } : {}),
     ...(params.get("peek") ? { peek: params.get("peek") ?? undefined } : {}),
-    ...(columns ? { columns } : {}),
+    ...(params.get("ws") ? { workspace: params.get("ws") ?? undefined } : {}),
     ...(density === "compact" || density === "normal" || density === "comfortable" ? { density } : {}),
     ...(params.get("event") ? { event: params.get("event") ?? undefined } : {}),
     ...(traceTab === "tree" || traceTab === "timeline" ? { traceTab } : {}),
@@ -265,7 +263,7 @@ export function buildHash(route: Route): string {
     : `/${route.view}`;
   const parts = [serializeFilter(route.filter)];
   if (route.sort) parts.push(`sort=${route.sort}`);
-  if (route.columns) parts.push(`columns=${route.columns.join(",")}`);
+  if (route.workspace) parts.push(`ws=${encodeURIComponent(route.workspace)}`);
   if (route.density) parts.push(`density=${route.density}`);
   if (route.view === "sessions" && route.peek) parts.push(`peek=${encodeURIComponent(route.peek)}`);
   if (route.analysisSort) parts.push(`asort=${encodeURIComponent(route.analysisSort)}`);

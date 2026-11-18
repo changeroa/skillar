@@ -1,12 +1,13 @@
 import { kstPeriodStart } from "../../time";
 import { useState } from "react";
 import type { SessionListRow } from "../../api";
+import type { FlowListEntry } from "../../../src/types.js";
 import { ConsoleSheet } from "../../components/console-sheet";
 import type { ViewProps } from "../../state";
 import { SessionFacets } from "./facets";
 
-export function SessionFilterSheet({ route, navigate, rows, close }: Pick<ViewProps, "route" | "navigate"> & {
-  readonly rows: readonly SessionListRow[]; readonly close: () => void;
+export function SessionFilterSheet({ route, navigate, rows, close, flows }: Pick<ViewProps, "route" | "navigate"> & {
+  readonly rows: readonly SessionListRow[]; readonly close: () => void; readonly flows?: readonly FlowListEntry[];
 }) {
   const [filter, setFilter] = useState(route.filter);
   return <ConsoleSheet id="session-filter-sheet" title="필터" close={close} actions={<>
@@ -28,6 +29,7 @@ export function SessionFilterSheet({ route, navigate, rows, close }: Pick<ViewPr
       </select>
     </label>
     <p className="pe-muted">기간을 바꾸면 적용 후 수를 다시 집계합니다.</p>
-    <SessionFacets rows={rows} route={{ ...route, filter }} navigate={next => setFilter(next.filter)} />
+    <SessionFacets rows={rows} route={{ ...route, filter }} flows={flows}
+      navigate={next => { if (next.workspace !== route.workspace) navigate(next); else setFilter(next.filter); }} />
   </ConsoleSheet>;
 }

@@ -42,8 +42,9 @@ export function sessionsStyles() {
 .session-table th{height:44px;font-weight:500;color:var(--ink-2)}.session-table th>button{display:flex;align-items:center;justify-content:space-between;gap:4px;background:none;border:0;padding:0;color:inherit;min-height:44px;width:100%;cursor:pointer}
 .session-table td{height:44px}.session-table[data-density=normal] td{height:52px}.session-table[data-density=comfortable] td{height:64px}
 .session-table .cell-started{width:112px}.session-table .cell-runtime{width:106px}
-.session-table .cell-reads,.session-table .cell-candidates{width:118px}.session-table .cell-duration{width:76px}
-.session-table .cell-search,.session-table .cell-load{width:125px}.session-table .cell-attribution{width:115px}.session-table .cell-id{width:160px}
+.session-table .cell-reads{width:118px}
+.session-table .cell-search{width:220px}
+.session-table .session-table__candidates{display:inline-flex;margin-inline-start:8px;vertical-align:middle}
 .session-table .cell-prompt{width:auto;min-width:160px}.session-table .rowlink{display:flex;align-items:center;min-height:44px;color:var(--ink);font-size:12px;text-decoration:none;overflow:hidden}
 .session-table .rowlink>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .session-table-frame.lf-table-surface .session-table{table-layout:fixed}

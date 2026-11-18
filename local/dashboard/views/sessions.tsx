@@ -1,6 +1,6 @@
 import { kstDay } from "../time";
 import { useEffect, useMemo, useState } from "react";
-import type { RuntimeId } from "../../src/types.js";
+import type { FlowListEntry, RuntimeId } from "../../src/types.js";
 import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
 import {
@@ -152,6 +152,7 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   const [facetsOpen, setFacetsOpen] = useState(false);
   const narrow = useNarrow();
   const [stats, setStats] = useState<Stats>();
+  const [flows, setFlows] = useState<FlowListEntry[]>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(true);
@@ -170,12 +171,19 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
     let cancelled = false;
     setBusy(true);
     const scope = { from: route.filter.from, to: route.filter.to, automated: route.filter.automated };
-    Promise.all([api.sessions(detail ? route.filter : scope), api.stats(route.filter)])
-      .then(([nextRows, nextStats]) => {
+    Promise.all([api.sessions(detail ? route.filter : scope), api.stats(route.filter),
+      // flows 는 선택 기능(클라우드 mock 등 미구현 허용): 호출 자체가 실패해도 목록은 그대로 둔다.
+      Promise.resolve().then(() => api.flows({ automated: route.filter.automated })).catch(() => undefined)])
+      .then(([nextRows, nextStats, nextFlows]) => {
         if (cancelled) return;
+        // 작업 공간 필터: 선택한 흐름/작업 공간의 세션 ID 목록으로 좁힌다(구 작업 공간 화면 병합분).
+        const entry = route.workspace ? nextFlows?.flows.find(item => item.id === route.workspace) : undefined;
+        const workspaceIds = entry ? new Set(entry.sessionIds) : undefined;
+        setFlows(nextFlows?.flows);
         setFacetRows(nextRows);
-        setRows(detail ? nextRows : nextRows.filter(row => matchesFilter(row, route.filter)
-          && (!route.filter.skill || readSkills(row).some(uri => route.filter.skill?.includes(uri)))));
+        setRows(nextRows.filter(row => (detail || matchesFilter(row, route.filter)
+          && (!route.filter.skill || readSkills(row).some(uri => route.filter.skill?.includes(uri))))
+          && (!workspaceIds || workspaceIds.has(row.id))));
         setStats(nextStats);
         setError(undefined);
       })
@@ -260,12 +268,12 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
       {failure}
       {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
       <div className="sessions-body" data-facets-open={facetsOpen}>
-        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
+        {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} flows={flows} />}
         <Results className="session-results" aria-label="세션 기록" tabIndex={-1}>
           {body}
         </Results>
       </div>
-      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
+      {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} flows={flows} close={() => setFacetsOpen(false)} />}
     </section>
   );
 }

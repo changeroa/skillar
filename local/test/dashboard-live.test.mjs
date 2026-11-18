@@ -129,21 +129,6 @@ test("cloud transport states have distinct accessible labels and recover their l
   assert.equal(label(), live);
 });
 
-test("a live update preserves a populated Flow's selected unit and mounted controls", async (t) => {
-  // Given
-  const h = host(t, "#/flow");
-  await h.mount();
-  const group = find(h.root, (node) => node.getAttribute("aria-label") === "단위");
-  const search = find(group, (node) => node.localName === "button" && node.getAttribute("aria-pressed") === "false");
-  await ui.act(async () => click(search));
-  const section = find(h.root, (node) => node.getAttribute("data-unit") === "search_requests");
-  // When
-  await h.refresh();
-  // Then
-  assert.ok(find(h.root, (node) => node.getAttribute("data-unit") === "search_requests") === section);
-  assert.ok(find(h.root, (node) => node.getAttribute("aria-label") === "단위") === group);
-});
-
 test("a live update keeps the Sessions search node and its unsubmitted draft", async (t) => {
   // Given
   const h = host(t, "#/sessions");
@@ -158,6 +143,29 @@ test("a live update keeps the Sessions search node and its unsubmitted draft", a
   // Then
   assert.ok(find(h.root, (node) => node.getAttribute("id") === "session-search") === input);
   assert.equal(input.value, "unsubmitted fixture query");
+});
+
+test("workspace facet filters the session list to flow members and keeps member links", async (t) => {
+  // Given: a flow whose membership covers exactly two of the fixture sessions, selected via ?ws=.
+  const memberIds = ["ses_770bad4531", "ses_1fe658341a"];
+  const entry = { id: "flow:release", kind: "flow", workspaceId: "ws-release", tabId: null, label: "릴리스 준비",
+    registered: true, spec: null, startedMs: null, endedMs: null, paneIds: ["pane-release"],
+    sessionIds: memberIds, counts: { panes: 1, sessions: memberIds.length },
+    attribution: { reported: memberIds.length, inferred: 0, unlinked: 0 } };
+  const flowsDto = { generatedAt: 0, from: null, to: null, limit: 100, automated: "exclude", flows: [entry], nextCursor: null };
+  const h = host(t, `#/sessions?ws=${encodeURIComponent("flow:release")}`, { flows: async () => flowsDto });
+  await h.mount();
+  // Then: the facet lists the workspace as selected with its member count...
+  const chip = find(h.root, (node) => node.textContent === "릴리스 준비");
+  assert.ok(chip.closest("label")?.textContent.includes("2") || chip.parentElement?.textContent.includes("2"));
+  assert.ok(h.root.textContent.includes("세션 2개"));
+  // ...only member sessions render, each still linking to its detail peek.
+  const links = descendants(h.root).filter((node) => node.getAttribute("href")?.includes("peek="));
+  assert.equal(links.length, memberIds.length);
+  for (const id of memberIds) assert.ok(links.some((node) => decodeURIComponent(node.getAttribute("href")).includes(id)));
+  // And a live refresh keeps the filtered membership.
+  await h.refresh();
+  assert.equal(descendants(h.root).filter((node) => node.getAttribute("href")?.includes("peek=")).length, memberIds.length);
 });
 
 test("generic refresh replaces trace data without discarding its existing disclosure", async (t) => {
@@ -198,48 +206,6 @@ test("a healthy cloud event transport does not change an unended historical trac
   await h.state("live");
   // Then
   assert.equal(duration(), historicalDuration);
-});
-
-for (const rejectFirst of [false, true]) test(`generic refresh reconciles a workspace report and retains its disclosure${rejectFirst ? " through failure and recovery" : ""}`, async (t) => {
-  // Given
-  const server = await startTestServer();
-  t.after(() => server.stop());
-  const fixture = seedEvidence(server.skillarHome);
-  const response = await http(server.port, { path: `/api/flows/${fixture.flowId}`, headers: bearer(server.token) });
-  assert.equal(response.status, 200);
-  const report = response.json;
-  const h = host(t, `#/workspaces/${fixture.flowId}`, {
-    flowReport: async () => report,
-    workflowVersions: async () => (await http(server.port, {
-      path: `/api/workflows/${report.spec.name}/versions`, headers: bearer(server.token),
-    })).json,
-  });
-  await h.mount();
-  const disclosure = find(h.root, (node) => node.getAttribute("data-pane") !== undefined);
-  disclosure.open = false;
-  const replacement = Promise.withResolvers();
-  const selected = channel("new workspace report");
-  h.read("flowReport", () => { selected.push(true); return replacement.promise; });
-  // When
-  const refreshed = h.refresh();
-  await selected.take();
-  assert.ok(classed(h.root, "ws__title").textContent === report.label, "the previous report remains visible while its replacement loads");
-  if (rejectFirst) {
-    replacement.reject(new Error("fixture background report failure"));
-    await refreshed;
-    assert.ok(find(h.root, (node) => node.getAttribute("data-pane") !== undefined) === disclosure);
-    assert.equal(disclosure.open, false);
-    assert.ok(h.root.textContent.includes("fixture background report failure"));
-    h.read("flowReport", async () => ({ ...report, label: "updated workspace fixture" }));
-    await h.refresh();
-  } else {
-    replacement.resolve({ ...report, label: "updated workspace fixture" });
-    await refreshed;
-  }
-  // Then
-  assert.equal(classed(h.root, "ws__title").textContent, "updated workspace fixture");
-  assert.ok(find(h.root, (node) => node.getAttribute("data-pane") !== undefined) === disclosure);
-  assert.equal(disclosure.open, false);
 });
 
 test("bootstrap reconciles the final upload after head adoption and ignores the older pinned report completing last", async (t) => {

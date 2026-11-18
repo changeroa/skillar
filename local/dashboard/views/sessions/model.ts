@@ -19,7 +19,6 @@ export function sortSessions(rows: readonly SessionListRow[], sort: SessionSort 
     switch (field) {
       case "runtime": return RUNTIME_LABEL[row.runtime];
       case "reads": return readSkills(row).length;
-      case "duration": return row.endedAt === undefined ? undefined : row.endedAt - row.startedAt;
       default: return row.startedAt;
     }
   };
@@ -32,6 +31,5 @@ export function sortSessions(rows: readonly SessionListRow[], sort: SessionSort 
 }
 
 export const COLUMN_LABEL = {
-  started: "시작", runtime: "실행 환경", reads: "읽은 스킬", candidates: "후보",
-  duration: "길이", prompt: "첫 요청", search: "검색", load: "읽기", attribution: "세션 연결", id: "세션 ID",
+  started: "시작", runtime: "실행 환경", reads: "읽은 스킬", prompt: "첫 요청", search: "검색",
 } as const;
