@@ -206,10 +206,9 @@ test("missed-later link opens and focuses the actual folded turn", () => {
   const missed = attr(source, "data-missed-skill", "later-missed");
   const anchor = missed.querySelector("a");
   assert.equal(anchor.getAttribute("href"), "#turn-evidence-3");
-  const [type, listener] = Object.entries(anchor.listeners).find(([name]) => name.toLowerCase() === "click");
-  listener.call(anchor, { type, currentTarget: anchor, preventDefault() {} });
+  anchor.click();
   assert.equal(attr(target, "data-turn", "evidence-3").open, true);
-  assert.equal(target.querySelector("summary").focused, true);
+  assert.equal(globalThis.document.activeElement, target.querySelector("summary"));
   assert.equal(pane.open, true);
   assert.equal(outer.open, true);
 });

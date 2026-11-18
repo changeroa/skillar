@@ -99,7 +99,7 @@ const find = (root, predicate) => {
   return node;
 };
 const classed = (root, name) => find(root, (node) => (node.getAttribute("class") ?? "").split(" ").includes(name));
-const click = (node) => node.listeners.click.call(node, { type: "click", target: node, currentTarget: node });
+const click = (node) => node.click();
 
 test("cloud transport states have distinct accessible labels and recover their live label", async (t) => {
   // Given
@@ -144,9 +144,10 @@ test("a live update keeps the Sessions search node and its unsubmitted draft", a
   const h = host(t, "#/sessions");
   await h.mount();
   const input = find(h.root, (node) => node.getAttribute("id") === "session-search");
-  input.value = "unsubmitted fixture query";
+  const setValue = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set;
+  setValue.call(input, "unsubmitted fixture query");
   input.focus();
-  await ui.act(() => input.listeners.input?.call(input, { type: "input", target: input, currentTarget: input }));
+  await ui.act(() => input.dispatchEvent(new (input.ownerDocument.defaultView.Event)("input", { bubbles: true })));
   // When
   await h.refresh();
   // Then
