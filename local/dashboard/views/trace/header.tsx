@@ -41,7 +41,6 @@ export function Header({ sessionId, row, steps, backHref, embedded }: { readonly
       </a>
       <Title ref={heading} tabIndex={embedded ? -1 : undefined} className="trace__title">{sessionId}</Title>
       {bounds.startedAt !== undefined && <time dateTime={new Date(bounds.startedAt).toISOString()}>{dateTimeFmt.format(bounds.startedAt)}</time>}
-      {title && <details className="trace__prompt"><summary>첫 요청문 보기</summary><p className="tl__text">{title}</p></details>}
       <p className="trace__counts">{parts.join(" \u00b7 ")}</p>
     </header>
   );

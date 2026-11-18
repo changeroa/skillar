@@ -16,17 +16,6 @@ export function summaryFacts(steps: readonly TraceStep[]) {
   return { reads, modelCount: models.length, costCount: costs.length, cost: costs.reduce((sum, cost) => sum + cost, 0), unmeasuredSearches };
 }
 
-function FirstRequest({ prompt }: { readonly prompt: string }) {
-  const narrow = useNarrow(), [open, setOpen] = useState(false);
-  if (!narrow) return <details className="trace__prompt"><summary>첫 요청문 보기</summary><p className="tl__text">{prompt}</p></details>;
-  return <div className="trace__prompt">
-    <button className="foldbtn trace-first-request" aria-expanded={open} aria-controls="first-request-content" onClick={() => setOpen(value => !value)}>
-      <Icon name="down" />{open ? "접기" : "첫 요청문 보기"}
-    </button>
-    <p id="first-request-content" className="tl__text" hidden={!open}>{prompt}</p>
-  </div>;
-}
-
 export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref }: {
   readonly sessionId: string; readonly steps: TraceStep[]; readonly row?: SessionListRow;
   readonly peek: boolean; readonly embedded: boolean; readonly backHref: string;
@@ -44,14 +33,10 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
     { id: "reads", label: "읽은 스킬", value: `${facts.reads.length}개` },
     { id: "searches", label: "검색", value: <>{counts.searches}회{facts.unmeasuredSearches > 0 && <span> · 지연 시간 {facts.unmeasuredSearches}회 <span>측정 안 됨</span></span>}</> },
     { id: "errors", label: "오류", value: `${counts.errors}건` },
-    { id: "models", label: "모델 기록", value: `${facts.modelCount}회` },
-    { id: "cost", label: "비용", value: facts.costCount ? `${formatCost(facts.cost)} · ${facts.costCount}/${facts.modelCount} 측정` : "미측정" },
-    { id: "outcome", label: "작업 성공", value: "미측정" },
   ];
   return <header className="trace-summary" data-component="session-summary">
     {!peek && <a className="trace__back" href={backHref}><Icon name="chevron" className="trace-back-icon" />세션 목록</a>}
     <div className="trace-summary__title"><Title className="trace__title"><code>{sessionId}</code></Title>{!peek && <CopyButton value={sessionId} />}</div>
-    {prompt && <FirstRequest prompt={prompt} />}
     <dl className="trace-summary__line trace__meta" aria-label="세션 요약">
       {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt><dd>{fact.value}</dd></div>)}
     </dl>

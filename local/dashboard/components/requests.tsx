@@ -33,7 +33,6 @@ export function RequestDetails({ steps }: { steps: TraceStep[] }) {
   if (!records.length) return null;
   return <section className="card request-details" aria-label="검색 및 읽기 요청">
     <h2>검색 및 읽기 요청</h2>
-    <p className="dim">한 줄이 요청 하나입니다. 재시도는 따로 셉니다. '알 수 없음'은 결과가 관찰되지 않았다는 뜻이며, 실패를 뜻하지 않습니다.</p>
     <table><thead><tr><th scope="col">작업</th><th scope="col">상태</th><th scope="col">결과 / 사유</th><th scope="col">스킬</th></tr></thead>
       <tbody>{(expanded ? records : records.slice(0, 20)).map((r) => <tr key={r.id}>
         <td data-label="작업">{OPERATION_LABEL[r.operation]}</td><td data-label="상태"><span className={`badge badge--${r.status}`}>{STATE_LABEL[r.status]}</span></td>

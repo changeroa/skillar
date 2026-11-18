@@ -110,32 +110,8 @@ test("hiding prompt and ID columns retains a keyboard-accessible session link", 
   assert.equal(all(container, node => node.localName === "a" && node.getAttribute("href")?.includes("peek=")).length, 2);
 });
 
-test("formatted and raw inspect the same event while native argument state survives switches", async t => {
-  const step = { kind: "tool_call", ts: 100, summary: "Bash", detail: { kind: "tool_call", toolName: "Bash", args: "captured".repeat(200) } };
-  const source = ui.createTimelineKeys("event-session")([step]);
-  const route = { view: "trace", sessionId: "event-session", filter: { q: "scope" }, event: source[0].key, sort: "-reads" };
-  const props = { source, bounds: { startedAt: 100, lastTs: 100 }, route, navigate() {} };
-  const { container, show } = await mount(t, ui.EventConsole, props);
-  const original = all(container, node => node.localName === "details" && node.getAttribute("class") === "tl__args")[0];
-  await act(() => { original.open = true; });
-  await show({ ...props, route: { ...route, format: "raw" } });
-  const raw = all(container, node => node.hasAttribute("data-event-raw"))[0];
-  const branch = all(raw, node => node.localName === "details")[0];
-  await act(() => { branch.open = false; });
-  assert.deepEqual(all(raw, node => node.getAttribute("class") === "json-value").map(node => JSON.parse(node.textContent)),
-    [step.kind, step.ts, step.summary, step.detail.kind, step.detail.toolName, step.detail.args]);
-  assert.ok(all(container, node => node === original)[0]);
-  assert.equal(original.open, true);
-  await show({ ...props, route: { ...route, format: "formatted" } });
-  assert.equal(all(container, node => node.hasAttribute("data-event-raw"))[0], raw);
-  assert.equal(raw.parentNode.hidden, true);
-  assert.equal(all(raw, node => node.localName === "details")[0], branch);
-  assert.equal(branch.open, false);
-  assert.ok(all(container, node => node === original)[0]);
-  assert.equal(original.open, true);
-});
 
-test("tree/timeline selection retains event and filters and graph remains disabled", async t => {
+test("tree/timeline selection retains event and filters", async t => {
   const source = ui.createTimelineKeys("event-session")([{ kind: "prompt", ts: 100, summary: "captured", detail: { kind: "prompt", text: "captured" } }]);
   const route = { view: "trace", sessionId: "event-session", filter: { q: "scope" }, event: source[0].key };
   let next;
@@ -143,8 +119,6 @@ test("tree/timeline selection retains event and filters and graph remains disabl
   const timeline = all(container, node => node.getAttribute("data-view") === "timeline")[0];
   await act(() => timeline.click());
   assert.deepEqual(next, { ...route, traceTab: "timeline" });
-  const graph = all(container, node => node.getAttribute("aria-describedby") === "event-graph-reason")[0];
-  assert.equal(graph.disabled || graph.hasAttribute("disabled"), true);
 });
 
 test("event navigation keeps one tab stop and preserves rows between tree and grid", async t => {
@@ -215,15 +189,13 @@ test("Gantt zoom clips the displayed window without changing measured offsets or
   assert.deepEqual(ui.ganttViewport(graph, 1, 0).points.map(({ inView, ...point }) => point), graph.points);
 });
 
-test("shared peek tabs preserve list scope and leave graph disabled with its reason", async t => {
+test("shared peek tabs preserve list scope", async t => {
   const route = { view: "sessions", filter: { q: "captured", runtime: ["codex"] }, peek: "session", sort: "-reads", event: "immutable" };
   let next;
   const { container } = await mount(t, ui.EventViewTabs, { route, navigate(value) { next = value; }, prefix: "peek-event" });
   const buttons = all(container, node => node.localName === "button");
   await act(() => buttons.find(node => node.getAttribute("data-view") === "timeline").click());
   assert.deepEqual(next, { ...route, traceTab: "timeline" });
-  const graph = buttons.find(node => node.disabled);
-  assert.equal(graph.getAttribute("aria-describedby"), "peek-event-graph-reason");
   assert.equal(buttons.find(node => node.getAttribute("data-view") === "tree").getAttribute("aria-selected"), "true");
 });
 

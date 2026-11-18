@@ -16,8 +16,6 @@ export function EventViewTabs({ route, navigate, prefix = "event" }: Pick<ViewPr
       {(["tree", "timeline"] as const).map(value => <button key={value} id={`${prefix}-${value}-tab`} role="tab" className="pe-button"
         data-view={value} aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} aria-controls={`${prefix}-tree-panel`}
         onClick={() => navigate({ ...route, traceTab: value })}><Icon name={value} />{value === "tree" ? "트리" : "타임라인"}</button>)}
-      <button role="tab" className="pe-button" disabled aria-selected="false" aria-describedby={`${prefix}-graph-reason`}><Icon name="graph" />그래프</button>
     </div>
-    <p id={`${prefix}-graph-reason`} className="pe-muted event-graph-reason">인과관계 기록이 없어 그래프를 표시하지 않습니다.</p>
   </div>;
 }

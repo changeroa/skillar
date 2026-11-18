@@ -4,7 +4,6 @@ import type { SkillSpan, TraceStep } from "../../../src/types.js";
 import { CopyButton } from "../../components/copy-button";
 import { Icon } from "../../components/icons";
 import type { ViewProps } from "../../state";
-import { JsonViewer } from "../../components/json-viewer";
 
 export function EventInspector({ id, kind, title, value, selected, narrow, trigger, route, navigate, children }: Pick<ViewProps, "route" | "navigate"> & {
   readonly id: string; readonly kind: string; readonly title: string; readonly value: TraceStep | SkillSpan;
@@ -14,9 +13,6 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
   const panel = useRef<HTMLElement>(null);
   const open = selected && (!narrow || route.event !== undefined);
   const domId = encodeURIComponent(id);
-  const raw = route.format === "raw";
-  const rawVisited = useRef(false);
-  if (open && raw) rawVisited.current = true;
   const close = () => navigate({ ...route, event: undefined });
   useLayoutEffect(() => {
     if (!open || !narrow) return;
@@ -41,29 +37,8 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
       {narrow && <button className="pe-button" onClick={close}><Icon name="close" />이벤트 목록</button>}
     </header>
     {digest && <p className="event-inspector__digest">읽은 버전 <code data-read-digest>{digest}</code></p>}
-    <div className="event-inspector__tabs" role="tablist" aria-label="이벤트 내용" onKeyDown={event => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation();
-      const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-      const current = buttons.findIndex(button => button === event.target);
-      const next = event.key === "Home" ? 0 : event.key === "End" ? 1 : (current + 1) % 2;
-      buttons[next]?.focus(); buttons[next]?.click();
-    }}>
-      <button id={`${domId}-preview-tab`} role="tab" className="pe-button" aria-selected={!route.attributes} tabIndex={route.attributes ? -1 : 0}
-        aria-controls={`${domId}-content`} onClick={() => navigate({ ...route, attributes: undefined })}>미리보기</button>
-      <button id={`${domId}-attributes-tab`} role="tab" className="pe-button" aria-selected={Boolean(route.attributes)} tabIndex={route.attributes ? 0 : -1}
-        aria-controls={`${domId}-content`} onClick={() => navigate({ ...route, attributes: true })}>속성</button>
-    </div>
-    <div className="event-inspector__formats" role="group" aria-label="표시 형식">
-      <button className="pe-button" data-format="formatted" aria-pressed={!raw} onClick={() => navigate({ ...route, format: "formatted" })}>서식</button>
-      <button className="pe-button" data-format="raw" aria-pressed={raw} onClick={() => navigate({ ...route, format: "raw" })}>원문</button>
-    </div>
-    <div id={`${domId}-content`} role="tabpanel" aria-labelledby={`${domId}-${route.attributes ? "attributes" : "preview"}-tab`}>
-      <div className="event-inspector__preview" data-source-key={id} hidden={Boolean(route.attributes) || raw}>{children}</div>
-      {rawVisited.current && <div hidden={!raw}><JsonViewer value={value} /></div>}
-      {open && !raw && route.attributes && <dl className="event-attributes">{Object.entries(value).map(([key, item]) =>
-        <div key={key}><dt><code>{key}</code></dt><dd><CodeBlock value={typeof item === "string" ? item : JSON.stringify(item, null, 2) ?? ""}
-          language={typeof item === "string" ? "text" : "json"} label={key} /></dd></div>)}</dl>}
+    <div id={`${domId}-content`}>
+      <div className="event-inspector__preview" data-source-key={id}>{children}</div>
     </div>
   </section>;
 }
