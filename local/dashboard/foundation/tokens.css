@@ -63,7 +63,9 @@ html {
   --lf-accent-foreground: light-dark(hsl(240 3.7% 15.9%), hsl(0 0% 70%));
   --lf-destructive: light-dark(hsl(0 84.2% 60.2%), hsl(0 78.7% 63.1%));
   --lf-destructive-foreground: light-dark(hsl(0 0% 98%), hsl(0 0% 100%));
-  --lf-ring: light-dark(hsl(240 5% 64.9%), hsl(246 55% 70%));
+  /* Light stop darkened (was hsl(240 5% 64.9%), #a1a1aa ≈ 2.56:1 on white)
+     so default inset focus rings clear the 3:1 non-text floor. */
+  --lf-ring: light-dark(hsl(240 3.8% 46.1%), hsl(246 55% 70%));
   --lf-primary-accent: light-dark(hsl(243 75.4% 58.6%), hsl(246 55% 70%));
   --lf-primary-accent-fill: light-dark(var(--lf-primary-accent), oklch(50% 0.11 287));
   --lf-link: light-dark(hsl(246 40% 50%), hsl(246 55% 70%));
