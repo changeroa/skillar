@@ -9,7 +9,7 @@ export const DESTINATIONS: readonly { view: View; label: string; icon: IconName 
 ];
 
 export function destination(route: Route, view: View): Route {
-  return { ...route, view, sessionId: undefined, flowId: undefined, peek: undefined, event: undefined };
+  return { ...route, view, sessionId: undefined, peek: undefined, event: undefined };
 }
 
 export function CommandJump({ route, navigate, close }: {

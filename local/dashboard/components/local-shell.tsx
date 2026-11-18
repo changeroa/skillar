@@ -53,9 +53,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     return () => removeEventListener("keydown", key);
   }, [embedded]);
   if (embedded) return <>{children}</>;
-  // 삭제·병합되는 화면(흐름·활동·작업 공간)은 리다이렉트 목적지의 탭을 활성으로 표시한다.
-  const active = route.view === "trace" || route.view === "workspace" || route.view === "workspaces" ? "sessions"
-    : route.view === "flow" || route.view === "heatmap" ? "dashboard" : route.view;
+  const active = route.view === "trace" ? "sessions" : route.view;
   const label = DESTINATIONS.find(item => item.view === active)?.label ?? "페이지를 찾을 수 없습니다";
   const source = api.mode === "fixtures" ? "예시 기록" : "이 기기";
   const sourceInfo = <div className="pe-source"><strong>{source}</strong>
@@ -65,7 +63,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     icon={<Icon name={item.icon} />} />)}</>;
   const crumbs = [{ label: source, href: buildHash(destination(route, "sessions")) },
     { label, href: buildHash(destination(route, active)) },
-    ...((route.sessionId || route.flowId) ? [{ label: route.sessionId ?? route.flowId ?? "" }] : [])];
+    ...(route.sessionId ? [{ label: route.sessionId }] : [])];
   return <div className="pe-shell">
     <div id={narrow ? undefined : "app-navigation"} className="pe-sidebar">
     <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}

@@ -9,14 +9,9 @@ async function load(path) {
     bundle: true, write: false, format: "esm", platform: "browser", jsx: "automatic", jsxImportSource: "react", logLevel: "silent" });
   return import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 }
-const [bars, data, state, workspace, flow, clock, histogram] = await Promise.all([
-  load("dashboard/charts/bars.tsx"), load("dashboard/views/analysis-data.ts"), load("dashboard/state.ts"), load("dashboard/views/workspace/list.tsx"), load("dashboard/views/flow.tsx"), load("dashboard/time.ts"), load("dashboard/views/sessions/histogram.tsx"),
+const [bars, data, state, clock, histogram] = await Promise.all([
+  load("dashboard/charts/bars.tsx"), load("dashboard/views/analysis-data.ts"), load("dashboard/state.ts"), load("dashboard/time.ts"), load("dashboard/views/sessions/histogram.tsx"),
 ]);
-
-test("flow unit picker offers request units without the retired first-load unit", () => {
-  assert.deepEqual(flow.FLOW_UNITS, ["search_requests", "load_requests"]);
-  assert.ok(!flow.FLOW_UNITS.includes("first_load"));
-});
 
 test("grouped bars share baseline, width and scale, including zero ticks", () => {
   const result = bars.barGeometry([{ label: "a", values: [0, 2] }, { label: "b", values: [1, 2] }]);
@@ -28,8 +23,8 @@ test("grouped bars share baseline, width and scale, including zero ticks", () =>
 });
 
 test("analysis URLs round trip sort, facets, selection and request unit", () => {
-  const route = { view: "workspaces", filter: { from: 100, automated: "include" }, peek: "space/1",
-    analysisSort: "-sessions", analysisQuery: "release", facet: "flow", flowUnit: "load_requests", flowMode: "table" };
+  const route = { view: "sessions", filter: { from: 100, automated: "include" }, peek: "space/1",
+    analysisSort: "-sessions", analysisQuery: "release", facet: "flow" };
   assert.deepEqual(state.parseHash(state.buildHash(route)), route);
 });
 
@@ -96,8 +91,3 @@ test("fixture heatmap derives only the supplied sessions in the named timezone",
   assert.equal(result.colTotals.reduce((sum, n) => sum + n, 0), 1);
 });
 
-test("workspace sorting keeps unknown times last in either direction", () => {
-  const row = (id, startedMs) => ({ id, startedMs });
-  assert.deepEqual(workspace.sortWorkspaces([row("unknown", null), row("early", 1), row("late", 2)], "-started").map(row => row.id), ["late", "early", "unknown"]);
-  assert.deepEqual(workspace.sortWorkspaces([row("unknown", null), row("late", 2), row("early", 1)], "started").map(row => row.id), ["early", "late", "unknown"]);
-});

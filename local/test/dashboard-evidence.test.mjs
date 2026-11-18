@@ -23,31 +23,22 @@ export const mutations = {
   reads: ["read.eventId}", '"mutated"}'],
   readBasis: ["read.label}", '"unknown"}'],
   readPath: ['typeof event?.data.uri === "string" ? event.data.uri', 'typeof event?.data.uri === "string" ? "mutated"'],
-  sharedCost: ["known.reduce((sum, cost) => sum + cost, 0)", "spans.reduce((sum, span) => sum + (span.costUsd ?? 0), 0)"],
-  distinctCost: ["known.reduce((sum, cost) => sum + cost, 0)", "known[0]"],
-  unknownCost: ["known.length === costs.size", "true"],
-  callIdentity: ["event.callId ?? event.id", "event.id"],
-  eventIdentity: ["event.callId ?? event.id", "event.callId"],
-  matchingMode: ['specStep.together ? "together" : "alternatives"', 'specStep.together ? "alternatives" : "together"'],
-  window: ['data-session-window="outside"', 'data-session-window="inside"'],
-  lifecycle: ['? "end_not_observed" : "unknown"', '? "in_progress" : "in_progress"'],
   unresolvedCount: ["data-unattributed-count={loads.count}", "data-unattributed-count={0}"],
   unresolvedUris: ["loads.uris.map", "[].map"],
-  uncertainStep: ["uncertain && step.panes.length > 0", "false"],
 };
 
 const mutation = process.env.SKILLAR_DASHBOARD_MUTATION;
 const reword = process.env.SKILLAR_DASHBOARD_REWORD === "1";
 const bundled = await build({
   stdin: {
-    contents: 'export * from "./dashboard/views/workspaces.tsx"; export * from "./dashboard/components/skill-evidence.tsx"; export {createElement as h} from "react"; export {render} from "./dashboard/react-mount";',
+    contents: 'export * from "./dashboard/components/skill-evidence.tsx"; export {createElement as h} from "react"; export {render} from "./dashboard/react-mount";',
     resolveDir: fileURLToPath(PACKAGE_ROOT), loader: "tsx",
   },
   bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react", logLevel: "silent",
   plugins: mutation || reword ? [{
     name: "regression-mutation",
     setup(build) {
-      build.onLoad({ filter: /(?:workspaces|skill-evidence)\.tsx$/ }, async ({ path }) => {
+      build.onLoad({ filter: /skill-evidence\.tsx$/ }, async ({ path }) => {
         const replacements = mutation ? [mutations[mutation]] : [
           ['"not in results (or no preceding search)"', '"absent from the preceding search"'],
           ['"next prompt text not captured"', '"following prompt content unavailable"'],
@@ -67,9 +58,8 @@ const bundled = await build({
 // Load before installing the DOM: view-local styles are a browser concern.
 const ui = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString("base64")}`);
 const newRoot = installDom();
-let server, fixture, report, workspaceReport, versions;
+let server, fixture, report;
 const reports = {};
-const costReports = {};
 before(async () => {
   server = await startTestServer();
   fixture = seedEvidence(server.skillarHome);
@@ -79,10 +69,7 @@ before(async () => {
     return response.json;
   };
   report = await get(`/api/flows/${fixture.flowId}`);
-  workspaceReport = await get("/api/flows/ws:evidence-ws");
-  versions = await get("/api/workflows/evidence-spec/versions");
   for (const [key, id] of Object.entries(fixture.ids)) reports[key] = await get(`/api/sessions/${id}/skill-report`);
-  for (const [key, id] of Object.entries(fixture.costFlows)) costReports[key] = await get(`/api/flows/${id}`);
 });
 after(async () => { if (server) await server.stop(); delete globalThis.document; delete globalThis.HTMLDetailsElement; });
 
@@ -99,44 +86,6 @@ function attr(root, name, value) {
 const finding = (index = 0) => reports.evidence.finding.turns[index];
 const findingView = (index = 0) => render(ui.FindingEvidence, { finding: finding(index) });
 
-test("a real scoped flow report renders an unended session without inventing termination", (t) => {
-  // Given the API's actual execution slice, not the workspace's unscoped session.
-  const link = report.tree.tabs.flatMap((tab) => tab.panes.flatMap((pane) => pane.sessions))
-    .find((item) => item.sessionId === fixture.ids.evidence);
-  assert.ok(link?.session);
-  assert.equal(reports.evidence.endedAt, null);
-  // When the same Session component used by the dashboard renders that slice.
-  const root = render(ui.Session, { link, session: link.session, flow: report.flow,
-    route: { view: "workspaces", filter: {} }, findings: new Map(), usageBySpan: new Map() });
-  t.after(() => ui.render(null, root));
-  // Then the semantic status remains unobserved, although the analysis interval ended.
-  assert.equal(link.session.endedAt, null);
-  attr(root, "data-session-status", "end_not_observed");
-});
-
-test("a real scoped report still renders a genuinely observed session end", async (t) => {
-  // Given a real termination event strictly inside the execution, delivered late.
-  const { openDb } = await distImport("store/db.js");
-  const { createStore } = await distImport("store/index.js");
-  const store = createStore(openDb(join(server.skillarHome, "skillar.db")));
-  const endedAt = report.flow.endedMs - 1;
-  try {
-    store.append({ id: "observed-end-control", kind: "session_end", source: "hook", ts: endedAt,
-      ref: { runtime: "claude-code", runtimeSessionId: "evidence" }, data: {} },
-    { sessionId: fixture.ids.evidence, method: "runtime_id" });
-  } finally { store.close(); }
-  // When the actual API slice is rendered through Session.
-  const result = await http(server.port, { path: `/api/flows/${fixture.flowId}`, headers: bearer(server.token) });
-  assert.equal(result.status, 200);
-  const link = result.json.tree.tabs[0].panes[0].sessions[0];
-  const root = render(ui.Session, { link, session: link.session, flow: result.json.flow,
-    route: { view: "workspaces", filter: {} }, findings: new Map(), usageBySpan: new Map() });
-  t.after(() => ui.render(null, root));
-  // Then the observed end survives separately from the later analysis boundary.
-  assert.equal(link.session.endedAt, endedAt);
-  assert.equal(link.session.executionWindow.to, report.flow.endedMs);
-  attr(root, "data-session-status", "ended");
-});
 function usageView(name, index = 0) {
   const session = reports.evidence;
   const turn = session.tree.turns[index];
@@ -190,29 +139,6 @@ test("out-of-results use does not invent a rank", () => {
   assert.equal(node.getAttribute("data-rank"), "not_in_results");
   assert.equal(node.getAttribute("data-via"), "load");
 });
-test("missed-later link opens and focuses the actual folded turn", () => {
-  const session = reports.evidence;
-  const index = ui.reportIndex({ finding: { sessions: [session.finding] }, usage: { sessions: [session.usage] } });
-  const target = render(ui.Turn, { turn: session.tree.turns[2], index: 2, finding: finding(2), usageBySpan: index.usageBySpan, open: false });
-  const pane = document.createElement("details");
-  const outer = document.createElement("details");
-  // Extend only the small test DOM's missing native surface; the real handler runs unchanged.
-  const proto = Object.getPrototypeOf(pane);
-  Object.defineProperty(proto, "parentElement", { configurable: true, get() { return this.parentNode; } });
-  proto.scrollIntoView = function () { this.scrolled = true; };
-  outer.appendChild(pane);
-  pane.appendChild(target);
-  document.body.appendChild(outer);
-  const source = findingView();
-  const missed = attr(source, "data-missed-skill", "later-missed");
-  const anchor = missed.querySelector("a");
-  assert.equal(anchor.getAttribute("href"), "#turn-evidence-3");
-  anchor.click();
-  assert.equal(attr(target, "data-turn", "evidence-3").open, true);
-  assert.equal(globalThis.document.activeElement, target.querySelector("summary"));
-  assert.equal(pane.open, true);
-  assert.equal(outer.open, true);
-});
 test("correction status exposes matched terms and heuristic basis", () => {
   const node = attr(usageView("lower"), "data-correction", "correction");
   assert.equal(node.getAttribute("data-basis"), "heuristic");
@@ -242,66 +168,4 @@ test("heuristic supporting read shows the tool argument and event", () => {
   const node = attr(root, "data-read", read.eventId);
   assert.equal(node.getAttribute("data-basis"), "heuristic");
   assert.match(node.textContent, /\/skills\/native-before\/reference\.md/);
-});
-
-function costView(key) {
-  return render(ui.Header, { report: costReports[key], backHref: "#/workspaces", onRefresh() {}, busy: false });
-}
-test("flow header charges one 0.02 model call once for two co-active spans", () => {
-  assert.match(costView("shared").textContent, /비용 \$0\.0200/);
-  const session = reports.shared;
-  assert.deepEqual(session.usage.spans.map((span) => span.costUsd), [0.02, 0.02]);
-  for (const span of session.tree.turns[0].skillSpans) {
-    const node = render(ui.Span, { span, usage: session.usage.spans.find((item) => item.spanId === span.id) });
-    attr(node, "data-shared-cost", "true");
-    assert.match(node.textContent, /비용 \$0\.0200/);
-  }
-});
-test("flow header adds two distinct model call costs exactly once", () => {
-  assert.match(costView("distinct").textContent, /비용 \$0\.0500/);
-});
-test("flow header preserves unknown cost for any unreported relevant call", () => {
-  assert.match(costView("unknown").textContent, /비용 알 수 없음/);
-});
-test("flow header counts model calls without active skills", () => {
-  assert.match(costView("unskilled").textContent, /비용 \$0\.0400/);
-});
-test("flow header deduplicates repeated observations by model call identity", () => {
-  assert.match(costView("repeated").textContent, /비용 \$0\.0200/);
-});
-test("flow header uses event identity when model call IDs are absent", () => {
-  assert.match(costView("event-only").textContent, /비용 \$0\.0500/);
-});
-test("step cards render together and alternative modes from the exact spec version", () => {
-  const spec = versions.find((item) => item.version === report.spec.version);
-  for (const [i, mode] of ["together", "alternatives"].entries()) {
-    const step = report.comparison.steps[i];
-    attr(render(ui.StepRow, { step, specStep: spec.steps.find((item) => item.id === step.stepId) }), "data-skill-mode", mode);
-  }
-});
-test("unresolved loads qualify a mapped step's non-use without hiding an unmapped step", () => {
-  // Given uncertainty and an otherwise empty mapped step.
-  const step = { ...report.comparison.steps[0], usedSkills: [], status: "no_skill_used" };
-  // When the actual step component renders mapped and unmapped variants.
-  const mapped = render(ui.StepRow, { step, uncertain: true });
-  const unmapped = render(ui.StepRow, { step: { ...step, panes: [], status: "not_run" }, uncertain: true });
-  // Then missing attribution is unknown, but an absent mapping remains a known not-run result.
-  attr(mapped, "data-step-attribution", "uncertain");
-  assert.equal(descendants(unmapped).some((node) => node.getAttribute("data-step-attribution") === "uncertain"), false);
-  attr(unmapped, "data-status", "not_run");
-});
-test("pane history and missing ends stay distinct from the registered execution", () => {
-  const pane = workspaceReport.tree.tabs[0].panes[0];
-  const link = pane.sessions.find((item) => item.agentSessionValue === "earlier");
-  assert.ok(link, "implicit workspace retains the earlier pane session");
-  assert.equal(report.tree.tabs[0].panes[0].sessions.some((item) => item.sessionId === link.sessionId), false);
-  const props = { session: link.session, link, route: { filter: {} }, findings: new Map(), usageBySpan: new Map() };
-  const ended = render(ui.Session, { ...props, flow: report.flow });
-  const header = render(ui.Header, { report, backHref: "#/workspaces", onRefresh() {}, busy: false });
-  assert.equal(descendants(header).some((node) => node.getAttribute("data-pane-history") === "true"), false);
-  attr(ended, "data-session-window", "outside");
-  attr(ended, "data-session-status", "end_not_observed");
-  attr(render(ui.Session, { ...props, newerSession: true }), "data-session-status", "end_not_observed");
-  attr(render(ui.Session, { ...props, paneClosed: true }), "data-session-status", "end_not_observed");
-  attr(render(ui.Session, props), "data-session-status", "unknown");
 });
