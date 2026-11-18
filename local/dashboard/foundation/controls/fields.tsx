@@ -1,5 +1,6 @@
 import type {JSX, Ref} from "react";
 import { useId, useRef, useState } from "react";
+import { TextInput as AxTextInput } from "@astryxdesign/core/TextInput";
 import { Glyph, type ControlIcon } from "./icons";
 
 type InputAttributes = Omit<React.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
@@ -44,30 +45,14 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   readonly onSubmit: (value: string) => void; readonly placeholder?: string;
   readonly disabled?: boolean; readonly id?: string; readonly size?: "default" | "large";
 }) {
-  const generatedId = useId();
-  const inputId = id ?? generatedId;
+  // Astryx TextInput: Enter submission is IME-safe inside the component, and
+  // its clear button returns focus to the field. onEnter passes no value, so
+  // submit the live field value (tests set input.value directly).
   const ref = useRef<HTMLInputElement>(null);
-  return <div className="lf-field">
-    <label htmlFor={inputId}>{label}</label>
-    <div className={`lf-search lf-search--${size}`} data-disabled={disabled}>
-      <button type="button" aria-label={`${label} 실행`} disabled={disabled} onClick={() => onSubmit(value)}>
-        <Glyph name="search" />
-      </button>
-      <input ref={ref} id={inputId} type="search" value={value} disabled={disabled} placeholder={placeholder}
-        onInput={event => onChange(event.currentTarget.value)}
-        onKeyDown={event => {
-          if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-            event.preventDefault();
-            onSubmit(event.currentTarget.value);
-          }
-        }} />
-      {value !== "" && <button type="button" aria-label={`${label} 지우기`} disabled={disabled}
-        onMouseDown={event => event.preventDefault()}
-        onClick={() => { onChange(""); ref.current?.focus(); }}>
-        <Glyph name="close" />
-      </button>}
-    </div>
-  </div>;
+  return <AxTextInput ref={ref} type="search" id={id} label={label} value={value}
+    onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
+    size={size === "large" ? "lg" : "md"} hasClear enterKeyHint="search"
+    onEnter={() => onSubmit(ref.current?.value ?? value)} />;
 }
 
 /** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */

@@ -124,12 +124,16 @@ test("search clear empties the controlled value and restores field focus", async
     return h(SearchInput, { label: "Search", value, onChange: setValue, onSubmit() {} });
   }
   const { container, dom } = await mount(t, Search, {});
+  // Astryx TextInput owns the clear button (no separate submit button: Enter
+  // submits, IME-safe). It is the only button and disappears once empty.
+  const clear = byTag(container, "button")[0];
+  assert.ok(clear.getAttribute("aria-label"), "clear button has an accessible name");
   // When
-  await act(() => byTag(container, "button")[1].click());
+  await act(() => clear.click());
   // Then
   assert.equal(byTag(container, "input")[0].value, "");
   assert.equal(dom.activeElement, byTag(container, "input")[0]);
-  assert.equal(byTag(container, "button").length, 1);
+  assert.equal(byTag(container, "button").length, 0);
 });
 
 test("select reports native changes and retains disabled options", async t => {
