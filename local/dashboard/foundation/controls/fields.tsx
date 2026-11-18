@@ -72,8 +72,8 @@ export function TextInput({ label, value, onChange, placeholder, id, type = "tex
   // the command-palette combobox, which TextInput cannot express.
   return <div className="lf-field">
     <AxTextInput type={type} id={id} label={label} value={value} width="100%"
-      onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
-      size={size === "large" ? "lg" : "md"} hasClear />
+      onChange={next => onChange(next)} {...(placeholder !== undefined ? { placeholder } : {})}
+      isDisabled={disabled} size={size === "large" ? "lg" : "md"} hasClear />
   </div>;
 }
 
