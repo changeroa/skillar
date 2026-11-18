@@ -19,7 +19,7 @@ else {
 if (arg('--save-inventory')) await writeFile(arg('--save-inventory'), JSON.stringify(documents, null, 2) + '\n');
 const search = arg('--implementation') ? (await import(pathToFileURL(resolve(arg('--implementation'))))).searchSkills : searchSkills;
 const mode = arg('--mode') ?? 'discovery';
-const cases = JSON.parse(await readFile(new URL('search-cases.json', import.meta.url), 'utf8'));
+const cases = JSON.parse(await readFile(arg('--cases') ? resolve(arg('--cases')) : new URL('search-cases.json', import.meta.url), 'utf8'));
 const rows = cases.map(c => {
   const found = search(documents, c.query, mode);
   const rank = found.findIndex(d => c.expected.includes(d.name)) + 1;

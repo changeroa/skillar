@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createCodexBridge } from "../dist/codex.js";
@@ -125,4 +126,19 @@ test("natural requests rank subject evidence, preserve identity and abstain on i
   docs[1].keywords = ['독립 주제']; docs[1].description = '완전히 다른 내용';
   assert.equal(searchSkills(docs, '일정 의존성', 'discovery').length, 0, 'metadata updates must not reuse an old index');
   assert.equal(searchSkills(docs, '독립 주제', 'discovery')[0].name, 'report');
+});
+
+test("versioned metadata covers DB and screen-reader Korean aliases without changing canonical URIs or legacy matching", async () => {
+  const catalog = JSON.parse(await readFile(new URL('../bench/catalog.json', import.meta.url), 'utf8'));
+  const expected = new Map([
+    ['디비 병목을 찾아줘', 'skill://fixture/demo/database-query/SKILL.md'],
+    ['DB 병목 query plan을 점검해줘', 'skill://fixture/demo/database-query/SKILL.md'],
+    ['스크린리더 레이블을 점검해줘', 'skill://fixture/demo/accessibility-check/SKILL.md'],
+    ['screen reader 스크린리더 label을 검토해줘', 'skill://fixture/demo/accessibility-check/SKILL.md'],
+  ]);
+  for (const [query, uri] of expected) {
+    assert.equal(searchSkills(catalog, query, 'discovery')[0]?.uri, uri, query);
+    assert.deepEqual(searchSkills(catalog, query, 'legacy'), [], `${query}: legacy still requires every literal word`);
+  }
+  assert.equal(searchSkills(catalog, 'screen reader labels', 'discovery')[0]?.uri, 'skill://fixture/demo/accessibility-check/SKILL.md');
 });
