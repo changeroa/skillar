@@ -30,7 +30,7 @@ PR-2 (Astryx 디자인 시스템 재구축)의 토큰 이행 계획.
 | `--lf-card` | `--color-background-card` | |
 | `--lf-popover` / `--lf-modal` | `--color-background-popover` | |
 | `--lf-border` / `--lf-input` | `--color-border` | |
-| `--lf-border-contrast` | `--color-border-emphasized` | |
+| `--lf-border-contrast` | `--color-border-emphasized` | checkbox indicator는 테마 오버라이드로 `light[60] #919191` / `dark[45] #6a6a6a` 사용 — dark[45]는 기존 dark[35] `#525252`(2.28:1)가 3:1 미달이라 전체 팔레트에서 3:1을 넘는 가장 가까운 스톱으로 추가 (실측 3.29:1) |
 | `--lf-muted-foreground` / `--lf-icon-foreground` | `--color-icon-secondary` | |
 | `--lf-overlay-backdrop` | `--color-overlay` | hover/pressed는 `--color-overlay-hover/pressed` |
 | `--lf-ring` | `--shadow-inset-selected` 계열 | ⚠ Astryx 포커스는 inset shadow 방식 (D-4) |

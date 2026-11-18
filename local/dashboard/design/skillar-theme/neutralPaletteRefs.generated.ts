@@ -1,5 +1,8 @@
-// Generated from the committed full palette for the stops used by Neutral's
-// theme source. Regenerate with `pnpm generate:neutral-palette-refs`.
+// Manually maintained subset of the full palette, covering the stops
+// Neutral's theme source actually uses. The source of truth is
+// palette.config.json (generated snapshot: neutralPalettes.generated.ts);
+// there is no regeneration script in this repo, so when palette.config.json
+// changes, update this file by hand to stay in sync with it.
 // Keep the complete palette available for authoring and audits without
 // making consumers pay for unused palette stops.
 // prettier-ignore
