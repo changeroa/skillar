@@ -58,7 +58,12 @@ const ATOMIC = /^(?:x[0-9a-z]{5,8}|astryx-[\w-]+)$/;
 function keepRule(rule, corpus) {
   const brace = rule.indexOf("{");
   if (brace < 0) return true;
-  const classes = ruleClasses(rule.slice(0, brace));
+  const selector = rule.slice(0, brace);
+  // Theme/token carriers are always preserved: a `:root,.xHash { --token... }`
+  // rule is how Astryx ships theme values, and the class half can be applied
+  // dynamically by scoped theming even when the JS corpus never names it.
+  if (/(^|[\s,]):root([\s,]|$)/.test(selector)) return true;
+  const classes = ruleClasses(selector);
   if (!classes.length) return true; // html/[data-...] selectors
   if (classes.some(name => !ATOMIC.test(name))) return true; // named class: preserve
   return classes.some(name => corpus.includes(name));

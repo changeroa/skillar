@@ -76,6 +76,24 @@ test("rules without class selectors are always kept", async t => {
   assert.ok(out.includes('[data-theme="dark"] .lf-surface'));
 });
 
+test("theme/token carrier rules (:root,.xHash) are preserved even when unreferenced", async t => {
+  const { out } = await runPrune(t, {
+    css: `:root,.xabc1234 { --color-accent: blue; }\n.xdef5678 { color: red; }\n`,
+    js: "",
+  });
+  assert.ok(out.includes(":root,.xabc1234"), "theme token carrier kept");
+  assert.ok(!out.includes(".xdef5678"), "ordinary atomic class still pruned");
+});
+
+test("every :root theme rule in the vendored Astryx stylesheet survives pruning", async t => {
+  const srcPath = new URL("../dashboard/design/astryx-vendor/astryx.css", import.meta.url);
+  const src = await readFile(srcPath, "utf8");
+  const themeRules = [...src.matchAll(/:root,[^{]+\{[^}]+\}/g)].map(match => match[0]);
+  assert.ok(themeRules.length > 0, "vendored stylesheet has :root theme rules");
+  const { out } = await runPrune(t, { css: src, js: "" });
+  for (const rule of themeRules) assert.ok(out.includes(rule), `theme rule preserved: ${rule.slice(0, 60)}`);
+});
+
 test("an atomic class referenced only in static HTML survives", async t => {
   const { out } = await runPrune(t, {
     css: `.xabc1234 { color: red; }\n`,
