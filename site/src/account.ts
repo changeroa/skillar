@@ -185,7 +185,8 @@ if (sessionStatus || accountLines.length || landingActions || shellAccount) {
       return;
     }
     if (result.kind === 'signed-out') {
-      sessionStatus.textContent = '로그인하지 않았습니다.';
+      // declutter login-1: the Google button already says the state.
+      sessionStatus.textContent = '';
     } else if (result.kind === 'unreachable') {
       sessionStatus.textContent = '계정 서비스에 연결할 수 없습니다. 연결을 확인하고 새로고침해 로그인 상태를 확인하세요.';
     } else {
