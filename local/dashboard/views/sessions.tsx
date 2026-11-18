@@ -152,7 +152,7 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   const [facetsOpen, setFacetsOpen] = useState(false);
   const narrow = useNarrow();
   const [stats, setStats] = useState<Stats>();
-  const [flows, setFlows] = useState<FlowListEntry[]>();
+  const [flows, setFlows] = useState<readonly FlowListEntry[]>();
   const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(true);

@@ -47,7 +47,7 @@ export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" 
       <tbody>{rows.map(row => <TableRow key={row.id} data-session-id={row.id} selected={route.peek === row.id}
         onOpen={() => navigate(select(row))}>
         {columns.map((column, index) => <td key={column} className={`cell-${column}`} data-label={COLUMN_LABEL[column]}>
-          {index === 0 && !columns.includes("prompt") && !columns.includes("id")
+          {index === 0 && !columns.includes("prompt")
             ? <a className="rowlink" href={buildHash(select(row))}>{cell(row, column)}</a> : cell(row, column)}
         </td>)}
       </TableRow>)}</tbody>
