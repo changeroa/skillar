@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { act } from "preact/test-utils";
+import { act } from "./helpers/t10-dom.mjs";
 import { createPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
 import { routes } from "../src/skills/api.ts";
 import { loadViews, mount } from "./helpers/t10-dom.mjs";
@@ -151,6 +151,8 @@ test("Enter inside the confirmation field never deletes, and the field sits outs
 test("a version confirmation arms only for that version's digest prefix and deletes exactly that version at the current head", async t => {
   // Given
   const { dom, api, container, changed } = await mountPanel(t);
+  await act(() => dom.getElementById("skill-detail-tab-versions").click());
+  assert.equal(dom.getElementById("skill-detail-tab-versions").getAttribute("aria-selected"), "true");
   const rows = () => classed(container, "version");
   const [current, old] = rows();
   assert.equal(rows().length, 2);
@@ -178,6 +180,8 @@ test("opening one confirmation closes another, so at most one deletion is ever a
   // Given
   const { dom, container } = await mountPanel(t);
   await act(() => dom.getElementById("skill-delete").click());
+  await act(() => dom.getElementById("skill-detail-tab-versions").click());
+  assert.equal(dom.getElementById("skill-detail-tab-versions").getAttribute("aria-selected"), "true");
   assert.ok(dom.getElementById(skillField));
   // When
   await act(() => dom.getElementById(olderTrigger).click());

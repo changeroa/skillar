@@ -130,7 +130,7 @@ test("select reports native changes and retains disabled options", async t => {
   await input(byTag(container, "select")[0], "b", "change");
   // Then
   assert.equal(chosen, "b");
-  assert.equal(byTag(container, "option")[3].getAttribute("disabled"), "true");
+  assert.equal(byTag(container, "option")[3].disabled, true);
 });
 
 test("compact select retains a native popup and decorative double chevron", async t => {

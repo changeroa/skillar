@@ -1,9 +1,10 @@
+// fake-dom must evaluate first: it installs the global document react-dom probes at load.
+import { all, byTag, buttonNamed, FakeEvent, installFakeDom, waitFor } from "./fake-dom.mjs";
 import { build } from "esbuild";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createElement as h, act } from "react";
 import { createRoot } from "react-dom/client";
-import { all, byTag, buttonNamed, FakeEvent, installFakeDom, waitFor } from "./fake-dom.mjs";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 

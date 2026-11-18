@@ -55,7 +55,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
           <text x={x(layout.left - 12)} y={layout.baseline + 4} textAnchor="end">0</text>
           <text x={x(layout.left - 12)} y={layout.top + 4} textAnchor="end">{layout.max}</text>
           {line ? data.series.map((series, seriesIndex) =>
-            <g key={series.label} className={`lf-chart__series lf-chart__series--${seriesIndex % 8 + 1}`} style={hidden.includes(seriesIndex) ? { display: "none" } : undefined}>
+            <g key={series.label} className={`lf-chart__series lf-chart__series--${seriesIndex % 8 + 1}`} {...({ hidden: hidden.includes(seriesIndex) || undefined } as unknown as React.SVGProps<SVGGElement>)}>
               <svg width="100%" height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`}
                 preserveAspectRatio="none" aria-hidden="true">
                 <path fill="none" d={series.values.map((value, index, values) => value === null ? "" :
@@ -77,7 +77,7 @@ function Chart({ title, data, kind, height }: ChartProps & { readonly kind: "bar
             layout.bars.map((bar, index) => {
               const text = describe(bar.label, bar.series, bar.value);
               return <g key={index} className={`lf-chart__series lf-chart__series--${bar.seriesIndex % 8 + 1}`}
-                style={hidden.includes(bar.seriesIndex) ? { display: "none" } : undefined} tabIndex={bar.value === null ? undefined : 0}
+                {...({ hidden: hidden.includes(bar.seriesIndex) || undefined } as unknown as React.SVGProps<SVGGElement>)} tabIndex={bar.value === null ? undefined : 0}
                 role={bar.value === null ? undefined : "img"} data-chart-point={bar.value !== null || undefined} aria-label={bar.value === null ? undefined : text}
                 aria-describedby={tooltip === text ? `${id}-tooltip` : undefined}
                 onFocus={() => setFocused({ label: bar.label, series: bar.series })} onBlur={() => setFocused(null)}

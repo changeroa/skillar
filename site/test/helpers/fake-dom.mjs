@@ -1,7 +1,7 @@
 // A small jsdom-backed DOM harness for rendering React components under node:test without a browser.
 // (Replaces the previous hand-rolled fake DOM, which only supported the old renderer.)
 
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { FakeEvent } from "./fake-event.mjs";
 
 // Node's own Event/EventTarget, captured before jsdom's globals are installed. Tests also
@@ -10,18 +10,45 @@ const NodeEvent = globalThis.Event;
 const NodeEventTarget = globalThis.EventTarget;
 export { FakeEvent };
 
+// React evaluates canUseDOM and input-event support once at module load, so a global
+// document must exist before react-dom is imported. Install one at module evaluation;
+// tests then get fresh documents from installFakeDom as before.
+installFakeDom();
+
 /** Installs a fresh jsdom document as the global React renders into and returns it. */
 export function installFakeDom() {
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on("jsdomError", error => {
+    // Surface listener exceptions that jsdom would otherwise swallow silently.
+    const original = error.detail?.detail ?? error.detail ?? error;
+    console.error("jsdom listener error:", original && original.cause ? original.cause.stack : original?.detail?.stack ?? original?.stack ?? original);
+  });
   const dom = new JSDOM("<!doctype html><html><head></head><body></body></html>", {
     url: "https://skillar.sh/skills/",
     pretendToBeVisual: true,
+    virtualConsole,
   });
   const { window } = dom;
-  globalThis.window = window;
+  // Browsers expose GlobalEventHandlers on Document; jsdom does not. React probes
+  // "oninput" in document once to decide its modern change-event path.
+  if (!("oninput" in window.document)) {
+    Object.defineProperty(window.document, "oninput", { value: null, writable: true, configurable: true });
+  }
+  // Tests may install their own window/location/history/matchMedia doubles before mounting;
+  // only replace globals that are unset or still owned by a previous installFakeDom call.
+  const HARNESS = "__skillarHarness";
+  const setGlobal = (key, value) => {
+    const current = globalThis[key];
+    if (current === undefined || current === null || current[HARNESS] === true) {
+      try { value[HARNESS] = true; } catch { /* non-extensible */ }
+      globalThis[key] = value;
+    }
+  };
+  setGlobal("window", window);
   const globals = ["document", "Element", "Node", "HTMLElement", "HTMLInputElement", "HTMLTextAreaElement",
     "HTMLButtonElement", "HTMLSelectElement", "HTMLAnchorElement", "HTMLFormElement", "SVGElement", "SVGSVGElement",
     "Event", "KeyboardEvent", "MouseEvent", "PointerEvent", "CustomEvent", "InputEvent", "FocusEvent",
-    "SubmitEvent", "MutationObserver", "history", "navigator", "getComputedStyle", "DocumentFragment", "Text", "Comment",
+    "SubmitEvent", "MutationObserver", "navigator", "getComputedStyle", "DocumentFragment", "Text", "Comment",
     "XMLSerializer", "DOMParser", "NodeFilter", "Range", "File", "Blob", "FormData", "CustomEvent",
     "requestAnimationFrame", "cancelAnimationFrame", "Document", "HTMLDialogElement"];
   for (const key of globals) {
@@ -29,19 +56,34 @@ export function installFakeDom() {
       try { globalThis[key] = window[key]; } catch { /* read-only global */ }
     }
   }
+  setGlobal("matchMedia", window.matchMedia);
+  setGlobal("location", window.location);
+  setGlobal("history", window.history);
   // Polyfills for browser APIs jsdom lacks but components and tests touch.
   if (!window.matchMedia) window.matchMedia = query => ({
     matches: false, media: query, onchange: null,
     addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
     dispatchEvent: () => false,
   });
-  globalThis.matchMedia = window.matchMedia;
   if (!window.Element.prototype.scrollIntoView) window.Element.prototype.scrollIntoView = function scrollIntoView() {};
   if (window.HTMLDialogElement) {
     if (!window.HTMLDialogElement.prototype.showModal) window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
     if (!window.HTMLDialogElement.prototype.show) window.HTMLDialogElement.prototype.show = function show() { this.open = true; };
     if (!window.HTMLDialogElement.prototype.close) window.HTMLDialogElement.prototype.close = function close() { this.open = false; };
   }
+  // Browsers fire focusin/focusout alongside focus/blur; jsdom's manual dispatch does not.
+  const rawDispatch = window.EventTarget.prototype.dispatchEvent;
+  window.EventTarget.prototype.dispatchEvent = function dispatchEvent(event) {
+    const result = rawDispatch.call(this, event);
+    if (event.type === "focus") rawDispatch.call(this, new window.FocusEvent("focusin", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (event.type === "blur") rawDispatch.call(this, new window.FocusEvent("focusout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    // React derives enter/leave from over/out; pair the synthetic enter/leave the way a browser visit does.
+    if (/^mouseenter$/i.test(event.type)) rawDispatch.call(this, new window.MouseEvent("mouseover", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^mouseleave$/i.test(event.type)) rawDispatch.call(this, new window.MouseEvent("mouseout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^pointerenter$/i.test(event.type)) rawDispatch.call(this, new window.PointerEvent("pointerover", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    else if (/^pointerleave$/i.test(event.type)) rawDispatch.call(this, new window.PointerEvent("pointerout", { bubbles: true, relatedTarget: event.relatedTarget ?? null }));
+    return result;
+  };
   // Record listener registrations so tests can inspect what a component wired up.
   const originalAdd = window.EventTarget.prototype.addEventListener;
   const originalRemove = window.EventTarget.prototype.removeEventListener;
@@ -98,12 +140,18 @@ export function installFakeDom() {
     window.NamedNodeMap.prototype.values = function* values() { for (let i = 0; i < this.length; i++) yield this[i].value; };
     window.NamedNodeMap.prototype.entries = function* entries() { for (let i = 0; i < this.length; i++) yield [this[i].name, this[i].value]; };
   }
-  try { globalThis.location = window.location; } catch { /* read-only global */ }
   if (NodeEventTarget && !NodeEventTarget.prototype.__skillarCrossRealm) {
     const originalDispatch = NodeEventTarget.prototype.dispatchEvent;
     NodeEventTarget.prototype.dispatchEvent = function dispatchEvent(event) {
       if (NodeEvent && !(event instanceof NodeEvent)) {
-        return originalDispatch.call(this, new NodeEvent(event.type, { bubbles: event.bubbles, cancelable: event.cancelable }));
+        const converted = new NodeEvent(event.type, { bubbles: event.bubbles, cancelable: event.cancelable });
+        for (const key of Object.getOwnPropertyNames(event)) {
+          if (key === "type" || key === "target" || key === "currentTarget" || key === "srcElement" || key === "eventPhase" || key === "defaultPrevented" || key === "bubbles" || key === "cancelable" || key === "timeStamp" || key === "isTrusted" || key === "NONE" || key === "AT_TARGET" || key === "BUBBLING_PHASE" || key === "CAPTURING_PHASE") continue;
+          try { converted[key] = event[key]; } catch { /* read-only */ }
+        }
+        const result = originalDispatch.call(this, converted);
+        if (converted.defaultPrevented) event.preventDefault();
+        return result;
       }
       return originalDispatch.call(this, event);
     };

@@ -86,8 +86,6 @@ test("tab semantics also apply while the embedded view panel is not mounted", ()
 
 async function palette(t, visible = true) {
     const document = installFakeDom();
-    const previousHTMLElement = globalThis.HTMLElement;
-    globalThis.HTMLElement = document.body.constructor;
     document.body.classList.add("app-shell");
     const window = new EventTarget();
     const navigations = [];
@@ -101,7 +99,7 @@ async function palette(t, visible = true) {
     if (visible) await act(() => opener.click());
     const dialog = byTag(document.body, "dialog")[0], field = dialog ? byTag(dialog, "input")[0] : undefined;
     const options = dialog ? byTag(dialog, "button").filter(node => node.getAttribute("role") === "option") : [];
-    t.after(async () => { await act(() => cleanup()); delete globalThis.window; globalThis.HTMLElement = previousHTMLElement; });
+    t.after(async () => { await act(() => cleanup()); delete globalThis.window; });
     return { document, window, opener, dialog, field, options, navigations,
       remount: () => { cleanup = mountCommandPalette(opener); } };
 }
