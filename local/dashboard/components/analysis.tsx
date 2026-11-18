@@ -54,9 +54,7 @@ export function conditions(filter: Filter) {
   ].filter(Boolean).join(" · ");
 }
 
-export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = false }: Pick<ViewProps, "route" | "navigate"> & {
-  readonly refresh: () => void; readonly busy: boolean; readonly workspace?: boolean;
-}) {
+export function AnalysisToolbar({ route, navigate }: Pick<ViewProps, "route" | "navigate">) {
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
   return <div className="analysis-toolbar">
     <TimePeriodSelect value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={value => {
@@ -65,15 +63,14 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
     }} options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
       { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
       { value: "60", label: "최근 60일", badge: "60d" }]} />
-    {!workspace && <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
+    <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
       const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
       update({ runtime: runtime ? [runtime] : undefined });
-    }} options={[{ value: "all", label: "전체" }, ...RUNTIME_IDS.map(value => ({ value, label: RUNTIME_LABEL[value] }))]} />}
+    }} options={[{ value: "all", label: "전체" }, ...RUNTIME_IDS.map(value => ({ value, label: RUNTIME_LABEL[value] }))]} />
     <Select label="자동 실행" value={route.filter.automated ?? "exclude"} onChange={event => {
       const value = event.currentTarget.value;
       update({ automated: value === "include" || value === "only" ? value : undefined });
     }} options={[{ value: "exclude", label: "제외" }, { value: "include", label: "포함" }, { value: "only", label: "자동 실행만" }]} />
-    <Button text={busy ? "갱신 중…" : "새로 고침"} variant="outline" onClick={refresh} disabled={busy} />
     {serializeFilter(route.filter) && <Button text="필터 지우기" variant="outline" onClick={() => navigate({ ...route, peek: undefined, filter: {} })} />}
   </div>;
 }
@@ -99,6 +96,11 @@ export function AnalysisWidget({ title, id, wide = false, children }: {
 }
 
 consoleStyles();
+installStyles("skill-weeks", `
+.skill-weeks{display:inline-flex;align-items:flex-end;gap:2px;min-height:16px}
+.skill-weeks__bar{display:inline-block;width:8px;border-radius:1px;background:var(--ink-2)}
+.skill-weeks__bar[data-count="0"]{opacity:.25}
+`);
 installStyles("analysis", `
 .analysis{display:grid;gap:16px;min-width:0;line-height:1.65}
 .analysis .page-title{margin:0}.analysis .page-title h1,.analysis .page-title h2{font-size:22px;margin:0}

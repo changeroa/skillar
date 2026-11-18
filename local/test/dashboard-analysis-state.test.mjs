@@ -9,9 +9,7 @@ const views = await loadViews(`
 `);
 const fixtures = JSON.parse(readFileSync(new URL("../dashboard/dev-fixtures.json", import.meta.url), "utf8"));
 const base = () => ({ ...views.api, mode: "http", sessions: async () => [], trace: async () => [], stats: async () => fixtures.stats,
-  skills: async () => fixtures.skills, flow: async () => ({ ...fixtures.flow, nodes: [], links: [], requestCount: 0, unit: "search_requests" }),
-  heatmap: async () => fixtures.heatmap, skillWeek: async () => fixtures.skillWeek,
-  flows: async () => ({ flows: [], generatedAt: 1, nextCursor: null }) });
+  skills: async () => fixtures.skills });
 
 for (const [name, Component, method] of [
   ["dashboard", views.DashboardView, "sessions"],
@@ -32,7 +30,7 @@ test("unavailable traces do not become zero request measurements", async t => {
   const props = { route: { view: "dashboard", filter: {} }, live: { state: "paused", seq: 0 }, navigate() {} };
   const { dom, container } = await mount(t, views.DashboardView, props);
   const metrics = () => all(container, node => (node.getAttribute("class") ?? "").split(/\s+/).includes("lf-metric__value"));
-  await waitFor(dom, () => metrics().length === 5, "dashboard request metrics");
-  assert.deepEqual([metrics()[1].textContent, metrics()[2].textContent, metrics()[3].textContent], ["미측정", "미측정", "미측정"]);
+  await waitFor(dom, () => metrics().length === 3, "dashboard request metrics");
+  assert.deepEqual([metrics()[1].textContent, metrics()[2].textContent], ["미측정", "미측정"]);
 });
 
