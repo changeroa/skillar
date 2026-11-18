@@ -25,7 +25,7 @@ export default defineConfig({
   resolve: {
     // The local views live outside the site package; their bare imports must
     // resolve from site/node_modules so CI builds without local/node_modules.
-    dedupe: ['react', 'react-dom', 'd3-sankey', 'zod', 'prismjs'],
+    dedupe: ['react', 'react-dom', 'd3-sankey', 'zod', 'prismjs', '@astryxdesign/core', '@astryxdesign/theme-neutral', '@stylexjs/stylex'],
   },
   server: { fs: { allow: ['..'] } },
   css: {

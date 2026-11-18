@@ -33,12 +33,9 @@ export function tableStyles(): void {
 .lf-table-surface .lf-table-select{width:calc(var(--lf-control-height) + var(--lf-space-3));white-space:nowrap}
 .lf-table-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--lf-space-2);min-width:0;margin-block:var(--lf-space-1);color:var(--lf-foreground);font:var(--lf-weight-regular) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
 .lf-table-toolbar :is(.lf-button,.lf-icon-button)>svg{width:var(--lf-space-4);height:var(--lf-space-4)}
-.lf-table-toolbar>.lf-field:has(.lf-search){flex:1;min-width:min(100%,220px)}
-.lf-table-toolbar .lf-field>label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.lf-table-toolbar>.lf-field:has(input[type=search]){flex:1;min-width:min(100%,220px)}
+.lf-table-toolbar .lf-field label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .lf-table-toolbar .lf-field{margin:0;gap:0;min-width:0}
-.lf-table-toolbar .lf-search{width:100%}
-.lf-table-toolbar .lf-search>button{min-width:var(--lf-control-height);width:var(--lf-control-height)}
-.lf-table-toolbar .lf-search>button[aria-label$="지우기"]{border-radius:0;color:var(--lf-foreground-tertiary)}
 .lf-table-pagination{container-type:inline-size;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--lf-space-4);min-width:0;color:var(--lf-foreground);font:var(--lf-weight-strong) var(--lf-text-sm)/var(--lf-leading-sm) var(--lf-font-sans)}
 .lf-table-surface>.lf-table-pagination{margin-block:var(--lf-space-2)}
 .lf-table-pagination .lf-field{display:flex;align-items:center;gap:var(--lf-space-2);margin:0}

@@ -29,6 +29,7 @@
     "node": ">=24.15"
   },
   "scripts": {
+    "prebuild": "node dashboard/design/skillar-theme/build.mjs",
     "dev:dashboard": "node dev-dashboard.mjs",
     "build": "tsc -p tsconfig.json && node build-cloud.mjs && node build-dashboard.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p dashboard/tsconfig.json",
@@ -36,7 +37,11 @@
     "start": "node dist/cli/main.js serve"
   },
   "dependencies": {
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-neutral": "^0.7.16",
+    "@stylexjs/stylex": "^0.19.2",
     "express": "^5.2.1",
+    "lucide-react": "^1.75.0",
     "yaml": "^2.9.0",
     "zod": "^4.1.11"
   },

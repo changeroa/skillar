@@ -1,4 +1,11 @@
 import type {ReactNode as ComponentChildren} from "react";
+import { Card as AxCard } from "@astryxdesign/core/Card";
+import { Heading } from "@astryxdesign/core/Heading";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { StackItem } from "@astryxdesign/core/Stack";
+import { Divider } from "@astryxdesign/core/Divider";
 import { Skeleton } from "../controls/labels";
 import { EmptyState, Alert } from "./messages";
 
@@ -11,15 +18,27 @@ export type CardProps = {
 };
 
 export function Card({ title, description, actions, footer, children }: CardProps) {
-  return <section className="lf-card" aria-label={title}>
-    <header className="lf-card__header">
-      <div><h3 className="lf-card__title">{title}</h3>
-        {description && <p className="lf-card__description">{description}</p>}</div>
-      {actions && <div className="lf-card__actions">{actions}</div>}
-    </header>
-    <div className="lf-card__content">{children}</div>
-    {footer && <footer className="lf-card__footer">{footer}</footer>}
-  </section>;
+  // Astryx Card composed with layout primitives. Landmark semantics preserved
+  // (role=region + aria-label, as the old section[aria-label]); description
+  // and footer use Astryx supporting text.
+  return <AxCard role="region" aria-label={title}>
+    <VStack gap={3}>
+      <HStack vAlign="start">
+        <StackItem size="fill">
+          <VStack gap={1}>
+            <Heading level={3}>{title}</Heading>
+            {description && <Text type="supporting" display="block">{description}</Text>}
+          </VStack>
+        </StackItem>
+        {actions && <StackItem size="static">{actions}</StackItem>}
+      </HStack>
+      {children}
+      {footer && <>
+        <Divider />
+        <footer><Text type="supporting" display="block">{footer}</Text></footer>
+      </>}
+    </VStack>
+  </AxCard>;
 }
 
 export type WidgetState =

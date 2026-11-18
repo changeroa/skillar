@@ -1,5 +1,30 @@
 # skillar.sh
 
+## Astryx design system (PR-2, 2026-11-18)
+
+The hosted app consumes the same Astryx-based dashboard foundation as the
+standalone local dashboard. The governing layer (theme, mount, tokens,
+component ownership, decision register D-1..D-12, accepted debt) lives in
+`local/dashboard/DESIGN.md`; this section records only the site-side
+contract and supersedes older site sections where they disagree.
+
+- The hosted `LocalViews` embed renders inside the same skillar-theme
+  `Theme` mounted at the dashboard App root; the site mounts no second
+  theme and adds no Astryx resets of its own.
+- Site build contract: vite `resolve.dedupe` covers
+  `@astryxdesign/core`, `@astryxdesign/theme-neutral`,
+  `@stylexjs/stylex` and `lucide-react` (D-8: lucide dedupes to the site
+  version), and `tsconfig.json` + `tsconfig.dashboard.json` carry the
+  paths entries (`@astryxdesign/core`, `@astryxdesign/core/*` → `dist/*`,
+  theme-neutral, stylex) so the hosted build resolves Astryx from the
+  site's own `node_modules`.
+- `src/dashboard/home-widgets.tsx` uses the swapped foundation Card and
+  Metric; its visuals follow the composed Astryx Card.
+- Per-PR evidence bar unchanged: bundle-size delta numerics, phone and
+  desktop light/dark captures at matched viewport and scroll against the
+  true base, and an a11y score that must not drop.
+
+
 ## Phase B landing tokens (PR-9)
 
 The marketing landing keeps its existing markup order, document scroll owner,

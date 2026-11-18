@@ -20,6 +20,7 @@ test("runtime verification runs the full CI sequence from the selected checkout"
     ["npm", ["ci"], resolve(root, "worker")],
     ["npm", ["ci"], resolve(root, "local")],
     ["npm", ["ci"], resolve(root, "site")],
+    [process.execPath, ["scripts/build-theme.mjs"], root],
     ["npm", ["run", "build"], resolve(root, "server")],
     ["npm", ["test"], resolve(root, "server")],
     [process.execPath, ["server/bench/search.mjs", "--check"], root],

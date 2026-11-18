@@ -14,6 +14,7 @@ const expectedChecks = [
   ["worker", "npm", ["ci"]],
   ["local", "npm", ["ci"]],
   ["site", "npm", ["ci"]],
+  [".", node, ["scripts/build-theme.mjs"]],
   ["server", "npm", ["run", "build"]],
   ["server", "npm", ["test"]],
   [".", node, ["server/bench/search.mjs", "--check"]],

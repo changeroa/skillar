@@ -1,5 +1,7 @@
 import type {JSX, Ref} from "react";
 import { useId, useRef, useState } from "react";
+import { TextInput as AxTextInput } from "@astryxdesign/core/TextInput";
+import { CheckboxInput as AxCheckboxInput } from "@astryxdesign/core/CheckboxInput";
 import { Glyph, type ControlIcon } from "./icons";
 
 type InputAttributes = Omit<React.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
@@ -44,29 +46,17 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   readonly onSubmit: (value: string) => void; readonly placeholder?: string;
   readonly disabled?: boolean; readonly id?: string; readonly size?: "default" | "large";
 }) {
-  const generatedId = useId();
-  const inputId = id ?? generatedId;
+  // Astryx TextInput: Enter submission is IME-safe inside the component, and
+  // its clear button returns focus to the field. onEnter passes no value, so
+  // submit the live field value (tests set input.value directly).
   const ref = useRef<HTMLInputElement>(null);
+  // The lf-field wrapper preserves the layout contract the toolbar CSS keys
+  // on (flex child + context label hiding); Astryx renders label + control.
   return <div className="lf-field">
-    <label htmlFor={inputId}>{label}</label>
-    <div className={`lf-search lf-search--${size}`} data-disabled={disabled}>
-      <button type="button" aria-label={`${label} 실행`} disabled={disabled} onClick={() => onSubmit(value)}>
-        <Glyph name="search" />
-      </button>
-      <input ref={ref} id={inputId} type="search" value={value} disabled={disabled} placeholder={placeholder}
-        onInput={event => onChange(event.currentTarget.value)}
-        onKeyDown={event => {
-          if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-            event.preventDefault();
-            onSubmit(event.currentTarget.value);
-          }
-        }} />
-      {value !== "" && <button type="button" aria-label={`${label} 지우기`} disabled={disabled}
-        onMouseDown={event => event.preventDefault()}
-        onClick={() => { onChange(""); ref.current?.focus(); }}>
-        <Glyph name="close" />
-      </button>}
-    </div>
+    <AxTextInput ref={ref} type="search" id={id} label={label} value={value} width="100%"
+      onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
+      size={size === "large" ? "lg" : "md"} hasClear enterKeyHint="search"
+      onEnter={() => onSubmit(ref.current?.value ?? value)} />
   </div>;
 }
 
@@ -99,12 +89,17 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
   </div>;
 }
 
-export function Checkbox({ label, mixed = false, size = "default", ...props }: {
+export function Checkbox({ label, mixed = false, size = "default", checked, onChange, disabled, name, ...props }: {
   readonly label: string; readonly mixed?: boolean; readonly size?: "default" | "sm";
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "class" | "className" | "style" | "children">) {
-  return <label className={`lf-checkbox lf-checkbox--${size}`}>
-    <input {...props} type="checkbox" ref={element => { if (element) element.indeterminate = mixed; }} />
-    <span className="lf-checkbox__box" aria-hidden="true"><Glyph name="check" small={size === "sm"} /></span>
-    <span>{label}</span>
-  </label>;
+  // Astryx CheckboxInput is controlled; every dashboard call site is too. It
+  // syncs the native indeterminate property itself and (like the old control)
+  // deliberately exposes no aria-checked for mixed. exactOptionalPropertyTypes
+  // cast as in buttons.tsx. NOTE: title is not accepted by Astryx BaseProps
+  // (facet checkbox value tooltip dropped — flagged for review).
+  return <AxCheckboxInput {...(props as object as React.ComponentProps<typeof AxCheckboxInput>)}
+    label={label} size={size === "sm" ? "sm" : "md"} {...(name !== undefined ? { htmlName: name } : {})}
+    value={mixed ? "indeterminate" : Boolean(checked)}
+    isDisabled={Boolean(disabled)}
+    onChange={(_next, event) => onChange?.(event)} />;
 }
