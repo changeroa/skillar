@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useEffect, useState } from "react";
 import type { PrivateSkillDetail, PrivateSkillDigest } from "../../../shared/dist/private-skills.js";
 import { BarChart, Pill, SegmentedTabs, Skeleton } from "../ui/index.ts";
 import { describeFailure, isUnauthorized, readExport } from "./api.ts";
@@ -55,10 +55,10 @@ export function VersionDocument({ preview, retry, digest }: {
 }) {
   if (preview.kind === "loading") return h(Skeleton, { label: "버전 문서 불러오는 중", rows: 3 });
   if (preview.kind === "failed") return h("div", null,
-    h("p", { class: "note", role: "status" }, preview.message),
-    h("button", { class: "button secondary", type: "button", onClick: retry }, "다시 시도"));
-  return h("section", { class: "skill-document-preview", "aria-label": "선택한 버전 문서" },
-    h("div", { class: "cluster" }, h("strong", null, "SKILL.md"), h(Pill, null, digest.slice(0, 8))),
+    h("p", { className: "note", role: "status" }, preview.message),
+    h("button", { className: "button secondary", type: "button", onClick: retry }, "다시 시도"));
+  return h("section", { className: "skill-document-preview", "aria-label": "선택한 버전 문서" },
+    h("div", { className: "cluster" }, h("strong", null, "SKILL.md"), h(Pill, null, digest.slice(0, 8))),
     h(SegmentedTabs, { id: "document-format", label: "문서 표시",
       tabs: [
         { id: "formatted", label: "Formatted", content: h(FormattedDocument, { text: preview.document }) },
@@ -68,14 +68,14 @@ export function VersionDocument({ preview, retry, digest }: {
 
 export function VersionFiles({ preview, retry }: { readonly preview: Preview; readonly retry: () => void }) {
   if (preview.kind !== "ready") return h(VersionDocument, { preview, retry, digest: "" });
-  return h("dl", { class: "account-status resource-list" }, preview.resources.map(resource =>
+  return h("dl", { className: "account-status resource-list" }, preview.resources.map(resource =>
     h("div", { key: resource.path }, h("dt", null, h("code", null, resource.path)),
       h("dd", null, `${formatBytes(resource.bytes)} · ${resource.mediaType}`))));
 }
 
 export function UnmeasuredReads({ detail }: { readonly detail: PrivateSkillDetail }) {
-  return h("section", { class: "skill-reads", "aria-label": "버전별 읽기 수" },
+  return h("section", { className: "skill-reads", "aria-label": "버전별 읽기 수" },
     h(BarChart, { title: "버전별 읽기 수", data: { labels: detail.versions.map(version => version.digest.slice(0, 8)),
       series: [{ label: "읽기 수 · 미측정", values: detail.versions.map(() => null) }] } }),
-    h("p", { class: "note" }, "아직 읽기 기록을 연결하지 않았습니다. 게시 기록은 읽기 기록이나 작업 성공의 근거가 아닙니다."));
+    h("p", { className: "note" }, "아직 읽기 기록을 연결하지 않았습니다. 게시 기록은 읽기 기록이나 작업 성공의 근거가 아닙니다."));
 }

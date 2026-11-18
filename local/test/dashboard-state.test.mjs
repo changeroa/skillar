@@ -31,7 +31,7 @@ async function loadSessionsView() {
     platform: "browser",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "preact",
+    jsxImportSource: "react",
     logLevel: "silent",
   });
   return import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);

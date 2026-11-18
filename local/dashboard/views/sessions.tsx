@@ -1,5 +1,5 @@
 import { kstDay } from "../time";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "react";
 import type { RuntimeId } from "../../src/types.js";
 import { api, ApiError, type SessionListRow, type Stats } from "../api";
 import { installStyles } from "../charts/sankey";
@@ -55,19 +55,19 @@ function UsageNote({ stats }: { stats: Stats }) {
   const rates = attributionRates(stats);
   if (!orphan && rates.length === 0) return null;
   return (
-    <footer class="sessions__foot">
-      <p class="usage">
+    <footer className="sessions__foot">
+      <p className="usage">
         {orphan && (
-          <span class="usage__item" data-usage="unattributed">
+          <span className="usage__item" data-usage="unattributed">
             <span>{orphan}</span>
-            <span class="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>세션 연결 방식</span>
+            <span className="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>세션 연결 방식</span>
           </span>
         )}
         {rates.length > 0 && (
-          <span class="usage__item" data-usage="rates" title="실행 환경별 MCP 이벤트 중 세션과 연결된 비율입니다. -는 보낸 MCP 이벤트가 없다는 뜻입니다.">
-            <span class="usage__key">MCP 세션 연결률</span>
+          <span className="usage__item" data-usage="rates" title="실행 환경별 MCP 이벤트 중 세션과 연결된 비율입니다. -는 보낸 MCP 이벤트가 없다는 뜻입니다.">
+            <span className="usage__key">MCP 세션 연결률</span>
             {rates.map((r) => (
-              <span key={r.runtime} class={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
+              <span key={r.runtime} className={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
             ))}
           </span>
         )}
@@ -97,10 +97,10 @@ function When({ row }: { row: SessionListRow }) {
   const started = new Date(row.startedAt);
   const dateLabel = isSameLocalDay(started, new Date()) ? "오늘" : dateFmt.format(started);
   return (
-    <time class="when" dateTime={started.toISOString()} title={started.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>
-      <span class="when__date">{dateLabel}</span>
-      <span class="when__time">{timeFmt.format(started)}</span>
-      {row.endedAt !== undefined && <span class="when__dur">{formatDuration(row.endedAt - row.startedAt)}</span>}
+    <time className="when" dateTime={started.toISOString()} title={started.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>
+      <span className="when__date">{dateLabel}</span>
+      <span className="when__time">{timeFmt.format(started)}</span>
+      {row.endedAt !== undefined && <span className="when__dur">{formatDuration(row.endedAt - row.startedAt)}</span>}
     </time>
   );
 }
@@ -114,29 +114,29 @@ function WaitingEmpty({ stats }: { stats: Stats }) {
   );
   const { ingest } = stats;
   return (
-    <section class="session-waiting" aria-live="polite">
+    <section className="session-waiting" aria-live="polite">
       <EmptyState title="첫 이벤트를 기다리고 있습니다" action={<p>
         아직 이벤트를 보낸 실행 환경이 없습니다. 연결된 실행 환경에서 세션을 시작하거나
-        {" "}<code class="cmd">skillar doctor</code>로 연결 상태를 확인하세요.
+        {" "}<code className="cmd">skillar doctor</code>로 연결 상태를 확인하세요.
       </p>} />
-      <dl class="checklist">
+      <dl className="checklist">
         {RUNTIME_IDS.filter((id) => id !== "unknown").map((id) => {
           const ts = stats.lastEventByRuntime[id];
           return (
             <>
               <dt key={`${id}-k`}>{RUNTIME_LABEL[id]}</dt>
-              <dd key={`${id}-v`} class={ts !== undefined ? "is-ok" : undefined}>{ts !== undefined ? `마지막 이벤트 ${dateTimeFmt.format(ts)}` : "이벤트 없음"}</dd>
+              <dd key={`${id}-v`} className={ts !== undefined ? "is-ok" : undefined}>{ts !== undefined ? `마지막 이벤트 ${dateTimeFmt.format(ts)}` : "이벤트 없음"}</dd>
             </>
           );
         })}
         <dt>수집</dt>
-        <dd class={ingest.rejected || ingest.dropped ? "is-bad" : undefined}>
+        <dd className={ingest.rejected || ingest.dropped ? "is-bad" : undefined}>
           수락 {ingest.accepted}건, 거부 {ingest.rejected}건, 누락 {ingest.dropped}건
         </dd>
         {ingest.lastError && (
           <>
             <dt>마지막 오류</dt>
-            <dd class="is-bad">
+            <dd className="is-bad">
               {ingest.lastError.code === "unauthorized" ? "이벤트 수집 인증에 실패했습니다. 연결 상태를 확인하세요." : "이벤트를 수집하지 못했습니다. 연결 상태를 확인하세요."}
               {" · "}{dateTimeFmt.format(ingest.lastError.ts)}
               <details><summary>기술 세부 정보</summary><code>{ingest.lastError.code}</code></details>
@@ -152,7 +152,7 @@ function FilteredEmpty({ route, navigate }: { route: Route; navigate: ViewProps[
   return (
     <EmptyState title="조건에 맞는 세션이 없습니다"
       description="기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다."
-      action={<button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 해제</button>} />
+      action={<button type="button" className="btn" onClick={() => navigate({ ...route, filter: {} })}>필터 해제</button>} />
   );
 }
 
@@ -160,7 +160,7 @@ function NoSessionsEmpty() {
   return (
     <EmptyState title="아직 기록된 세션이 없습니다"
       description={api.mode === "cloud" ? "올린 기록에 이벤트는 있지만 세션은 없습니다. 출처 기기에서 최신 기록을 올리고 출처를 다시 불러오세요." : undefined}
-      action={api.mode !== "cloud" ? <p>이벤트는 도착했지만 세션을 시작한 이벤트가 없습니다. 연결된 실행 환경에 요청문을 입력하거나 <code class="cmd">skillar doctor</code>를 실행하세요.</p> : undefined} />
+      action={api.mode !== "cloud" ? <p>이벤트는 도착했지만 세션을 시작한 이벤트가 없습니다. 연결된 실행 환경에 요청문을 입력하거나 <code className="cmd">skillar doctor</code>를 실행하세요.</p> : undefined} />
   );
 }
 
@@ -215,21 +215,21 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   }, [filterKey, refresh]);
 
   const failure = error && <Alert variant="destructive" announce action={
-    <button type="button" class="btn" onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+    <button type="button" className="btn" onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
   }>{error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"}</Alert>;
-  if (detail && error) return <section class="session-picker" role="group" aria-label="세션 목록 다시 시도" tabIndex={0} aria-busy={busy}
+  if (detail && error) return <section className="session-picker" role="group" aria-label="세션 목록 다시 시도" tabIndex={0} aria-busy={busy}
     onKeyDown={event => {
       if (event.key !== "Enter") return;
       event.preventDefault(); setError(undefined); setRefresh(n => n + 1);
     }}>
     <StatusMessage level="ERROR" announce message={error === "permission" ? "이 기록을 볼 권한이 없습니다" : "세션을 불러오지 못했습니다"} />
     <p>엔터 키로 목록을 다시 불러올 수 있습니다.</p>
-    <button type="button" class="btn" tabIndex={-1} onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
+    <button type="button" className="btn" tabIndex={-1} onClick={() => { setError(undefined); setRefresh(n => n + 1); }}>다시 시도</button>
   </section>;
   if (detail) return <section aria-busy={busy}>
     {failure}
     {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
-    {rows && <div class="session-picker" role="listbox" aria-label="세션 목록" tabIndex={0}
+    {rows && <div className="session-picker" role="listbox" aria-label="세션 목록" tabIndex={0}
       aria-activedescendant={rows.some(row => row.id === active) ? `session-option-${encodeURIComponent(active ?? "")}` : undefined}
       onKeyDown={event => {
         const index = rows.findIndex(row => row.id === active);
@@ -254,10 +254,10 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
         }
       }}>
       {rows.map(row => <a key={row.id} id={`session-option-${encodeURIComponent(row.id)}`} role="option" tabIndex={-1}
-        aria-selected={row.id === route.sessionId} class="session-picker__row" data-active={row.id === active}
+        aria-selected={row.id === route.sessionId} className="session-picker__row" data-active={row.id === active}
         href={buildHash({ view: "trace", sessionId: row.id, filter: route.filter })}>
         <span>{row.id === route.sessionId ? "✓ " : ""}<code>{row.id}</code></span>
-        <When row={row} /><span class="rowlink">{row.firstPrompt ?? "(요청문 기록 없음)"}</span>
+        <When row={row} /><span className="rowlink">{row.firstPrompt ?? "(요청문 기록 없음)"}</span>
       </a>)}
       {rows.length === 0 && <p>조건에 맞는 세션이 없습니다. 세션 목록에서 필터를 조정하세요.</p>}
     </div>}
@@ -277,17 +277,17 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
   }
 
   return (
-    <section class="sessions-console pe-console" data-pe-screen="sessions-table" data-peek={Boolean(route.peek)} aria-busy={busy}>
-      <div class="page-title">
+    <section className="sessions-console pe-console" data-pe-screen="sessions-table" data-peek={Boolean(route.peek)} aria-busy={busy}>
+      <div className="page-title">
         <Title>세션</Title>
       </div>
       <SessionToolbar route={route} navigate={navigate} count={rows?.length} facetsOpen={facetsOpen} sheet={narrow}
         toggleFacets={() => setFacetsOpen(value => !value)} />
       {failure}
       {busy && <StatusMessage level="DEFAULT" announce message="세션 불러오는 중…" />}
-      <div class="sessions-body" data-facets-open={facetsOpen}>
+      <div className="sessions-body" data-facets-open={facetsOpen}>
         {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
-        <Results class="session-results" aria-label="세션 기록" tabIndex={-1}>
+        <Results className="session-results" aria-label="세션 기록" tabIndex={-1}>
           {rows && <SessionHistogram rows={rows} filter={route.filter} />}
           {body}
         </Results>

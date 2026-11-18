@@ -9,10 +9,10 @@ import { channel, fakeScheduler, fakeTransport, fakeVisibility, modules, ready, 
 
 const bundled = await build({
   stdin: {
-    contents: 'export {App} from "./dashboard/main.tsx"; export {configureApi} from "./dashboard/api.ts"; export {h, render} from "preact"; export {act} from "preact/test-utils";',
+    contents: 'export {App} from "./dashboard/main.tsx"; export {configureApi} from "./dashboard/api.ts"; export {h, render} from "react"; export {act} from "react";',
     resolveDir: new URL("../", import.meta.url).pathname, loader: "tsx",
   },
-  bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "preact",
+  bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react",
 });
 const ui = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString("base64")}`);
 const fixtures = JSON.parse(readFileSync(new URL("../dashboard/dev-fixtures.json", import.meta.url), "utf8"));

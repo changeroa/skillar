@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 import type { FlowReportDto } from "../../../src/types.js";
 import { api } from "../../api";
 import { Facts } from "../../components/facts";
@@ -18,21 +18,21 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
   const history = report.tree.tabs.some((tab) => tab.panes.some((pane) => pane.sessions.some((link) =>
     link.session !== null && !sessionInWindow(link.session, report.flow))));
   return (
-    <header class="ws__head card">
-      <a class="ws__back" href={backHref}>
+    <header className="ws__head card">
+      <a className="ws__back" href={backHref}>
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         작업 공간 목록
       </a>
-      <Title class="ws__title">{report.label ?? report.workspaceId}</Title>
-      <dl class="ws__meta">
+      <Title className="ws__title">{report.label ?? report.workspaceId}</Title>
+      <dl className="ws__meta">
         {report.kind !== "outside_herdr" && <>
         <div>
           <dt>작업 공간</dt>
-          <dd class="ws__id">{report.workspaceId}</dd>
+          <dd className="ws__id">{report.workspaceId}</dd>
         </div>
         <div>
           <dt>스펙</dt>
-          <dd class={report.spec ? undefined : "dim"}>{specLabel(report.spec)}</dd>
+          <dd className={report.spec ? undefined : "dim"}>{specLabel(report.spec)}</dd>
         </div>
         <div>
           <dt>시작</dt>
@@ -40,7 +40,7 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
         </div>
         <div>
           <dt>종료</dt>
-          <dd class={report.flow?.endedMs != null ? undefined : "dim"}>{report.flow?.endedMs != null ? formatStarted(report.flow.endedMs) : "상태 미상"}</dd>
+          <dd className={report.flow?.endedMs != null ? undefined : "dim"}>{report.flow?.endedMs != null ? formatStarted(report.flow.endedMs) : "상태 미상"}</dd>
         </div>
         <div>
           <dt>패널</dt>
@@ -53,13 +53,13 @@ export function Header({ report, backHref, onRefresh, busy, embedded = false }: 
         </div>
       </dl>
       <Facts facts={summaryFacts(flowSummary(report))} className="facts ws__counts" />
-      {history && <p class="dim" data-pane-history="true">대화 차례와 세션 수에는 패널 기록이 포함됩니다. 단계 결과와 고유 호출 비용은 이 워크플로의 실행 구간만 집계하며, 구간 밖 세션은 아래에 따로 표시됩니다.</p>}
-      <div class="ws__actions">
-        <span class="dim">{dateTimeFmt.format(report.generatedAt)} 기준</span>
-        <button type="button" class="btn" onClick={onRefresh} disabled={busy}>{busy ? "읽는 중\u2026" : "새로 고침"}</button>
+      {history && <p className="dim" data-pane-history="true">대화 차례와 세션 수에는 패널 기록이 포함됩니다. 단계 결과와 고유 호출 비용은 이 워크플로의 실행 구간만 집계하며, 구간 밖 세션은 아래에 따로 표시됩니다.</p>}
+      <div className="ws__actions">
+        <span className="dim">{dateTimeFmt.format(report.generatedAt)} 기준</span>
+        <button type="button" className="btn" onClick={onRefresh} disabled={busy}>{busy ? "읽는 중\u2026" : "새로 고침"}</button>
       </div>
       {report.excludedSessions.length > 0 && (
-        <p class="dim" data-excluded={report.excludedSessions.length}>
+        <p className="dim" data-excluded={report.excludedSessions.length}>
           자동화된 세션 {report.excludedSessions.length}개 제외됨
           ({[...new Set(report.excludedSessions.map((session) => session.reason))].join(", ")}). 자동화된 세션을 표시하도록 설정하면 포함됩니다.
         </p>
@@ -129,23 +129,23 @@ export function WorkspaceView({ route, live, embedded = false, peek = false }: V
 
   if (error !== undefined && report === undefined) {
     return (
-      <section class="ws analysis pe-console">
-        <header class="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header>
+      <section className="ws analysis pe-console">
+        <header className="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header>
         <AnalysisError error={error} title="이 워크플로를 불러올 수 없습니다" retry={() => setRefresh(n => n + 1)} />
-        <a class="btn ws__backbtn" href={backHref}>작업 공간 목록으로</a>
+        <a className="btn ws__backbtn" href={backHref}>작업 공간 목록으로</a>
       </section>
     );
   }
-  if (report === undefined) return <section class="ws analysis pe-console" aria-busy="true"><header class="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header><StatusMessage level="DEFAULT" announce message="작업 공간 보고서 읽는 중…" /></section>;
+  if (report === undefined) return <section className="ws analysis pe-console" aria-busy="true"><header className="page-title">{embedded || peek ? <h2>작업 공간</h2> : <h1>작업 공간</h1>}</header><StatusMessage level="DEFAULT" announce message="작업 공간 보고서 읽는 중…" /></section>;
 
   const { findings, usageBySpan } = reportIndex(report);
   return (
-    <section class="ws analysis pe-console" aria-busy={busy}>
+    <section className="ws analysis pe-console" aria-busy={busy}>
       {busy && <StatusMessage level="DEFAULT" announce message={`갱신 중: ${conditions(workspaceFilter(query))}`} />}
-      <p class="analysis-scope" data-result-conditions>{conditions(workspaceFilter(resultQuery))}</p>
+      <p className="analysis-scope" data-result-conditions>{conditions(workspaceFilter(resultQuery))}</p>
       <Header report={report} backHref={backHref} onRefresh={() => setRefresh((n) => n + 1)} busy={busy} embedded={embedded || peek} />
       <AnalysisError error={error} title="이 워크플로를 새로 고칠 수 없습니다" retry={() => setRefresh(n => n + 1)} />
-      {report.executionScope && <aside class="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
+      {report.executionScope && <aside className="callout" role="note" data-execution-boundary={report.executionScope.boundary}>{report.executionScope.label}</aside>}
       <UnresolvedLoadNotice loads={report.unattributedLoads} />
       {report.comparison && <Steps comparison={report.comparison} specSteps={specSteps} specError={specError} uncertain={report.unattributedLoads.count > 0} />}
       <Tree tree={report.tree} route={route} findings={findings} usageBySpan={usageBySpan} filtered={report.excludedSessions.length > 0} flow={report.flow} />

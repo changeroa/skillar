@@ -86,36 +86,9 @@ test("tab semantics also apply while the embedded view panel is not mounted", ()
 
 async function palette(t, visible = true) {
     const document = installFakeDom();
-    const prototype = Object.getPrototypeOf(document.body);
-    const descriptor = Object.getOwnPropertyDescriptor(prototype, "textContent");
-    if (!descriptor.set) Object.defineProperty(prototype, "textContent", {
-      get: descriptor.get,
-      set(value) {
-        for (const child of [...this.childNodes]) this.removeChild(child);
-        this.appendChild(this.ownerDocument.createTextNode(value));
-      },
-      configurable: true,
-    });
-    document.body.append = child => document.body.appendChild(child);
     const previousHTMLElement = globalThis.HTMLElement;
     globalThis.HTMLElement = document.body.constructor;
-    const create = document.createElement.bind(document);
-    document.createElement = name => {
-      const node = create(name);
-      node.append = child => node.appendChild(child);
-      node.scrollIntoView = () => {};
-      node.querySelector = selector => selector === "input" ? byTag(node, "input")[0] : null;
-      node.matches = selector => selector === ":disabled" && node.disabled;
-      if (name === "dialog") {
-        node.oncancel = null;
-        node.showModal = () => { node.open = true; };
-        node.close = () => { node.open = false; };
-      }
-      return node;
-    };
-    document.createElementNS = (_namespace, name) => document.createElement(name);
-    document.querySelector = selector => selector === "#app-command" ? document.getElementById("app-command") : null;
-    document.body.classList = { contains: value => value === "app-shell" };
+    document.body.classList.add("app-shell");
     const window = new EventTarget();
     const navigations = [];
     window.location = { assign: href => navigations.push(href) };

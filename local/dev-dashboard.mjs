@@ -28,7 +28,7 @@ const ctx = await context({
   absWorkingDir: fileURLToPath(root),
   entryPoints: { "assets/app": "dashboard/main.tsx", "assets/gallery": "dashboard/gallery.ts" },
   outdir: out, bundle: true, splitting: true, format: "esm", platform: "browser",
-  target: "es2022", jsx: "automatic", jsxImportSource: "preact",
+  target: "es2022", jsx: "automatic", jsxImportSource: "react",
   nodePaths: [fileURLToPath(new URL("node_modules", root))],
 });
 await ctx.watch();

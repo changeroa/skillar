@@ -1,8 +1,8 @@
-import type { JSX, Ref } from "preact";
-import { useId, useRef, useState } from "preact/hooks";
+import type {JSX, Ref} from "react";
+import { useId, useRef, useState } from "react";
 import { Glyph, type ControlIcon } from "./icons";
 
-type InputAttributes = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
+type InputAttributes = Omit<React.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
 type FieldLabel = { readonly label: string; readonly error?: string };
 
 export function Input({ label, error, id, prefix, valuePrefix, inputRef, icon = prefix || valuePrefix ? false : "search",
@@ -15,26 +15,26 @@ export function Input({ label, error, id, prefix, valuePrefix, inputRef, icon = 
   const inputId = id ?? generatedId;
   const ref = useRef<HTMLInputElement>(null);
   const description = [props["aria-describedby"], error ? `${inputId}-error` : undefined].filter(Boolean).join(" ") || undefined;
-  return <div class={`lf-field${variant === "command" ? " lf-command-field" : ""}`}>
-    <label for={inputId}>{label}</label>
-    <div class="lf-input-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}
+  return <div className={`lf-field${variant === "command" ? " lf-command-field" : ""}`}>
+    <label htmlFor={inputId}>{label}</label>
+    <div className="lf-input-wrap" data-invalid={Boolean(error)} data-disabled={Boolean(props.disabled)}
       data-prefixed={Boolean(prefix || valuePrefix)} data-value-prefixed={Boolean(valuePrefix)} data-icon={Boolean(icon)}
       onMouseDown={event => {
         if (event.target === ref.current) return;
         event.preventDefault();
         ref.current?.focus();
       }}>
-      {prefix && <span class="lf-input-prefix">{prefix}</span>}
-      {valuePrefix && <span class="lf-input-value-prefix">{valuePrefix}</span>}
-      {icon && <span class="lf-input-icon"><Glyph name={icon} /></span>}
+      {prefix && <span className="lf-input-prefix">{prefix}</span>}
+      {valuePrefix && <span className="lf-input-value-prefix">{valuePrefix}</span>}
+      {icon && <span className="lf-input-icon"><Glyph name={icon} /></span>}
       <input {...props} ref={element => {
         ref.current = element;
         if (typeof inputRef === "function") inputRef(element);
         else if (inputRef) inputRef.current = element;
-      }} id={inputId} class="lf-input"
+      }} id={inputId} className="lf-input"
         aria-invalid={error ? "true" : props["aria-invalid"]} aria-describedby={description} />
     </div>
-    {error && <span id={`${inputId}-error`} class="lf-field-error">{error}</span>}
+    {error && <span id={`${inputId}-error`} className="lf-field-error">{error}</span>}
   </div>;
 }
 
@@ -47,16 +47,16 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const ref = useRef<HTMLInputElement>(null);
-  return <div class="lf-field">
-    <label for={inputId}>{label}</label>
-    <div class={`lf-search lf-search--${size}`} data-disabled={disabled}>
+  return <div className="lf-field">
+    <label htmlFor={inputId}>{label}</label>
+    <div className={`lf-search lf-search--${size}`} data-disabled={disabled}>
       <button type="button" aria-label={`${label} 실행`} disabled={disabled} onClick={() => onSubmit(value)}>
         <Glyph name="search" />
       </button>
       <input ref={ref} id={inputId} type="search" value={value} disabled={disabled} placeholder={placeholder}
         onInput={event => onChange(event.currentTarget.value)}
         onKeyDown={event => {
-          if (event.key === "Enter" && !event.isComposing) {
+          if (event.key === "Enter" && !event.nativeEvent.isComposing) {
             event.preventDefault();
             onSubmit(event.currentTarget.value);
           }
@@ -75,36 +75,36 @@ export type SelectOption = { readonly value: string; readonly label: string; rea
 export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
   readonly size?: "default" | "sm";
-} & Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
   const generatedId = useId();
   const [nativeValue, setNativeValue] = useState(props.defaultValue ?? "");
   const selectId = id ?? generatedId;
   const selected = options.find(option => option.value === (props.value ?? nativeValue));
   const text = selected?.label ?? (options.length === 0 ? "선택 가능한 항목 없음" : placeholder);
   const description = [props["aria-describedby"], error ? `${selectId}-error` : undefined].filter(Boolean).join(" ") || undefined;
-  return <div class="lf-field">
-    <label for={selectId}>{label}</label>
-    <div class={`lf-select-wrap lf-select-wrap--${size}`} data-invalid={Boolean(error)}
+  return <div className="lf-field">
+    <label htmlFor={selectId}>{label}</label>
+    <div className={`lf-select-wrap lf-select-wrap--${size}`} data-invalid={Boolean(error)}
       data-disabled={Boolean(props.disabled)} data-placeholder={!selected}>
-      <select {...props} id={selectId} class="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}
+      <select {...props} id={selectId} className="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}
         aria-describedby={description} onChange={event => { setNativeValue(event.currentTarget.value); onChange?.(event); }}>
         <option value="" disabled>{options.length === 0 ? "선택 가능한 항목 없음" : placeholder}</option>
         {options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </select>
-      {selected?.badge && <span class="lf-select-badge" aria-hidden="true">{selected.badge}</span>}
-      <span class="lf-select-value" aria-hidden="true">{text}</span>
+      {selected?.badge && <span className="lf-select-badge" aria-hidden="true">{selected.badge}</span>}
+      <span className="lf-select-value" aria-hidden="true">{text}</span>
       <Glyph name={size === "sm" ? "chevrons" : "chevron"} />
     </div>
-    {error && <span id={`${selectId}-error`} class="lf-field-error">{error}</span>}
+    {error && <span id={`${selectId}-error`} className="lf-field-error">{error}</span>}
   </div>;
 }
 
 export function Checkbox({ label, mixed = false, size = "default", ...props }: {
   readonly label: string; readonly mixed?: boolean; readonly size?: "default" | "sm";
-} & Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "class" | "className" | "style" | "children">) {
-  return <label class={`lf-checkbox lf-checkbox--${size}`}>
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "class" | "className" | "style" | "children">) {
+  return <label className={`lf-checkbox lf-checkbox--${size}`}>
     <input {...props} type="checkbox" ref={element => { if (element) element.indeterminate = mixed; }} />
-    <span class="lf-checkbox__box" aria-hidden="true"><Glyph name="check" small={size === "sm"} /></span>
+    <span className="lf-checkbox__box" aria-hidden="true"><Glyph name="check" small={size === "sm"} /></span>
     <span>{label}</span>
   </label>;
 }

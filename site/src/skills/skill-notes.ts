@@ -1,4 +1,4 @@
-import { h } from "preact";
+import {createElement as h} from "react";
 import { describeFailure, technicalDetail } from "./api.ts";
 import { SkillDraftError } from "./model.ts";
 import type { DraftState, Note } from "./skill-state.ts";
@@ -25,7 +25,7 @@ export function describeDraftFailure(error: unknown): string {
 
 export function NoteLine({ note }: { readonly note: Note }) {
   return [
-    h("span", { key: "text", class: "note", role: "status", "aria-live": "polite" }, note.text),
-    note.technical !== null && h("details", { key: "technical", class: "technical" }, h("summary", null, "기술 정보"), h("code", null, note.technical)),
+    h("span", { key: "text", className: "note", role: "status", "aria-live": "polite" }, note.text),
+    note.technical !== null && h("details", { key: "technical", className: "technical" }, h("summary", null, "기술 정보"), h("code", null, note.technical)),
   ];
 }

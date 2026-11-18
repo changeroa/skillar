@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { JSX } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {JSX} from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Pending, DeleteTarget } from "./skill-state.ts";
 /** The text a person must type before "삭제 확인" is enabled. A pointer alone can never produce it, so repeated clicks cannot delete. */
 export function confirmationText(target: DeleteTarget): string {
@@ -41,22 +41,22 @@ export function useSkillConfirmation(busy: boolean) {
   const confirmation = (target: DeleteTarget, consequence: string, keepLabel: string, onConfirm: () => unknown) => {
     const id = target.kind === "skill" ? "confirm-delete-skill" : `confirm-delete-${target.digest.slice(0, 16)}`;
     const armed = !busy && confirmsDeletion(target, typed);
-    return h("div", { class: "editor", role: "group", "aria-labelledby": `${id}-consequence`,
-      onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
+    return h("div", { className: "editor", role: "group", "aria-labelledby": `${id}-consequence`,
+      onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key !== "Escape" || busy) return;
         event.preventDefault();
         setPending(null);
       } },
-      h("p", { id: `${id}-consequence`, class: "note" }, consequence),
-      h("label", { class: "field-label", for: id },
+      h("p", { id: `${id}-consequence`, className: "note" }, consequence),
+      h("label", { className: "field-label", for: id },
         h("span", null, target.kind === "skill" ? "삭제하려면 스킬 이름을 정확히 입력하세요: " : "삭제하려면 이 버전의 식별자 앞 8자를 입력하세요: ",
-          h("code", { class: "version__digest" }, confirmationText(target))),
-        h("input", { id, ref: confirmField, class: "text-field", type: "text", autocomplete: "off", autocapitalize: "off", spellcheck: false,
+          h("code", { className: "version__digest" }, confirmationText(target))),
+        h("input", { id, ref: confirmField, className: "text-field", type: "text", autoComplete: "off", autoCapitalize: "off", spellCheck: false,
           value: typed, disabled: busy, "aria-describedby": `${id}-consequence`,
-          onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setTyped(event.currentTarget.value) })),
-      h("div", { class: "cluster" },
-        h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => setPending(null) }, keepLabel),
-        h("button", { class: "button danger", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "삭제 확인")));
+          onInput: (event: React.SyntheticEvent<HTMLInputElement>) => setTyped(event.currentTarget.value) })),
+      h("div", { className: "cluster" },
+        h("button", { className: "button secondary", type: "button", disabled: busy, onClick: () => setPending(null) }, keepLabel),
+        h("button", { className: "button danger", type: "button", disabled: !armed, onClick: () => { if (armed) void onConfirm(); } }, "삭제 확인")));
   };
 
   return { pending, setPending, openConfirmation, confirmation };

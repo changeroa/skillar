@@ -1,7 +1,7 @@
 import "../../src/style.css";
 import "../../src/ui/ui.css";
-import { h, render } from "preact";
-import { useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useRef, useState } from "react";
 import { BarChart, LineChart, DataTable, FacetPanel, KeyValueGrid, NumberTile, PeekPanel,
   Pill, SegmentedTabs, Skeleton, Toast, usePeekSelection } from "../../src/ui/index.ts";
 
@@ -14,10 +14,10 @@ function Showcase() {
     { label: "읽기", values: [0, 7, 3] }, { label: "검색", values: [3, 14, 2] }] };
   return h("main", { style: { padding: "24px", display: "grid", gap: "24px", maxWidth: "960px", margin: "auto" } },
     h("h1", { style: { fontSize: "28px" } }, "공유 컴포넌트"),
-    h("p", { class: "note" }, "합성 데이터 · 시각 검증 전용"),
-    h("div", { class: "cluster" },
+    h("p", { className: "note" }, "합성 데이터 · 시각 검증 전용"),
+    h("div", { className: "cluster" },
       h(Pill, { children: "호스팅" }), h(Pill, { tone: "success", children: "완료" }),
-      h("button", { id: "showcase-open", ref: opener, class: "button secondary", type: "button", onClick: () => select("fixture") }, "상세 열기")),
+      h("button", { id: "showcase-open", ref: opener, className: "button secondary", type: "button", onClick: () => select("fixture") }, "상세 열기")),
     h(NumberTile, { label: "세션", value: null, note: "기록을 받은 뒤 표시합니다." }),
     h(FacetPanel, { title: "리비전 필터", scope: "현재 표본 3개", groups: [
       { id: "revision", label: "리비전", values: [{ id: "1", label: "1개", count: 2 }, { id: "2", label: "2개", count: 1 }] }],
@@ -36,7 +36,7 @@ function Showcase() {
     h(LineChart, { title: "요청 추이 · 합성 데이터", data }),
     h(BarChart, { title: "읽기 기록", data: { labels: [], series: [] } }),
     h(Skeleton, { rows: 3 }),
-    h("button", { id: "showcase-toast", class: "button secondary", type: "button", onClick: () => setNotice("복사했습니다.") }, "피드백 표시"),
+    h("button", { id: "showcase-toast", className: "button secondary", type: "button", onClick: () => setNotice("복사했습니다.") }, "피드백 표시"),
     h(Toast, { message: notice, onDismiss: () => setNotice("") }),
     h(PeekPanel, { id: "showcase-peek", selectedId: selected, title: "스킬 상세",
       fullPageHref: "/skills/", returnFocus: opener.current, onClose: () => select(null),

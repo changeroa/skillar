@@ -1,5 +1,5 @@
-import type { ComponentChildren } from "preact";
-import { useLayoutEffect, useRef } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useLayoutEffect, useRef } from "react";
 import { Button } from "../controls/buttons";
 
 export type DialogProps = {
@@ -38,7 +38,7 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
       if (origin instanceof HTMLElement && origin.isConnected) origin.focus({ preventScroll: true });
     };
   }, [open, initialFocusId]);
-  return <dialog ref={panel} id={id} class={`lf-dialog lf-dialog--${placement} lf-dialog--${size}${placement === "side" && side === "left" ? " lf-dialog--left" : ""}`}
+  return <dialog ref={panel} id={id} className={`lf-dialog lf-dialog--${placement} lf-dialog--${size}${placement === "side" && side === "left" ? " lf-dialog--left" : ""}`}
     role={kind} aria-modal="true" aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined} tabIndex={-1}
     onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose(); }}
@@ -58,21 +58,21 @@ export function Dialog({ id, open, title, onClose, children, actions, descriptio
       } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }}
     onClick={event => event.stopPropagation()}>
-    <header class="lf-dialog__head">
-      <div class="lf-dialog__head-content">
-      <div class="lf-dialog__heading"><h2 id={`${id}-title`} tabIndex={-1} data-dialog-start>{title}</h2>
+    <header className="lf-dialog__head">
+      <div className="lf-dialog__head-content">
+      <div className="lf-dialog__heading"><h2 id={`${id}-title`} tabIndex={-1} data-dialog-start>{title}</h2>
         {subtitle && <p>{subtitle}</p>}</div>
-      <button type="button" class="lf-overlay-close" aria-label="닫기" onClick={onClose}>
+      <button type="button" className="lf-overlay-close" aria-label="닫기" onClick={onClose}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
       </button>
       </div>
     </header>
-    <div class="lf-dialog__body">
+    <div className="lf-dialog__body">
       {description && <p id={`${id}-description`}>{description}</p>}
       {children}
     </div>
-    {actions && <footer class="lf-dialog__actions">{actions}</footer>}
+    {actions && <footer className="lf-dialog__actions">{actions}</footer>}
   </dialog>;
 }
 
@@ -90,7 +90,7 @@ export function ConfirmDialog({ id, open, title, description, confirmLabel, canc
       <Button id={`${id}-cancel`} text={cancelLabel} variant="outline" disabled={busy} onClick={dismiss} />
       <Button text={confirmLabel} variant="destructive" disabled={confirmDisabled} loading={busy} onClick={onConfirm} />
     </>}>
-    {error && <div role="alert" class="lf-confirm-error"><h5>오류:</h5><div>{error}</div></div>}
+    {error && <div role="alert" className="lf-confirm-error"><h5>오류:</h5><div>{error}</div></div>}
     {children}
   </Dialog>;
 }

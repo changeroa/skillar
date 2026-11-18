@@ -1,9 +1,10 @@
 import './main';
+import { render } from "./react-mount";
 import ky, { HTTPError, TimeoutError } from 'ky';
 import { sessionResponseSchema } from '../lib/account';
 import type { SessionUser } from '../lib/account';
 import { KST_TIME_ZONE } from './time.ts';
-import { h, render } from 'preact';
+import {createElement as h} from 'react';
 import { Avatar } from '../../local/dashboard/foundation/controls/choices';
 
 const emptyViews = Array.from(document.querySelectorAll<HTMLElement>('.empty-state'));

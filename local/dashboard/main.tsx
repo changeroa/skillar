@@ -1,5 +1,6 @@
-import { render } from "preact";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {} from "react";
+import { render } from "./react-mount";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Filter } from "../src/types.js";
 import { api, type LiveState, type SessionListRow } from "./api";
 import {
@@ -76,18 +77,18 @@ function FilterChips({ route, navigate }: { route: Route; navigate: (next: Route
   const chips = chipsFor(route.filter);
   if (!chips.length) return null;
   return (
-    <div class="filters" aria-label="적용된 필터">
+    <div className="filters" aria-label="적용된 필터">
       {chips.map((chip) => (
-        <span class="chip" key={chip.key}>
-          <span class="chip__k">{chip.label}</span>
-          <span class="chip__v" title={chip.value}>{chip.value}</span>
-          <button type="button" class="chip__x" aria-label={`${chip.label} 필터 해제`} onClick={() => navigate({ ...route, filter: withoutFilterKey(route.filter, chip.key) })}>
+        <span className="chip" key={chip.key}>
+          <span className="chip__k">{chip.label}</span>
+          <span className="chip__v" title={chip.value}>{chip.value}</span>
+          <button type="button" className="chip__x" aria-label={`${chip.label} 필터 해제`} onClick={() => navigate({ ...route, filter: withoutFilterKey(route.filter, chip.key) })}>
             {"\u00d7"}
           </button>
         </span>
       ))}
       {chips.length > 1 && (
-        <button type="button" class="btn" onClick={() => navigate({ ...route, filter: {} })}>전체 해제</button>
+        <button type="button" className="btn" onClick={() => navigate({ ...route, filter: {} })}>전체 해제</button>
       )}
     </div>
   );
@@ -107,7 +108,7 @@ function AutomatedToggle({ route, navigate, live }: { route: Route; navigate: (n
   }, [baseKey, live.seq]);
   if (route.filter.automated !== undefined || hidden === 0) return null;
   return (
-    <button type="button" class="btn" data-automated-toggle title={AUTOMATED_EXPLAINER}
+    <button type="button" className="btn" data-automated-toggle title={AUTOMATED_EXPLAINER}
       onClick={() => navigate({ ...route, filter: { ...route.filter, automated: "include" } })}>
       {`자동 실행 세션 ${hidden}개 숨김 \u00b7 표시`}
     </button>
@@ -220,9 +221,9 @@ export function App({ embedded = false }: AppOptions = {}) {
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
     <LocalShell {...props} automation={<AutomatedToggle route={route} navigate={navigate} live={live} />}>
-      {embedded && <Header class="top local-top">
-        <div class="wrap top__row">
-          <nav class="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
+      {embedded && <Header className="top local-top">
+        <div className="wrap top__row">
+          <nav className="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
             const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="tab"]'));
             const index = tabs.findIndex(tab => tab === event.target);
             let next: number;
@@ -242,35 +243,35 @@ export function App({ embedded = false }: AppOptions = {}) {
             {TABS.map((tab) => (
               <a key={tab.view} id={`skillar-local-tab-${tab.view}`} role="tab" aria-controls="skillar-local-panel"
                 aria-selected={activeTab === tab.view} tabIndex={activeTab === tab.view || activeTab === "not-found" ? 0 : -1}
-                class="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
+                className="tab" href={buildHash({ view: tab.view, filter: route.filter })} aria-current={activeTab === tab.view ? "page" : undefined}>
                 {tab.label}
               </a>
             ))}
           </nav>
-          <div class="top__status">
-            <span class={`live live--${live.state}`} role="status" aria-live="polite">
-              <span class="live__dot" aria-hidden="true" />
+          <div className="top__status">
+            <span className={`live live--${live.state}`} role="status" aria-live="polite">
+              <span className="live__dot" aria-hidden="true" />
               {LIVE_TEXT[live.state]}
             </span>
             <FilterChips route={route} navigate={navigate} />
             <AutomatedToggle route={route} navigate={navigate} live={live} />
           </div>
         </div>
-        <div class="wrap"><p class="local-location" aria-label="현재 위치">
+        <div className="wrap"><p className="local-location" aria-label="현재 위치">
           <span>출처: {embedded ? "선택한 출처" : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
           {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
           {route.view === "workspace" && <> › <code>{route.flowId}</code></>}
         </p></div>
       </Header>}
-      <Content class={embedded ? "page wrap" : "pe-content"}
+      <Content className={embedded ? "page wrap" : "pe-content"}
         id={embedded ? "skillar-local-panel" : undefined}
         ref={(node: HTMLElement | null) => { contentRef.current = node; }}
         tabIndex={embedded ? -1 : undefined} role={embedded ? "tabpanel" : undefined}
         aria-label={embedded ? `${VIEW_LABEL[activeTab]} 기록` : undefined}>
         <div id={embedded ? undefined : "skillar-local-panel"}>
         {(route.view === "sessions" || route.view === "trace") && (
-          <div class={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
-            {(embedded || route.view === "sessions") && <div class={route.view === "trace" ? "sessions-detail__list" : undefined}>
+          <div className={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page" : "pe-sessions-region"}>
+            {(embedded || route.view === "sessions") && <div className={route.view === "trace" ? "sessions-detail__list" : undefined}>
               <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
             </div>}
             {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
@@ -282,10 +283,10 @@ export function App({ embedded = false }: AppOptions = {}) {
         {route.view === "workspace" && <WorkspaceView {...props} />}
         {route.view === "flow" && <FlowView {...props} />}
         {route.view === "heatmap" && <HeatmapView {...props} />}
-        {route.view === "not-found" && <section class="empty">
+        {route.view === "not-found" && <section className="empty">
           {embedded ? <h2>페이지를 찾을 수 없습니다</h2> : <h1>페이지를 찾을 수 없습니다</h1>}
           <p>주소가 올바르지 않거나 더 이상 사용할 수 없는 화면입니다. 세션 목록에서 다시 시작하세요.</p>
-          <a class="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
+          <a className="btn" href={buildHash({ view: "sessions", filter: route.filter })}>세션으로 돌아가기</a>
         </section>}
         </div>
       </Content>

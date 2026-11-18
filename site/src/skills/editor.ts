@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { JSX } from "preact";
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {JSX} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PRIVATE_SKILL_MAX_RESOURCE_BYTES, PRIVATE_SKILL_MAX_RESOURCES } from "../../../shared/dist/private-skills.js";
 import { draftIssues, ENTRYPOINT, formatBytes, mediaTypeFor, mergePickedFiles, readFrontMatter, relativePaths, removeFile } from "./model.ts";
 import type { Draft, DraftFile } from "./model.ts";
@@ -102,7 +102,7 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange, showErrors
     if (field !== null) document.getElementById(id(field))?.focus();
   }, [busy, showErrors]);
 
-  const picked = async (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+  const picked = async (event: React.SyntheticEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const list = input.files;
     if (busy || list === null || list.length === 0) return;
@@ -124,64 +124,64 @@ export function DraftEditor({ draft, idPrefix, busy, notes, onChange, showErrors
     }
   };
 
-  const fileRows = draft.files.map(file => h("li", { key: file.path, class: "file-row" },
-    h("div", { class: "file-row__name" },
+  const fileRows = draft.files.map(file => h("li", { key: file.path, className: "file-row" },
+    h("div", { className: "file-row__name" },
       h("code", null, file.path),
-      h("span", { class: "note" }, `${formatBytes(file.bytes.length)} · `, h("code", null, file.mediaType))),
-    h("button", { class: "button secondary file-row__remove", type: "button", disabled: busy,
+      h("span", { className: "note" }, `${formatBytes(file.bytes.length)} · `, h("code", null, file.mediaType))),
+    h("button", { className: "button secondary file-row__remove", type: "button", disabled: busy,
       "aria-label": `${file.path} 제거`, onClick: () => onChange(current => removeFile(current, file.path), []) }, "제거")));
 
-  return h("div", { class: "editor" },
-    h("fieldset", { class: "editor__files", "aria-labelledby": id("files-title"),
+  return h("div", { className: "editor" },
+    h("fieldset", { className: "editor__files", "aria-labelledby": id("files-title"),
       "aria-invalid": fileErrors.length > 0, "aria-describedby": fileErrors.length > 0 ? id("file-errors") : undefined },
       h("p", { id: id("pick-note") }, `${ENTRYPOINT}가 있는 폴더나 파일을 선택하세요. 폴더 안의 구조는 유지하고 최상위 폴더 이름은 제외합니다. 선택한 파일만, 선택할 때 읽습니다.`),
-      h("div", { class: "cluster file-picker" },
-        h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
+      h("div", { className: "cluster file-picker" },
+        h("button", { className: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
           onClick: () => folderInput.current?.click() }, "스킬 폴더 선택\u2026"),
-        h("button", { class: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
+        h("button", { className: "button secondary", type: "button", disabled: busy, "aria-describedby": id("pick-note"),
           onClick: () => filesInput.current?.click() }, "파일 선택\u2026"),
         h("input", { ref: folderInput, type: "file", disabled: busy, webkitdirectory: true, multiple: true, hidden: true, tabIndex: -1,
           "aria-hidden": "true", onChange: picked }),
         h("input", { ref: filesInput, type: "file", disabled: busy, multiple: true, hidden: true, tabIndex: -1, "aria-hidden": "true", onChange: picked })),
-      readError !== "" && h("p", { class: "note", role: "alert" }, readError),
-      readMessage !== "" && h("p", { class: "note", role: "status" }, readMessage),
-      fileErrors.length > 0 && h("p", { id: id("file-errors"), class: "field-error", role: "alert", tabIndex: -1 },
+      readError !== "" && h("p", { className: "note", role: "alert" }, readError),
+      readMessage !== "" && h("p", { className: "note", role: "status" }, readMessage),
+      fileErrors.length > 0 && h("p", { id: id("file-errors"), className: "field-error", role: "alert", tabIndex: -1 },
         fileErrors.map(issue => issue.message).join(" ")),
-      undo !== null && h("button", { class: "button secondary", type: "button", disabled: busy, onClick: () => {
+      undo !== null && h("button", { className: "button secondary", type: "button", disabled: busy, onClick: () => {
         onChange(current => ({ ...current, document: undo.document, files: undo.files }), []);
         setUndo(null);
       } }, "되돌리기"),
-      notes.length > 0 && h("ul", { class: "editor__notes", role: "status", "aria-live": "polite" },
-        notes.map(note => h("li", { key: note, class: "note" }, note))),
-      h("p", { class: "editor__subtitle", id: id("files-title") }, "추가 파일"),
+      notes.length > 0 && h("ul", { className: "editor__notes", role: "status", "aria-live": "polite" },
+        notes.map(note => h("li", { key: note, className: "note" }, note))),
+      h("p", { className: "editor__subtitle", id: id("files-title") }, "추가 파일"),
       draft.files.length === 0
-        ? h("p", { class: "note" }, `아직 없습니다. ${ENTRYPOINT} 하나만으로도 스킬을 구성할 수 있습니다.`)
-        : h("ul", { class: "file-list", "aria-labelledby": id("files-title") }, fileRows)),
-    h("dl", { class: "account-status will-publish" },
+        ? h("p", { className: "note" }, `아직 없습니다. ${ENTRYPOINT} 하나만으로도 스킬을 구성할 수 있습니다.`)
+        : h("ul", { className: "file-list", "aria-labelledby": id("files-title") }, fileRows)),
+    h("dl", { className: "account-status will-publish" },
       h("div", null, h("dt", null, "이름"), h("dd", null, front.name === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.name))),
       h("div", null, h("dt", null, "설명"), h("dd", null, front.description === null ? "SKILL.md 메타데이터에서 찾지 못했습니다" : h("code", null, front.description)))),
     h(Textarea, { label: `${ENTRYPOINT} (렌더링하지 않는 일반 텍스트)`, code: true,
-      id: id("document"), rows: 18, spellcheck: false, autocomplete: "off", disabled: busy,
+      id: id("document"), rows: 18, spellCheck: false, autoComplete: "off", disabled: busy,
       "aria-invalid": documentErrors.length > 0, "aria-describedby": documentErrors.length > 0 ? id("document-errors") : undefined,
       value: draft.document,
-      onInput: (event: JSX.TargetedEvent<HTMLTextAreaElement, Event>) => {
+      onInput: (event: React.SyntheticEvent<HTMLTextAreaElement>) => {
         const document = event.currentTarget.value;
         onChange(current => ({ ...current, document }), []);
       } }),
-    documentErrors.length > 0 && h("p", { id: id("document-errors"), class: "field-error", role: "alert" },
+    documentErrors.length > 0 && h("p", { id: id("document-errors"), className: "field-error", role: "alert" },
       documentErrors.map(issue => issue.message).join(" ")),
-    h("label", { class: "choice choice--ack" },
+    h("label", { className: "choice choice--ack" },
       h("input", { id: id("acknowledged"), type: "checkbox", checked: draft.acknowledged, disabled: busy,
         "aria-invalid": acknowledgementErrors.length > 0,
         "aria-describedby": acknowledgementErrors.length > 0 ? id("acknowledgement-errors") : undefined,
-        onChange: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+        onChange: (event: React.SyntheticEvent<HTMLInputElement>) => {
           const acknowledged = event.currentTarget.checked;
           onChange(current => ({ ...current, acknowledged }), []);
         } }),
       h("span", null,
         h("strong", null, "이 파일을 내 비공개 skillar 보관함에 업로드하는 데 동의합니다."),
-        h("span", { class: "choice__detail" },
+        h("span", { className: "choice__detail" },
           "기기 활동 수집 동의와 별개입니다. 위에 나열된 파일과 SKILL.md 텍스트만 전송하며, 삭제할 때까지 내 계정에 보관합니다."))),
-    acknowledgementErrors.length > 0 && h("p", { id: id("acknowledgement-errors"), class: "field-error", role: "alert" },
+    acknowledgementErrors.length > 0 && h("p", { id: id("acknowledgement-errors"), className: "field-error", role: "alert" },
       acknowledgementErrors.map(issue => issue.message).join(" ")));
 }

@@ -1,5 +1,5 @@
 import { isSkillarMcpData } from "../../src/ingest/identity.js";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import type { UsageTokenKey, UsageTokens } from "../../src/analysis/usage.js";
 import type { AssignedTreeEvent } from "../../src/types.js";
 import { installStyles } from "../charts/sankey";
@@ -99,13 +99,13 @@ export function callRows(events: readonly Pick<AssignedTreeEvent, "id" | "kind" 
 }
 
 export function Tokens({ parts }: { parts: TokenPart[] }) {
-  if (parts.length === 0) return <span class="tok tok--none">토큰 {UNKNOWN}</span>;
+  if (parts.length === 0) return <span className="tok tok--none">토큰 {UNKNOWN}</span>;
   return (
     <>
       {parts.map((part) => (
-        <span key={part.key} class="tok">
-          <span class="tok__k">{part.label}</span>
-          <span class="tok__v">{part.value.toLocaleString()}</span>
+        <span key={part.key} className="tok">
+          <span className="tok__k">{part.label}</span>
+          <span className="tok__v">{part.value.toLocaleString()}</span>
         </span>
       ))}
     </>
@@ -114,28 +114,28 @@ export function Tokens({ parts }: { parts: TokenPart[] }) {
 
 export function CallList({ rows }: { rows: CallRow[] }) {
   const [open, setOpen] = useState(false);
-  if (rows.length === 0) return <p class="calls__none">기록된 도구 호출이나 모델 호출이 없습니다</p>;
+  if (rows.length === 0) return <p className="calls__none">기록된 도구 호출이나 모델 호출이 없습니다</p>;
   const shown = open ? rows : rows.slice(0, MAX_CALL_ROWS);
   return (
     <>
-      <ul class="calls">
+      <ul className="calls">
         {shown.map((row) => (
-          <li key={row.id} class="call" data-kind={row.kind}>
-            <span class="call__name">{row.name}</span>
-            {row.skillarMcp && <span class="tag" title="skillar 자체 MCP 서버 호출">skillar</span>}
+          <li key={row.id} className="call" data-kind={row.kind}>
+            <span className="call__name">{row.name}</span>
+            {row.skillarMcp && <span className="tag" title="skillar 자체 MCP 서버 호출">skillar</span>}
             {row.kind === "tool_call" && (
               row.success === null
-                ? <span class="tag tag--dim">결과 {UNKNOWN}</span>
-                : <span class={row.success ? "tag tag--ok" : "tag tag--bad"}>{row.success ? "성공" : "실패"}</span>
+                ? <span className="tag tag--dim">결과 {UNKNOWN}</span>
+                : <span className={row.success ? "tag tag--ok" : "tag tag--bad"}>{row.success ? "성공" : "실패"}</span>
             )}
-            <span class="call__meta">{row.duration}</span>
-            {row.kind === "llm_call" && <span class="call__meta">비용 {row.cost}</span>}
+            <span className="call__meta">{row.duration}</span>
+            {row.kind === "llm_call" && <span className="call__meta">비용 {row.cost}</span>}
             {row.kind === "llm_call" && <Tokens parts={row.tokens} />}
           </li>
         ))}
       </ul>
       {rows.length > MAX_CALL_ROWS && (
-        <button type="button" class="foldbtn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <button type="button" className="foldbtn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           {open ? "호출 접기" : `호출 ${rows.length}건 모두 보기`}
         </button>
       )}

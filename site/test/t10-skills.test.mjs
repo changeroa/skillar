@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { createPrivateSkillPackage } from "../../shared/dist/private-skill-package.js";
 import { routes } from "../src/skills/api.ts";
 import { emptyDraft } from "../src/skills/model.ts";
-import { act, all, byTag, buttonNamed, h, input, mount, render, submit, waitFor, loadViews } from "./helpers/t10-dom.mjs";
+import { act, all, byTag, choose, buttonNamed, FakeEvent, h, input, mount, render, submit, waitFor, loadViews } from "./helpers/t10-dom.mjs";
 const { SkillPanel, DraftEditor, PublishPanel } = await loadViews(`
   export { SkillPanel } from "./site/src/skills/skill.ts";
   export { DraftEditor } from "./site/src/skills/editor.ts";
@@ -39,8 +39,12 @@ function Editor({ busy = false }) {
 
 function pick(node, ...files) {
   node.files = files;
-  const event = { type: "change", currentTarget: node, target: node };
-  return node.listeners.find(entry => entry.type === "change").listener.call(node, event);
+  node.value = files.length ? `C:\\fakepath\\${files.map(entry => entry.name).join(",")}` : "";
+  // React delegates change handling; dispatch the native event and resolve once the reads
+  // the component started have settled plus one macrotask for its continuation.
+  const reads = files.map(entry => entry.arrayBuffer());
+  act(() => { node.dispatchEvent(new FakeEvent("change")); });
+  return Promise.allSettled(reads).then(() => new Promise(resolve => setTimeout(resolve, 0)));
 }
 function file(name, buffer) {
   return { name, webkitRelativePath: "", size: 1, type: "text/plain", arrayBuffer: () => buffer };
@@ -125,7 +129,7 @@ test("CV-031 package generation locks publishing before any asynchronous digest 
   await input(byTag(container, "textarea")[0], document);
   const checkbox = byTag(container, "input").find(node => node.type === "checkbox");
   const { FakeEvent } = await import("./helpers/fake-dom.mjs");
-  await act(() => { checkbox.checked = true; checkbox.dispatchEvent(new FakeEvent("change")); });
+  await choose(checkbox);
   // When
   await submit(byTag(container, "form")[0]);
   // Then

@@ -10,8 +10,8 @@ export function ToastIcon({ variant }: { readonly variant: keyof typeof paths })
     fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d={paths[variant]} clip-rule="evenodd" /></svg>;
 }
 export function ToastLoading() {
-  return <span class="lf-toast-loader" aria-hidden="true"><span class="lf-toast-loader__spinner">{Array.from({ length: 12 }, (_, index) =>
-    <span class="lf-toast-loader__bar" key={index} style={{
+  return <span className="lf-toast-loader" aria-hidden="true"><span className="lf-toast-loader__spinner">{Array.from({ length: 12 }, (_, index) =>
+    <span className="lf-toast-loader__bar" key={index} style={{
       transform: `rotate(${index === 0 ? .0001 : index * 30}deg) translate(146%)`,
       animationDelay: `-${(1.2 - index * .1).toFixed(1)}s`,
     }} />)}</span></span>;

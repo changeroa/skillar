@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useRef, useState } from "react";
 import type { PrivateSkillId } from "../../../shared/dist/private-skills.js";
 import { classifyFailure, describeFailure, isUnauthorized, technicalDetail } from "./api.ts";
 import { DraftEditor, useDraftGuard } from "./editor.ts";
@@ -71,17 +71,17 @@ export function PublishPanel({ signal, onPublished, onOpen, onUnauthorized }: Pu
     }
   };
 
-  return h("section", { class: "panel", "aria-labelledby": "publish-title" },
+  return h("section", { className: "panel", "aria-labelledby": "publish-title" },
     h("h2", { id: "publish-title" }, "새 스킬 게시"),
-    h("p", { class: "account-lead" }, "스킬은 SKILL.md와 선택적으로 추가하는 파일로 구성됩니다. 게시하면 내 계정의 새 스킬 ID에 리비전 1로 저장합니다. 이후 버전은 해당 스킬 화면에서 게시합니다."),
-    h("form", { class: "publish", onSubmit: submit },
+    h("p", { className: "account-lead" }, "스킬은 SKILL.md와 선택적으로 추가하는 파일로 구성됩니다. 게시하면 내 계정의 새 스킬 ID에 리비전 1로 저장합니다. 이후 버전은 해당 스킬 화면에서 게시합니다."),
+    h("form", { className: "publish", onSubmit: submit },
       h(DraftEditor, { draft, idPrefix: "new-skill", busy, notes, onChange: change, showErrors: problems.length > 0 }),
       problems.length > 0 && h("div", { role: "alert" },
-        h("ul", { class: "problems" }, problems.map(problem => h("li", { key: problem }, problem)))),
-      h("div", { class: "cluster publish__actions" },
-        h("button", { class: "button primary", type: "submit", disabled: busy }, "스킬 게시"),
-        outcome.kind === "published" && h("button", { class: "button secondary", type: "button", onClick: () => onOpen(outcome.skillId) }, `${outcome.name} 열기`),
-        outcome.kind === "exists" && h("button", { class: "button secondary", type: "button", onClick: () => onOpen(outcome.skillId) }, "기존 스킬 열기"),
-        h("span", { class: "note", role: "status", "aria-live": "polite" }, message),
-        detail !== null && h("details", { class: "technical" }, h("summary", null, "기술 정보"), h("code", null, detail)))));
+        h("ul", { className: "problems" }, problems.map(problem => h("li", { key: problem }, problem)))),
+      h("div", { className: "cluster publish__actions" },
+        h("button", { className: "button primary", type: "submit", disabled: busy }, "스킬 게시"),
+        outcome.kind === "published" && h("button", { className: "button secondary", type: "button", onClick: () => onOpen(outcome.skillId) }, `${outcome.name} 열기`),
+        outcome.kind === "exists" && h("button", { className: "button secondary", type: "button", onClick: () => onOpen(outcome.skillId) }, "기존 스킬 열기"),
+        h("span", { className: "note", role: "status", "aria-live": "polite" }, message),
+        detail !== null && h("details", { className: "technical" }, h("summary", null, "기술 정보"), h("code", null, detail)))));
 }

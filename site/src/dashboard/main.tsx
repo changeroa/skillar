@@ -1,7 +1,8 @@
 import "../../../local/dashboard/styles.css";
+import { render } from "../react-mount";
 import "./embed.css";
 import "../main";
-import { render } from "preact";
+import {} from "react";
 import { Dashboard } from "./app";
 
 const root = document.getElementById("dashboard-app");

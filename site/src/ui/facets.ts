@@ -1,4 +1,4 @@
-import { h } from "preact";
+import {createElement as h} from "react";
 import { TableFacet } from "../../../local/dashboard/foundation/table/facets";
 
 export type FacetGroup = {
@@ -14,8 +14,8 @@ export function FacetPanel({ title, scope, groups, selected, onChange }: {
   readonly selected: Readonly<Record<string, readonly string[]>>;
   readonly onChange: (group: string, values: readonly string[]) => void;
 }) {
-  return h("aside", { class: "ui-facets lf-facet-panel", "aria-label": title },
-    h("p", { class: "note" }, scope),
+  return h("aside", { className: "ui-facets lf-facet-panel", "aria-label": title },
+    h("p", { className: "note" }, scope),
     groups.map(group => h(TableFacet<string>, {
       key: group.id, label: group.label,
       choices: group.values.map(value => ({ value: value.id, label: value.label, count: value.count })),

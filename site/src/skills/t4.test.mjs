@@ -46,7 +46,7 @@ test("sort uses response timestamps by default and names when selected without m
 
 test("library places search and sortable headers before rows and retains the selected workspace", async t => {
   // Given
-  const { h } = await import("preact");
+  const { h } = await import("react");
   const props = { ...searchProps, skills: [summary, older], status: "ready", message: "", notice: "",
     selectedId: skillId, onReload() {}, detail: h("section", { id: "selected-detail" }, "상세") };
   // When
@@ -76,7 +76,7 @@ test("candidate digest relationship distinguishes current, different and absent 
 
 test("catalog arrival moves the selected detail without unmounting its workspace", async t => {
   // Given
-  const { h } = await import("preact");
+  const { h } = await import("react");
   const props = { ...searchProps, skills: [], status: "loading", message: "", notice: "", selectedId: skillId,
     onReload() {}, detail: h("section", { id: "retained-detail" }, "상세") };
   const { dom, show } = await mount(t, LibraryPanel, props);
@@ -374,7 +374,7 @@ test("publication preparation preserves the existing base and explicit acknowled
 
 test("entity heading updates T1's h1 container without creating a duplicate", async t => {
   // Given
-  const { h } = await import("preact");
+  const { h } = await import("react");
   function Shell({ name }) {
     globalThis.document.querySelector = () => globalThis.document.getElementById("skills-page-title");
     return h("div", null, h("h1", { id: "skills-page-title" }, "스킬"), h(SkillsHeading, { name }));

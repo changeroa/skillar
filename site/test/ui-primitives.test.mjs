@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { useState } from "preact/hooks";
-import { act, all, byTag, FakeEvent, h, mount, input, loadViews } from "./helpers/t10-dom.mjs";
+import { useState } from "react";
+import { act, all, byTag, choose, FakeEvent, h, mount, input, loadViews } from "./helpers/t10-dom.mjs";
 const { DataTable, sortRows, FacetPanel, Pill, KeyValueGrid, NumberTile, Toast, Skeleton,
   SegmentedTabs, BarChart, LineChart, chartLayout, peekUrl, usePeekSelection, PeekPanel } =
   await loadViews('export * from "./site/src/ui/index.ts";');
@@ -114,7 +114,7 @@ test("facet selection reports its group and value without dropping zero-count op
   });
   const checkbox = byTag(container, "input").find(field => field.type === "checkbox");
   // When
-  await act(() => { checkbox.checked = true; checkbox.dispatchEvent(new FakeEvent("change")); });
+  await choose(checkbox);
   // Then
   assert.deepEqual(change, ["runtime", ["empty"]]);
   assert.equal(checkbox.disabled, false);

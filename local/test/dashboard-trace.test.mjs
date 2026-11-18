@@ -16,7 +16,7 @@ async function loadModule(relative) {
     platform: "node",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "preact",
+    jsxImportSource: "react",
     logLevel: "silent",
   });
   const code = result.outputFiles[0].text;

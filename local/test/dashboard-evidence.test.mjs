@@ -40,10 +40,10 @@ const mutation = process.env.SKILLAR_DASHBOARD_MUTATION;
 const reword = process.env.SKILLAR_DASHBOARD_REWORD === "1";
 const bundled = await build({
   stdin: {
-    contents: 'export * from "./dashboard/views/workspaces.tsx"; export * from "./dashboard/components/skill-evidence.tsx"; export {h, render} from "preact";',
+    contents: 'export * from "./dashboard/views/workspaces.tsx"; export * from "./dashboard/components/skill-evidence.tsx"; export {h, render} from "react";',
     resolveDir: fileURLToPath(PACKAGE_ROOT), loader: "tsx",
   },
-  bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "preact", logLevel: "silent",
+  bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react", logLevel: "silent",
   plugins: mutation || reword ? [{
     name: "regression-mutation",
     setup(build) {

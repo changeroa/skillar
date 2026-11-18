@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { PrivateSkillDetail, PrivateSkillDigest } from "../../../shared/dist/private-skills.js";
 import { downloadTextFile } from "../dashboard/grant.ts";
 import { classifyFailure, deleteSkill, describeFailure, isUnauthorized, readExport, readSkill } from "./api.ts";
@@ -196,9 +196,9 @@ export function SkillPanel(props: SkillProps) {
     returnFocus: props.returnFocus ?? null, onClose: () => {
       if (!controller.busy) props.onBack();
     }, ...(props.onFullPage ? { onFullPage: props.onFullPage } : {}),
-    actions: h("div", { class: "skill-peek-actions cluster" },
-      h("button", { class: "button secondary", type: "button", disabled: !props.onPrevious || controller.busy, onClick: props.onPrevious }, "이전"),
-      h("button", { class: "button secondary", type: "button", disabled: !props.onNext || controller.busy, onClick: props.onNext }, "다음"),
-      h("button", { class: "button secondary", type: "button", onClick: copy }, "ID 복사")),
+    actions: h("div", { className: "skill-peek-actions cluster" },
+      h("button", { className: "button secondary", type: "button", disabled: !props.onPrevious || controller.busy, onClick: props.onPrevious }, "이전"),
+      h("button", { className: "button secondary", type: "button", disabled: !props.onNext || controller.busy, onClick: props.onNext }, "다음"),
+      h("button", { className: "button secondary", type: "button", onClick: copy }, "ID 복사")),
     children: h("div", null, h(Toast, { message: toast, onDismiss: () => setToast("") }), content) });
 }

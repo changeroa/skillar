@@ -9,11 +9,20 @@
       "DOM.Iterable"
     ],
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    "jsxImportSource": "react",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "react": [
+        "../node_modules/@types/react"
+      ],
+      "react/*": [
+        "../node_modules/@types/react/*"
+      ]
+    }
   },
   "include": [
     "./**/*.ts",

@@ -1,5 +1,5 @@
 import { REQUEST_STATUSES, type RequestStatus } from "../../src/request-status.js";
-import { useMemo, useState } from "preact/hooks";
+import { useMemo, useState } from "react";
 import type { FlowState, Filter, FlowDto, SkillEntry } from "../../src/types.js";
 import { api } from "../api";
 import { STATE_VALUES, Sankey, genericLabel, installStyles, nodeValue, percent, share, type FlowLink, type FlowNode, type FlowTarget } from "../charts/sankey";
@@ -124,9 +124,9 @@ installStyles("flow", FLOW_CSS);
 
 function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (next: T) => void }) {
   return (
-    <div class="seg" role="group" aria-label={label}>
+    <div className="seg" role="group" aria-label={label}>
       {options.map((option) => (
-        <button key={option.value} type="button" class="seg__btn" aria-pressed={option.value === value} onClick={() => onChange(option.value)}>
+        <button key={option.value} type="button" className="seg__btn" aria-pressed={option.value === value} onClick={() => onChange(option.value)}>
           {option.label}
         </button>
       ))}
@@ -136,13 +136,13 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
 
 function Legend({ unit, withKey }: { unit: FlowUnit; withKey: boolean }) {
   return (
-    <p class="flow__legend">
+    <p className="flow__legend">
       <span>{`${legendText(unit)} 비율 = 경로의 요청 수 / 기간 내 요청 수.`}</span>
       {withKey && (
-        <span class="flow__key" aria-label="띠 색상">
+        <span className="flow__key" aria-label="띠 색상">
           {REQUEST_STATUSES.filter((s) => s !== "not_attempted").map((state) => (
-            <span class="flow__swatch" key={state}>
-              <i class={`flow__dot is-${state}`} aria-hidden="true" />
+            <span className="flow__swatch" key={state}>
+              <i className={`flow__dot is-${state}`} aria-hidden="true" />
               {STATE_LABEL[state]}
             </span>
           ))}
@@ -167,8 +167,8 @@ export function TopPathsTable({ dto, route, navigate, resolve }: { dto: FlowDto;
     <button onClick={() => navigate({ ...route, analysisSort: sort === key ? `-${key}` : key })}>{label} {sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "↓" : "↑" : "↕"}</button>
   </th>;
   return (
-    <div class="card flow__paths">
-      <table class="paths analysis-table">
+    <div className="card flow__paths">
+      <table className="paths analysis-table">
         <thead>
           <tr>
             {header("path", "경로")}
@@ -186,16 +186,16 @@ export function TopPathsTable({ dto, route, navigate, resolve }: { dto: FlowDto;
             return (
               <tr key={row.index} onClick={(event) => { if (!isInteractive(event.target)) navigate(target); }}>
                 <td>
-                  <span class="paths__path">
-                    <span class="paths__task">{genericLabel(taskNode)}</span>
-                    <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
-                    <a class={filterable ? "paths__skill" : "paths__skill paths__skill--dim"} href={href} title={filterable ? nodeValue(row.skillNode) : undefined}>{filterable ? skillName(resolve(nodeValue(row.skillNode)) ?? row.skill) : genericLabel(row.skillNode)}</a>
-                    <span class="paths__arrow" aria-hidden="true">{"\u2192"}</span>
-                    <span class={`badge badge--${displayStatus(row.state)}`} title={displayStatus(row.state) === "unknown" && row.state !== "unknown" ? "이전 분류 값입니다. 11/02 확정 상태 모델에서는 알 수 없음으로 표시합니다." : undefined}>{STATE_LABEL[displayStatus(row.state)]}</span>
+                  <span className="paths__path">
+                    <span className="paths__task">{genericLabel(taskNode)}</span>
+                    <span className="paths__arrow" aria-hidden="true">{"\u2192"}</span>
+                    <a className={filterable ? "paths__skill" : "paths__skill paths__skill--dim"} href={href} title={filterable ? nodeValue(row.skillNode) : undefined}>{filterable ? skillName(resolve(nodeValue(row.skillNode)) ?? row.skill) : genericLabel(row.skillNode)}</a>
+                    <span className="paths__arrow" aria-hidden="true">{"\u2192"}</span>
+                    <span className={`badge badge--${displayStatus(row.state)}`} title={displayStatus(row.state) === "unknown" && row.state !== "unknown" ? "이전 분류 값입니다. 11/02 확정 상태 모델에서는 알 수 없음으로 표시합니다." : undefined}>{STATE_LABEL[displayStatus(row.state)]}</span>
                   </span>
                 </td>
-                <td class="num">{row.count}</td>
-                <td class="num"><span class="paths__share" style={{ "--share": percent(row.count, dto.requestCount ?? dto.sessionCount) }}>{percent(row.count, dto.requestCount ?? dto.sessionCount)}</span></td>
+                <td className="num">{row.count}</td>
+                <td className="num"><span className="paths__share" style={{ "--share": percent(row.count, dto.requestCount ?? dto.sessionCount) } as React.CSSProperties}>{percent(row.count, dto.requestCount ?? dto.sessionCount)}</span></td>
               </tr>
             );
           })}
@@ -235,25 +235,25 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
   } else {
     body = (
       <>
-        <div class="toolbar">
+        <div className="toolbar">
           <Segmented label="보기" value={shown} options={[{ value: "chart", label: "차트" }, { value: "table", label: "주요 경로" }]} onChange={setMode} />
           {top !== DEFAULT_TOP && (
-            <button type="button" class="btn" onClick={() => setTop(DEFAULT_TOP)}>열별 상위 {DEFAULT_TOP}개</button>
+            <button type="button" className="btn" onClick={() => setTop(DEFAULT_TOP)}>열별 상위 {DEFAULT_TOP}개</button>
           )}
-          <span class="toolbar__count">
+          <span className="toolbar__count">
             {dto.requestCount !== undefined ? `요청 ${dto.requestCount}건` : `세션 ${dto.sessionCount}개`}
             {orphanLoads !== undefined && orphanLoads > 0 && <span>{` · 세션에 연결되지 않은 읽기 ${orphanLoads}건 별도`}</span>}
           </span>
         </div>
-        <p class="analysis-scope" data-result-conditions>{UNIT_LABEL[resultUnit]} · {conditions(filter)}</p>
+        <p className="analysis-scope" data-result-conditions>{UNIT_LABEL[resultUnit]} · {conditions(filter)}</p>
         <Legend unit={dto.unit} withKey={shown === "chart"} />
-        <div class="analysis-facets" aria-label="받은 경로의 상태별 수">
-          <button class="pe-button" aria-pressed={!route.facet} onClick={() => navigate({ ...route, facet: undefined })}>전체 {topPaths(dto).reduce((sum, row) => sum + row.count, 0)}</button>
-          {[...new Set(topPaths(dto).map(row => row.state))].map(state => <button class="pe-button" aria-pressed={route.facet === state} onClick={() => navigate({ ...route, flowMode: "table", facet: state })} key={state}>{STATE_LABEL[displayStatus(state)]} {topPaths(dto).filter(row => row.state === state).reduce((sum, row) => sum + row.count, 0)}</button>)}
+        <div className="analysis-facets" aria-label="받은 경로의 상태별 수">
+          <button className="pe-button" aria-pressed={!route.facet} onClick={() => navigate({ ...route, facet: undefined })}>전체 {topPaths(dto).reduce((sum, row) => sum + row.count, 0)}</button>
+          {[...new Set(topPaths(dto).map(row => row.state))].map(state => <button className="pe-button" aria-pressed={route.facet === state} onClick={() => navigate({ ...route, flowMode: "table", facet: state })} key={state}>{STATE_LABEL[displayStatus(state)]} {topPaths(dto).filter(row => row.state === state).reduce((sum, row) => sum + row.count, 0)}</button>)}
         </div>
-        {(dto.requestCount ?? dto.sessionCount) === 0 ? <><p class="empty">이 필터에 기록된 {dto.unit === "search_requests" ? "검색" : "읽기"} 요청이 없습니다.</p><AnalysisEmpty route={route} navigate={navigate} /></> : shown === "chart"
+        {(dto.requestCount ?? dto.sessionCount) === 0 ? <><p className="empty">이 필터에 기록된 {dto.unit === "search_requests" ? "검색" : "읽기"} 요청이 없습니다.</p><AnalysisEmpty route={route} navigate={navigate} /></> : shown === "chart"
           ? (
-            <div class="card flow__chart">
+            <div className="card flow__chart">
               <Sankey dto={dto} hrefFor={hrefFor} onActivate={onActivate} onExpandOther={top < EXPANDED_TOP ? () => setTop(EXPANDED_TOP) : undefined} />
             </div>
           )
@@ -263,8 +263,8 @@ export function FlowView({ route, navigate, live, embedded }: ViewProps) {
   }
 
   return (
-    <section class="analysis pe-console" aria-busy={report.busy} data-mode={dto ? shown : undefined} data-top={top} data-unit={unit}>
-      <header class="page-title">{embedded ? <h2>흐름</h2> : <h1>흐름</h1>}<p>작업 유형에서 스킬과 요청 상태로 이어지는 기록</p></header>
+    <section className="analysis pe-console" aria-busy={report.busy} data-mode={dto ? shown : undefined} data-top={top} data-unit={unit}>
+      <header className="page-title">{embedded ? <h2>흐름</h2> : <h1>흐름</h1>}<p>작업 유형에서 스킬과 요청 상태로 이어지는 기록</p></header>
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
       <Segmented label="단위" value={unit} options={FLOW_UNITS.map(value => ({ value, label: UNIT_LABEL[value] }))} onChange={setUnit} />
       {report.busy && <StatusMessage level="DEFAULT" announce message={dto ? `갱신 중: ${UNIT_LABEL[unit]} · ${conditions(route.filter)}` : "사용 흐름 집계 중…"} />}

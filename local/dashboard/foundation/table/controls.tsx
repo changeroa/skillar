@@ -1,4 +1,4 @@
-import { useId } from "preact/hooks";
+import { useId } from "react";
 import { DropdownMenu } from "../overlays/menu";
 import { tableStyles } from "./styles";
 

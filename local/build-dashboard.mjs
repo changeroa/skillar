@@ -17,7 +17,7 @@ export const dashboardBuild = await build({
   format: "esm",
   target: "es2022",
   jsx: "automatic",
-  jsxImportSource: "preact",
+  jsxImportSource: "react",
   minify: true,
   define: { "process.env.NODE_ENV": '"production"' },
   metafile: true,

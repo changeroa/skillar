@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { act, byTag, FakeEvent, h, input, loadViews, mount } from "./helpers/t10-dom.mjs";
 
 const { Button, Badge, Tag, StatusBadge, Input, SearchInput, Select, Checkbox, Link, KeyboardShortcut, CopyButton } = await loadViews(

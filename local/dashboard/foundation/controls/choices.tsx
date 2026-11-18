@@ -1,15 +1,15 @@
-import type { JSX } from "preact";
-import { useId, useState } from "preact/hooks";
+import type {JSX} from "react";
+import { useId, useState } from "react";
 import { Tooltip } from "../overlays/tooltip";
 export { Textarea } from "./textarea";
 
-type ChoiceInput = Omit<JSX.InputHTMLAttributes<HTMLInputElement>,
+type ChoiceInput = Omit<React.InputHTMLAttributes<HTMLInputElement>,
   "type" | "size" | "class" | "className" | "style" | "children">;
 
 export function Radio({ label, ...props }: ChoiceInput & { readonly label: string }) {
-  return <label class="lf-radio">
+  return <label className="lf-radio">
     <input {...props} type="radio" />
-    <span class="lf-radio__ring" aria-hidden="true"><span /></span>
+    <span className="lf-radio__ring" aria-hidden="true"><span /></span>
     <span>{label}</span>
   </label>;
 }
@@ -17,9 +17,9 @@ export function Radio({ label, ...props }: ChoiceInput & { readonly label: strin
 export function Switch({ label, size = "default", color = "default", ...props }: ChoiceInput & {
   readonly label: string; readonly size?: "default" | "sm"; readonly color?: "default" | "green";
 }) {
-  return <label class={`lf-switch lf-switch--${size} lf-switch--${color}`}>
+  return <label className={`lf-switch lf-switch--${size} lf-switch--${color}`}>
     <input {...props} type="checkbox" role="switch" />
-    <span class="lf-switch__track" aria-hidden="true"><span /></span>
+    <span className="lf-switch__track" aria-hidden="true"><span /></span>
     <span>{label}</span>
   </label>;
 }
@@ -38,9 +38,9 @@ export function Avatar({ displayName, email, src, size = "lg", shape = "circle",
   for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) % 1_000_003;
   const color = (["blue", "green", "yellow", "violet"] as const)[hash % 4] ?? "blue";
   return <Tooltip id={tooltipId} content={email && email.toLowerCase() !== name.toLowerCase() ? `${name}\n${email}` : name} size="content"><span role="img" aria-label={accessible}
-    class={`lf-avatar lf-avatar--${size} lf-avatar--${shape}`} data-tone={tone === "tinted" ? color : "muted"}>
+    className={`lf-avatar lf-avatar--${size} lf-avatar--${shape}`} data-tone={tone === "tinted" ? color : "muted"}>
     {status !== "loaded" && <span aria-hidden="true">{initials}</span>}
-    {src && status !== "failed" && <img src={src} alt="" referrerpolicy="no-referrer"
+    {src && status !== "failed" && <img src={src} alt="" referrerPolicy="no-referrer"
       onLoad={() => setImage({ src, status: "loaded" })} onError={() => setImage({ src, status: "failed" })} />}
   </span></Tooltip>;
 }

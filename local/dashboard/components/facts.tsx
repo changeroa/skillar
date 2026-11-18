@@ -57,9 +57,9 @@ export function factTitle(fact: Fact): string | undefined {
 
 export function Facts({ facts, className = "facts" }: { facts: Fact[]; className?: string }) {
   return (
-    <p class={className}>
+    <p className={className}>
       {facts.map((fact, index) => (
-        <span key={`${fact.key}-${index}`} class="facts__item" data-fact={fact.key} title={factTitle(fact)}>
+        <span key={`${fact.key}-${index}`} className="facts__item" data-fact={fact.key} title={factTitle(fact)}>
           {factText(fact)}
         </span>
       ))}

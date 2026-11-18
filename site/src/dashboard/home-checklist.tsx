@@ -47,10 +47,10 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
   const availableProfiles = profiles.filter(profile => profile.availability !== "revoked");
   const retryDevices = devices.status !== "ready";
   return (
-    <section class={`dash-empty${state === "none" ? " dash-setup-strip" : ""}${state === "loading" || state === "failed" ? " dash-source-picker" : ""}`} aria-labelledby="dash-empty-title">
-      <div class="panel__head">
+    <section className={`dash-empty${state === "none" ? " dash-setup-strip" : ""}${state === "loading" || state === "failed" ? " dash-source-picker" : ""}`} aria-labelledby="dash-empty-title">
+      <div className="panel__head">
         <h2 id="dash-empty-title" data-state={state} role={state === "loading" ? "status" : undefined}>{heading}</h2>
-        {state === "failed" && <button class="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
+        {state === "failed" && <button className="button secondary" type="button" onClick={onRetry}>다시 시도</button>}
       </div>
       {stale && (state === "loading" || state === "failed") && <p role="status" data-stale="true">
         마지막으로 확인한 기록을 표시하고 있습니다. 최신 정보가 아닐 수 있습니다.
@@ -62,40 +62,40 @@ export function HomeChecklist({ state, message, technical, profiles, devices, on
       </>}
       {state === "choose" && <>
         <p>조회할 수 있는 출처에서 '기록 보기'를 선택하면 최근 세션과 검색·읽기 기록이 열립니다.</p>
-        <p class="note">아직 기록을 선택하지 않았습니다.</p>
+        <p className="note">아직 기록을 선택하지 않았습니다.</p>
       </>}
       {state === "none" && <>
-        <ol class="dash-checklist" aria-label="첫 기록 확인 단계">
+        <ol className="dash-checklist" aria-label="첫 기록 확인 단계">
           {steps.map((step, index) => <li key={step.title} data-state={step.status} title={step.detail}>
-            <span class="source__state">{index + 1} {index === 2 ? "첫 세션" : step.title}{" "}
+            <span className="source__state">{index + 1} {index === 2 ? "첫 세션" : step.title}{" "}
               {step.status === "done" ? "완료" : step.status === "failed" ? "확인 실패" :
                 devices.status === "loading" && index < 2 ? "확인 중" : "대기"}
             </span>
           </li>)}
         </ol>
         {retryDevices || (active.length > 0 && granted) ?
-          <button class="button primary dash-setup-action" type="button" onClick={onRetry}>
+          <button className="button primary dash-setup-action" type="button" onClick={onRetry}>
             {devices.status === "failed" ? "다시 시도" : devices.status === "loading" ? "상태 다시 확인" : "첫 세션 확인"}
           </button> :
-          <a class="button primary dash-setup-action" href="#dashboard-management" onClick={onManage}>
+          <a className="button primary dash-setup-action" href="#dashboard-management" onClick={onManage}>
             {active.length > 0 ? "업로드 범위 확인" : "기기 연결 안내"}
           </a>}
-        {devices.status === "failed" && <p class="note" role="status">{devices.message}</p>}
-        {revoked.length > 0 && <details class="dash-revoked">
+        {devices.status === "failed" && <p className="note" role="status">{devices.message}</p>}
+        {revoked.length > 0 && <details className="dash-revoked">
           <summary>해제된 기기 {revoked.length}개</summary>
           <ul>{revoked.map(id => <li key={id}><code>{id}</code> · 해제됨 · 새 업로드 불가</li>)}</ul>
         </details>}
-        {availableProfiles.length > 0 && <details class="dash-setup-details">
+        {availableProfiles.length > 0 && <details className="dash-setup-details">
           <summary>출처 상태 확인</summary>
           {availableProfiles.map(profile => {
             const copy = availabilityCopy(profile.availability);
-            return <p class="note" key={profileKey(profile)} data-availability={profile.availability}>
+            return <p className="note" key={profileKey(profile)} data-availability={profile.availability}>
               <code>{shortId(profile.deviceId)}</code> · {copy.label}: {copy.explanation} {copy.next}
             </p>;
           })}
         </details>}
       </>}
-      {state !== "none" && <p class="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>}
+      {state !== "none" && <p className="note">읽기 기록은 작업 성공을 뜻하지 않습니다.</p>}
     </section>
   );
 }

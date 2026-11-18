@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { PACKAGE_ROOT } from "./_helpers.mjs";
 
-// The chart module ships inside the dashboard bundle, so it is bundled the same way here (preact is inert without a DOM).
+// The chart module ships inside the dashboard bundle, so it is bundled the same way here (react is inert without a DOM).
 async function loadChart() {
   const result = await build({
     entryPoints: [fileURLToPath(new URL("dashboard/charts/heatmap.tsx", PACKAGE_ROOT))],
@@ -15,7 +15,7 @@ async function loadChart() {
     platform: "browser",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "preact",
+    jsxImportSource: "react",
     logLevel: "silent",
   });
   const code = result.outputFiles[0].text;

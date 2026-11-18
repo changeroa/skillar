@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { ComponentChildren, JSX } from "preact";
-import { useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {ReactNode as ComponentChildren, JSX} from "react";
+import { useState } from "react";
 
 export type TabItem = {
   readonly id: string; readonly label: string; readonly content: ComponentChildren;
@@ -20,14 +20,14 @@ export function Tabs({ id, label, tabs, initialId, value, onChange,
   const enabled = tabs.filter(tab => !tab.disabled);
   const stop = activation === "manual" && enabled.some(tab => tab.id === focused) ? focused : selected;
   const select = (tab: TabItem) => { setInternal(tab.id); onChange?.(tab.id); };
-  return h("div", { class: `lf-tabs lf-tabs--${variant}` },
+  return h("div", { className: `lf-tabs lf-tabs--${variant}` },
     h("div", { role: "tablist", "aria-label": label, "aria-orientation": "horizontal" },
       tabs.map(tab => h("button", {
         key: tab.id, type: "button", role: "tab", id: `${id}-tab-${tab.id}`,
         "aria-controls": `${id}-panel-${tab.id}`, "aria-selected": selected === tab.id,
         tabIndex: stop === tab.id ? 0 : -1, disabled: tab.disabled,
         onFocus: () => setFocused(tab.id), onClick: () => select(tab),
-        onKeyDown: (event: JSX.TargetedKeyboardEvent<HTMLButtonElement>) => {
+        onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => {
           const index = enabled.indexOf(tab);
           let next: number;
           switch (event.key) {

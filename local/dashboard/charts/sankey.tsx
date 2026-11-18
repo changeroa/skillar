@@ -1,6 +1,6 @@
 import { REQUEST_STATUSES, type RequestStatus } from "../../src/request-status.js";
 import { sankey as sankeyLayout, sankeyLinkHorizontal, type SankeyNode } from "d3-sankey";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FlowState as AdoptionState, FlowDto } from "../../src/types.js";
 import { STATE_LABEL, displayStatus } from "../state";
 
@@ -314,7 +314,7 @@ export type SankeyProps = {
 
 type Hover = { target: FlowTarget; x: number; y: number };
 
-function isPlainClick(event: MouseEvent): boolean {
+function isPlainClick(event: { button: number; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }): boolean {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 }
 
@@ -372,18 +372,18 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   const maxChars = Math.max(8, Math.min(24, narrow ? Math.floor((gap * 0.95 - 22) / 6.2) : Math.floor((gap * 0.5 - 24) / 7)));
   const labelLeft = (node: LaidOutNode) => node.column === 2 && !narrow;
 
-  const place = (event: MouseEvent): { x: number; y: number } => {
+  const place = (event: { clientX: number; clientY: number }): { x: number; y: number } => {
     const rect = wrap.current?.getBoundingClientRect();
     return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
   };
   const bind = (target: FlowTarget, focusPoint: { x: number; y: number }) => ({
-    onPointerEnter: (event: PointerEvent) => setHover({ target, ...place(event) }),
-    onPointerMove: (event: PointerEvent) => setHover({ target, ...place(event) }),
+    onPointerEnter: (event: React.PointerEvent) => setHover({ target, ...place(event) }),
+    onPointerMove: (event: React.PointerEvent) => setHover({ target, ...place(event) }),
     onPointerLeave: () => setHover(undefined),
     onFocus: () => setHover({ target, ...focusPoint }),
     onBlur: () => setHover(undefined),
   });
-  const activate = (target: FlowTarget, action: string) => (event: MouseEvent) => {
+  const activate = (target: FlowTarget, action: string) => (event: React.MouseEvent) => {
     if (!isPlainClick(event)) return;
     event.preventDefault();
     returnFocus = { url: location.href, action };
@@ -394,20 +394,20 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
   const flip = hover ? hover.x > width / 2 : false;
 
   return (
-    <div class={`sankey${actionable ? " is-interactive" : ""}`} ref={wrap} style={{ minHeight: `${height}px` }}>
+    <div className={`sankey${actionable ? " is-interactive" : ""}`} ref={wrap} style={{ minHeight: `${height}px` }}>
       {layout.nodes.length > 0 && (
-        <svg class={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={chartWidth} height={height} viewBox={`0 0 ${chartWidth} ${height}`} role="group" aria-label={`작업 유형에서 스킬, 결과로 이어지는 ${countText(dto, dto.requestCount ?? dto.sessionCount)}의 사용 흐름`}>
+        <svg className={`sankey__svg${narrow ? " is-narrow" : ""}${hover ? " is-hovering" : ""}`} width={chartWidth} height={height} viewBox={`0 0 ${chartWidth} ${height}`} role="group" aria-label={`작업 유형에서 스킬, 결과로 이어지는 ${countText(dto, dto.requestCount ?? dto.sessionCount)}의 사용 흐름`}>
           <g aria-hidden="true">
-            <text class="sankey__head" x={0} y={10}>{COLUMN_TITLE[dto.columns[0]]}</text>
-            <text class="sankey__head sankey__head--mid" x={plotWidth / 2} y={10}>{COLUMN_TITLE[dto.columns[1]]}</text>
-            <text class={narrow ? "sankey__head" : "sankey__head sankey__head--end"} x={narrow ? plotWidth - NODE_WIDTH : plotWidth} y={10}>{COLUMN_TITLE[dto.columns[2]]}</text>
+            <text className="sankey__head" x={0} y={10}>{COLUMN_TITLE[dto.columns[0]]}</text>
+            <text className="sankey__head sankey__head--mid" x={plotWidth / 2} y={10}>{COLUMN_TITLE[dto.columns[1]]}</text>
+            <text className={narrow ? "sankey__head" : "sankey__head sankey__head--end"} x={narrow ? plotWidth - NODE_WIDTH : plotWidth} y={10}>{COLUMN_TITLE[dto.columns[2]]}</text>
           </g>
           <g aria-hidden="true">
             {layout.links.map(link => {
               const source = nodeById.get(link.source), destination = nodeById.get(link.target);
               if (!source || !destination) return null;
               const target: FlowTarget = { kind: "link", link, index: link.index };
-              return <path key={link.index} class={`sankey__link is-${link.state}${!lit || lit.links.has(link.index) ? " is-on" : ""}`} d={link.path} stroke-width={Math.max(1, link.width)}
+              return <path key={link.index} className={`sankey__link is-${link.state}${!lit || lit.links.has(link.index) ? " is-on" : ""}`} d={link.path} strokeWidth={Math.max(1, link.width)}
                 onPointerEnter={event => setHover({ target, ...place(event) })}
                 onPointerMove={event => setHover({ target, ...place(event) })}
                 onPointerLeave={() => setHover(undefined)}
@@ -425,10 +425,10 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const { x, y } = handle;
               const label = `${link.count} · ${source ? displayLabel(source) : link.source} \u2192 ${dest ? displayLabel(dest) : link.target}, ${STATE_LABEL[displayStatus(link.state)]}: ${countText(dto, link.count)} (${percent(link.count, (dto.requestCount ?? dto.sessionCount))})`;
               const handlers = bind(target, handle);
-              return <a key={`l${link.index}`} data-flow-action={`l${link.index}`} tabindex={0} href={href} aria-label={label} onClick={activate(target, `l${link.index}`)} {...handlers}>
-                  <rect class="sankey__hit" x={x - TARGET_SIZE / 2} y={y - TARGET_SIZE / 2} width={TARGET_SIZE} height={TARGET_SIZE} />
-                  <rect class="sankey__handle" x={x - 16} y={y - 12} width={32} height={24} rx={2} />
-                  <text class="sankey__handle-count" x={x} y={y}>{link.count}</text>
+              return <a key={`l${link.index}`} data-flow-action={`l${link.index}`} tabIndex={0} href={href} aria-label={label} onClick={activate(target, `l${link.index}`)} {...handlers}>
+                  <rect className="sankey__hit" x={x - TARGET_SIZE / 2} y={y - TARGET_SIZE / 2} width={TARGET_SIZE} height={TARGET_SIZE} />
+                  <rect className="sankey__handle" x={x - 16} y={y - 12} width={32} height={24} rx={2} />
+                  <text className="sankey__handle-count" x={x} y={y}>{link.count}</text>
               </a>;
             })}
           </g>
@@ -444,26 +444,26 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
               const visibleLabel = truncate(displayLabel(node), maxChars);
               const body = (
                 <>
-                  {(href || expandable) && <rect class="sankey__hit" {...nodeHit(node, height, narrow)} />}
-                  <rect class="sankey__rect" x={node.x0} y={node.y0} width={node.x1 - node.x0} height={Math.max(1, node.y1 - node.y0)} rx={2} />
-                  <text data-flow-label={node.id} class={`sankey__label${end ? " sankey__label--end" : ""}`} x={end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP} y={(node.y0 + node.y1) / 2}>
-                    {end ? <tspan class="sankey__count">{node.count} </tspan> : null}
+                  {(href || expandable) && <rect className="sankey__hit" {...nodeHit(node, height, narrow)} />}
+                  <rect className="sankey__rect" x={node.x0} y={node.y0} width={node.x1 - node.x0} height={Math.max(1, node.y1 - node.y0)} rx={2} />
+                  <text data-flow-label={node.id} className={`sankey__label${end ? " sankey__label--end" : ""}`} x={end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP} y={(node.y0 + node.y1) / 2}>
+                    {end ? <tspan className="sankey__count">{node.count} </tspan> : null}
                     <tspan dx={end ? LABEL_GAP : 0}>{visibleLabel}</tspan>
-                    {end ? null : <tspan class="sankey__count" dx={LABEL_GAP}> {node.count}</tspan>}
+                    {end ? null : <tspan className="sankey__count" dx={LABEL_GAP}> {node.count}</tspan>}
                   </text>
                 </>
               );
               const label = `${end ? `${node.count} ${visibleLabel}` : `${visibleLabel} ${node.count}`}: ${countText(dto, node.count)} (${percent(node.count, (dto.requestCount ?? dto.sessionCount))})${visibleLabel !== displayLabel(node) ? ` · ${displayLabel(node)}` : ""}`;
               const handlers = bind(target, { x: end ? node.x0 - LABEL_GAP : node.x1 + LABEL_GAP, y: (node.y0 + node.y1) / 2 });
-              if (href) return <a key={node.id} data-flow-action={node.id} tabindex={0} class={cls} href={href} aria-label={label} onClick={activate(target, node.id)} {...handlers}>{body}</a>;
+              if (href) return <a key={node.id} data-flow-action={node.id} tabIndex={0} className={cls} href={href} aria-label={label} onClick={activate(target, node.id)} {...handlers}>{body}</a>;
               if (expandable) {
                 return (
                   <g
                     key={node.id}
                     data-flow-action={node.id}
-                    class={cls}
+                    className={cls}
                     role="button"
-                    tabindex={0}
+                    tabIndex={0}
                     aria-label={`${label} · 열별 최대 15개까지 표시`}
                     onClick={() => onExpandOther?.()}
                     onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onExpandOther?.(); } }}
@@ -473,15 +473,15 @@ export function Sankey({ dto, hrefFor, onActivate, onExpandOther }: SankeyProps)
                   </g>
                 );
               }
-              return <g key={node.id} class={cls} tabindex={-1} {...handlers}>{body}</g>;
+              return <g key={node.id} className={cls} tabIndex={-1} {...handlers}>{body}</g>;
             })}
           </g>
         </svg>
       )}
       {hover && tip && (
-        <div class="sankey__tip" role="status" style={flip ? { right: `${width - hover.x + TIP_OFFSET}px`, top: `${hover.y + TIP_OFFSET}px` } : { left: `${hover.x + TIP_OFFSET}px`, top: `${hover.y + TIP_OFFSET}px` }}>
+        <div className="sankey__tip" role="status" style={flip ? { right: `${width - hover.x + TIP_OFFSET}px`, top: `${hover.y + TIP_OFFSET}px` } : { left: `${hover.x + TIP_OFFSET}px`, top: `${hover.y + TIP_OFFSET}px` }}>
           <div>{tip.title}</div>
-          <div class="sankey__tip-sub">{tip.sub}</div>
+          <div className="sankey__tip-sub">{tip.sub}</div>
         </div>
       )}
     </div>

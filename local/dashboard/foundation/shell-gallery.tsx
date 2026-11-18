@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import { Sidebar, NavGroup, NavItem, Breadcrumb, Topbar, PageHeader } from "./shell/navigation";
 import { Tabs } from "./shell/tabs";
 import { CommandPalette } from "./shell/command-palette";
@@ -16,7 +16,7 @@ export function ShellGallery() {
   ];
   return <section data-component="shell" aria-labelledby="shell-title">
     <h2 id="shell-title">셸</h2>
-    <div class="lf-gallery__grid">
+    <div className="lf-gallery__grid">
       <div data-specimen="Sidebar" data-component="Sidebar">
         <Sidebar label="주요 화면"><NavGroup label="Observability">
           <NavItem href="#traces" label="Tracing" icon={<Icon name="tree" />} current />

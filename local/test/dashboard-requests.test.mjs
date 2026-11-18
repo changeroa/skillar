@@ -5,8 +5,8 @@ import { build } from "esbuild";
 import { PACKAGE_ROOT } from "./_helpers.mjs";
 import { installDom, descendants } from "./helpers/dashboard-dom.mjs";
 
-const bundle = await build({ stdin: { contents: 'export * from "./dashboard/components/requests"; export {TopPathsTable, targetFilter} from "./dashboard/views/flow"; export {h,render} from "preact";',
-  resolveDir: fileURLToPath(PACKAGE_ROOT), loader: "tsx" }, bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "preact", logLevel: "silent" });
+const bundle = await build({ stdin: { contents: 'export * from "./dashboard/components/requests"; export {TopPathsTable, targetFilter} from "./dashboard/views/flow"; export {h,render} from "react";',
+  resolveDir: fileURLToPath(PACKAGE_ROOT), loader: "tsx" }, bundle: true, write: false, format: "esm", platform: "node", jsx: "automatic", jsxImportSource: "react", logLevel: "silent" });
 const ui = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`);
 const newRoot = installDom();
 

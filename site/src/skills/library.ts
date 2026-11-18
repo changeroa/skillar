@@ -1,6 +1,6 @@
-import { h } from "preact";
-import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import {createElement as h} from "react";
+import type {ReactNode as ComponentChildren} from "react";
+import { useEffect, useState } from "react";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
 import { BarChart, DataTable, FacetPanel, Pill } from "../ui/index.ts";
 import type { TableColumn } from "../ui/table.ts";
@@ -77,9 +77,9 @@ export function LibraryPanel(props: LibraryProps) {
     { id: "day", label: "최근 변경 기간 · KST", values: days.map(id => ({ id, label: id.slice(5).replace("-", ". "), count: skills.filter(skill => skillDay(skill) === id).length })) },
   ];
   const columns: readonly TableColumn<PrivateSkillSummary>[] = [
-    { id: "name", label: "이름", hideable: false, value: skill => skill.name, render: skill => h("div", { class: "skill-table-name", title: `${skill.name}\n${skill.description}` },
-      h("strong", null, skill.name), h("span", { class: "skill-table-description" }, skill.description),
-      h("span", { class: "skill-table-mobile" },
+    { id: "name", label: "이름", hideable: false, value: skill => skill.name, render: skill => h("div", { className: "skill-table-name", title: `${skill.name}\n${skill.description}` },
+      h("strong", null, skill.name), h("span", { className: "skill-table-description" }, skill.description),
+      h("span", { className: "skill-table-mobile" },
         !view.hidden.includes("updated") && h("time", { dateTime: new Date(skill.updatedAt).toISOString(), title: formatWhen(skill.updatedAt) },
           `${shortKstDate(skill.updatedAt)} KST`),
         !view.hidden.includes("updated") && !view.hidden.includes("digest") && " · ",
@@ -88,26 +88,26 @@ export function LibraryPanel(props: LibraryProps) {
     { id: "updated", label: "최근 변경", value: skill => skill.updatedAt, render: skill => when(skill.updatedAt) },
     { id: "digest", label: "digest", value: skill => skill.head.digest, render: skill => h(Pill, null, h("code", null, skill.head.digest.slice(0, 8))) },
   ];
-  return h("section", { class: "library", "aria-labelledby": "library-title" },
-    h("div", { class: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
-      h("div", { class: "cluster" },
+  return h("section", { className: "library", "aria-labelledby": "library-title" },
+    h("div", { className: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
+      h("div", { className: "cluster" },
         h(Button, { text: "새로고침", variant: "outline", disabled: status === "loading", onClick: onReload }),
         h(Button, { text: "새 스킬", onClick: () => {
           const title = document.getElementById("publish-title");
           if (title) { title.tabIndex = -1; title.scrollIntoView({ block: "start" }); title.focus({ preventScroll: true }); }
         } }))),
-    notice !== "" && h("p", { class: "note", role: "status" }, notice),
-    h("p", { class: "note library-status", role: "status", "aria-live": "polite" }, status === "loading" ? "스킬 불러오는 중…" : message),
-    status === "failed" && h("button", { class: "button secondary", type: "button", onClick: onReload }, "다시 시도"),
-    status === "ready" && skills.length === 0 && h("p", { class: "library-empty" },
+    notice !== "" && h("p", { className: "note", role: "status" }, notice),
+    h("p", { className: "note library-status", role: "status", "aria-live": "polite" }, status === "loading" ? "스킬 불러오는 중…" : message),
+    status === "failed" && h("button", { className: "button secondary", type: "button", onClick: onReload }, "다시 시도"),
+    status === "ready" && skills.length === 0 && h("p", { className: "library-empty" },
       "아직 게시한 비공개 스킬이 없습니다. 아래의 ‘새 스킬 게시’에서 SKILL.md가 있는 폴더를 선택하고 업로드에 동의하세요."),
-    h("div", { class: "skills-table-layout", "data-peeking": selectedId !== null },
-      h("details", { class: "skills-facets", open: facetsOpen }, h("summary", null, "필터"),
+    h("div", { className: "skills-table-layout", "data-peeking": selectedId !== null },
+      h("details", { className: "skills-facets", open: facetsOpen }, h("summary", null, "필터"),
         h(FacetPanel, { title: "스킬 필터", scope: "받은 보관함 기준 · 현재 리비전 번호", groups,
           selected: { revision: view.revisions, day: view.days },
           onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
-      h("div", { class: "skills-table-main" },
-        skills.length > 0 && selectedId === null && h("details", { class: "skills-distribution" },
+      h("div", { className: "skills-table-main" },
+        skills.length > 0 && selectedId === null && h("details", { className: "skills-distribution" },
           h("summary", null, "최근 변경일 분포 · KST"),
           h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 })),
         h("div", { hidden: status === "failed" && skills.length === 0 },
@@ -129,7 +129,7 @@ export function LibraryPanel(props: LibraryProps) {
           onRowOpen: (skill, target) => onOpen(skill.skillId, target),
           toolbar: h(SearchBox, { skills, signal: props.signal, onOpen, onUnauthorized: props.onUnauthorized,
             compact: true, query: view.q, onQueryChange: q => update({ ...view, q }) }) })),
-        skills.length > 0 && visibleSkills(skills, view).length === 0 && h("button", { class: "button secondary",
+        skills.length > 0 && visibleSkills(skills, view).length === 0 && h("button", { className: "button secondary",
           type: "button", onClick: () => update({ ...view, q: "", revisions: [], days: [] }) }, "검색·필터 해제"))),
     props.detail);
 }

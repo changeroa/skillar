@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
-import type { ComponentChildren } from "preact";
+import { useState } from "react";
+import type {ReactNode as ComponentChildren} from "react";
 import { Button, IconButton, Select } from "./controls";
 import { Card, Widget, MetricStrip, Metric, BarChart, LineChart, Histogram, EmptyState, Alert, StatusMessage, Callout } from "./widgets";
 import type { ChartData, WidgetState } from "./widgets";
@@ -8,13 +8,13 @@ const chart: ChartData = { labels: ["월\nKST", "화\nKST", "수\nKST"], series:
   { label: "읽기", values: [0, 7, null] }, { label: "검색", values: [3, 14, 2] },
 ] };
 function Specimen({ name, children }: { readonly name: string; readonly children: ComponentChildren }) {
-  return <section data-specimen={name} class="lf-widget-specimen"><h2>{name}</h2>{children}</section>;
+  return <section data-specimen={name} className="lf-widget-specimen"><h2>{name}</h2>{children}</section>;
 }
 export function WidgetsGallery() {
   const [theme, setTheme] = useState(document.documentElement.dataset["theme"] ?? "system");
   const [dismissed, setDismissed] = useState<readonly string[]>([]);
-  return <main id="gallery" data-ready="true" class="lf-gallery lf-widgets-gallery">
-    <header class="lf-gallery__header"><div><h1>위젯과 차트</h1><p>합성 데이터 · 측정값과 미측정 구분</p></div>
+  return <main id="gallery" data-ready="true" className="lf-gallery lf-widgets-gallery">
+    <header className="lf-gallery__header"><div><h1>위젯과 차트</h1><p>합성 데이터 · 측정값과 미측정 구분</p></div>
       <Select label="테마" value={theme} options={[{ value: "system", label: "시스템" }, { value: "light", label: "라이트" }, { value: "dark", label: "다크" }]}
         onChange={event => { const value = event.currentTarget.value; document.documentElement.dataset["theme"] = value; setTheme(value); }} /></header>
     <Specimen name="Card"><Card title="읽기 기록" description="최근 3일 · KST"

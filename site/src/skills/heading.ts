@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useLayoutEffect } from "preact/hooks";
+import {createElement as h} from "react";
+import { useLayoutEffect } from "react";
 
 /** T1 may supply the shared title slot. Older shells keep their introduction but not a duplicate h1. */
 export function SkillsHeading({ name }: { readonly name: string }) {
@@ -19,5 +19,5 @@ export function SkillsHeading({ name }: { readonly name: string }) {
     parent.removeChild(previous);
     return () => { parent.insertBefore(previous, next); };
   }, [name, slot]);
-  return slot === null ? h("h1", { class: "skills-heading" }, name) : null;
+  return slot === null ? h("h1", { className: "skills-heading" }, name) : null;
 }

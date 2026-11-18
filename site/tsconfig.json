@@ -1,18 +1,31 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "preact": ["./node_modules/preact"],
-      "preact/*": ["./node_modules/preact/*"],
-      "zod": ["./node_modules/zod"],
-      "prismjs": ["./node_modules/@types/prismjs"],
-      "prismjs/*": ["./node_modules/prismjs/*"]
+      "zod": [
+        "./node_modules/zod"
+      ],
+      "prismjs": [
+        "./node_modules/@types/prismjs"
+      ],
+      "prismjs/*": [
+        "./node_modules/prismjs/*"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ]
     },
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    "jsxImportSource": "react",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -23,6 +36,10 @@
     "noEmit": true,
     "skipLibCheck": false
   },
-  "include": ["src"],
-  "exclude": ["src/dashboard/**/*.tsx"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/dashboard/**/*.tsx"
+  ]
 }

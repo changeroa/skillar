@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
-import type { ComponentChildren } from "preact";
+import { useState } from "react";
+import type {ReactNode as ComponentChildren} from "react";
 import { Textarea, Radio, Switch, Avatar } from "./controls/choices";
 import { Combobox, MultiSelect } from "./controls/combobox";
 import { DateRangeInput, TimePeriodSelect } from "./controls/date-range";
@@ -15,7 +15,7 @@ const sample = "# Skill\n\nA recorded document.\n\n- Read the file\n- Keep its c
 const variants: readonly ToastVariant[] = ["default", "success", "info", "warning", "error", "loading"];
 
 function Specimen({ component, state, children }: { readonly component: string; readonly state: string; readonly children: ComponentChildren }) {
-  return <article class="lf-gallery__specimen" data-component={component} data-state={state} data-specimen>
+  return <article className="lf-gallery__specimen" data-component={component} data-state={state} data-specimen>
     <h2>{component} / {state}</h2><div data-probe>{children}</div>
   </article>;
 }
@@ -33,12 +33,12 @@ export function P1Gallery() {
   const [range, setRange] = useState({ from: Date.UTC(2026, 10, 1) - 9 * 3600000, to: Date.UTC(2026, 10, 7) - 9 * 3600000 });
   const [message, setMessage] = useState("Saved");
   const [theme, setTheme] = useState(document.documentElement.dataset["theme"] ?? "system");
-  return <main id="gallery" class={`lf-gallery${examples.has("atomic") ? " lf-gallery--atomic" : ""}`} data-ready="true">
+  return <main id="gallery" className={`lf-gallery${examples.has("atomic") ? " lf-gallery--atomic" : ""}`} data-ready="true">
     <h1>Viewers and P1 controls</h1>
     <label>Theme <select value={theme} onChange={event => {
       const next = event.currentTarget.value; setTheme(next); document.documentElement.dataset["theme"] = next;
     }}><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
-    <div class="lf-gallery__grid">
+    <div className="lf-gallery__grid">
       {["default", "empty", "disabled", "error", "code"].map(state =>
         <Specimen component="Textarea" state={state} key={`textarea-${state}`}>
           <Textarea id={`p1-textarea-${state}`} label="Description" disabled={state === "disabled"} code={state === "code"}

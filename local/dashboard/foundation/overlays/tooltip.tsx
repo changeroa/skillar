@@ -1,5 +1,5 @@
-import type { ComponentChildren } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 /** Put one named, focusable control inside; the tooltip never adds a Tab stop. */
 export function Tooltip({ id, content, children, size = "bounded" }: {
@@ -51,12 +51,12 @@ export function Tooltip({ id, content, children, size = "bounded" }: {
   const leave = () => {
     if (!active.current.hover && !active.current.focus) { setOpen(false); setDismissed(false); }
   };
-  return <span ref={root} class="lf-tooltip-anchor"
+  return <span ref={root} className="lf-tooltip-anchor"
     onPointerEnter={() => { active.current.hover = true; setOpen(true); }}
     onPointerLeave={() => { active.current.hover = false; leave(); }}
-    onFocusIn={() => { active.current.focus = true; setOpen(true); }}
-    onFocusOut={() => { active.current.focus = false; leave(); }}>
+    onFocusCapture={() => { active.current.focus = true; setOpen(true); }}
+    onBlurCapture={() => { active.current.focus = false; leave(); }}>
     {children}
-    <span id={id} ref={tip} popover="manual" role="tooltip" class="lf-tooltip" data-size={size}>{content}</span>
+    <span id={id} ref={tip} popover="manual" role="tooltip" className="lf-tooltip" data-size={size}>{content}</span>
   </span>;
 }

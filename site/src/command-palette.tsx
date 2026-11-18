@@ -1,5 +1,6 @@
-import { render } from "preact";
-import { useLayoutEffect, useState } from "preact/hooks";
+import {} from "react";
+import { render } from "./react-mount";
+import { useLayoutEffect, useState } from "react";
 import { CommandPalette } from "../../local/dashboard/foundation/shell/command-palette";
 
 const destinations = [

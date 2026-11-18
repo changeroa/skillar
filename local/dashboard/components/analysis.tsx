@@ -1,5 +1,5 @@
-import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useEffect, useState } from "react";
 import type { Filter } from "../../src/types.js";
 import { ApiError } from "../api";
 import { DOW_LABEL, RUNTIME_IDS, RUNTIME_LABEL, STATE_LABEL, buildHash, serializeFilter, skillName, type ViewProps } from "../state";
@@ -58,7 +58,7 @@ export function AnalysisToolbar({ route, navigate, refresh, busy, workspace = fa
   readonly refresh: () => void; readonly busy: boolean; readonly workspace?: boolean;
 }) {
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
-  return <div class="analysis-toolbar">
+  return <div className="analysis-toolbar">
     <TimePeriodSelect value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={value => {
       const now = Date.now();
       update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
@@ -83,17 +83,17 @@ export function AnalysisEmpty({ route, navigate }: Pick<ViewProps, "route" | "na
   return <EmptyState title={filtered ? "조건에 맞는 세션이 없습니다" : "아직 기록된 세션이 없습니다"}
     description={filtered ? "기간을 늘리거나 필터를 해제하면 더 많은 세션을 볼 수 있습니다." : "연결된 실행 환경에서 세션을 시작하면 기록이 여기에 나타납니다."}
     action={filtered ? <Button text="필터 지우기" variant="outline" onClick={() => navigate({ ...route, filter: {} })} />
-      : <><a class="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a><code>skillar doctor</code></>} />;
+      : <><a className="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a><code>skillar doctor</code></>} />;
 }
 
 export function Metric({ label, value, suffix, children }: { readonly label: string; readonly value: number | null; readonly suffix?: string; readonly children?: ComponentChildren }) {
-  return <section class="analysis-tile"><FoundationMetric label={label} value={value} suffix={suffix} /><div class="pe-muted">{children}</div></section>;
+  return <section className="analysis-tile"><FoundationMetric label={label} value={value} suffix={suffix} /><div className="pe-muted">{children}</div></section>;
 }
 
 export function AnalysisWidget({ title, id, wide = false, children }: {
   readonly title: string; readonly id: string; readonly wide?: boolean; readonly children: ComponentChildren;
 }) {
-  return <div class={wide ? "analysis-widget-shell analysis-widget--wide" : "analysis-widget-shell"} data-widget={id}>
+  return <div className={wide ? "analysis-widget-shell analysis-widget--wide" : "analysis-widget-shell"} data-widget={id}>
     <Card title={title}>{children}</Card>
   </div>;
 }

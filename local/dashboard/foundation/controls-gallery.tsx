@@ -1,11 +1,11 @@
-import type { ComponentChildren } from "preact";
-import { useState } from "preact/hooks";
+import type {ReactNode as ComponentChildren} from "react";
+import { useState } from "react";
 import { Button, IconButton, Badge, StatusBadge, Tag, Input, SearchInput, Select,
   Checkbox, Link, KeyboardShortcut, Skeleton, CopyButton } from "./controls";
 
 function Specimen({ id, children }: { readonly id: string; readonly children: ComponentChildren }) {
-  return <div class="lf-gallery__specimen" data-specimen={id}>
-    <code>{id}</code><div class="lf-controls__sample">{children}</div>
+  return <div className="lf-gallery__specimen" data-specimen={id}>
+    <code>{id}</code><div className="lf-controls__sample">{children}</div>
   </div>;
 }
 
@@ -20,7 +20,7 @@ export function ControlsGallery() {
   return <section id="basic-controls" aria-labelledby="basic-controls-title" data-component="basic-controls">
     <h2 id="basic-controls-title">기본 컨트롤</h2>
     <p>같은 Preact 컴포넌트를 두 앱에서 사용합니다.</p>
-    <div class="lf-gallery__grid">
+    <div className="lf-gallery__grid">
       {(["primary", "secondary", "outline", "destructive", "ghost", "text"] as const).map(variant =>
         <Specimen key={variant} id={`button-${variant}`}><Button text="확인" variant={variant} onClick={() => setCount(value => value + 1)} /></Specimen>)}
       <Specimen id="button-small"><Button text="확인" size="sm" /></Specimen>

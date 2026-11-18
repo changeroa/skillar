@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useRef } from "react";
 import type { RuntimeId, TraceStep } from "../../../src/types.js";
 import { api, type SessionListRow } from "../../api";
 import { RequestCounts } from "../../components/requests";
@@ -8,8 +8,8 @@ const dateTimeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", m
 
 function Runtime({ runtime }: { runtime: RuntimeId }) {
   return (
-    <span class="rt">
-      <span class="rt__mark" aria-hidden="true">{RUNTIME_MARK[runtime] ?? RUNTIME_MARK.unknown}</span>
+    <span className="rt">
+      <span className="rt__mark" aria-hidden="true">{RUNTIME_MARK[runtime] ?? RUNTIME_MARK.unknown}</span>
       <span>{RUNTIME_LABEL[runtime] ?? RUNTIME_LABEL.unknown}</span>
     </span>
   );
@@ -34,15 +34,15 @@ export function Header({ sessionId, row, steps, backHref, embedded }: { readonly
   if (counts.natives) parts.push(`내장 스킬 ${counts.natives}개`);
   if (counts.errors) parts.push(`오류 ${counts.errors}건`);
   return (
-    <header class="trace__head page-title">
-      <a class="trace__back" href={backHref}>
+    <header className="trace__head page-title">
+      <a className="trace__back" href={backHref}>
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         세션
       </a>
-      <Title ref={heading} tabIndex={embedded ? -1 : undefined} class="trace__title">{sessionId}</Title>
+      <Title ref={heading} tabIndex={embedded ? -1 : undefined} className="trace__title">{sessionId}</Title>
       {bounds.startedAt !== undefined && <time dateTime={new Date(bounds.startedAt).toISOString()}>{dateTimeFmt.format(bounds.startedAt)}</time>}
-      {title && <details class="trace__prompt"><summary>첫 요청문 보기</summary><p class="tl__text">{title}</p></details>}
-      <p class="trace__counts">{parts.join(" \u00b7 ")}</p>
+      {title && <details className="trace__prompt"><summary>첫 요청문 보기</summary><p className="tl__text">{title}</p></details>}
+      <p className="trace__counts">{parts.join(" \u00b7 ")}</p>
     </header>
   );
 }
@@ -64,12 +64,12 @@ export function Inspector({ sessionId, row, steps, liveState, unresolvedLoads, e
       : ATTRIBUTION_LABEL[row.attribution] ?? row.attribution
     : "-";
   return (
-    <aside class="trace__inspector" aria-labelledby="trace-inspector-title">
-      <Heading id="trace-inspector-title" class="trace__subtitle">세션 정보</Heading>
-      <dl class="trace__meta">
+    <aside className="trace__inspector" aria-labelledby="trace-inspector-title">
+      <Heading id="trace-inspector-title" className="trace__subtitle">세션 정보</Heading>
+      <dl className="trace__meta">
         <div>
           <dt>실행 환경</dt>
-          <dd>{runtime ? <Runtime runtime={runtime} /> : <span class="trace__dim">알 수 없음</span>}</dd>
+          <dd>{runtime ? <Runtime runtime={runtime} /> : <span className="trace__dim">알 수 없음</span>}</dd>
         </div>
         <div>
           <dt>시작</dt>
@@ -81,23 +81,23 @@ export function Inspector({ sessionId, row, steps, liveState, unresolvedLoads, e
         </div>
         <div>
           <dt>세션 연결</dt>
-          <dd class={row?.attribution === "none" ? "trace__dim" : undefined}>{attribution}</dd>
+          <dd className={row?.attribution === "none" ? "trace__dim" : undefined}>{attribution}</dd>
         </div>
         {row && (
           <div>
             <dt>요청</dt>
-            <dd>{unresolvedLoads ? <span class="tag" data-adoption-status="uncertain">세션 연결 미확정</span>
+            <dd>{unresolvedLoads ? <span className="tag" data-adoption-status="uncertain">세션 연결 미확정</span>
               : <RequestCounts summary={row.requests} />}</dd>
           </div>
         )}
         <div>
           <dt>세션</dt>
-          <dd class="trace__id">{sessionId}</dd>
+          <dd className="trace__id">{sessionId}</dd>
         </div>
       </dl>
-      <div class="trace__scope">
-        <Sub class="trace__scope-title">확인 범위</Sub>
-        <p class="trace__note">검색과 읽기 기록은 요청 단위로 확인됩니다. 실제 적용과 작업 성공은 이 기록으로 확인되지 않습니다.</p>
+      <div className="trace__scope">
+        <Sub className="trace__scope-title">확인 범위</Sub>
+        <p className="trace__note">검색과 읽기 기록은 요청 단위로 확인됩니다. 실제 적용과 작업 성공은 이 기록으로 확인되지 않습니다.</p>
       </div>
     </aside>
   );

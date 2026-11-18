@@ -1,4 +1,4 @@
-import type { ComponentChildren } from "preact";
+import type {ReactNode as ComponentChildren} from "react";
 
 export type TableColumn<Row> = {
   readonly id: string;

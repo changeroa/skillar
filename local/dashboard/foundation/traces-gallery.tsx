@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import type { TraceStep } from "../../src/types.js";
 import type { Route } from "../state";
 import { EventConsole } from "../views/trace/event-console";
@@ -21,17 +21,17 @@ export function TracesGallery() {
   traceConsoleStyles();
   const [route, navigate] = useState<Route>({ view: "trace", filter: {} });
   const primitivesOnly = new URLSearchParams(location.search).has("primitives");
-  return <main id="gallery" class="lf-gallery" data-ready="true">
+  return <main id="gallery" className="lf-gallery" data-ready="true">
     <h1>세션 이벤트 컴포넌트</h1>
     <p>합성 데이터 · 트리, 타임라인, 원본 JSON · 방향키로 이벤트 이동</p>
-    {!primitivesOnly && <><div class="trace pe-console" data-specimen="trace">
+    {!primitivesOnly && <><div className="trace pe-console" data-specimen="trace">
       <EventConsole source={source} bounds={{ startedAt, endedAt: startedAt + 4000 }}
         route={route} navigate={navigate} embedded />
     </div>
-    <div class="trace pe-console" data-specimen="empty-trace">
+    <div className="trace pe-console" data-specimen="empty-trace">
       <EventConsole source={[]} bounds={{}} route={{ view: "trace", filter: {} }} navigate={() => undefined} prefix="empty" embedded />
     </div></>}
-    <div class="trace pe-console" data-specimen="json-primitives">
+    <div className="trace pe-console" data-specimen="json-primitives">
       <JsonViewer value={{ number: 42, boolean: false, missing: null, string: "recorded" }} />
     </div>
   </main>;

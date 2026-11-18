@@ -1,5 +1,5 @@
 import type { TraceStep } from "../../../src/types.js";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 import type { SessionListRow } from "../../api";
 import { CopyButton } from "../../components/copy-button";
 import { Icon } from "../../components/icons";
@@ -18,12 +18,12 @@ export function summaryFacts(steps: readonly TraceStep[]) {
 
 function FirstRequest({ prompt }: { readonly prompt: string }) {
   const narrow = useNarrow(), [open, setOpen] = useState(false);
-  if (!narrow) return <details class="trace__prompt"><summary>첫 요청문 보기</summary><p class="tl__text">{prompt}</p></details>;
-  return <div class="trace__prompt">
-    <button class="foldbtn trace-first-request" aria-expanded={open} aria-controls="first-request-content" onClick={() => setOpen(value => !value)}>
+  if (!narrow) return <details className="trace__prompt"><summary>첫 요청문 보기</summary><p className="tl__text">{prompt}</p></details>;
+  return <div className="trace__prompt">
+    <button className="foldbtn trace-first-request" aria-expanded={open} aria-controls="first-request-content" onClick={() => setOpen(value => !value)}>
       <Icon name="down" />{open ? "접기" : "첫 요청문 보기"}
     </button>
-    <p id="first-request-content" class="tl__text" hidden={!open}>{prompt}</p>
+    <p id="first-request-content" className="tl__text" hidden={!open}>{prompt}</p>
   </div>;
 }
 
@@ -38,7 +38,7 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
     ? formatDuration(bounds.endedAt - bounds.startedAt)
     : bounds.lastTs !== undefined ? `${formatDuration(bounds.lastTs - bounds.startedAt)} (종료 기록 없음)` : "종료 미기록";
   const line = [
-    { id: "runtime", label: "실행 환경", hidden: true, value: <span class="pe-pill">{row ? RUNTIME_LABEL[row.runtime] : "미측정"}</span> },
+    { id: "runtime", label: "실행 환경", hidden: true, value: <span className="pe-pill">{row ? RUNTIME_LABEL[row.runtime] : "미측정"}</span> },
     { id: "started", label: "시작", hidden: true, value: bounds.startedAt === undefined ? "미측정" : <time dateTime={new Date(bounds.startedAt).toISOString()}>{date.format(bounds.startedAt)}</time> },
     { id: "duration", label: "소요 시간", hidden: true, value: duration },
     { id: "reads", label: "읽은 스킬", value: `${facts.reads.length}개` },
@@ -48,15 +48,15 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
     { id: "cost", label: "비용", value: facts.costCount ? `${formatCost(facts.cost)} · ${facts.costCount}/${facts.modelCount} 측정` : "미측정" },
     { id: "outcome", label: "작업 성공", value: "미측정" },
   ];
-  return <header class="trace-summary" data-component="session-summary">
-    {!peek && <a class="trace__back" href={backHref}><Icon name="chevron" class="trace-back-icon" />세션 목록</a>}
-    <div class="trace-summary__title"><Title class="trace__title"><code>{sessionId}</code></Title>{!peek && <CopyButton value={sessionId} />}</div>
+  return <header className="trace-summary" data-component="session-summary">
+    {!peek && <a className="trace__back" href={backHref}><Icon name="chevron" className="trace-back-icon" />세션 목록</a>}
+    <div className="trace-summary__title"><Title className="trace__title"><code>{sessionId}</code></Title>{!peek && <CopyButton value={sessionId} />}</div>
     {prompt && <FirstRequest prompt={prompt} />}
-    <dl class="trace-summary__line trace__meta" aria-label="세션 요약">
-      {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt class={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+    <dl className="trace-summary__line trace__meta" aria-label="세션 요약">
+      {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt><dd>{fact.value}</dd></div>)}
     </dl>
-    {facts.reads.length > 0 && <div class="trace-summary__reads">{facts.reads.map(uri => <span class="pe-pill" key={uri} title={uri}><code>{skillName(uri)}</code></span>)}</div>}
-    {peek && <dl class="trace-summary__kv">
+    {facts.reads.length > 0 && <div className="trace-summary__reads">{facts.reads.map(uri => <span className="pe-pill" key={uri} title={uri}><code>{skillName(uri)}</code></span>)}</div>}
+    {peek && <dl className="trace-summary__kv">
       <div><dt>시작</dt><dd>{bounds.startedAt === undefined ? "미측정" : date.format(bounds.startedAt)}</dd></div>
       <div><dt>길이</dt><dd>{duration}</dd></div>
       <div><dt>이벤트</dt><dd>{counts.steps}개</dd></div>

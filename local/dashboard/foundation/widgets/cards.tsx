@@ -1,4 +1,4 @@
-import type { ComponentChildren } from "preact";
+import type {ReactNode as ComponentChildren} from "react";
 import { Skeleton } from "../controls/labels";
 import { EmptyState, Alert } from "./messages";
 
@@ -11,14 +11,14 @@ export type CardProps = {
 };
 
 export function Card({ title, description, actions, footer, children }: CardProps) {
-  return <section class="lf-card" aria-label={title}>
-    <header class="lf-card__header">
-      <div><h3 class="lf-card__title">{title}</h3>
-        {description && <p class="lf-card__description">{description}</p>}</div>
-      {actions && <div class="lf-card__actions">{actions}</div>}
+  return <section className="lf-card" aria-label={title}>
+    <header className="lf-card__header">
+      <div><h3 className="lf-card__title">{title}</h3>
+        {description && <p className="lf-card__description">{description}</p>}</div>
+      {actions && <div className="lf-card__actions">{actions}</div>}
     </header>
-    <div class="lf-card__content">{children}</div>
-    {footer && <footer class="lf-card__footer">{footer}</footer>}
+    <div className="lf-card__content">{children}</div>
+    {footer && <footer className="lf-card__footer">{footer}</footer>}
   </section>;
 }
 
@@ -49,17 +49,17 @@ export type MetricProps = {
 };
 
 export function Metric({ label, value, note, prefix, suffix }: MetricProps) {
-  return <section class="lf-metric" aria-label={label}>
-    <p class="lf-metric__label">{label}</p>
-    <strong class="lf-metric__value" data-measured={value !== null}>
+  return <section className="lf-metric" aria-label={label}>
+    <p className="lf-metric__label">{label}</p>
+    <strong className="lf-metric__value" data-measured={value !== null}>
       {value === null ? "미측정" : <>{prefix}{value.toLocaleString("ko-KR")}{suffix}</>}
     </strong>
-    {note && <p class="lf-metric__note">{note}</p>}
+    {note && <p className="lf-metric__note">{note}</p>}
   </section>;
 }
 
 export function MetricStrip({ metrics, label }: { readonly metrics: readonly MetricProps[]; readonly label: string }) {
-  return <div class="lf-metric-strip" role="group" aria-label={label}>
+  return <div className="lf-metric-strip" role="group" aria-label={label}>
     {metrics.map(metric => <Metric key={metric.label} {...metric} />)}
   </div>;
 }

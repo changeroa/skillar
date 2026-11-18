@@ -1,4 +1,4 @@
-import type { ComponentChildren } from "preact";
+import type {ReactNode as ComponentChildren} from "react";
 import { Glyph } from "./icons";
 
 export type BadgeColor = "primary" | "filled" | "filledOnMuted" | "ghost" | "inverted" | "green" | "blue" | "violet" | "teal" | "red" | "yellow";
@@ -10,8 +10,8 @@ export function Badge({ text, label, color = "primary", size = "default", mono =
   const content = <>{label && <span>{label}:</span>}<span title={text}>{text}</span></>;
   const className = `lf-badge lf-badge--${color} lf-badge--${size}${mono ? " lf-mono" : ""}`;
   return onDismiss
-    ? <button type="button" class={className} aria-label={`Remove ${text}`} onClick={onDismiss}>{content}</button>
-    : <span class={className}>{content}</span>;
+    ? <button type="button" className={className} aria-label={`Remove ${text}`} onClick={onDismiss}>{content}</button>
+    : <span className={className}>{content}</span>;
 }
 
 export function Tag({ text, secondaryText, status = "default", variant = "default", remove }: {
@@ -20,10 +20,10 @@ export function Tag({ text, secondaryText, status = "default", variant = "defaul
   readonly variant?: "default" | "header";
   readonly remove?: { readonly onRemove: () => void; readonly disabled?: boolean };
 }) {
-  return <span class={`lf-tag lf-tag--${status}${variant === "header" ? " lf-tag--header" : ""}`}>
+  return <span className={`lf-tag lf-tag--${status}${variant === "header" ? " lf-tag--header" : ""}`}>
     {variant !== "header" && <Glyph name="tag" small />}
     <span title={[text, secondaryText].filter(Boolean).join(" ")}>{text}</span>
-    {secondaryText && <span class="lf-tag__secondary">{secondaryText}</span>}
+    {secondaryText && <span className="lf-tag__secondary">{secondaryText}</span>}
     {remove && <button type="button" aria-label={`Remove ${text}`} disabled={remove.disabled}
       onClick={event => { event.stopPropagation(); remove.onRemove(); }}><Glyph name="close" small /></button>}
   </span>;
@@ -44,8 +44,8 @@ export function StatusBadge({ type, size = "default", transparent = false, isLiv
   const category = Object.hasOwn(categories, key) ? categories[key] ?? "unknown" : "unknown";
   const dot = isLive && !["completed", "error", "partial"].includes(category);
   const text = type ? type[0]?.toUpperCase() + type.slice(1).replaceAll("_", " ") : "Unknown";
-  return <span class={`lf-status lf-status--${category} lf-status--${size}`} data-transparent={transparent}>
-    {dot && <span class="lf-status__dot" aria-hidden="true"><span /><span /></span>}{text}
+  return <span className={`lf-status lf-status--${category} lf-status--${size}`} data-transparent={transparent}>
+    {dot && <span className="lf-status__dot" aria-hidden="true"><span /><span /></span>}{text}
   </span>;
 }
 
@@ -59,7 +59,7 @@ export function KeyboardShortcut({ keys, variant = "default", size = "default", 
   readonly platform?: "auto" | "mac" | "other"; readonly title?: string;
 }) {
   const mac = platform === "mac" || (platform === "auto" && typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform));
-  return <kbd class={`lf-shortcut lf-shortcut--${variant} lf-shortcut--${size}`} title={title} aria-label={keys.join("+")}>
+  return <kbd className={`lf-shortcut lf-shortcut--${variant} lf-shortcut--${size}`} title={title} aria-label={keys.join("+")}>
     {keys.map((key, index) => {
       const label = key === "Mod" ? (mac ? "\u2318" : "Ctrl")
         : mac && key === "Shift" ? "\u21e7" : mac && key === "Alt" ? "\u2325" : keyLabels[key] ?? key;
@@ -71,7 +71,7 @@ export function KeyboardShortcut({ keys, variant = "default", size = "default", 
 export function Skeleton({ label = "불러오는 중", rows = 3, variant = "default" }: {
   readonly label?: string; readonly rows?: number; readonly variant?: "default" | "contrast";
 }) {
-  return <div class={`lf-skeleton lf-skeleton--${variant}`} role="status" aria-label={label} aria-busy="true">
+  return <div className={`lf-skeleton lf-skeleton--${variant}`} role="status" aria-label={label} aria-busy="true">
     {Array.from({ length: rows }, (_, index): ComponentChildren => <div key={index} aria-hidden="true" />)}
   </div>;
 }

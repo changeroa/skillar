@@ -1,4 +1,4 @@
-import { h, type ComponentChildren } from "preact";
+import {createElement as h, type ReactNode as ComponentChildren} from "react";
 import { CodeBlock } from "./code-block";
 
 const listItem = /^(\s*)([-*]|\d+[.)])\s+(.*)$/;
@@ -54,7 +54,7 @@ export function MarkdownViewer({ text }: { readonly text: string }) {
       const code = [];
       while (index < lines.length && !lines[index]?.startsWith("```")) code.push(lines[index++]);
       index++;
-      blocks.push(h("div", { key, class: "lf-markdown__code" },
+      blocks.push(h("div", { key, className: "lf-markdown__code" },
         h(CodeBlock, { value: code.join("\n"), language: line.slice(3).trim() || "text" })));
       continue;
     }
@@ -71,5 +71,5 @@ export function MarkdownViewer({ text }: { readonly text: string }) {
     // parser or giving its source tags paragraph semantics.
     blocks.push(line.trimStart().startsWith("<") ? `${paragraph.join("\n")}\n` : h("p", { key }, inline(paragraph.join("\n"))));
   }
-  return <div class="lf-markdown">{blocks}</div>;
+  return <div className="lf-markdown">{blocks}</div>;
 }

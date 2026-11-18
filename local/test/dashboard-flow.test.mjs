@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { PACKAGE_ROOT } from "./_helpers.mjs";
 
-// The dashboard ships as one esbuild bundle; each module under test is bundled the same way (preact JSX, browser platform)
+// The dashboard ships as one esbuild bundle; each module under test is bundled the same way (react JSX, browser platform)
 // and imported from a data: URL, so the pure helpers run in node without a DOM.
 async function loadModule(relPath) {
   const result = await build({
@@ -16,7 +16,7 @@ async function loadModule(relPath) {
     platform: "browser",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "preact",
+    jsxImportSource: "react",
     logLevel: "silent",
   });
   return import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
