@@ -22,16 +22,8 @@ export const configSchema = z.object({
 });
 export type Config = z.infer<typeof configSchema>;
 
-export const loginReturnPathSchema = z.string().max(8192).refine(value => {
-  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return false;
-  const url = new URL(value, 'https://return.invalid');
-  return url.origin === 'https://return.invalid' && url.hash === '' &&
-    ((url.pathname === '/oauth/authorize' && url.search !== '') ||
-      (url.pathname === '/connections/' || url.pathname === '/skills/' || url.pathname === '/dashboard/') && url.search === '');
-}).transform(value => {
-  const url = new URL(value, 'https://return.invalid');
-  return url.pathname + url.search;
-}).pipe(z.string().max(8192));
+export { loginReturnPathSchema } from './return-path.ts';
+import { loginReturnPathSchema } from './return-path.ts';
 const flowSchema = z.object({
   state: z.string().min(32),
   nonce: z.string().min(32),

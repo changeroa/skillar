@@ -25,7 +25,8 @@ function isAbort(error: unknown): boolean {
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
   if (phase.kind === "signed-out") {
-    location.replace("/login/?next=/skills");
+    // 현재 경로·탭·해시를 보존해 로그인 뒤 같은 뷰로 돌아온다.
+    location.replace(`/login/?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`);
     return null;
   }
   const text = phase.kind === "expired" ? "로그인이 만료되어 이 화면에서 스킬 정보를 지웠습니다. 계속하려면 다시 로그인하세요." :

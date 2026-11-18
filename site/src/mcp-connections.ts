@@ -191,7 +191,7 @@ async function mount(): Promise<void> {
   const render = () => {
     const phase = model.phase;
     if (phase === "signed-out") {
-      location.replace("/login/?next=/connections");
+      location.replace(`/login/?next=${encodeURIComponent(location.pathname)}`);
       return;
     }
     status.hidden = phase === "ready";

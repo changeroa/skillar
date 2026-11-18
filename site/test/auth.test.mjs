@@ -520,3 +520,18 @@ test('Google return paths accept the account, skills and dashboard screens', asy
     assert.equal(response.status, 303);
   }
 });
+
+test('Google return paths preserve the skills evidence tab and dashboard hash routes', async t => {
+  const f = await fixture(t);
+  for (const path of ['/skills/?tab=evidence', '/skills/?tab=evidence#/sessions', '/skills/?tab=evidence#/sessions/abc', '/skills/#/sessions']) {
+    const parsed = loginReturnPathSchema.safeParse(path);
+    assert.equal(parsed.success, true, path);
+    assert.equal(parsed.data, path);
+    const response = await f.request(`/auth/google?returnTo=${encodeURIComponent(path)}`);
+    assert.equal(response.status, 303, path);
+  }
+  for (const path of ['/skills/?tab=other', '/skills/?tab=evidence&next=elsewhere', '/skills/?next=elsewhere#/sessions']) {
+    assert.equal(loginReturnPathSchema.safeParse(path).success, false, path);
+    assert.equal((await f.request(`/auth/google?returnTo=${encodeURIComponent(path)}`)).status, 400, path);
+  }
+});

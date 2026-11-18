@@ -2,19 +2,23 @@ import './main';
 import { render } from "./react-mount";
 import ky, { HTTPError, TimeoutError } from 'ky';
 import { sessionResponseSchema } from '../lib/account';
+import { loginReturnPathSchema } from '../lib/return-path.ts';
 import type { SessionUser } from '../lib/account';
 import { KST_TIME_ZONE } from './time.ts';
 import {createElement as h} from 'react';
 import { Avatar } from '../../local/dashboard/foundation/controls/choices';
 
 // 로그인 페이지: ?next=/skills 등을 Google 로그인 returnTo로 연결합니다.
-// 서버 측 허용 경로(loginReturnPathSchema)와 동일한 목록입니다.
+// 서버 측 허용 경로(loginReturnPathSchema)와 같은 스키마로 검증하고,
+// 슬래시 없는 옛 형태(/skills)만 뒤에 슬래시를 붙여 한 번 더 시도합니다.
 if (window.location.pathname === '/login/') {
-  const nextTargets: Readonly<Record<string, string>> = {
-    '/connections': '/connections/', '/skills': '/skills/', '/dashboard': '/dashboard/',
-  };
   const next = new URLSearchParams(window.location.search).get('next');
-  const returnTo = next === null ? undefined : nextTargets[next];
+  let returnTo: string | undefined;
+  if (next !== null) {
+    const direct = loginReturnPathSchema.safeParse(next);
+    const slashed = next.endsWith('/') ? null : loginReturnPathSchema.safeParse(`${next}/`);
+    returnTo = direct.success ? direct.data : slashed && slashed.success ? slashed.data : undefined;
+  }
   if (returnTo !== undefined) {
     const href = `/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
     document.querySelectorAll<HTMLAnchorElement>('a[href^="/auth/google"]').forEach(link => { link.href = href; });
