@@ -51,6 +51,11 @@ jobs:
       - run: npm ci && npm run build
         working-directory: shared
       - if: inputs.target == 'pages'
+        run: npm ci
+        working-directory: local
+      - if: inputs.target == 'pages'
+        run: node scripts/build-theme.mjs
+      - if: inputs.target == 'pages'
         run: npm ci && npm test && npm run build
         working-directory: site
       - if: inputs.target != 'pages'
