@@ -59,7 +59,7 @@ function keepRule(rule, corpus) {
   const brace = rule.indexOf("{");
   if (brace < 0) return true;
   const classes = ruleClasses(rule.slice(0, brace));
-  if (!classes.length) return true; // html/:root/[data-...] selectors
+  if (!classes.length) return true; // html/[data-...] selectors
   if (classes.some(name => !ATOMIC.test(name))) return true; // named class: preserve
   return classes.some(name => corpus.includes(name));
 }
@@ -68,21 +68,22 @@ function pruneContent(text, js, stats) {
   const out = [];
   for (const item of splitItems(text)) {
     const trimmed = item.trimStart();
+    if (!trimmed) continue; // whitespace-only segments: keeps re-pruning idempotent
     if (trimmed.includes("{") && (trimmed.startsWith("@media") || trimmed.startsWith("@layer") || trimmed.startsWith("@supports"))) {
       const brace = item.indexOf("{");
       const inner = pruneContent(item.slice(brace + 1, item.endsWith("}") ? -1 : undefined), js, stats);
-      if (inner.trim()) out.push(item.slice(0, brace + 1) + inner + "}");
+      if (inner.trim()) out.push(item.slice(0, brace + 1).trimStart() + inner + "}");
       continue;
     }
     if (trimmed.startsWith("@property") || trimmed.startsWith("@keyframes")) {
-      out.push(item);
+      out.push(trimmed);
       continue;
     }
     if (trimmed.startsWith("/*") || trimmed.startsWith("@") || !trimmed.includes("{")) {
-      out.push(item); // comments, @layer name declarations, @charset, whitespace
+      out.push(trimmed); // comments, @layer name declarations, @charset
       continue;
     }
-    if (keepRule(trimmed, js)) { stats.kept++; out.push(item); }
+    if (keepRule(trimmed, js)) { stats.kept++; out.push(trimmed); }
     else { stats.dropped++; stats.droppedItems.push(item); }
   }
   return out.join("\n");
@@ -106,12 +107,14 @@ export async function pruneAstryxCss(cssPath, jsPaths, outPath, htmlPaths = []) 
     const missing = [...consumed].filter(name => !defined.has(name));
     if (!missing.length) break;
     let progress = false;
-    for (let i = stats.droppedItems.length - 1; i >= 0; i--) {
+    const stillMissing = new Set(missing);
+    for (let i = stats.droppedItems.length - 1; i >= 0 && stillMissing.size; i--) {
       const item = stats.droppedItems[i];
       const defines = [...item.matchAll(/(--[\w-]+)\s*:/g)].map(match => match[1]);
-      if (defines.some(name => missing.includes(name))) {
-        result += "\n" + item;
+      if (defines.some(name => stillMissing.has(name))) {
+        result += "\n" + item.trim();
         stats.droppedItems.splice(i, 1);
+        for (const name of defines) stillMissing.delete(name);
         rescued++; progress = true;
       }
     }
@@ -132,7 +135,7 @@ export async function pruneAstryxCss(cssPath, jsPaths, outPath, htmlPaths = []) 
     stats.droppedDefs = (stats.droppedDefs || 0) + 1;
     return false;
   });
-  result = finalItems.join("\n");
+  result = finalItems.map(item => item.trimStart()).join("\n");
 
   if (result.split("{").length !== result.split("}").length) {
     throw new Error(`prune-astryx-css: unbalanced braces (${stats.kept} kept) - refusing to write`);
