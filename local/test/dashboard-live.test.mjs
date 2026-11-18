@@ -71,6 +71,11 @@ function host(t, hash, overrides = {}) {
   ui.configureApi(api);
   t.after(async () => {
     await ui.act(() => ui.render(null, root));
+    // The bundled React dev scheduler's MessageChannel task ports can outlive a test with pending
+    // (already-asserted) work; unref them so the runner can exit. Browser behavior is unaffected.
+    for (const handle of process._getActiveHandles?.() ?? []) {
+      if (handle?.constructor?.name === "MessagePort" && typeof handle.unref === "function") handle.unref();
+    }
     globalThis.setTimeout = originalSetTimeout;
     globalThis.clearTimeout = originalClearTimeout;
     for (const key of ["document", "HTMLDetailsElement", "location", "addEventListener", "removeEventListener"]) delete globalThis[key];

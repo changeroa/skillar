@@ -160,7 +160,7 @@ for (const scope of ["flow", "session"]) test(`${scope} unresolved loads render 
 
 test("a zero unresolved-load count renders no uncertainty disclosure", () => {
   const root = render(ui.UnresolvedLoadNotice, { loads: { count: 0, uris: [] } });
-  assert.equal(descendants(root).some((node) => node.getAttribute("data-load-attribution") !== undefined), false);
+  assert.equal(descendants(root).some((node) => node.getAttribute("data-load-attribution") !== null), false);
 });
 
 test("lower-ranked loaded skill retains its machine rank and rendered value", () => {
@@ -202,6 +202,7 @@ test("missed-later link opens and focuses the actual folded turn", () => {
   proto.scrollIntoView = function () { this.scrolled = true; };
   outer.appendChild(pane);
   pane.appendChild(target);
+  document.body.appendChild(outer);
   const source = findingView();
   const missed = attr(source, "data-missed-skill", "later-missed");
   const anchor = missed.querySelector("a");
