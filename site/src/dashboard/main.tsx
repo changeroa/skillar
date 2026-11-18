@@ -1,3 +1,6 @@
+import "@astryxdesign/core/reset.css";
+import "@astryxdesign/core/astryx.css";
+import "../../../local/dashboard/design/skillar-theme/dist/theme.css";
 import "../../../local/dashboard/styles.css";
 import { render } from "../react-mount";
 import "./embed.css";

@@ -1,5 +1,7 @@
 import {} from "react";
 import { render } from "./react-mount";
+import { Theme } from "@astryxdesign/core/theme";
+import { skillarTheme } from "./design/skillar-theme/dist/skillar.js";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Filter } from "../src/types.js";
 import { api, type LiveState, type SessionListRow } from "./api";
@@ -295,7 +297,7 @@ export function App({ embedded = false }: AppOptions = {}) {
 }
 
 export function mount(element: Element, options: AppOptions = {}): () => void {
-  render(<App {...options} />, element);
+  render(<Theme theme={skillarTheme} mode="system"><App {...options} /></Theme>, element);
   return () => render(null, element);
 }
 const el = typeof document === "undefined" ? null : document.getElementById("app");

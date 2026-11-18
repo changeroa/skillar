@@ -15,7 +15,12 @@
     "skipLibCheck": true,
     "types": ["node"],
     "baseUrl": ".",
-    "paths": { "*": ["./node_modules/@types/*", "./node_modules/*"] }
+    "paths": {
+      "@astryxdesign/core": ["./node_modules/@astryxdesign/core"],
+      "@astryxdesign/core/*": ["./node_modules/@astryxdesign/core/dist/*"],
+      "@astryxdesign/theme-neutral": ["./node_modules/@astryxdesign/theme-neutral"],
+      "@stylexjs/stylex": ["./node_modules/@stylexjs/stylex"],
+      "*": ["./node_modules/@types/*", "./node_modules/*"] }
   },
   "include": ["src/dashboard"]
 }

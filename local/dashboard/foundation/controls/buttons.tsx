@@ -1,8 +1,13 @@
 import type {JSX} from "react";
+import { Button as AxButton } from "@astryxdesign/core/Button";
+import { IconButton as AxIconButton } from "@astryxdesign/core/IconButton";
 import { Glyph } from "./icons";
 import type { ControlIcon } from "./icons";
-import { Spinner } from "./feedback";
 
+// Astryx-backed controls. The wrapper keeps the dashboard's existing call
+// shape (text/icon names/size names) so view code is untouched; variant and
+// size names that have no Astryx equivalent collapse per token-mapping.md
+// (outline→secondary, text→ghost, xs→sm) and are flagged in the PR.
 type NativeButton = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "class" | "className" | "style" | "children" | "size">;
 export type ButtonProps = NativeButton & {
   readonly text: string;
@@ -13,15 +18,21 @@ export type ButtonProps = NativeButton & {
   readonly trailingIcon?: ControlIcon;
 };
 
+type AxVariant = "primary" | "secondary" | "ghost" | "destructive";
+const buttonVariant: Record<NonNullable<ButtonProps["variant"]>, AxVariant> = {
+  primary: "primary", secondary: "secondary", outline: "secondary",
+  destructive: "destructive", ghost: "ghost", text: "ghost",
+};
+
 export function Button({ text, variant = "primary", size = "default", loading = false,
   icon, trailingIcon, disabled, type = "button", ...props }: ButtonProps) {
-  return <button {...props} type={type} className={`lf-button lf-button--${variant} lf-button--${size}`}
-    disabled={disabled || loading} aria-busy={loading || undefined} aria-label={props["aria-label"] ?? text}>
-    <span className="lf-button__content" data-trailing={Boolean(trailingIcon)} aria-hidden={loading || undefined}>
-      {icon && <Glyph name={icon} />}{text}{trailingIcon && <Glyph name={trailingIcon} />}
-    </span>
-    {loading && <span className="lf-button__busy" aria-hidden="true"><Spinner decorative variant="inherit" /></span>}
-  </button>;
+  // exactOptionalPropertyTypes (site tsconfig) rejects optional props typed
+  // `| undefined` from the spread; the runtime pass-through is identical.
+  return <AxButton {...(props as object as React.ComponentProps<typeof AxButton>)} type={type} label={text} variant={buttonVariant[variant]}
+    size={size === "sm" ? "sm" : "md"} isLoading={Boolean(loading)}
+    isDisabled={Boolean(disabled)}
+    icon={icon ? <Glyph name={icon} /> : undefined}
+    endContent={trailingIcon ? <Glyph name={trailingIcon} /> : undefined} />;
 }
 
 export type IconButtonProps = NativeButton & {
@@ -31,11 +42,17 @@ export type IconButtonProps = NativeButton & {
   readonly variant?: "ghost" | "outline" | "outlineDestructive" | "subtle" | "toolbar" | "destructive";
 };
 
-export function IconButton({ label, icon, size = "md", variant = "ghost", type = "button", ...props }: IconButtonProps) {
-  return <button {...props} className={`lf-icon-button lf-icon-button--${variant} lf-icon-button--${size}`}
-    type={type} aria-label={label} title={props.title ?? label}>
-    <Glyph name={icon} small={size === "xs" || variant === "toolbar"} />
-  </button>;
+const iconButtonVariant: Record<NonNullable<IconButtonProps["variant"]>, AxVariant> = {
+  ghost: "ghost", outline: "secondary", outlineDestructive: "destructive",
+  subtle: "ghost", toolbar: "ghost", destructive: "destructive",
+};
+
+export function IconButton({ label, icon, size = "md", variant = "ghost", type = "button",
+  disabled, title, ...props }: IconButtonProps) {
+  return <AxIconButton {...(props as object as React.ComponentProps<typeof AxIconButton>)} type={type} label={label} variant={iconButtonVariant[variant]}
+    size={size === "md" ? "md" : "sm"} isDisabled={Boolean(disabled)}
+    tooltip={title ?? label}
+    icon={<Glyph name={icon} small={size !== "md" || variant === "toolbar"} />} />;
 }
 
 export function Link({ text, href, external = false, ...props }: {
@@ -45,6 +62,5 @@ export function Link({ text, href, external = false, ...props }: {
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "class" | "className" | "style" | "children">) {
   return <a {...props} className="lf-link" href={href} title={props.title ?? text}
     target={external ? "_blank" : props.target} rel={external ? "noopener noreferrer" : props.rel}>
-    <span>{text}</span>
-  </a>;
+    <span>{text}</span></a>;
 }

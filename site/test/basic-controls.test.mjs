@@ -15,7 +15,11 @@ test("loading button blocks activation without losing its accessible name", asyn
   const button = byTag(container, "button")[0];
   await act(() => button.click());
   // Then
-  assert.equal(button.disabled, true);
+  // Astryx Button keeps the button focusable while loading: it signals the
+  // blocked state with aria-disabled instead of the native disabled attribute,
+  // so keyboard focus is never dropped mid-action. Activation is still blocked.
+  assert.equal(button.disabled, false);
+  assert.equal(button.getAttribute("aria-disabled"), "true");
   assert.equal(button.getAttribute("aria-busy"), "true");
   assert.equal(button.getAttribute("aria-label"), "Save");
   assert.equal(activated, 0);
@@ -27,10 +31,18 @@ test("trailing button glyph follows its unchanged accessible label", async t => 
   // When
   const { container } = await mount(t, Button, { text: label, trailingIcon: "chevron" });
   // Then
-  const content = byTag(container, "span")[0];
-  assert.equal(byTag(content, "svg")[0], content.childNodes.at(-1));
-  assert.equal(byTag(content, "svg").length, 1);
-  assert.equal(byTag(container, "button")[0].getAttribute("aria-label"), label);
+  // Astryx Button nests the trailing icon in its own wrapper span and drops
+  // aria-label at rest (the visible label is the accessible name; aria-label
+  // only appears while loading). Compare positions, never node identity:
+  // node's assert stringifies jsdom nodes with React fibers and OOMs.
+  const button = byTag(container, "button")[0];
+  const svgs = byTag(button, "svg");
+  assert.equal(svgs.length, 1);
+  assert.equal(svgs[0].getAttribute("aria-hidden"), "true");
+  const labelSpan = byTag(button, "span").find(s => s.textContent === label);
+  assert.ok(labelSpan, "visible label renders as the accessible name");
+  assert.ok(labelSpan.compareDocumentPosition(svgs[0]) & 4 /* DOCUMENT_POSITION_FOLLOWING */,
+    "glyph renders after the label");
 });
 
 test("input adornments stay decorative and do not duplicate a supplied prefix", async t => {
@@ -243,7 +255,12 @@ test("copy exposes rejection inline instead of reporting success", async t => {
   await act(async () => { byTag(container, "button")[0].click(); });
   // Then
   assert.equal(byTag(container, "button")[0].getAttribute("aria-label"), "ID 복사");
-  assert.equal(byTag(container, "span").find(node => node.getAttribute("role") === "status").textContent.length > 0, true);
+  // The copy control's own feedback span carries the failure; Astryx IconButton
+  // also renders an (empty) role=status loading announcer, so select by class.
+  const feedback = byTag(container, "span").find(node => node.classList.contains("lf-copy__feedback"));
+  assert.ok(feedback, "copy feedback element renders");
+  assert.equal(feedback.getAttribute("role"), "status");
+  assert.equal(feedback.textContent.length > 0, true);
 });
 
 test("stale clipboard completion cannot mark a changed value as copied", async t => {

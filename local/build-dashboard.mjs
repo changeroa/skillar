@@ -26,6 +26,9 @@ export const dashboardBuild = await build({
 await copyFile(new URL("dashboard/index.html", root), new URL("index.html", out));
 await copyFile(new URL("dashboard/styles.css", root), new URL("assets/styles.css", out));
 await copyFile(new URL("dashboard/foundation/tokens.css", root), new URL("assets/tokens.css", out));
+await copyFile(new URL("dashboard/design/astryx-vendor/reset.css", root), new URL("assets/astryx-reset.css", out));
+await copyFile(new URL("dashboard/design/astryx-vendor/astryx.css", root), new URL("assets/astryx.css", out));
+await copyFile(new URL("dashboard/design/skillar-theme/dist/theme.css", root), new URL("assets/skillar-theme.css", out));
 await mkdir(new URL("viewers/", out), { recursive: true });
 await copyFile(new URL("dashboard/foundation/controls/p1.css", root), new URL("assets/p1.css", out));
 await copyFile(new URL("dashboard/foundation/viewers/viewers.css", root), new URL("viewers/viewers.css", out));
