@@ -60,7 +60,6 @@ function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-i
     <div className="auth-actions dash-signed-out">
       <p className="note session-status" role="status" aria-live="polite">{text}</p>
       <a className="button primary" href="/auth/google">Google로 계속하기 <span aria-hidden="true">{"\u2192"}</span></a>
-      <p className="note">Google은 자체 페이지에서 동의를 요청합니다. 그 뒤 skillar는 Google ID, 이메일, 이름, 프로필 사진, 첫 로그인 시각과 최근 로그인 시각을 저장합니다. 세션은 서명된 보안 쿠키이며, Google 토큰은 보관하지 않습니다.</p>
     </div>
   );
 }
@@ -179,6 +178,12 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     close();
     setPhase({ kind: "expired" });
   }, [close]);
+  // The breadcrumb source switcher only makes sense signed in: signed out
+  // there is no source to switch to.
+  useEffect(() => {
+    const switcher = document.querySelector<HTMLElement>(".app-breadcrumb details");
+    if (switcher) switcher.hidden = phase.kind !== "signed-in";
+  }, [phase.kind]);
   useEffect(() => {
     readSession(signal).then(setPhase, (error: unknown) => {
       if (!isAbort(error)) setPhase({ kind: "unexpected" });
