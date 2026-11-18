@@ -6,6 +6,8 @@ Run from the repository root after `npm --prefix server run build`:
 node server/bench/search.mjs --check
 ```
 
+For a separately consented, deidentified real-query evaluation with grouped tune/holdout reporting, use `real-search.mjs` and follow [REAL_SEARCH_AUTHORING.md](./REAL_SEARCH_AUTHORING.md). Its committed fixture is synthetic contract coverage only; it is not a production-quality claim.
+
 The default `catalog.json` contains 12 entirely synthetic skill metadata entries, including two explicit-only entries. It contains no private catalog metadata or skill bodies and is used only by this benchmark, never for runtime routing or installation. Connected catalogs are unchanged; their results depend on their own names, descriptions and keywords.
 
 The 32 maintainer-authored cases contain 24 expected matches in Korean and English and 8 no-match queries. They measure Hit@1, Hit@5, MRR, negative abstention, exact-name lookup, invocation filtering, and warm/cold local search latency. Cases and metadata were developed together: this is a regression suite, not an independent holdout or proof of live catalog quality. Local timings exclude network and agent overhead.
