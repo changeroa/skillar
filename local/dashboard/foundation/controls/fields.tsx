@@ -1,6 +1,7 @@
 import type {JSX, Ref} from "react";
 import { useId, useRef, useState } from "react";
 import { TextInput as AxTextInput } from "@astryxdesign/core/TextInput";
+import { CheckboxInput as AxCheckboxInput } from "@astryxdesign/core/CheckboxInput";
 import { Glyph, type ControlIcon } from "./icons";
 
 type InputAttributes = Omit<React.InputHTMLAttributes<HTMLInputElement>, "class" | "className" | "style" | "size" | "prefix">;
@@ -84,12 +85,17 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
   </div>;
 }
 
-export function Checkbox({ label, mixed = false, size = "default", ...props }: {
+export function Checkbox({ label, mixed = false, size = "default", checked, onChange, disabled, name, ...props }: {
   readonly label: string; readonly mixed?: boolean; readonly size?: "default" | "sm";
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "class" | "className" | "style" | "children">) {
-  return <label className={`lf-checkbox lf-checkbox--${size}`}>
-    <input {...props} type="checkbox" ref={element => { if (element) element.indeterminate = mixed; }} />
-    <span className="lf-checkbox__box" aria-hidden="true"><Glyph name="check" small={size === "sm"} /></span>
-    <span>{label}</span>
-  </label>;
+  // Astryx CheckboxInput is controlled; every dashboard call site is too. It
+  // syncs the native indeterminate property itself and (like the old control)
+  // deliberately exposes no aria-checked for mixed. exactOptionalPropertyTypes
+  // cast as in buttons.tsx. NOTE: title is not accepted by Astryx BaseProps
+  // (facet checkbox value tooltip dropped — flagged for review).
+  return <AxCheckboxInput {...(props as object as React.ComponentProps<typeof AxCheckboxInput>)}
+    label={label} size={size === "sm" ? "sm" : "md"} {...(name !== undefined ? { htmlName: name } : {})}
+    value={mixed ? "indeterminate" : Boolean(checked)}
+    isDisabled={Boolean(disabled)}
+    onChange={(_next, event) => onChange?.(event)} />;
 }
