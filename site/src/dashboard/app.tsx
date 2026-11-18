@@ -53,7 +53,7 @@ function useLoad<T>(
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
   if (phase.kind === "signed-out") {
-    location.replace("/login/?next=/dashboard");
+    location.replace("/login/?next=/skills");
     return null;
   }
   const text = phase.kind === "expired" ? "세션이 끝나 이 페이지의 활동 내용을 지웠습니다. 계속하려면 다시 로그인하세요." :

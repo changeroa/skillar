@@ -33,7 +33,7 @@ if (navigation && drawer && menu && closeButton) {
   const links = Array.from(navigation.querySelectorAll<HTMLAnchorElement>('a[href]'));
   const path = window.location.pathname;
   const syncCurrent = () => {
-    const session = path.startsWith('/dashboard/') && window.location.hash.startsWith('#/sessions');
+    const session = path.startsWith('/skills/') && window.location.hash.startsWith('#/sessions');
     const current = links.find(link => path.startsWith(link.pathname) &&
       (session ? link.hash === '#/sessions' : link.hash === ''));
     for (const link of links) {
@@ -41,7 +41,7 @@ if (navigation && drawer && menu && closeButton) {
       else link.removeAttribute('aria-current');
     }
     const item = document.querySelector('[data-breadcrumb-item]');
-    if (item) item.textContent = session ? '세션' : '대시보드';
+    if (item) item.textContent = session ? '세션' : '스킬';
   };
   syncCurrent();
   window.addEventListener('hashchange', syncCurrent);

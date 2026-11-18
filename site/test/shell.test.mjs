@@ -127,7 +127,7 @@ for (const modifier of ["metaKey", "ctrlKey"]) {
     // Then
     assert.equal(dialog.open, true);
     assert.equal(document.activeElement, byTag(dialog, "input")[0]);
-    assert.equal(byTag(dialog, "input")[0].getAttribute("aria-activedescendant"), "app-command-option-dashboard");
+    assert.equal(byTag(dialog, "input")[0].getAttribute("aria-activedescendant"), "app-command-option-sessions");
     await act(() => dialog.dispatchEvent(new FakeEvent("cancel")));
     assert.equal(dialog.open, false);
     assert.equal(document.activeElement, opener);
@@ -138,17 +138,17 @@ test("two ArrowDown presses and Enter navigate to the third destination", async 
   const { field, navigations, dialog } = await palette(t);
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
-  assert.equal(field.getAttribute("aria-activedescendant"), "app-command-option-skills");
+  assert.equal(field.getAttribute("aria-activedescendant"), "app-command-option-evidence");
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
-  assert.deepEqual(navigations, ["/skills/"]);
+  assert.deepEqual(navigations, ["/skills/?tab=evidence"]);
   assert.equal(dialog.open, false);
 });
 
 test("arrows wrap and Home and End select the visible endpoints", async t => {
   const { field, options } = await palette(t);
   for (const [key, expected] of [
-    ["ArrowUp", "account"], ["ArrowDown", "dashboard"], ["End", "account"],
-    ["Home", "dashboard"], ["ArrowDown", "sessions"],
+    ["ArrowUp", "account"], ["ArrowDown", "sessions"], ["End", "account"],
+    ["Home", "sessions"], ["ArrowDown", "skills"],
   ]) {
     await act(() => field.dispatchEvent(new FakeEvent("keydown", { key })));
     assert.equal(field.getAttribute("aria-activedescendant"), `app-command-option-${expected}`);

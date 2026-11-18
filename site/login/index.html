@@ -43,7 +43,7 @@
       <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command">이동… <kbd>⌘K</kbd></button>
       <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
       <aside id="app-navigation" class="app-navigation">
-        <nav aria-label="주요 메뉴"><a href="/dashboard/#/sessions">세션</a><a href="/skills/">스킬</a><a href="/connections/">연결</a></nav>
+        <nav aria-label="주요 메뉴"><a href="/skills/?tab=evidence#/sessions">세션</a><a href="/skills/">스킬</a><a href="/connections/">연결</a></nav>
         <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/" aria-current="page">계정</a></nav><div id="sidebar-account"></div></div>
       </aside>
       <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
@@ -86,7 +86,7 @@
               <div><dt>최근 로그인</dt><dd><time id="user-last"></time></dd></div>
             </dl>
             </div>
-            <a class="button primary" href="/dashboard/">활동 대시보드 열기 <span aria-hidden="true">→</span></a>
+            <a class="button primary" href="/skills/?tab=evidence">읽기 근거 열기 <span aria-hidden="true">→</span></a>
             <form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form>
           </div>
           <section class="account-session" aria-labelledby="account-session-title"><h2 id="account-session-title">이 브라우저의 세션</h2><form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form></section>
