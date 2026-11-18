@@ -8,7 +8,6 @@ import {
   buildHash, isEmptyFilter, matchesFilter, serializeFilter, type Route, type ViewProps,
 } from "../state";
 import { SessionFacets } from "./sessions/facets";
-import { SessionHistogram } from "./sessions/histogram";
 import { SessionTable } from "./sessions/table";
 import { SessionToolbar } from "./sessions/toolbar";
 import { readSkills, sortSessions } from "./sessions/model";
@@ -50,31 +49,6 @@ export function attributionRates(stats: Pick<Stats, "attributionRate" | "lastEve
     .map((id) => ({ runtime: id, text: formatRate(stats.attributionRate[id]), known: (stats.attributionRate[id] ?? null) !== null }));
 }
 
-function UsageNote({ stats }: { stats: Stats }) {
-  const orphan = unattributedText(stats.unattributed);
-  const rates = attributionRates(stats);
-  if (!orphan && rates.length === 0) return null;
-  return (
-    <footer className="sessions__foot">
-      <p className="usage">
-        {orphan && (
-          <span className="usage__item" data-usage="unattributed">
-            <span>{orphan}</span>
-            <span className="usage__why" tabIndex={0} data-tip={ATTRIBUTION_EXPLAINER} aria-label={ATTRIBUTION_EXPLAINER}>세션 연결 방식</span>
-          </span>
-        )}
-        {rates.length > 0 && (
-          <span className="usage__item" data-usage="rates" title="실행 환경별 MCP 이벤트 중 세션과 연결된 비율입니다. -는 보낸 MCP 이벤트가 없다는 뜻입니다.">
-            <span className="usage__key">MCP 세션 연결률</span>
-            {rates.map((r) => (
-              <span key={r.runtime} className={r.known ? "usage__rate" : "usage__rate usage__rate--none"}>{RUNTIME_LABEL[r.runtime]} {r.text}</span>
-            ))}
-          </span>
-        )}
-      </p>
-    </footer>
-  );
-}
 
 const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
 const dateFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric" });
@@ -288,11 +262,9 @@ export function SessionsView({ route, navigate, live, embedded = false, detail =
       <div className="sessions-body" data-facets-open={facetsOpen}>
         {facetRows && !(narrow && facetsOpen) && <SessionFacets rows={facetRows} route={route} navigate={navigate} />}
         <Results className="session-results" aria-label="세션 기록" tabIndex={-1}>
-          {rows && <SessionHistogram rows={rows} filter={route.filter} />}
           {body}
         </Results>
       </div>
-      {rows !== undefined && stats && <UsageNote stats={stats} />}
       {narrow && facetsOpen && facetRows && <SessionFilterSheet rows={facetRows} route={route} navigate={navigate} close={() => setFacetsOpen(false)} />}
     </section>
   );

@@ -11,7 +11,6 @@ export function TableFacet<T extends string>({ label, choices, selected = [], ch
 }) {
   tableStyles();
   const [expanded, setExpanded] = useState(true);
-  const [mode, setMode] = useState("select");
   const [query, setQuery] = useState("");
   const shown = choices.filter(choice => choice.label.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
   return <fieldset className="lf-facet">
@@ -20,12 +19,8 @@ export function TableFacet<T extends string>({ label, choices, selected = [], ch
       {selected.length > 0 && <Button text="해제" icon="close" aria-label={`${label} 필터 해제`} variant="ghost" onClick={() => change(undefined)} />}
     </span></legend>
     {expanded && <>
-      <div className="lf-facet-modes" role="group" aria-label={`${label} 입력 방식`}>
-        <Button text="선택" variant="ghost" aria-pressed={mode === "select"} onClick={() => setMode("select")} />
-        <Button text="텍스트" variant="ghost" aria-pressed={mode === "text"} onClick={() => setMode("text")} />
-      </div>
       <div className="lf-facet-values">
-        <TextInput label={`${label} 값 찾기`} type={mode === "text" ? "text" : "search"} placeholder={mode === "text" ? "포함하는 값 찾기" : "값 찾기"}
+        <TextInput label={`${label} 값 찾기`} type="search" placeholder="값 찾기"
           value={query} onChange={setQuery} />
         {shown.map(choice => <div className="lf-facet-choice" key={choice.value}>
           <Checkbox size="sm" label={choice.label} title={choice.value} checked={selected.includes(choice.value)}

@@ -84,14 +84,6 @@ test("every daily histogram bar shares the baseline, including labelled zero tic
 const loaded = { id: "loaded", runtime: "codex", state: "loaded", startedAt: 10, endedAt: 110, skills: ["skill://a", "skill://b"], firstPrompt: "captured" };
 const exposed = { id: "exposed", runtime: "codex", state: "exposed_only", startedAt: 20, skills: ["skill://candidate"], firstPrompt: "captured" };
 
-test("the session distribution starts collapsed without unmounting its data", async t => {
-  const { container } = await mount(t, ui.SessionHistogram, { rows: [loaded, exposed], filter: {} });
-  const disclosure = all(container, node => node.localName === "details")[0];
-  assert.equal(disclosure.hasAttribute("open"), false);
-  assert.equal(all(disclosure, node => node.localName === "summary").length > 0, true);
-  assert.equal(all(disclosure, node => node.localName === "svg").length > 0, true);
-});
-
 test("candidate exposure never contributes to actual-read counts or read sorting", () => {
   assert.deepEqual(ui.readSkills(exposed), []);
   assert.deepEqual(ui.candidateSkills(loaded), []);
