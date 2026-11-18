@@ -1,5 +1,84 @@
 # skillar Dashboard Design System
 
+## Astryx design system (PR-2, 2026-11-18)
+
+The dashboard's hand-made basic controls are being rebuilt on Astryx
+(`@astryxdesign/core` + `@astryxdesign/theme-neutral`, React 19+, StyleX)
+with a skillar theme fork at `local/dashboard/design/skillar-theme`.
+This section is the governing layer; every older section below stays as
+historical record and loses wherever the two disagree.
+
+### Mount and build contract
+
+- `Theme` (skillar theme, `mode="system"`) mounts once at the dashboard App
+  root, so the standalone local dashboard and the hosted `LocalViews` embed
+  share one theme. The root Theme syncs `data-theme`/`data-astryx-theme` on
+  `documentElement`.
+- The Astryx runtime CSS is vendored at `local/dashboard/design/astryx-vendor/`
+  because the packed CLI build runs `build-dashboard.mjs` with no
+  `node_modules`; the vendored copy is the only CSS source the pack can see.
+- Cross-package resolution contract (CI masking lesson): importers must
+  resolve Astryx from their own `node_modules` — vite `resolve.dedupe`
+  (`@astryxdesign/core`, `@astryxdesign/theme-neutral`, `@stylexjs/stylex`,
+  `lucide-react`) plus `tsconfig` paths (`@astryxdesign/core`,
+  `@astryxdesign/core/*` → `dist/*`, theme-neutral, stylex) on both the
+  local and site sides. The theme is built with
+  `--icons-specifier '@astryxdesign/theme-neutral'`.
+
+### Tokens
+
+Brand `#B4321C` is unchanged and lives in the skillar theme as the Astryx
+accent. The `--lf-*` ↔ Astryx token correspondence, the alias-layer
+migration strategy, and the domain tokens that stay as extensions
+(charts, observations, badges, banners) are specified in
+`design/token-mapping.md`, which this section adopts by reference.
+
+### Component ownership
+
+| Component | Basis | State |
+|---|---|---|
+| Button / IconButton | Astryx Button/IconButton | swapped |
+| SearchInput | Astryx TextInput (`type="search"`, `hasClear`, `enterKeyHint="search"`) | swapped |
+| Checkbox | Astryx CheckboxInput | swapped |
+| Card | Astryx Card composed with HStack/VStack/StackItem, Heading, Text, Divider | swapped |
+| Select | native `<select>` (D-11 proposal) | kept |
+| Input | mixed (D-12 proposal) | kept pending decision |
+
+Layout-contract rule for future swaps: context CSS keys on structure
+(example: the table toolbar grows `.lf-field:has(input[type=search])` and
+visually hides toolbar labels with a descendant selector). A swap must
+preserve the wrapper that carries the layout contract, or update the
+contract CSS in the same commit, and prove it with base-vs-new captures.
+
+### Decision register
+
+Confirmed implementation: D-2 (primary semantic is the brand accent),
+D-2b (outline collapses to secondary), D-6 (text collapses to ghost),
+D-8 (lucide-react dedupes to the site version), D-9 (the search submit
+button is gone; Enter submits the live field value through a forwarded
+ref), D-10 (the facet checkbox `title` tooltip is dropped; Astryx
+BaseProps omits `title`).
+
+Proposals for review (not implemented): D-1 (dark accent `#D9553A`; raw
+brand is 3.22:1 on near-black), D-3 (disabled/tertiary text token
+aliasing), D-4 (Astryx focus is inset-shadow, not outline), D-5 (Figtree
+as the theme font), D-7 (theme dist committed vs CI-built), D-11 (keep
+native Select for the mobile picker and ArrowDown behavior; Astryx
+Selector is a custom listbox and would change UX), D-12 (Astryx TextInput
+cannot cover the date-range date/time types, prefix/valuePrefix
+specimens, or the command palette combobox; either migrate only plain
+callers or keep Input).
+
+### Accepted debt carried into PR-2 review
+
+- Pre-existing, identical on base and slice: `.lf-nav-group__label`
+  12px alpha-0.7 caption ≈ 3.88:1 (< 4.5 AA) and the unchecked
+  `.lf-checkbox__box` border ≈ 1.97:1 (< 3:1). Fix here or defer to PR-3
+  is a review question.
+- Cleanup tracked here: the `.lf-search` ruleset in `controls.css` is
+  dead after the SearchInput swap and is removed with the DESIGN.md
+  cleanup pass; residual `lf-card*` rules follow the Card audit.
+
 ## Phase B local screens (PR-7)
 
 The local v3 wireframes supply screen composition; the merged foundation owns
