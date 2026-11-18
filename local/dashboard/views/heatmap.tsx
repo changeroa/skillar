@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { SkillUri } from "../../src/types.js";
 import { api } from "../api";
 import {
@@ -81,6 +81,16 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
   const total = heat ? gridTotal(heat) : 0;
   const bucketHours = resultChoice === "auto" ? autoBucket(total, narrow) : resultChoice;
   const grid = useMemo(() => (heat ? buildGrid(heat, { bucketHours }) : undefined), [heat, bucketHours]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollOverflows, setScrollOverflows] = useState(false);
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const check = () => setScrollOverflows(node.scrollWidth > node.clientWidth + 1);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [grid]);
   const skills = useMemo(() => (skillWeek ? buildSkillWeekGrid({ ...skillWeek, rows: skillWeek.rows.filter(row => !resultFilter.skill?.length || resultFilter.skill.includes(row.uri)) }) : undefined), [skillWeek, resultFilter]);
   const selectedCount = grid && selection ? selectionCount(grid, selection) : 0;
   const activeSkills: readonly SkillUri[] = route.filter.skill ?? [];
@@ -131,18 +141,16 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
     }} onMouseOver={event => { if (event.target instanceof HTMLElement) delete event.target.dataset.tooltipDismissed; }}
       onFocus={event => { if (event.target instanceof HTMLElement) delete event.target.dataset.tooltipDismissed; }}>
       <HeatmapStyles />
-      <header className="page-title">{embedded ? <h2>활동</h2> : <h1>활동</h1>}<p>세션의 시작 시간과 주별 스킬 읽기를 확인합니다.</p></header>
+      <header className="page-title">{embedded ? <h2>활동</h2> : <h1>활동</h1>}</header>
       <AnalysisToolbar route={route} navigate={navigate} refresh={report.refresh} busy={report.busy} />
       {report.busy && <StatusMessage level="DEFAULT" announce message={grid ? `갱신 중: ${conditions(dataFilter)} · ${requestBucket}시간` : "활동 분포를 집계하는 중…"} />}
       <AnalysisError error={report.error} title="활동 분포를 불러올 수 없습니다" retry={report.refresh} />
-      {grid && <p className="analysis-scope" data-result-conditions>{conditions(resultFilter)} · {bucketHours}시간 · {timezoneLabel}</p>}
-      <button className="pe-button" data-range-toggle aria-pressed={rangeMode} onClick={() => { setRangeMode(!rangeMode); clearSelection(); }}>범위 선택{rangeMode ? " · 켜짐" : ""}</button>
+      <button className="pe-button" style={{ justifySelf: "start" }} data-range-toggle aria-pressed={rangeMode} onClick={() => { setRangeMode(!rangeMode); clearSelection(); }}>범위 선택{rangeMode ? " · 켜짐" : ""}</button>
       {rangeMode && <p role="status">{rangeStart ? "끝 칸을 누르세요. 같은 요일의 시간 범위를 선택합니다." : "시작 칸을 누른 뒤 끝 칸을 누르세요."}</p>}
       {grid && (
         <article className="hmc" aria-labelledby="hm-dow-title">
           <header className="hmc__head">
             <h2 className="hmc__title" id="hm-dow-title">요일·시간대별 세션</h2>
-            <span className="hmc__meta">세션 {grid.total}개 {"\u00b7"} {timezoneLabel} {"\u00b7"} 주 시작 {weekStartLabel}요일 {"\u00b7"} {bucketLabel}</span>
             <BucketToggle choice={choice} onChange={setChoice} />
           </header>
           {grid.total === 0 && (
@@ -152,17 +160,13 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
             </p>
           )}
           {grid.total === 0 && <AnalysisEmpty route={route} navigate={navigate} />}
-          <p className="analysis-scope">← 가로로 더 보기 →</p>
-          <div className="analysis-scroll" tabIndex={0} role="region" aria-label="요일·시간대별 세션 표"><WeekdayHourHeatmap grid={grid} selection={selection} onCellClick={onCellClick} label="요일·시간대별 세션" /></div>
+          {scrollOverflows && <p className="analysis-scope">← 가로로 더 보기 →</p>}
+          <div ref={scrollRef} className="analysis-scroll" tabIndex={0} role="region" aria-label="요일·시간대별 세션 표"><WeekdayHourHeatmap grid={grid} selection={selection} onCellClick={onCellClick} label="요일·시간대별 세션" /></div>
           {selection && (
             <SelectionBar selection={selection} count={selectedCount} total={grid.total} onShow={showSelection} onClear={clearSelection} />
           )}
           <footer className="hmc__foot">
             <HeatLegend ranges={legendRanges(grid.level, grid.maxCount)} unit="session" />
-            <p className="hmc__hint">
-              칸을 클릭하면 세션 목록으로 이동합니다 · 방향키로 칸 이동 · 범위 선택 또는 ⇧+클릭으로 범위 선택
-              {choice === "auto" && grid.total < AUTO_BUCKET_BELOW && !narrow ? ` \u00b7 세션 ${AUTO_BUCKET_BELOW}개 미만이면 2시간 단위` : ""}
-            </p>
           </footer>
         </article>
       )}
@@ -177,10 +181,8 @@ export function HeatmapView({ route, navigate, live, embedded }: ViewProps) {
           ) : (
             <div className="analysis-scroll" tabIndex={0} role="region" aria-label="주별 스킬 읽기 표"><SkillWeekHeatmap grid={skills} activeSkills={activeSkills} onRowClick={toggleSkill} label="ISO 주별 스킬 읽기" /></div>
           )}
-          {coverage && <p className="analysis-scope">{coverage} · 요청 시각 기준 · 한국 시간</p>}
           <footer className="hmc__foot">
             {weekMeasured && <HeatLegend ranges={legendRanges(skills.level, skills.maxCount)} unit="load" />}
-            <p className="hmc__hint">스킬 행을 클릭하면 모든 화면을 그 스킬로 필터링합니다</p>
           </footer>
         </article>
       )}
