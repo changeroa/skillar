@@ -18,6 +18,7 @@ export default defineConfig({
         connections: 'connections/index.html',
         dashboard: 'dashboard/index.html',
         skills: 'skills/index.html',
+        sessions: 'sessions/index.html',
       },
     },
   },

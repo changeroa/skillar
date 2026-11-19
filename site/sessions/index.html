@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="업로드에 동의한 기기의 에이전트 세션을 찾고, 어떤 스킬 버전을 읽었는지와 그 뒤의 기록을 확인하세요.">
+    <meta name="theme-color" content="#171916">
+    <meta property="og:title" content="세션 — skillar">
+    <meta property="og:description" content="에이전트 스킬을 보관하는 곳.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://skillar.sh/sessions/">
+    <meta property="og:image" content="https://skillar.sh/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="skillar — 에이전트 스킬을 보관하는 곳.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://skillar.sh/og.png">
+    <link rel="canonical" href="https://skillar.sh/sessions/">
+    <title>세션 — skillar</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('skillar-theme') || 'system';
+      } catch (error) {
+        if (!(error instanceof DOMException)) throw error;
+      }
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="/src/account.css">
+    <link rel="stylesheet" href="/src/shell.css">
+    <link rel="stylesheet" href="/src/dashboard/dashboard.css">
+    <link rel="stylesheet" href="/src/hosted.css">
+  </head>
+  <body class="app-shell hosted-screen">
+    <a class="skip" href="#main">본문으로 이동</a>
+    <header class="shell header app-topbar">
+      <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
+      <nav class="app-breadcrumb" aria-label="현재 위치"><details><summary>세션</summary><div><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></div></details><span aria-hidden="true">›</span><span>세션</span></nav>
+      <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command" aria-label="이동…" title="이동…"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg> <kbd>⌘K</kbd></button>
+      <div class="theme-label theme-picker">
+        <button id="theme" class="theme-picker__button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" aria-label="테마 선택" title="테마 선택"></button>
+        <div id="theme-menu" class="theme-picker__menu" role="menu" aria-label="테마" hidden>
+          <button type="button" role="menuitemradio" data-theme-value="system"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>시스템</button>
+          <button type="button" role="menuitemradio" data-theme-value="light"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>라이트</button>
+          <button type="button" role="menuitemradio" data-theme-value="dark"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>다크</button>
+        </div>
+      </div>
+      <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
+      <aside id="app-navigation" class="app-navigation">
+        <nav aria-label="주요 메뉴"><a href="/sessions/" aria-current="page"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>세션</a><a href="/skills/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>스킬</a><a href="/connections/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>연결</a></nav>
+        <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/">계정</a></nav><div id="sidebar-account"></div></div>
+      </aside>
+      <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
+        <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
+      </dialog>
+    </header>
+    <main id="main" class="shell account-main" tabindex="-1">
+      <div class="dashboard-heading"><div><h1>세션</h1></div></div>
+      <noscript>
+        <p class="note">JavaScript가 꺼져 있습니다. 세션 목록과 추적을 보려면 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
+        <div class="auth-actions">
+          <a class="button primary" href="/auth/google">Google로 계속 <span aria-hidden="true">→</span></a>
+          <form method="post" action="/auth/logout"><button class="button secondary" type="submit">이 브라우저에서 로그아웃</button></form>
+        </div>
+      </noscript>
+      <div id="sessions-app"></div>
+    </main>
+    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/skills/">비공개 스킬</a></div></footer>
+    <script type="module" src="/src/dashboard/sessions.tsx"></script>
+    <script type="module" src="/src/shell.ts"></script>
+  </body>
+</html>

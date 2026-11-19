@@ -2,13 +2,13 @@ import {createElement as h} from "react";
 import type {ReactNode as ComponentChildren} from "react";
 import { useEffect, useState } from "react";
 import type { PrivateSkillId, PrivateSkillSummary } from "../../../shared/dist/private-skills.js";
-import { BarChart, DataTable, FacetPanel, Pill } from "../ui/index.ts";
+import { BarChart, DataTable, FacetPanel } from "../ui/index.ts";
 import type { TableColumn } from "../ui/table.ts";
 import { formatWhen } from "../dashboard/status.ts";
 import { SearchBox } from "./search.ts";
 import { readSkillsView } from "./view-state.ts";
 import type { SkillsView, SkillSort } from "./view-state.ts";
-import { kstDay, shortKstDate } from "../time.ts";
+import { kstDay } from "../time.ts";
 import { Button } from "../../../local/dashboard/foundation/controls/buttons";
 
 export type LibraryProps = {
@@ -76,17 +76,11 @@ export function LibraryPanel(props: LibraryProps) {
     { id: "revision", label: "리비전 수", values: revisions.map(id => ({ id, label: `현재 r${id}`, count: skills.filter(skill => String(skill.head.revision) === id).length })) },
     { id: "day", label: "최근 변경 기간 · KST", values: days.map(id => ({ id, label: id.slice(5).replace("-", ". "), count: skills.filter(skill => skillDay(skill) === id).length })) },
   ];
+  // 오너 피드백(ts 1795084225.603299): "스킬 목록도 스킬 이름만 둬. 리비전 이런건 상세에 있어도 됨".
+  // 목록은 이름(아래 작은 글씨 설명 1줄)만, 리비전·최근 변경·digest·읽기 링크는 상세 패널에서 확인한다.
   const columns: readonly TableColumn<PrivateSkillSummary>[] = [
     { id: "name", label: "이름", hideable: false, value: skill => skill.name, render: skill => h("div", { className: "skill-table-name", title: `${skill.name}\n${skill.description}` },
-      h("strong", null, skill.name), h("span", { className: "skill-table-description" }, skill.description),
-      h("span", { className: "skill-table-mobile" },
-        !view.hidden.includes("updated") && h("time", { dateTime: new Date(skill.updatedAt).toISOString(), title: formatWhen(skill.updatedAt) },
-          `${shortKstDate(skill.updatedAt)} KST`),
-        !view.hidden.includes("updated") && !view.hidden.includes("digest") && " · ",
-        !view.hidden.includes("digest") && h(Pill, null, h("code", null, skill.head.digest.slice(0, 8))))) },
-    { id: "revision", label: "현재 리비전", value: skill => skill.head.revision, render: skill => h(Pill, null, `r${skill.head.revision}`) },
-    { id: "updated", label: "최근 변경", value: skill => skill.updatedAt, render: skill => when(skill.updatedAt) },
-    { id: "digest", label: "digest", value: skill => skill.head.digest, render: skill => h(Pill, null, h("code", null, skill.head.digest.slice(0, 8))) },
+      h("strong", null, skill.name), skill.description !== "" && h("span", { className: "skill-table-description" }, skill.description)) },
   ];
   return h("section", { className: "library", "aria-labelledby": "library-title" },
     h("div", { className: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
@@ -117,9 +111,7 @@ export function LibraryPanel(props: LibraryProps) {
           rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },
           onSort: next => {
-            const sort = next.column;
-            if (sort === "name" || sort === "revision" || sort === "updated" || sort === "digest")
-              update({ ...view, sort, descending: next.direction === "descending" });
+            if (next.column === "name") update({ ...view, sort: "name", descending: next.direction === "descending" });
           },
           hidden: view.hidden, onHiddenChange: hidden => update({ ...view, hidden }), density: view.density,
           onDensityChange: density => {

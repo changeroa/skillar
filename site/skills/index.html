@@ -50,7 +50,7 @@
       </div>
       <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
       <aside id="app-navigation" class="app-navigation">
-        <nav aria-label="주요 메뉴"><a href="/skills/?tab=evidence#/sessions"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>세션</a><a href="/skills/" aria-current="page"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>스킬</a><a href="/connections/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>연결</a></nav>
+        <nav aria-label="주요 메뉴"><a href="/sessions/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>세션</a><a href="/skills/" aria-current="page"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>스킬</a><a href="/connections/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>연결</a></nav>
         <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/">계정</a></nav><div id="sidebar-account"></div></div>
       </aside>
       <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
@@ -59,10 +59,6 @@
     </header>
     <main id="main" class="shell account-main" tabindex="-1">
       <div class="dashboard-heading"><div><h1 id="skills-page-title">스킬</h1></div></div>
-      <nav class="cluster skills-tabs" aria-label="스킬 화면 전환">
-        <a id="skills-tab-posts" class="button secondary" href="/skills/">게시 스킬</a>
-        <a id="skills-tab-evidence" class="button secondary" href="/skills/?tab=evidence">읽기 근거</a>
-      </nav>
       <noscript>
         <p class="note">JavaScript가 꺼져 있습니다. 스킬을 불러오고 선택한 파일로 패키지를 만들려면 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
         <div class="auth-actions">
@@ -72,9 +68,14 @@
       </noscript>
       <div id="skills-app"></div>
     </main>
-    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/skills/?tab=evidence">읽기 근거</a></div></footer>
+    <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/sessions/">세션</a></div></footer>
+    <script>
+      // 독립 세션 화면(/sessions/)으로 옮긴 구 읽기 근거 탭의 보존 경로.
+      if (new URLSearchParams(location.search).get("tab") === "evidence" || location.hash.startsWith("#/")) {
+        location.replace("/sessions/" + location.hash);
+      }
+    </script>
     <script type="module" src="/src/skills.ts"></script>
-    <script type="module" src="/src/dashboard/evidence.tsx"></script>
     <script type="module" src="/src/shell.ts"></script>
   </body>
 </html>

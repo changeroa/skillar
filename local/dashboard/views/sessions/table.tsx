@@ -1,5 +1,5 @@
 import type {ReactNode as ComponentChildren} from "react";
-import type { SessionListRow } from "../../api";
+import { api, type SessionListRow } from "../../api";
 import { OperationCounts } from "../../components/requests";
 import { SortButton, TableRow } from "../../foundation/table/parts";
 import { tableStyles } from "../../foundation/table/styles";
@@ -14,9 +14,13 @@ function Skills({ values }: { readonly values: readonly string[] }) {
   return values.length ? <span className="session-table__skills">{values.map(uri => <Tag key={uri} text={skillName(uri)} />)}</span> : <>0</>;
 }
 
+// 호스팅 세션 화면(cloud 임베드)은 식별에 필요한 열만 남긴다(오너 피드백 ts 1795084225.603299:
+// "너무 가로로 길어. 식별만 가능하게"). 요청문·검색 열은 상세에서 확인한다. 로컬 대시보드는 기존 열 구성 유지.
+const HOSTED_SESSION_COLUMNS: readonly SessionColumn[] = ["started", "runtime", "reads"];
+
 export function SessionTable({ rows, route, navigate }: Pick<ViewProps, "route" | "navigate"> & { readonly rows: readonly SessionListRow[] }) {
   tableStyles();
-  const columns = SESSION_COLUMNS;
+  const columns = api.mode === "cloud" ? HOSTED_SESSION_COLUMNS : SESSION_COLUMNS;
   const sort = route.sort ?? "-started";
   const select = (row: SessionListRow) => ({ ...route, view: "sessions" as const, peek: row.id, event: undefined });
   function cell(row: SessionListRow, column: SessionColumn): ComponentChildren {
