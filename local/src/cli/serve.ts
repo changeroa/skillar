@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dbPath, loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
@@ -42,8 +42,20 @@ export async function runServe(opts: { port?: number }, env: NodeJS.ProcessEnv, 
   const deps = makeCliDeps(env);
   const config = opts.port === undefined ? deps.config : { ...deps.config, port: opts.port };
   const server = await startServer(config, { skillarHome: deps.skillarHome, openStore: deps.openStore });
+  // Persist an explicit --port once the server is actually listening, so
+  // `skillar open --print` and doctor target the port the daemon runs on.
+  if (opts.port !== undefined && opts.port !== deps.config.port) {
+    writeConfigPort(deps.skillarHome, opts.port);
+  }
   io.err(`skillar listening on http://127.0.0.1:${server.port}\n`);
   return 0;
+}
+
+/** Merges a port into the existing config file, preserving every other key. */
+export function writeConfigPort(skillarHome: string, port: number): void {
+  const path = join(skillarHome, "config.json");
+  const current = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  writeFileSync(path, JSON.stringify({ ...current, port }, null, 2) + "\n", { mode: 0o600 });
 }
 
 export type PlannedCommand = PackPlan["commands"][number] & { allowFailure?: boolean };
@@ -85,6 +97,8 @@ ${args}
   </array>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>HOME</key>
+    <string>${xml(ctx.home)}</string>
     <key>SKILLAR_HOME</key>
     <string>${xml(ctx.skillarHome)}</string>
   </dict>
@@ -108,6 +122,7 @@ Description=skillar local skill router
 
 [Service]
 ExecStart=${unitQuote(ctx.nodePath)} ${unitQuote(join(ctx.packageRoot, "dist", "cli", "main.js"))} serve
+Environment=${unitQuote(`HOME=${ctx.home}`)}
 Environment=${unitQuote(`SKILLAR_HOME=${ctx.skillarHome}`)}
 Restart=always
 StandardOutput=append:${log}
