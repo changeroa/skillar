@@ -4,6 +4,7 @@ import { configureApi } from "../../../local/dashboard/api";
 import { createCloudApi } from "../../../local/dashboard/cloud";
 import type { CloudApi } from "../../../local/dashboard/cloud";
 import { App as LocalViews } from "../../../local/dashboard/main";
+import { UploadOffEmpty } from "../../../local/dashboard/views/sessions";
 import type { SessionUser } from "../../lib/account.ts";
 import { describeFailure, failureOf, isUnauthorized, readProfiles, readSession } from "./api";
 import type { SessionState } from "./api";
@@ -78,9 +79,12 @@ type SignedInProps = {
   readonly onClose: () => void;
   readonly onRebuild: () => void;
   readonly onUnauthorized: () => void;
+  // 보여 줄 출처가 하나도 없을 때의 빈 상태: /dashboard/는 빈 스킬 뷰(기존 오너 결정),
+  // 독립 /sessions/는 세션 화면의 "업로드 꺼짐 · 켜기" 한 줄(코어-미니멈 A).
+  readonly emptyView?: "skills" | "sessions";
 };
 
-function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, onRebuild, onUnauthorized }: SignedInProps) {
+function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, onRebuild, onUnauthorized, emptyView = "skills" }: SignedInProps) {
   const sourcePicker = useRef<HTMLDetailsElement>(null);
   const sourceSummary = useRef<HTMLElement>(null);
   const management = useRef<HTMLDetailsElement>(null);
@@ -110,7 +114,8 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   const loadMessage = (state: Loaded<unknown>, loading: string): string =>
     state.status === "loading" ? loading : state.message;
   // 출처 없음 온보딩은 삭제됐다(오너 ts 1795051070.800359): 빈 스킬 뷰가 그 자리에 선다.
-  const checklist = profiles.status === "ready" && !hasViewableSources ? <SkillsEmpty /> : <HomeChecklist
+  const checklist = profiles.status === "ready" && !hasViewableSources
+    ? (emptyView === "sessions" ? <UploadOffEmpty /> : <SkillsEmpty />) : <HomeChecklist
     state={profiles.status === "ready" ? "choose" : profiles.status}
     message={profiles.message} technical={profiles.technical} onRetry={reload}
     stale={hasViewableSources} />;
@@ -163,7 +168,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   );
 }
 
-export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
+export function Dashboard({ signal, emptyView = "skills" }: { readonly signal: AbortSignal; readonly emptyView?: "skills" | "sessions" }) {
   const [phase, setPhase] = useState<Phase>({ kind: "checking" });
   const [selected, setSelected] = useState<DashboardProfile | null>(null);
   const [reports, setReports] = useState<ReadonlyMap<string, DashboardReportStatus>>(new Map());
@@ -255,7 +260,7 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
   if (phase.kind !== "signed-in") return <SignedOut phase={phase} />;
   return (
     <SignedIn user={phase.user} signal={signal} selected={selected} report={mergeReports(reports.values())} failure={failures.values().next().value ?? null} onSelect={select}
-      onClose={close} onUnauthorized={expire}
+      onClose={close} onUnauthorized={expire} emptyView={emptyView}
       onRebuild={() => {
         failureEpoch.current += 1;
         setReports(new Map());

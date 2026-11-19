@@ -197,3 +197,34 @@ test("CV-011 successful unrelated report leaves the failed logical query visible
   // Then
   assert.equal(ui.failed(), true);
 });
+
+const noSources = { schemaVersion: 1, devices: [], profiles: [], ingestEnabled: false };
+function mockNoSourceAccount(t) {
+  t.mock.method(globalThis, "fetch", async url => {
+    if (url === routes.session) return Response.json({ user });
+    if (url === routes.profiles) return Response.json(noSources);
+    if (url === routes.devices) return Response.json({ devices: [] });
+    return Response.json({});
+  });
+}
+
+test("CV-012 /sessions/ with no viewable source shows the upload-off one-liner, not the empty skills view", async t => {
+  // Given: signed in, profiles ready but zero sources (upload consent off on every device)
+  mockNoSourceAccount(t);
+  const { dom, container } = await mount(t, Dashboard, { signal, emptyView: "sessions" });
+  // Then: the core-minimum A empty state shows, and the old KPI/top-skills cards never render
+  await waitFor(dom, () => container.textContent.includes("업로드 꺼짐"), "upload-off empty");
+  assert.ok(buttonNamed(container, "켜기")[0]);
+  assert.equal(container.textContent.includes("많이 읽힌 스킬"), false);
+  // 켜기 클릭 → 관리 접힘 열기는 fake DOM이 HTMLDetailsElement 가드를 통과하지 못해 브라우저 검증(캡처)으로 확인한다.
+  assert.ok(all(container, node => node.id === "dashboard-management")[0]);
+});
+
+test("CV-012 /dashboard/ keeps the empty skills view for the same no-source state", async t => {
+  // Given
+  mockNoSourceAccount(t);
+  const { dom, container } = await mount(t, Dashboard, { signal });
+  // Then: unchanged existing behaviour (owner decision ts 1795051070.800359)
+  await waitFor(dom, () => container.textContent.includes("많이 읽힌 스킬"), "empty skills view");
+  assert.equal(container.textContent.includes("업로드 꺼짐"), false);
+});

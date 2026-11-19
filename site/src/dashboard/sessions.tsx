@@ -19,7 +19,7 @@ if (root !== null) {
   const boot = (): void => {
     controller?.abort();
     controller = new AbortController();
-    render(h(Dashboard, { signal: controller.signal }), root);
+    render(h(Dashboard, { signal: controller.signal, emptyView: "sessions" }), root);
   };
   const clear = (): void => {
     controller?.abort();
