@@ -9,7 +9,11 @@ import { createStore } from "../store/index.js";
 import type { CliDeps, PackPlan, PackPlanFile } from "../types.js";
 import { readTarget } from "./config-writer.js";
 
-export type Io = { out(text: string): void; err(text: string): void };
+export type Io = {
+  out(text: string): void; err(text: string): void;
+  /** Present only on an interactive terminal; absence means non-interactive (never prompt). */
+  ask?(question: string): Promise<string>;
+};
 export const processIo: Io = { out: (t) => process.stdout.write(t), err: (t) => process.stderr.write(t) };
 
 export const SERVICE_LABEL = "dev.skillar.daemon";

@@ -12,7 +12,12 @@ import { connectCloudDeviceFlow } from "../sync/cloud-pending.js";
 import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
 export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean; connect?: boolean; upload?: boolean };
-export type InitHooks = { afterPlan?: () => void | Promise<void> };
+export type InitHooks = {
+  afterPlan?: () => void | Promise<void>;
+  /** Test/stub seam for the browser-approval connect step; production leaves both unset. */
+  fetcher?: typeof fetch;
+  wait?: (ms: number) => Promise<void>;
+};
 
 type RecordedCommand = { argv: string[]; description: string; undo?: { argv: string[]; description: string }; exitCode: number | null; allowFailure?: boolean };
 export type BackupManifest = {
@@ -215,12 +220,35 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
       try {
         const connected = await connectCloudDeviceFlow(skillarHome, {
           origin: "https://skillar.sh", uploadIntent: opts.upload ?? false, env, io,
+          fetcher: hooks.fetcher, wait: hooks.wait,
         });
         io.out(`cloud: connected device ${connected.deviceId}\n`);
       } catch (error) {
         io.err(`cloud connect failed: ${error instanceof Error ? error.message : String(error)}\n`);
         return 1;
       }
+    }
+  } else if (opts.serviceOnly !== true && opts.connect !== false &&
+      readConnection(skillarHome) === null && io.ask !== undefined) {
+    // Interactive TTY offer with default yes: --connect runs without asking,
+    // --no-connect skips, non-TTY skips without --connect, connected skips.
+    // The offer never implies upload consent (browser-side, default off).
+    const answer = (await io.ask(
+      "skillar.sh 계정에 이 기기를 연결할까요? 업로드 동의는 브라우저에서 직접 선택하며 기본은 로컬 전용입니다. [Y/n] "
+    )).trim().toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") {
+      try {
+        const connected = await connectCloudDeviceFlow(skillarHome, {
+          origin: "https://skillar.sh", uploadIntent: opts.upload ?? false, env, io,
+          fetcher: hooks.fetcher, wait: hooks.wait,
+        });
+        io.out(`cloud: connected device ${connected.deviceId}\n`);
+      } catch (error) {
+        io.err(`cloud connect failed: ${error instanceof Error ? error.message : String(error)}\n`);
+        return 1;
+      }
+    } else {
+      io.out("나중에 `skillar sync connect`로 연결할 수 있습니다.\n");
     }
   }
   return 0;
