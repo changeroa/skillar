@@ -244,8 +244,10 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
         });
         io.out(`cloud: connected device ${connected.deviceId}\n`);
       } catch (error) {
+        // The offer is optional: a failed connect must not fail the completed
+        // install. Explicit --connect above still returns 1 on failure.
         io.err(`cloud connect failed: ${error instanceof Error ? error.message : String(error)}\n`);
-        return 1;
+        io.out("설치는 완료됐습니다. 나중에 `skillar sync connect`로 다시 연결할 수 있습니다.\n");
       }
     } else {
       io.out("나중에 `skillar sync connect`로 연결할 수 있습니다.\n");

@@ -160,3 +160,35 @@ test("interactive init offers connect with default yes; explicit flags and non-T
     assert.equal(readConnection(join(f.dir, ".skillar")), null);
   }
 });
+
+test("offer connect failure keeps install success; explicit --connect failure returns 1", { timeout: 30000 }, async t => {
+  const { runInit } = await distImport("cli/init.js");
+  const initEnv = dir => ({ HOME: dir, SKILLAR_NO_CLI: "1", PATH: process.env.PATH });
+  const failingFetcher = f => (url, init) =>
+    new URL(String(url)).pathname.endsWith("/devices/pending") && init?.method === "POST"
+      ? Promise.resolve(new Response("boom", { status: 500 }))
+      : f.fetcher(url, init);
+  // TTY offer accepted, but the server create call fails: install stays a success
+  {
+    const f = await fixture(t);
+    const lines = [];
+    const code = await runInit({ noService: true }, initEnv(f.dir),
+      { out: s => lines.push(s), err: s => lines.push(s), ask: async () => "" },
+      { fetcher: failingFetcher(f), wait: async () => {} });
+    assert.equal(code, 0);
+    assert.equal(readConnection(join(f.dir, ".skillar")), null);
+    assert.ok(lines.some(l => l.includes("cloud connect failed")));
+    assert.ok(lines.some(l => l.includes("skillar sync connect")));
+  }
+  // Explicit --connect with the same failure returns 1
+  {
+    const f = await fixture(t);
+    const lines = [];
+    const code = await runInit({ noService: true, connect: true }, initEnv(f.dir),
+      { out: s => lines.push(s), err: s => lines.push(s), ask: async () => "" },
+      { fetcher: failingFetcher(f), wait: async () => {} });
+    assert.equal(code, 1);
+    assert.equal(readConnection(join(f.dir, ".skillar")), null);
+    assert.ok(lines.some(l => l.includes("cloud connect failed")));
+  }
+});
