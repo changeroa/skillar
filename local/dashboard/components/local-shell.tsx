@@ -68,7 +68,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     <div id={narrow ? undefined : "app-navigation"} className="pe-sidebar">
     <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}
       footer={<div className="pe-sidebar__foot">{sourceInfo}
-        {automation}<Link href="https://skillar.sh" text="skillar.sh" icon="external-link" />
+        {automation}<Link href="https://skillar.sh" text="skillar.sh" icon="arrow-up-right" />
       </div>}>{links()}</Sidebar>
     </div>
     <div className="pe-body"><Topbar actions={<div className="pe-jump">
@@ -89,7 +89,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     {narrow && drawer && <Sheet id="pe-source-drawer" open title="출처와 탐색" side="left" size="navigation" onClose={() => setDrawer(false)}>
       {sourceInfo}
       {automation}
-      <Link href="https://skillar.sh" text="skillar.sh" icon="external-link" />
+      <Link href="https://skillar.sh" text="skillar.sh" icon="arrow-up-right" />
       <div onClick={event => {
         if (event.target instanceof Element && event.target.closest("a")) setDrawer(false);
       }}><Sidebar label="메뉴 화면">{links()}</Sidebar></div>
