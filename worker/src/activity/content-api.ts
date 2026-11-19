@@ -42,6 +42,7 @@ import { sweepCommands } from "./commands-cleanup.ts";
 import { acceleratorStatus, acceleratorStatusPath } from "./accelerator.ts";
 import { deletionRequest } from "./deletion-api.ts";
 import { sweepDeletions } from "./deletion-cleanup.ts";
+import { sweepPendingCodes } from "./pending-cleanup.ts";
 import { sweepRuntimeContexts } from "./runtime-cleanup.ts";
 import { sweepPrivateSkills } from "../private-skills/retention.ts";
 import { sweepSourceContent } from "./content-retention.ts";
@@ -213,6 +214,7 @@ export default {
   scheduled(event: ScheduledController, env: ReportEnv, context: ExecutionContext) {
     if (event.cron === "* * * * *") {
       context.waitUntil(sweepDeletions(env));
+      context.waitUntil(sweepPendingCodes(env));
       if (env.ACCOUNT_HUB !== undefined) {
         const hub = env.ACCOUNT_HUB;
         context.waitUntil(dispatchAccountControls(env).then(() =>

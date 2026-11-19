@@ -8,7 +8,7 @@ export async function activityDb(t) {
   t.after(() => db.close());
   db.exec('PRAGMA foreign_keys=ON');
   for (const migration of ['0001_accounts.sql', '0002_activity_accounts.sql', '0003_activity_consent.sql',
-    '0004_account_events.sql']) {
+    '0004_account_events.sql', '0009_device_pending_codes.sql', '0010_device_pending_attempts.sql']) {
     db.exec(await readFile(new URL(`../../migrations/${migration}`, import.meta.url), 'utf8'));
   }
   const execute = (sql, args) => {
