@@ -49,6 +49,8 @@ test("landing, login and 404 static icons come from the shared icon map", () => 
   const login = page("login/index.html");
   expectIcon(login, "arrow-left", "skillar로 돌아가기");
   expectIcon(login, "arrow-up-right", "문서 링크");
+  expectIcon(login, "arrow-up-right", "로그인 문제 문의 링크");
+  assert.ok(!login.includes("문의 ↗"), "로그인 문제 문의 링크에 문자 화살표가 남아 있습니다");
   expectIcon(login, "shield", "계정 정보와 기록 범위");
   expectIcon(login, "arrow-right", "Google로 계속하기");
   expectIcon(page("404.html"), "house", "홈으로");
