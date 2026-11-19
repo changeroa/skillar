@@ -3,10 +3,9 @@ import test from "node:test";
 import { act, all, buttonNamed, loadViews, mount, waitFor } from "./helpers/t10-dom.mjs";
 import { DashboardRequestError, describeFailure, readSession, routes } from "../src/dashboard/api.ts";
 
-const { Dashboard, SignedIn, HomeChecklist, PermissionSummary } = await loadViews(`
+const { Dashboard, SignedIn, HomeChecklist } = await loadViews(`
   export * from "./site/src/dashboard/app.tsx";
   export * from "./site/src/dashboard/home-checklist.tsx";
-  export * from "./site/src/dashboard/permission-summary.tsx";
 `, { signedIn: true, cloud: true });
 const user = { sub: "fixture", email: "fixture@example.test", name: "예시", picture: "", createdAt: 1, lastLogin: 1 };
 const signal = new AbortController().signal;
@@ -209,27 +208,6 @@ test("closing a selected record restores focus to the reopened source picker", a
 const localDevice = { deviceId: profile.deviceId, createdAt: 1, revokedAt: null, version: 0, consent: { mode: "local-only" } };
 const readyDevices = data => ({ status: "ready", data, message: "", technical: "" });
 
-
-test("permission summary remains read only for each returned consent mode", async t => {
-  // Given
-  const consent = { mode: "managed-content", version: 1, grantedAtMs: 1,
-    scope: { deviceId: profile.deviceId, projectIds: ["project"], rootIds: [] },
-    retention: { contentDays: 30, projectionDays: 30, backupDays: 30 },
-    contentKinds: ["prompt"], serverProcessingAcknowledged: true, externalModelTransfer: false };
-  const { container } = await mount(t, PermissionSummary, {
-    devices: readyDevices([localDevice, { ...localDevice, deviceId: "second", consent },
-      { ...localDevice, deviceId: "metadata", consent: { mode: "metadata", version: 1, grantedAtMs: 1,
-        scope: consent.scope, retention: consent.retention } },
-      { ...localDevice, deviceId: "revoked", revokedAt: 2 }]), onRetry() {},
-  });
-  // When
-  const lists = all(container, node => node.localName === "dl");
-  // Then: the revoked device is hidden (owner decision), the other three stay read only
-  assert.equal(lists.length, 3);
-  assert.deepEqual(lists.map(list => list.children.length), [5, 5, 5]);
-  assert.equal(all(container, node => node.textContent.includes("해제된 기기")).length, 0);
-  assert.equal(all(container, node => ["input", "select", "form"].includes(node.localName)).length, 0);
-});
 
 for (const [error, expected] of [[new SyntaxError("bad JSON"), "unexpected"], [new TypeError("offline"), "unreachable"]]) {
   test(`session read distinguishes ${error.name} from other failure causes`, async t => {

@@ -40,6 +40,20 @@ test("CV-039 ignores draft edits while token creation is pending", () => {
   assert.deepEqual(next.draft, pending.draft);
 });
 
+test("CV-040 hides revoked devices from the management list while keeping server records untouched", async t => {
+  // Given: one active and one revoked device in the server response
+  const active = { deviceId: "device-active", createdAt: 1, revokedAt: null, version: 0, consent: { mode: "local-only" } };
+  const revoked = { ...active, deviceId: "device-revoked", revokedAt: 2 };
+  const { container } = await mount(t, DevicesSection, {
+    ...common, devices: [active, revoked], ingestEnabled: true, origin: "https://skillar.sh", settled: true, message: "",
+  });
+  // Then: only the active card renders; no "연결 해제됨" state text anywhere
+  assert.equal(all(container, node => node.localName === "article").length, 1);
+  assert.ok(container.textContent.includes("device-active"));
+  assert.equal(container.textContent.includes("device-revoked"), false);
+  assert.equal(container.textContent.includes("연결 해제됨"), false);
+});
+
 test("CV-041 keeps the approval file when dismissal confirmation is cancelled", async t => {
   // Given
   t.mock.method(globalThis, "fetch", async () => Response.json({ grant: "g".repeat(43), deviceId: "device-test", expiresAt: 1800000600 }));

@@ -6,6 +6,17 @@ import { describeConsent } from "./consent";
 import { ConsentForm } from "./consent-form";
 import { connectSteps, downloadTextFile, grantFileName, grantFileText } from "./grant";
 import { formatSeconds, shortId } from "./status";
+import { readConsent, readDevices } from "./api";
+
+export async function loadDevices(signal: AbortSignal): Promise<readonly DeviceState[]> {
+  const devices = await readDevices(signal);
+  const states = await Promise.all(devices.map(async (device): Promise<DeviceState> => {
+    if (device.revokedAt !== null) return { ...device, version: 0, consent: { mode: "local-only" } };
+    const state = await readConsent(device.deviceId, signal);
+    return { ...device, version: state.version, consent: state.consent };
+  }));
+  return states.sort((a, b) => b.createdAt - a.createdAt);
+}
 
 export type DeviceState = {
   readonly deviceId: string; readonly createdAt: number; readonly revokedAt: number | null;
@@ -174,13 +185,18 @@ export function DevicesSection({ devices, ingestEnabled, origin, settled, messag
       <p className="account-lead">각 기기는 일회성 연결 승인으로 연결되며 로컬 전용으로 시작합니다. 업로드는 여기에서 해당 기기의 동의를 저장한 뒤에만 시작됩니다. 동의 철회와 기기 연결 해제는 별개의 작업입니다.</p>
       <ConnectDevice origin={origin} {...common} />
       {message !== "" && <p className="note" role="status">{message}</p>}
-      {devices.length === 0 ? (
-        settled && <p className="note">이 계정에 연결된 기기가 아직 없습니다.</p>
-      ) : (
-        <div className="device-list">
-          {devices.map(device => <DeviceCard key={device.deviceId} device={device} ingestEnabled={ingestEnabled} {...common} />)}
-        </div>
-      )}
+      {(() => {
+        // 해제된 기기는 화면에 보이지 않는다(서버 응답·감사 기록은 그대로). 연결 화면(PR#125) 및
+        // 권한 요약 필터(PR#127)와 같은 기준 — 오너 ts 1795047419.028379.
+        const active = devices.filter(device => device.revokedAt === null);
+        return active.length === 0 ? (
+          settled && <p className="note">이 계정에 연결된 기기가 아직 없습니다.</p>
+        ) : (
+          <div className="device-list">
+            {active.map(device => <DeviceCard key={device.deviceId} device={device} ingestEnabled={ingestEnabled} {...common} />)}
+          </div>
+        );
+      })()}
     </section>
   );
 }

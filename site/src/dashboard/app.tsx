@@ -13,7 +13,7 @@ import { DevicesSection } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { HomeChecklist } from "./home-checklist";
 import { SkillsEmpty } from "./skills-empty";
-import { loadDevices, PermissionSummary } from "./permission-summary";
+import { loadDevices } from "./devices";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
 import { dashboardPaths, dashboardQuerySchema, dashboardReferenceSchema, dashboardReportStatusSchema, dashboardResultPartRequestSchema } from "../../../shared/dist/activity-dashboard.js";
@@ -152,7 +152,6 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           )}
         </div>
       </div>
-      <PermissionSummary devices={devices} onRetry={reloadDevices} />
       <details ref={management} id="dashboard-management" className="dash-management">
         <summary>기기 및 비공개 팩 관리</summary>
         <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
