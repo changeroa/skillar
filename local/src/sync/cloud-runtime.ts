@@ -233,7 +233,12 @@ export async function runCloudRuntimeStep(
         // Only the exact commit receipt below can acknowledge it; an uncommitted
         // purged batch still fails finalization and keeps its local pending job.
         if (error instanceof CloudRequestError && error.status === 409 && error.code === "content_expired") break;
-        throw error;
+        // Consent moved on the server after this step read it: re-read the
+        // device consent and retry this chunk once under the current version.
+        if (error instanceof CloudRequestError && error.status === 409 && error.code === "consent_conflict") {
+          authorize((await currentCloudDevice(connection, options.fetcher)).consent, commit);
+          value = await http.request("/v1/activity/chunks", { body });
+        } else throw error;
       }
       const ack = z.strictObject({ stored: z.literal(true), chunk: contentChunkRefSchema }).parse(value);
       blobs.renew();
@@ -241,7 +246,18 @@ export async function runCloudRuntimeStep(
     }
     if (paused(home)) return save({ phase: "paused" });
     blobs.renew();
-    const receipt = receiptSchema.parse(await http.request("/v1/activity/context", { body: job.body }));
+    let receiptValue: unknown;
+    try {
+      receiptValue = await http.request("/v1/activity/context", { body: job.body });
+    } catch (error) {
+      // Same consent re-read as the chunk upload above: one retry under the
+      // current server-side consent version.
+      if (error instanceof CloudRequestError && error.status === 409 && error.code === "consent_conflict") {
+        authorize((await currentCloudDevice(connection, options.fetcher)).consent, commit);
+        receiptValue = await http.request("/v1/activity/context", { body: job.body });
+      } else throw error;
+    }
+    const receipt = receiptSchema.parse(receiptValue);
     blobs.renew();
     if (receipt.sequence !== commit.sequence || receipt.sourceCut !== commit.sourceCut ||
         receipt.contentHash !== commit.contentHash) throw new CloudSyncError("invalid_remote_receipt");

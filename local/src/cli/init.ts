@@ -7,9 +7,11 @@ import { PACKS, getPack } from "../packs/registry.js";
 import type { SkillarConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 import { assertPlatform } from "../version.js";
 import { type AppliedFile, WriterError, applyFiles, changedFiles, maskSecrets, removeEmptyDirs, restoreFiles, unifiedDiff, unparseable } from "./config-writer.js";
+import { readConnection } from "../sync/cloud-connection.js";
+import { connectCloudDeviceFlow } from "../sync/cloud-pending.js";
 import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
-export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean };
+export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean; connect?: boolean; upload?: boolean };
 export type InitHooks = { afterPlan?: () => void | Promise<void> };
 
 type RecordedCommand = { argv: string[]; description: string; undo?: { argv: string[]; description: string }; exitCode: number | null; allowFailure?: boolean };
@@ -206,6 +208,21 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   writeManifest(backupDir, manifest);
   if (applied.files.some((f) => f.path === serviceFile)) io.out(`service log: ${daemonLogPath(skillarHome)}\n`);
   io.out(`applied ${applied.files.length} file(s) and ${manifest.commands.length} command(s); backup set ${backupDir}\n`);
+  if (opts.connect === true) {
+    if (readConnection(skillarHome) !== null) {
+      io.out("cloud: already connected; skipping browser approval\n");
+    } else {
+      try {
+        const connected = await connectCloudDeviceFlow(skillarHome, {
+          origin: "https://skillar.sh", uploadIntent: opts.upload ?? false, env, io,
+        });
+        io.out(`cloud: connected device ${connected.deviceId}\n`);
+      } catch (error) {
+        io.err(`cloud connect failed: ${error instanceof Error ? error.message : String(error)}\n`);
+        return 1;
+      }
+    }
+  }
   return 0;
 }
 

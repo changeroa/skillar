@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { dbPath, resolveSkillarHome } from "../config.js";
 import { connectCloud, disconnectCloud, readConnection } from "../sync/cloud-connection.js";
+import { connectCloudDeviceFlow, consentReviewNotice, markConsentNoticed } from "../sync/cloud-pending.js";
 import { prepareCloudSnapshot } from "../sync/cloud-prepare.js";
 import { rollbackCloud } from "../sync/cloud-rollback.js";
 import { restoreCloud } from "../sync/cloud-restore.js";
@@ -17,16 +18,32 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
     case "connect": {
       const { values } = parseArgs({ args, options: {
         "grant-file": { type: "string" }, origin: { type: "string", default: "https://skillar.sh" },
+        upload: { type: "boolean", default: false }, "no-upload": { type: "boolean", default: false },
+        "no-open": { type: "boolean", default: false },
       } });
-      if (values["grant-file"] === undefined) throw new Error("sync connect needs --grant-file <path>");
-      out(await connectCloud(home, {
-        origin: values.origin, grant: readFileSync(values["grant-file"], "utf8").trim(),
+      if (values.upload && values["no-upload"]) throw new Error("sync connect takes only one of --upload or --no-upload");
+      if (values["grant-file"] !== undefined) {
+        const connected = await connectCloud(home, {
+          origin: values.origin, grant: readFileSync(values["grant-file"], "utf8").trim(),
+        });
+        markConsentNoticed(home, connected.deviceId);
+        out(connected);
+        return 0;
+      }
+      // Browser-approval flow; --upload/--no-upload are terminal guidance only.
+      out(await connectCloudDeviceFlow(home, {
+        origin: values.origin, uploadIntent: values.upload, open: !values["no-open"], env, io,
       }));
       return 0;
     }
     case "status": {
       parseArgs({ args, options: {} });
       const connection = readConnection(home);
+      if (connection !== null) {
+        const notice = consentReviewNotice(home, connection);
+        if (notice !== null) io.out(`이 기기의 업로드 동의는 웹에서 관리합니다(기본은 로컬 전용): ${notice}
+`);
+      }
       out({
         connected: connection !== null,
         deviceId: connection?.deviceId ?? null,
@@ -53,6 +70,14 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
       const { values } = parseArgs({ args, options: {
         resume: { type: "boolean", default: false },
       } });
+      {
+        const connection = readConnection(home);
+        if (connection !== null) {
+          const notice = consentReviewNotice(home, connection);
+          if (notice !== null) io.out(`이 기기의 업로드 동의는 웹에서 관리합니다(기본은 로컬 전용): ${notice}
+`);
+        }
+      }
       out(await runCloudStep(home, source, {
         resume: values.resume, backfill: command === "backfill",
       }));

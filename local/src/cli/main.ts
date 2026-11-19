@@ -21,7 +21,7 @@ export const HELP = `skillar - local skill router
 Usage:
   skillar serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
   skillar open [--print]                      print and open the dashboard URL
-  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
+  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote] [--connect] [--upload]
   skillar init --rollback [--all]             undo the newest (or every) init run
   skillar doctor [--json]                     check service, daemon, packs, index and backups
   skillar service install|remove|status       manage the LaunchAgent / systemd user unit
@@ -103,12 +103,13 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         return await runOpen({ print: p.flags.has("--print") }, env, io);
       }
       case "init": {
-        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote"], multi: ["--runtime"] });
+        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote", "--connect", "--upload"], multi: ["--runtime"] });
         if (p.positional.length) throw new UsageError(`unexpected argument ${p.positional[0]}`);
         if (p.flags.has("--all") && !p.flags.has("--rollback")) throw new UsageError("--all is only valid with --rollback");
         return await runInit({
           dryRun: p.flags.has("--dry-run"), rollback: p.flags.has("--rollback"), all: p.flags.has("--all"),
           noService: p.flags.has("--no-service"), disableRemote: p.flags.has("--disable-remote"), runtimes: p.values.get("--runtime") ?? [],
+          connect: p.flags.has("--connect"), upload: p.flags.has("--upload"),
         }, env, io);
       }
       case "doctor": {
