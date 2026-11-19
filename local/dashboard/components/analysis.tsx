@@ -8,6 +8,7 @@ import { kstPeriodStart } from "../time";
 import { Button } from "../foundation/controls/buttons";
 import { Select } from "../foundation/controls/fields";
 import { Card, Metric as FoundationMetric } from "../foundation/widgets/cards";
+import type { ControlIcon } from "../foundation/controls/icons";
 import { Alert, EmptyState } from "../foundation/widgets/messages";
 import { consoleStyles } from "./console-style";
 import { CodeBlock } from "../foundation/viewers";
@@ -57,16 +58,16 @@ export function conditions(filter: Filter) {
 export function AnalysisToolbar({ route, navigate }: Pick<ViewProps, "route" | "navigate">) {
   const update = (patch: Filter) => navigate({ ...route, peek: undefined, filter: { ...route.filter, ...patch } });
   return <div className="analysis-toolbar">
-    <TimePeriodSelect value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={value => {
+    <TimePeriodSelect icon="calendar" hideLabel value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"} onChange={value => {
       const now = Date.now();
       update(value === "all" ? { from: undefined, to: undefined } : { from: kstPeriodStart(now, Number(value)), to: now });
     }} options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
       { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
       { value: "60", label: "최근 60일", badge: "60d" }]} />
-    <Select label="실행 환경" value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
+    <Select label="실행 환경" icon="terminal" hideLabel value={route.filter.runtime?.[0] ?? "all"} onChange={event => {
       const runtime = RUNTIME_IDS.find(value => value === event.currentTarget.value);
       update({ runtime: runtime ? [runtime] : undefined });
-    }} options={[{ value: "all", label: "전체" }, ...RUNTIME_IDS.map(value => ({ value, label: RUNTIME_LABEL[value] }))]} />
+    }} options={[{ value: "all", label: "전체 환경" }, ...RUNTIME_IDS.map(value => ({ value, label: RUNTIME_LABEL[value] }))]} />
     <Select label="자동 실행" value={route.filter.automated ?? "exclude"} onChange={event => {
       const value = event.currentTarget.value;
       update({ automated: value === "include" || value === "only" ? value : undefined });
@@ -83,8 +84,8 @@ export function AnalysisEmpty({ route, navigate }: Pick<ViewProps, "route" | "na
       : <><a className="pe-button" href={buildHash({ view: "sessions", filter: {} })}>세션과 연결 안내 보기</a><code>skillar doctor</code></>} />;
 }
 
-export function Metric({ label, value, suffix, children }: { readonly label: string; readonly value: number | null; readonly suffix?: string; readonly children?: ComponentChildren }) {
-  return <section className="analysis-tile"><FoundationMetric label={label} value={value} suffix={suffix} /><div className="pe-muted">{children}</div></section>;
+export function Metric({ label, value, suffix, icon, children }: { readonly label: string; readonly value: number | null; readonly suffix?: string; readonly icon?: ControlIcon; readonly children?: ComponentChildren }) {
+  return <section className="analysis-tile"><FoundationMetric label={label} value={value} suffix={suffix} icon={icon} /><div className="pe-muted">{children}</div></section>;
 }
 
 export function AnalysisWidget({ title, id, wide = false, children }: {

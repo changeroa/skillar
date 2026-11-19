@@ -1,4 +1,5 @@
 import type {ReactNode as ComponentChildren} from "react";
+import { iconMarkup, iconNodes, type SkillarIcon } from "../../../../shared/icons";
 
 const paths = {
   panelLeft: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></>,
@@ -26,10 +27,19 @@ const paths = {
   external: <><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></>,
 } as const satisfies Record<string, ComponentChildren>;
 
-export type ControlIcon = keyof typeof paths;
+// 공통 아이콘 맵(shared/icons.ts)의 이름도 그대로 쓸 수 있다. 같은 뜻은 모든 화면에서
+// 같은 아이콘을 쓴다는 약속의 한 파일 구현이다. 로컬 paths에 같은 이름이 있으면 그쪽이 우선한다.
+export type ControlIcon = keyof typeof paths | SkillarIcon;
 
 export function Glyph({ name, small = false }: { readonly name: ControlIcon; readonly small?: boolean }) {
+  const local = (paths as Record<string, ComponentChildren>)[name];
+  if (local !== undefined) {
+    return <svg width={small ? 12 : 14} height={small ? 12 : 14} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round" aria-hidden="true">{local}</svg>;
+  }
   return <svg width={small ? 12 : 14} height={small ? 12 : 14} viewBox="0 0 24 24"
     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-    stroke-linejoin="round" aria-hidden="true">{paths[name]}</svg>;
+    stroke-linejoin="round" aria-hidden="true"
+    dangerouslySetInnerHTML={{ __html: iconMarkup(name as SkillarIcon) }} />;
 }

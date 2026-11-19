@@ -4,6 +4,7 @@ import { summarizeRequests } from "../../src/request-status.js";
 import { AnalysisEmpty, AnalysisError, AnalysisToolbar, AnalysisWidget, Metric, conditions, useAnalysisReport } from "../components/analysis";
 import { observedRequests, requestsInRange } from "./analysis-data";
 import { StatusMessage } from "../foundation/widgets/messages";
+import { Glyph, type ControlIcon } from "../foundation/controls/icons";
 import { DAY_MS, kstWeekStart } from "../time";
 
 const WEEK_LABELS = ["3주 전", "2주 전", "지난주", "이번 주"] as const;
@@ -60,8 +61,8 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
   const sort = route.analysisSort ?? "-reads";
   const top = [...reads.keys()].map(uri => ({ uri, name: nameOf(uri), count: reads.get(uri) ?? 0 }))
     .sort((a, b) => (sort.replace(/^-/, "") === "name" ? a.name.localeCompare(b.name, "ko") : a.count - b.count) * (sort.startsWith("-") ? -1 : 1));
-  const order = (key: string, label: string) => <th scope="col" aria-sort={sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "descending" : "ascending" : "none"}>
-    <button onClick={() => navigate({ ...route, analysisSort: sort === key ? `-${key}` : key })}>{label} {sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "↓" : "↑" : "↕"}</button></th>;
+  const order = (key: string, label: string, icon?: ControlIcon) => <th scope="col" aria-sort={sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "descending" : "ascending" : "none"}>
+    <button onClick={() => navigate({ ...route, analysisSort: sort === key ? `-${key}` : key })}>{icon && <Glyph name={icon} />}{label} {sort.replace(/^-/, "") === key ? sort.startsWith("-") ? "↓" : "↑" : "↕"}</button></th>;
   return <section className="analysis pe-console" data-analysis-dashboard aria-busy={report.busy}>
     <header className="page-title">{embedded ? <h2>스킬</h2> : <h1>스킬</h1>}</header>
     <AnalysisToolbar route={route} navigate={navigate} />
@@ -69,14 +70,14 @@ export function DashboardView({ route, live, embedded, navigate }: ViewProps) {
     <AnalysisError error={report.error} title="세션 활동을 불러올 수 없습니다" retry={report.refresh} />
     {data && <>{data.rows.length === 0 ? <AnalysisEmpty route={route} navigate={navigate} /> : <>
         <div className="analysis-tiles">
-          <Metric label="세션" value={data.rows.length} />
-          <Metric label="검색 요청" value={requestsMeasured ? summary.search.total : null}>{!requestsMeasured && "추적 조회 실패로 요청 수를 확인할 수 없습니다."}</Metric>
-          <Metric label="읽기 요청" value={requestsMeasured ? summary.load.total : null}>{!requestsMeasured && "추적 조회 실패로 읽기 수를 확인할 수 없습니다."}</Metric>
+          <Metric label="세션" value={data.rows.length} icon="clock" />
+          <Metric label="검색 요청" value={requestsMeasured ? summary.search.total : null} icon="search">{!requestsMeasured && "추적 조회 실패로 요청 수를 확인할 수 없습니다."}</Metric>
+          <Metric label="읽기 요청" value={requestsMeasured ? summary.load.total : null} icon="book-open">{!requestsMeasured && "추적 조회 실패로 읽기 수를 확인할 수 없습니다."}</Metric>
         </div>
         <AnalysisWidget title="많이 읽힌 스킬" id="top-skills" wide>
           <div className="analysis-scroll"><table className="analysis-table"><thead><tr>
-            {order("name", "스킬")}<th scope="col">버전</th><th scope="col">검색 후보</th>{order("reads", "읽기")}
-            <th scope="col">최근 4주 읽기</th><th scope="col">읽은 세션</th>
+            {order("name", "스킬")}<th scope="col">버전</th><th scope="col"><Glyph name="search" />검색 후보</th>{order("reads", "읽기", "book-open")}
+            <th scope="col">최근 4주 읽기</th><th scope="col"><Glyph name="clock" />읽은 세션</th>
           </tr></thead>
             <tbody>{top.map(row => {
               const digest = digests.get(row.uri);

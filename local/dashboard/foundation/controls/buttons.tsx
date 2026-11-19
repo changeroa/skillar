@@ -55,12 +55,13 @@ export function IconButton({ label, icon, size = "md", variant = "ghost", type =
     icon={<Glyph name={icon} small={size !== "md" || variant === "toolbar"} />} />;
 }
 
-export function Link({ text, href, external = false, ...props }: {
+export function Link({ text, href, external = false, icon, ...props }: {
   readonly text: string;
   readonly href: string;
   readonly external?: boolean;
+  readonly icon?: ControlIcon;
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "class" | "className" | "style" | "children">) {
   return <a {...props} className="lf-link" href={href} title={props.title ?? text}
     target={external ? "_blank" : props.target} rel={external ? "noopener noreferrer" : props.rel}>
-    <span>{text}</span></a>;
+    {icon && <Glyph name={icon} />}<span>{text}</span></a>;
 }

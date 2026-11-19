@@ -41,7 +41,8 @@ export function Input({ label, error, id, prefix, valuePrefix, inputRef, icon = 
 }
 
 export function SearchInput({ label, value, onChange, onSubmit, placeholder = "검색", disabled = false,
-  id, size = "default" }: {
+  id, size = "default", showIcon = true }: {
+  readonly showIcon?: boolean;
   readonly label: string; readonly value: string; readonly onChange: (value: string) => void;
   readonly onSubmit: (value: string) => void; readonly placeholder?: string;
   readonly disabled?: boolean; readonly id?: string; readonly size?: "default" | "large";
@@ -55,6 +56,7 @@ export function SearchInput({ label, value, onChange, onSubmit, placeholder = "�
   return <div className="lf-field">
     <AxTextInput ref={ref} type="search" id={id} label={label} value={value} width="100%"
       onChange={next => onChange(next)} placeholder={placeholder} isDisabled={disabled}
+      {...(showIcon ? { startIcon: <Glyph name="search" /> } : {})}
       size={size === "large" ? "lg" : "md"} hasClear enterKeyHint="search"
       onEnter={() => onSubmit(ref.current?.value ?? value)} />
   </div>;
@@ -73,15 +75,16 @@ export function TextInput({ label, value, onChange, placeholder, id, type = "tex
   return <div className="lf-field">
     <AxTextInput type={type} id={id} label={label} value={value} width="100%"
       onChange={next => onChange(next)} {...(placeholder !== undefined ? { placeholder } : {})}
+      {...(type === "search" ? { startIcon: <Glyph name="search" /> } : {})}
       isDisabled={disabled} size={size === "large" ? "lg" : "md"} hasClear />
   </div>;
 }
 
 /** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */
 export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean; readonly badge?: string };
-export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", ...props }: FieldLabel & {
+export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", icon, hideLabel = false, ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
-  readonly size?: "default" | "sm";
+  readonly size?: "default" | "sm"; readonly icon?: ControlIcon; readonly hideLabel?: boolean;
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
   const generatedId = useId();
   const [nativeValue, setNativeValue] = useState(props.defaultValue ?? "");
@@ -90,7 +93,7 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
   const text = selected?.label ?? (options.length === 0 ? "선택 가능한 항목 없음" : placeholder);
   const description = [props["aria-describedby"], error ? `${selectId}-error` : undefined].filter(Boolean).join(" ") || undefined;
   return <div className="lf-field">
-    <label htmlFor={selectId}>{label}</label>
+    <label htmlFor={selectId} className={hideLabel ? "sr-only" : undefined}>{label}</label>
     <div className={`lf-select-wrap lf-select-wrap--${size}`} data-invalid={Boolean(error)}
       data-disabled={Boolean(props.disabled)} data-placeholder={!selected}>
       <select {...props} id={selectId} className="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}
@@ -99,6 +102,7 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
         {options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </select>
       {selected?.badge && <span className="lf-select-badge" aria-hidden="true">{selected.badge}</span>}
+      {icon && <span className="lf-select-icon" aria-hidden="true"><Glyph name={icon} /></span>}
       <span className="lf-select-value" aria-hidden="true">{text}</span>
       <Glyph name={size === "sm" ? "chevrons" : "chevron"} />
     </div>

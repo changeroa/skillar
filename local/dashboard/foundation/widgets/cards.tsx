@@ -7,6 +7,7 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { StackItem } from "@astryxdesign/core/Stack";
 import { Divider } from "@astryxdesign/core/Divider";
 import { Skeleton } from "../controls/labels";
+import { Glyph, type ControlIcon } from "../controls/icons";
 import { EmptyState, Alert } from "./messages";
 
 export type CardProps = {
@@ -65,11 +66,12 @@ export type MetricProps = {
   readonly note?: string;
   readonly prefix?: string;
   readonly suffix?: string;
+  readonly icon?: ControlIcon;
 };
 
-export function Metric({ label, value, note, prefix, suffix }: MetricProps) {
+export function Metric({ label, value, note, prefix, suffix, icon }: MetricProps) {
   return <section className="lf-metric" aria-label={label}>
-    <p className="lf-metric__label">{label}</p>
+    <p className="lf-metric__label">{icon && <Glyph name={icon} />}{label}</p>
     <strong className="lf-metric__value" data-measured={value !== null}>
       {value === null ? "미측정" : <>{prefix}{value.toLocaleString("ko-KR")}{suffix}</>}
     </strong>

@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Select } from "./fields";
 import type { SelectOption } from "./fields";
+import type { ControlIcon } from "./icons";
 import { Button } from "./buttons";
 import { Input } from "./fields";
 
@@ -18,11 +19,12 @@ export function formatKstDateTime(timestamp: number): string {
   return new Date(timestamp + 9 * 60 * 60 * 1000).toISOString().slice(0, 23);
 }
 
-export function TimePeriodSelect({ label = "기간", options, value, onChange, disabled }: {
+export function TimePeriodSelect({ label = "기간", options, value, onChange, disabled, icon, hideLabel = false }: {
   readonly label?: string; readonly options: readonly SelectOption[]; readonly value: string;
-  readonly onChange: (value: string) => void; readonly disabled?: boolean;
+  readonly onChange: (value: string) => void; readonly disabled?: boolean; readonly icon?: ControlIcon;
+  readonly hideLabel?: boolean;
 }) {
-  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled}
+  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled} {...(icon !== undefined ? { icon } : {})} hideLabel={hideLabel}
     onChange={event => onChange(event.currentTarget.value)} /></div>;
 }
 

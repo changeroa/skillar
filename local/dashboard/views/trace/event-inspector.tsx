@@ -2,7 +2,8 @@ import type {ReactNode as ComponentChildren, RefObject} from "react";
 import { useLayoutEffect, useRef } from "react";
 import type { SkillSpan, TraceStep } from "../../../src/types.js";
 import { CopyButton } from "../../components/copy-button";
-import { Icon } from "../../components/icons";
+import { EVENT_ICON, Icon } from "../../components/icons";
+import type { EventKind } from "../../../src/types.js";
 import type { ViewProps } from "../../state";
 
 export function EventInspector({ id, kind, title, value, selected, narrow, trigger, route, navigate, children }: Pick<ViewProps, "route" | "navigate"> & {
@@ -33,7 +34,8 @@ export function EventInspector({ id, kind, title, value, selected, narrow, trigg
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }
     }}>
-    <header className="event-inspector__head"><strong>{title}</strong><CopyButton value={id} label="이벤트 선택 ID" />
+    <header className="event-inspector__head"><strong>{kind in EVENT_ICON
+      && <Icon name={EVENT_ICON[kind as EventKind]} size={16} />}{title}</strong><CopyButton value={id} label="이벤트 선택 ID" />
       {narrow && <button className="pe-button" onClick={close}><Icon name="close" />이벤트 목록</button>}
     </header>
     {digest && <p className="event-inspector__digest">읽은 버전 <code data-read-digest>{digest}</code></p>}
