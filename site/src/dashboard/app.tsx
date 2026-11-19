@@ -12,6 +12,7 @@ import { PrivatePacks } from "./packs";
 import { DevicesSection } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { HomeChecklist } from "./home-checklist";
+import { SkillsEmpty } from "./skills-empty";
 import { loadDevices, PermissionSummary } from "./permission-summary";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
@@ -108,10 +109,11 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   };
   const loadMessage = (state: Loaded<unknown>, loading: string): string =>
     state.status === "loading" ? loading : state.message;
-  const checklist = <HomeChecklist
-    state={profiles.status === "ready" ? hasViewableSources ? "choose" : "none" : profiles.status}
-    message={profiles.message} technical={profiles.technical} profiles={list} devices={devices} onRetry={reload}
-    stale={hasViewableSources} onManage={() => { if (management.current) management.current.open = true; }} />;
+  // 출처 없음 온보딩은 삭제됐다(오너 ts 1795051070.800359): 빈 스킬 뷰가 그 자리에 선다.
+  const checklist = profiles.status === "ready" && !hasViewableSources ? <SkillsEmpty /> : <HomeChecklist
+    state={profiles.status === "ready" ? "choose" : profiles.status}
+    message={profiles.message} technical={profiles.technical} onRetry={reload}
+    stale={hasViewableSources} />;
   return (
     <>
       <div className="dash-account">

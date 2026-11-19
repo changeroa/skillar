@@ -37,7 +37,7 @@ for (const name of [user.name, ""]) {
   });
 }
 
-for (const state of ["loading", "failed", "none"]) {
+for (const state of ["loading", "failed"]) {
   test(`${state} source guidance is the only panel before a source choice`, async t => {
     // Given
     const held = Promise.withResolvers();
@@ -57,6 +57,25 @@ for (const state of ["loading", "failed", "none"]) {
   });
 }
 
+test("no viewable source shows the empty skills view, not the removed onboarding block", async t => {
+  // Given
+  t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+    Response.json(response([])) : Response.json({ devices: [] }));
+  const { dom, container } = await mount(t, SignedIn, common);
+  // When: the empty skills view appears (owner ts 1795051070.800359: onboarding block removed)
+  await waitFor(dom, () => all(container, node => node.getAttribute("data-analysis-dashboard") !== null)[0], "empty skills view");
+  // Then: KPIs are unmeasured, never 0, and the table area says data is absent
+  const tiles = all(container, node => node.getAttribute("class") === "lf-metric__value");
+  assert.deepEqual(tiles.map(tile => tile.textContent), ["미측정", "미측정", "미측정"]);
+  assert.deepEqual(tiles.map(tile => tile.getAttribute("data-measured")), ["false", "false", "false"]);
+  assert.ok(container.textContent.includes("데이터 없음"));
+  // And: no onboarding remnants (steps card, upload-scope button, revoked disclosure, guidance heading)
+  assert.equal(home(container), undefined);
+  assert.equal(all(container, node => node.textContent.includes("해제된 기기")).length, 0);
+  assert.equal(buttonNamed(container, "업로드 범위 확인").length, 0);
+  assert.equal(picker(container), undefined);
+});
+
 for (const receivedAtMs of [null, profile.receivedAtMs]) {
   test(`metadata-only sources keep the first viewable record pending after receipt ${receivedAtMs}`, async t => {
     // Given
@@ -68,15 +87,11 @@ for (const receivedAtMs of [null, profile.receivedAtMs]) {
       url === routes.consent(profile.deviceId) ? Response.json({ version: 1, consent }) :
         Response.json({ devices: [{ deviceId: profile.deviceId, createdAt: 1, revokedAt: null }] }));
     const { dom, container } = await mount(t, SignedIn, common);
-    // When
-    await waitFor(dom, () => home(container)?.getAttribute("data-state") === "none" &&
-      all(container, node => node.localName === "ol")[0]?.children[0]?.getAttribute("data-state") === "done", "metadata-only checklist");
+    // When: metadata-only sources are not viewable, so the empty skills view shows instead of the old checklist
+    await waitFor(dom, () => all(container, node => node.getAttribute("data-analysis-dashboard") !== null)[0], "empty skills view");
     // Then
-    const steps = all(container, node => node.localName === "ol")[0].children;
-    assert.deepEqual([...steps].map(step => step.getAttribute("data-state")), ["done", "done", "pending"]);
     assert.equal(picker(container), undefined);
-    assert.equal(all(container, node => node.getAttribute("data-availability") === "metadata-only").length, 1);
-    assert.ok(buttonNamed(container, "첫 세션 확인")[0]);
+    assert.equal(home(container), undefined);
   });
 }
 
@@ -144,16 +159,15 @@ test("source loading transitions through failure and retry to explicit choice", 
   assert.equal(selections, 1);
 });
 
-test("successful empty or unavailable sources show checklist instead of a picker", async t => {
+test("successful empty or unavailable sources show the empty skills view instead of a picker", async t => {
   // Given
   t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
     Response.json(response([{ ...profile, availability: "metadata-only" }])) : Response.json({ devices: [] }));
   const { dom, container } = await mount(t, SignedIn, common);
   // When
-  await waitFor(dom, () => home(container)?.getAttribute("data-state") === "none", "no viewable source");
+  await waitFor(dom, () => all(container, node => node.getAttribute("data-analysis-dashboard") !== null)[0], "empty skills view");
   // Then
   assert.equal(picker(container), undefined);
-  assert.equal(all(container, node => node.localName === "ol")[0]?.children.length, 3);
 });
 
 test("refreshed profile facts replace the originally selected snapshot facts", async t => {
@@ -194,73 +208,7 @@ test("closing a selected record restores focus to the reopened source picker", a
 
 const localDevice = { deviceId: profile.deviceId, createdAt: 1, revokedAt: null, version: 0, consent: { mode: "local-only" } };
 const readyDevices = data => ({ status: "ready", data, message: "", technical: "" });
-test("connection alone completes only the connection checklist step", async t => {
-  // Given
-  const { container } = await mount(t, HomeChecklist, {
-    state: "none", message: "", technical: "", profiles: [], devices: readyDevices([localDevice]), onRetry() {}, onManage() {},
-  });
-  // When
-  const steps = all(container, node => node.localName === "li");
-  // Then
-  assert.deepEqual(steps.map(step => step.getAttribute("data-state")), ["done", "pending", "pending"]);
-});
 
-test("failed device reads never reuse stale consent as completed checklist steps", async t => {
-  // Given
-  const { container } = await mount(t, HomeChecklist, {
-    state: "none", message: "", technical: "", profiles: [],
-    devices: { status: "failed", data: [localDevice], message: "조회 실패", technical: "" }, onRetry() {}, onManage() {},
-  });
-  // When
-  const steps = all(container, node => node.localName === "li");
-  // Then
-  assert.deepEqual(steps.map(step => step.getAttribute("data-state")), ["failed", "failed", "pending"]);
-});
-
-for (const [devices, expectedAction] of [
-  [readyDevices([]), "기기 연결 안내"],
-  [readyDevices([localDevice]), "업로드 범위 확인"],
-  [readyDevices([{ ...localDevice, consent: { mode: "metadata" } }]), "첫 세션 확인"],
-  [{ status: "loading", data: null, message: "", technical: "" }, "상태 다시 확인"],
-  [{ status: "failed", data: [localDevice], message: "조회 실패", technical: "" }, "다시 시도"],
-]) {
-  test(`setup strip offers one next action for ${devices.status} ${expectedAction}`, async t => {
-    // Given
-    let managed = 0, retried = 0;
-    const { container } = await mount(t, HomeChecklist, {
-      state: "none", message: "", technical: "", profiles: [], devices,
-      onRetry() { retried++; }, onManage() { managed++; },
-    });
-    const actions = all(container, node => node.localName === "a" || node.localName === "button");
-    // When
-    await act(() => actions[0].click());
-    // Then
-    assert.equal(actions.length, 1);
-    assert.equal(actions[0].textContent, expectedAction);
-    assert.equal(managed, expectedAction === "기기 연결 안내" || expectedAction === "업로드 범위 확인" ? 1 : 0);
-    assert.equal(retried, 1 - managed);
-  });
-}
-
-test("revoked notices deduplicate devices and keep raw IDs inside one closed disclosure", async t => {
-  // Given
-  const revoked = { ...localDevice, revokedAt: 2 };
-  const { container } = await mount(t, HomeChecklist, {
-    state: "none", message: "", technical: "",
-    profiles: [{ ...profile, availability: "revoked" }, { ...profile, sourceDomain: "second", availability: "revoked" }],
-    devices: readyDevices([revoked]), onRetry() {}, onManage() {},
-  });
-  // When
-  const disclosures = all(container, node => node.localName === "details");
-  const ids = all(container, node => node.localName === "code");
-  // Then
-  assert.equal(disclosures.length, 1);
-  assert.equal(disclosures[0].hasAttribute("open"), false);
-  assert.equal(disclosures[0].children[0].textContent, "해제된 기기 1개");
-  assert.equal(ids.length, 1);
-  assert.equal(ids[0].textContent, profile.deviceId);
-  assert.equal(disclosures[0].contains(ids[0]), true);
-});
 
 test("permission summary remains read only for each returned consent mode", async t => {
   // Given
@@ -276,9 +224,10 @@ test("permission summary remains read only for each returned consent mode", asyn
   });
   // When
   const lists = all(container, node => node.localName === "dl");
-  // Then
-  assert.equal(lists.length, 4);
-  assert.deepEqual(lists.map(list => list.children.length), [5, 5, 5, 5]);
+  // Then: the revoked device is hidden (owner decision), the other three stay read only
+  assert.equal(lists.length, 3);
+  assert.deepEqual(lists.map(list => list.children.length), [5, 5, 5]);
+  assert.equal(all(container, node => node.textContent.includes("해제된 기기")).length, 0);
   assert.equal(all(container, node => ["input", "select", "form"].includes(node.localName)).length, 0);
 });
 
