@@ -216,3 +216,25 @@ test("connections page no longer carries a separate upload-consent step", async 
   assert.equal(html.includes("업로드 동의"), false);
   assert.equal((html.match(/connections-steps/g) ?? []).length > 0, true);
 });
+
+test("pending approval sends only the code unless the user explicitly chose upload consent", async t => {
+  // Given
+  const calls = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    calls.push({ url, body: options?.body === undefined ? undefined : JSON.parse(options.body) });
+    return url.includes("/approve") ? Response.json({ deviceId: "d".repeat(43) }) :
+      Response.json({ deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+  });
+  const { readPending, approvePending } = await import("../src/dashboard/api.ts");
+  // When: summary read carries no secrets
+  assert.deepEqual(await readPending("ABCD-EFGH"), {
+    deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+  // And: default off — no consent key leaves the browser without an explicit choice
+  await approvePending("ABCD-EFGH", undefined);
+  assert.deepEqual(calls[1].body, { code: "ABCD-EFGH" });
+  // And: an explicit managed-content choice carries the kinds and the acknowledgement
+  await approvePending("ABCD-EFGH", {
+    mode: "managed-content", contentKinds: [...contentKinds], serverProcessingAcknowledged: true });
+  assert.deepEqual(calls[2].body, { code: "ABCD-EFGH", consent: {
+    mode: "managed-content", contentKinds: [...contentKinds], serverProcessingAcknowledged: true } });
+});

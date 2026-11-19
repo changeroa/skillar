@@ -4,6 +4,7 @@ import { dashboardPaths, dashboardProfilesSchema } from "../../../shared/dist/ac
 import type { DashboardProfiles } from "../../../shared/dist/activity-dashboard.js";
 import { consentSchema } from "../../../shared/dist/activity-consent.js";
 import type { Consent } from "../../../shared/dist/activity-consent.js";
+import type { ContentKind } from "../../../shared/dist/activity-schema.js";
 import { commandStatusSchema } from "../../../shared/dist/activity-commands.js";
 import type { CommandStatus, CommandStatusRequest, SourceCommandRequest } from "../../../shared/dist/activity-commands.js";
 import { sessionResponseSchema } from "../../lib/account.ts";
@@ -18,6 +19,8 @@ export const routes = {
   grants: "/api/devices/grants",
   consent: (deviceId: string) => `/api/devices/${encodeURIComponent(deviceId)}/consent`,
   revoke: (deviceId: string) => `/api/devices/${encodeURIComponent(deviceId)}/revoke`,
+  pending: (code: string) => `/api/devices/pending/${encodeURIComponent(code)}`,
+  pendingApprove: "/api/devices/pending/approve",
   commands: "/api/dashboard/commands",
   commandStatus: "/api/dashboard/commands/status",
 } as const;
@@ -33,6 +36,10 @@ const grantSchema = z.object({
   grant: z.string().min(32).max(128), deviceId: z.string().min(1), expiresAt: z.number().int(),
 });
 const revokedSchema = z.object({ revoked: z.literal(true) });
+const pendingSummarySchema = z.object({
+  deviceLabel: z.string().min(1), scopes: z.array(z.string()).min(1), expiresAt: z.number().int(),
+});
+export type PendingSummary = z.infer<typeof pendingSummarySchema>;
 const errorSchema = z.object({ error: z.string().min(1).max(100) });
 
 export type DeviceRecord = z.infer<typeof deviceListSchema>["devices"][number];
@@ -151,6 +158,25 @@ export function writeConsent(
 export function createGrant(signal?: AbortSignal, allowPrivateSkills = false): Promise<DeviceGrant> {
   return call(routes.grants, grantSchema, {
     body: { scopes: allowPrivateSkills ? [...GRANT_SCOPES, ...privateSkillScopes] : GRANT_SCOPES }, signal,
+  });
+}
+
+/** Summary of a CLI-initiated connection request; contains no secrets. */
+export function readPending(code: string, signal?: AbortSignal): Promise<PendingSummary> {
+  return call(routes.pending(code), pendingSummarySchema, { signal });
+}
+
+/** The user's upload-consent choice on the approval page; the server builds the full consent record from it. */
+export type PendingConsentChoice =
+  | { mode: "metadata" }
+  | { mode: "managed-content"; contentKinds: ContentKind[]; serverProcessingAcknowledged: true };
+
+/** Approves a pending connection in this browser session; consent is recorded only from this explicit submission. */
+export function approvePending(
+  code: string, consent: PendingConsentChoice | undefined, signal?: AbortSignal,
+): Promise<{ deviceId: string }> {
+  return call(routes.pendingApprove, z.object({ deviceId: z.string().min(1) }), {
+    body: consent === undefined ? { code } : { code, consent }, signal,
   });
 }
 

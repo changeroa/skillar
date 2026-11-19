@@ -60,6 +60,7 @@
       </dialog>
     </header>
     <main id="main" class="shell account-main" tabindex="-1">
+      <div id="pending-approval" hidden></div>
       <div class="dashboard-heading"><div><h1>연결</h1></div></div>
       <noscript>
         <p class="note">JavaScript가 꺼져 있습니다. 연결 확인, 토큰 생성과 접근 해제에는 JavaScript가 필요합니다. 로그인과 로그아웃은 이용할 수 있습니다.</p>
@@ -152,6 +153,7 @@
     <footer class="account-footer"><div class="shell cluster"><a class="text-link" href="/">skillar로 돌아가기</a><a class="text-link" href="/skills/">비공개 스킬</a><a class="text-link" href="/skills/?tab=evidence">읽기 근거</a></div></footer>
     <script type="module" src="/src/account.ts"></script>
     <script type="module" src="/src/mcp-connections.ts"></script>
+    <script type="module" src="/src/pending-approval.ts"></script>
     <script type="module" src="/src/shell.ts"></script>
   </body>
 </html>
