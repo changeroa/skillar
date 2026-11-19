@@ -6,7 +6,13 @@
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
-<p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="기계 팔이 서랍장에서 작업 지침 카드를 꺼내 작업대로 옮기는 일러스트. 따뜻한 상아색 바탕의 검정과 주홍색 판화."></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
+    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="skillar 로고: 주홍색 쉐브론과 skillar 워드마크.">
+  </picture>
+</p>
 
 이 머신에 있는 `SKILL.md` 폴더를 코딩 에이전트에 연결하세요. skillar는 MCP로 스킬을 검색하고, 세션마다 무엇을 검색하고 읽었는지 기록해 로컬 대시보드로 보여줍니다.
 
@@ -20,28 +26,41 @@ macOS 또는 Linux · **Node.js 24.15 이상**
 
 > **gisool에서 업그레이드하나요?** 설치 **전에** [마이그레이션 안내](docs/migration-skillar.md)를 읽어 주세요. 두 패키지가 같은 `gisool` 명령을 사용하므로 바로 전역 설치하면 충돌합니다. `--force` 대신 데몬 중지, 백업, 패키지 교체 절차를 따르세요.
 
-새로 설치한다면:
+1. **설치** (Node.js 24.15 이상):
 
-```sh
-npm install -g skillar
-skillar init --dry-run    # 설정과 서비스 변경 미리 보기; 파일을 쓰지 않음
-skillar init              # 감지된 런타임 연결 및 백그라운드 서비스 설치
-skillar open              # 로컬 대시보드 열기
-```
+   ```sh
+   npm install -g skillar
+   ```
 
-`init`은 macOS에서 LaunchAgent, Linux에서 systemd 사용자 유닛을 설치합니다. 데몬은 `127.0.0.1:8799`에서 실행됩니다. 포그라운드로 실행하려면 `skillar init --no-service` 후 `skillar serve`를 사용하세요.
+2. **초기 설정** - 변경 내용을 미리 보고 적용합니다:
 
-설치 상태는 `skillar doctor`로 점검합니다. 소스에서 설치하려면 [개발 환경 안내](local/README.md#develop)를 참고하세요.
+   ```sh
+   skillar init --dry-run   # 파일을 쓰지 않고 변경을 미리 봅니다
+   skillar init             # 감지된 런타임을 연결하고 백그라운드 서비스를 설치합니다
+   ```
+
+   `init`은 macOS LaunchAgent 또는 Linux systemd 사용자 유닛을 설치하고, 데몬은 `127.0.0.1:8799`에서 수신합니다. 포그라운드로 실행하려면 `skillar init --no-service` 후 `skillar serve`를 사용하세요.
+
+3. **에이전트에서 사용** - 연결된 에이전트는 `search_skills`로 검색하고 MCP `resources/read`로 선택한 `SKILL.md`를 읽습니다:
+
+   ```sh
+   skillar open     # 로컬 대시보드를 엽니다
+   skillar doctor   # 설치 상태를 점검합니다
+   ```
+
+   소스에서 설치하려면 [개발 환경 안내](local/README.md#develop)를 참고하세요.
+
+> **다음 npm 배포(0.3.0, 아직 미발행)부터:** 대화형 `init`이 skillar.sh 계정 연결도 제안합니다. 승인은 브라우저에서 직접 하며, 명시적으로 선택하지 않으면 업로드는 꺼진 상태(로컬 전용)를 유지합니다.
 
 ## 스킬 폴더에서 세션 기록까지
 
 | 단계 | 동작 |
 | --- | --- |
-| **검색** | 기존 스킬 루트를 복사하거나 수정하지 않고 색인합니다. 에이전트는 `search_skills`로 순위가 매겨진 후보를 받습니다. |
-| **읽기** | 호스트가 MCP `resources/read`로 선택한 `SKILL.md`와 보조 파일을 읽습니다. 읽기 기록은 실행 허가를 뜻하지 않습니다. |
-| **추적** | 대시보드에서 세션, 검색 후보, 스킬 읽기, 작업 → 스킬 → 결과 흐름, 요일·시간별 활동을 확인합니다. |
+| **검색** | 기존 스킬 루트를 그대로 색인합니다. 에이전트는 `search_skills`로 순위 후보를 받습니다. |
+| **읽기** | 호스트가 MCP `resources/read`로 선택한 `SKILL.md`와 보조 파일을 읽습니다. |
+| **추적** | 대시보드에서 세션, 검색 후보, 스킬 읽기, 결과 흐름, 시간대별 활동을 확인합니다. |
 
-런타임 훅이나 텔레메트리가 알려 주면 에이전트가 직접 사용한 스킬도 관찰합니다. [스킬 추적 안내](local/docs/skill-tracing.md)는 귀속 방식과 증거의 한계, **pane·session 추적에 필요한 herdr**를 설명합니다. herdr에 연결되지 않아도 MCP 제공과 세션 수집은 계속됩니다.
+읽기 기록은 실행 허가를 뜻하지 않습니다. 런타임 훅이나 텔레메트리가 알려 주면 에이전트가 직접 사용한 스킬도 관찰합니다. [스킬 추적 안내](local/docs/skill-tracing.md)는 귀속 방식과 증거의 한계, **pane·session 추적에 필요한 herdr**를 설명합니다. herdr에 연결되지 않아도 MCP 제공과 세션 수집은 계속됩니다.
 
 ## 지원 런타임
 
@@ -61,7 +80,7 @@ MCP 리비전 **2026-07-28**과 레거시 `initialize` 핸드셰이크를 모두
 
 ## 개인정보와 저장소
 
-skillar 데몬은 색인과 프롬프트·검색·읽기 기록을 로컬 SQLite에 저장하며, 수집한 텔레메트리를 원격 서비스에 업로드하지 않습니다. 데몬은 루프백에서만 수신하고 MCP·수집·API 요청에 로컬 bearer 토큰을 요구합니다. 대시보드는 로컬 인증 쿠키를 사용합니다. 연결된 에이전트와 모델 제공자의 데이터 처리는 별개입니다.
+skillar 데몬은 색인과 프롬프트·검색·읽기 기록을 로컬 SQLite에 저장하며, 수집한 텔레메트리를 스스로 원격 서비스에 업로드하지 않습니다. skillar.sh 계정을 연결한 경우에도 기기는 브라우저에서 명시적으로 동의한 범위만 업로드하며, 기본값은 로컬 전용입니다. 데몬은 루프백에서만 수신하고 MCP·수집·API 요청에 로컬 bearer 토큰을 요구합니다. 대시보드는 로컬 인증 쿠키를 사용합니다. 연결된 에이전트와 모델 제공자의 데이터 처리는 별개입니다.
 
 `~/.skillar/config.json`에서 보관 범위를 선택하세요.
 
@@ -124,7 +143,7 @@ skillar eval                                    # 검색 품질 측정
 
 Worker는 `SKILLS_BUCKET`, 읽기용 `SKILLAR_BEARER_TOKEN`, 별도의 게시용 `SKILLAR_PUBLISH_TOKEN`을 사용합니다. `server/ops/`는 새 설치용 템플릿이며 실제 자격 증명이나 운영 중인 배포의 증거가 아닙니다.
 
-[배포, 불변 릴리스 형식, 롤백, 프로덕션 게이트](docs/deployment.md) · [팀 자체 호스팅](docs/team-plugin.md) · [과거 세션 인수인계](docs/SESSION_CONTEXT.md)
+[배포, 불변 릴리스 형식, 롤백, 프로덕션 게이트](docs/deployment.md) · [팀 자체 호스팅](docs/team-plugin.md)
 
 </details>
 

@@ -6,7 +6,13 @@
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
-<p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
+    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="The skillar logo: a vermilion chevron followed by the skillar wordmark.">
+  </picture>
+</p>
 
 Connect the `SKILL.md` folders already on your machine to your coding agents. skillar searches them over MCP, records what each session searched and read, and makes that history visible in a local dashboard.
 
@@ -22,18 +28,31 @@ macOS or Linux · **Node.js 24.15+**
 
 > **Upgrading from gisool?** Read the [migration guide](docs/migration-skillar.md) **before installing**. Both packages own the `gisool` command; a direct global install collides. Follow the stop, backup, and package-handoff steps rather than using `--force`.
 
-For a fresh installation:
+1. **Install** (Node.js 24.15 or newer):
 
-```sh
-npm install -g skillar
-skillar init --dry-run    # preview config and service changes; write nothing
-skillar init              # connect detected runtimes and install the background service
-skillar open              # open the local dashboard
-```
+   ```sh
+   npm install -g skillar
+   ```
 
-`init` installs a LaunchAgent on macOS or a systemd user unit on Linux. The daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
+2. **Initialize** - preview the changes, then apply them:
 
-Already using skillar? `skillar doctor` checks your installation. For a source checkout, see [development setup](local/README.md#develop).
+   ```sh
+   skillar init --dry-run   # preview every change without writing a file
+   skillar init             # connect detected runtimes and install the background service
+   ```
+
+   `init` installs a LaunchAgent on macOS or a systemd user unit on Linux; the daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
+
+3. **Use it from your agent** - connected agents search with `search_skills` and read the chosen `SKILL.md` over MCP `resources/read`:
+
+   ```sh
+   skillar open     # open the local dashboard
+   skillar doctor   # check the installation
+   ```
+
+   For a source checkout, see [development setup](local/README.md#develop).
+
+> **Coming in the next npm release (0.3.0, not yet published):** an interactive `init` also offers to connect your skillar.sh account. Approval happens in your browser, and uploads stay off (local only) unless you explicitly choose otherwise.
 
 ## From a skill folder to a session trace
 
@@ -63,7 +82,7 @@ Both MCP revision **2026-07-28** and the legacy `initialize` handshake are suppo
 
 ## Privacy and storage
 
-The local daemon stores prompts, searches, loads, and supporting-file reads in SQLite. It listens on loopback only, protects MCP, ingest, and API requests with a local bearer token, and does not upload captured telemetry. The dashboard uses a local authenticated cookie. Connected agents and their model providers handle data separately.
+The local daemon stores prompts, searches, loads, and supporting-file reads in SQLite. It listens on loopback only, protects MCP, ingest, and API requests with a local bearer token, and never uploads captured telemetry on its own. When a skillar.sh account is connected, a device uploads only what you explicitly consent to in the browser; the default is local only. The dashboard uses a local authenticated cookie. Connected agents and their model providers handle data separately.
 
 Choose what to retain in `~/.skillar/config.json`:
 
@@ -126,7 +145,7 @@ The local CLI needs no hosted registry. This repository also contains a separate
 
 The Worker uses `SKILLS_BUCKET`, a reader `SKILLAR_BEARER_TOKEN`, and a separate `SKILLAR_PUBLISH_TOKEN` for publication. `server/ops/` contains new-install templates, not live credentials or proof of an active deployment.
 
-[Deployment, immutable release format, rollback, and production gates](docs/deployment.md) · [Self-hosted team setup](docs/team-plugin.md) · [Historical session handoff](docs/SESSION_CONTEXT.md)
+[Deployment, immutable release format, rollback, and production gates](docs/deployment.md) · [Self-hosted team setup](docs/team-plugin.md)
 
 </details>
 

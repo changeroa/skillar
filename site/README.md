@@ -79,7 +79,7 @@ CNAME to `site.example.test`. Its exact Google origin and callback are
 registered alongside the Pages alias and localhost. Verify active HTTPS and
 real login/logout on the canonical domain after deployment.
 
-`public/workshop.webp` is an optimized copy of the repository's own `docs/assets/gisul-workshop.png`. See that folder's README for source details. The code example excerpts `plugins/skillar/skills/skillar/SKILL.md`, with its complete frontmatter and first instruction sentence.
+`public/workshop.webp` is the site's own landing illustration, added with the landing page in `db0e985`. The code example excerpts `plugins/skillar/skills/skillar/SKILL.md`, with its complete frontmatter and first instruction sentence.
 
 Product claims are sourced from the root README, `local/README.md`,
 `server/README.md`, `worker/src/`, and `docs/deployment.md`. Google account
