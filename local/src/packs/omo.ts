@@ -1,4 +1,5 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
+import { homedir, userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { localServerName, noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 import type { PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
@@ -25,24 +26,44 @@ function readOrNull(path: string): string | null {
   }
 }
 
+/** An overridden HOME (sandbox, test, isolated dry run) means detection must stay inside it:
+ *  runtime-dir env vars exported by the real shell must not escape the override.
+ *  Compares against the OS account home (userInfo), not homedir(): homedir() itself
+ *  follows $HOME on POSIX, which would see every HOME override as "not redirected". */
+function homeRedirected(home: string): boolean {
+  let osHome: string;
+  try {
+    osHome = userInfo().homedir;
+  } catch {
+    osHome = homedir();
+  }
+  return resolve(home) !== resolve(osHome);
+}
+
 export function resolveOmoAgentDir(home: string, env: NodeJS.ProcessEnv): string {
-  for (const name of ["OMO_CODING_AGENT_DIR", "SENPI_CODING_AGENT_DIR", "PI_CODING_AGENT_DIR"]) {
-    const v = env[name]?.trim();
-    if (v) return resolve(v);
+  if (!homeRedirected(home)) {
+    for (const name of ["OMO_CODING_AGENT_DIR", "SENPI_CODING_AGENT_DIR", "PI_CODING_AGENT_DIR"]) {
+      const v = env[name]?.trim();
+      if (v) return resolve(v);
+    }
   }
   return join(home, ".omo", "agent");
 }
 
 export function resolveGajaeAgentDir(home: string, env: NodeJS.ProcessEnv): string {
-  for (const name of ["GJC_CODING_AGENT_DIR", "PI_CODING_AGENT_DIR"]) {
-    const v = env[name]?.trim();
-    if (v) return resolve(v);
-  }
-  const configDir = env.GJC_CONFIG_DIR?.trim() || env.PI_CONFIG_DIR?.trim() || ".gjc";
-  if (isAbsolute(configDir) || configDir.split(/[\\/]/).some(part => ["", ".", ".."].includes(part))) {
+  const explicit = env.GJC_CONFIG_DIR?.trim() || env.PI_CONFIG_DIR?.trim();
+  // Malformed relative config dirs are rejected even under a sandbox HOME: the shape is invalid either way.
+  if (explicit && (isAbsolute(explicit) || explicit.split(/[\\/]/).some(part => ["", ".", ".."].includes(part)))) {
     throw new Error("Use GJC_CODING_AGENT_DIR for an explicit Gajae profile path");
   }
-  return join(home, configDir, "agent");
+  if (!homeRedirected(home)) {
+    for (const name of ["GJC_CODING_AGENT_DIR", "PI_CODING_AGENT_DIR"]) {
+      const v = env[name]?.trim();
+      if (v) return resolve(v);
+    }
+    if (explicit) return join(home, explicit, "agent");
+  }
+  return join(home, ".gjc", "agent");
 }
 
 function isLoopbackUrl(raw: string): boolean {
