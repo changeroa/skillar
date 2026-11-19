@@ -209,3 +209,23 @@ test("snapshot refresh emits a real reload signal without fabricated sessions", 
   assert.equal(sessions, 0);
   api.dispose();
 });
+
+test("a labeled source posts only the strict wire profile (label is display-only)", async () => {
+  // Given: 기기 이름 label은 화면 표시 전용. 요청 스키마는 strict(deviceId·sourceDomain)라
+  // label을 실으면 사이트가 400 invalid_request로 거절한다(운영 A 미반영 원인 중 하나).
+  const requests = [];
+  const result = wire(["x"]);
+  const fetch = async (path, init) => {
+    requests.push({ path, body: JSON.parse(init.body) });
+    if (path.endsWith("/result")) return json(result.parts[JSON.parse(init.body).part]);
+    return json(result.status);
+  };
+  // When
+  const api = createCloudApi({ ...profile, label: "집 데스크톱" }, { fetch, onUnauthorized() {} });
+  await api.sessions({});
+  // Then
+  const posted = requests.filter(r => r.body?.profile !== undefined);
+  assert.ok(posted.length > 0);
+  for (const r of posted) assert.deepEqual(r.body.profile, profile);
+  api.dispose();
+});

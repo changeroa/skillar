@@ -90,7 +90,8 @@ function openUploadConsent() {
 }
 
 // 요청문: 빈 상태는 "업로드 꺼짐 · 켜기" 한 줄. 켜기는 기존 기기 업로드 동의 토글 위치를 연다.
-function UploadOffEmpty() {
+// /sessions/ 독립 화면에서 출처가 하나도 없을 때도 같은 빈 상태를 쓴다(site app.tsx).
+export function UploadOffEmpty() {
   return (
     <section aria-live="polite" className="upload-off">
       <p className="upload-off__line">업로드 꺼짐 ·{" "}
