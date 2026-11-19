@@ -83,6 +83,7 @@ body.app-shell #app-navigation a:focus-visible { outline-color:var(--lf-sidebar-
 .theme-picker { position:relative; display:inline-flex; }
 .theme-picker__button { display:inline-flex; align-items:center; justify-content:center; width:var(--lf-control-height,36px); height:var(--lf-control-height,36px); min-height:var(--lf-control-height,36px); padding:0; border:1px solid var(--lf-border); border-radius:var(--lf-radius-md); background:var(--lf-background); color:var(--lf-foreground); cursor:pointer; }
 .theme-picker__menu { position:absolute; top:calc(100% + 4px); right:0; z-index:30; display:grid; min-width:140px; padding:4px; border:1px solid var(--lf-border); border-radius:var(--lf-radius-md); background:var(--lf-background); box-shadow:0 4px 16px rgb(0 0 0 / .18); }
+.theme-picker__menu[hidden] { display:none; }
 .theme-picker__menu [role="menuitemradio"] { display:flex; align-items:center; gap:8px; padding:8px 10px; border:0; border-radius:6px; background:transparent; color:var(--lf-foreground); font-size:var(--lf-text-sm); text-align:left; cursor:pointer; }
 .theme-picker__menu [role="menuitemradio"]:hover, .theme-picker__menu [role="menuitemradio"]:focus-visible { background:var(--lf-accent); }
 .theme-picker__menu [role="menuitemradio"][aria-checked="true"] { font-weight:600; }
