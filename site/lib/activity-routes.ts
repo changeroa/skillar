@@ -130,8 +130,11 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
   const pendingRead = /^\/api\/devices\/pending\/([^/]+)$/.exec(path);
   if (pendingRead?.[1] !== undefined && request.method === "GET") {
     const summary = await readPendingCode(decodeURIComponent(pendingRead[1]), env);
+    // Store keeps epoch seconds; the page renders with Date(ms), so the API
+    // exposes epoch milliseconds under an explicit name.
     return summary === null ? activityError(404, "not_found") :
-      Response.json(summary, { headers: noStore });
+      Response.json({ deviceLabel: summary.deviceLabel, scopes: summary.scopes,
+        expiresAtMs: summary.expiresAt * 1000 }, { headers: noStore });
   }
   if (!principal.scopes.includes("device:manage")) return activityError(403, "insufficient_scope");
   if (path === "/api/devices/pending/approve" && request.method === "POST") {

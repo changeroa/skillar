@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { activityDb } from './helpers/activity-db.mjs';
-import { pkceChallenge } from '../lib/auth.ts';
+import { pkceChallenge, signCookie, SESSION_COOKIE } from '../lib/auth.ts';
+import { activityRequest } from '../lib/activity-routes.ts';
 import { browserPrincipalSchema } from '../lib/activity-auth.ts';
 import {
   approvePendingCode, createPendingCode, pollPendingCode, readPendingCode, sweepPendingCodes,
@@ -259,4 +260,20 @@ test('approval binds the approving account, not the requesting CLI', async t => 
   assert.equal(approved.kind, 'approved');
   const row = f.db.prepare('SELECT account_id FROM devices').get();
   assert.equal(row.account_id, 'b');
+});
+
+test('summary API exposes the expiry as epoch milliseconds (expiresAtMs), never seconds', async t => {
+  // Given an issued request (store keeps epoch seconds)
+  const f = await fixture(t);
+  const issued = await f.issue();
+  const routeEnv = { ...f.env, ACTIVITY_ENABLED: 'true' };
+  const cookie = `${SESSION_COOKIE}=${await signCookie({ sub: 'a', sid: 'a'.repeat(43) }, 'session', routeEnv, now)}`;
+  // When the approval page reads the summary through the HTTP route
+  const res = await activityRequest(new Request(
+    `${origin}/api/devices/pending/${encodeURIComponent(issued.userCode)}`, { headers: { cookie } }), routeEnv);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  // Then the expiry is epoch ms matching the stored seconds, and no raw-seconds field leaks
+  assert.equal(body.expiresAtMs, (now + 600) * 1000);
+  assert.equal('expiresAt' in body, false);
 });
