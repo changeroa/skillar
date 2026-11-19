@@ -82,9 +82,9 @@ export function TextInput({ label, value, onChange, placeholder, id, type = "tex
 
 /** `badge` is a short closed-control prefix (e.g. "7d"), shown only for the selected option. */
 export type SelectOption = { readonly value: string; readonly label: string; readonly disabled?: boolean; readonly badge?: string };
-export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", icon, ...props }: FieldLabel & {
+export function Select({ label, error, options, placeholder = "선택", id, onChange, size = "default", icon, hideLabel = false, ...props }: FieldLabel & {
   readonly options: readonly SelectOption[]; readonly placeholder?: string;
-  readonly size?: "default" | "sm"; readonly icon?: ControlIcon;
+  readonly size?: "default" | "sm"; readonly icon?: ControlIcon; readonly hideLabel?: boolean;
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "class" | "className" | "style" | "children" | "size" | "multiple">) {
   const generatedId = useId();
   const [nativeValue, setNativeValue] = useState(props.defaultValue ?? "");
@@ -93,7 +93,7 @@ export function Select({ label, error, options, placeholder = "선택", id, onCh
   const text = selected?.label ?? (options.length === 0 ? "선택 가능한 항목 없음" : placeholder);
   const description = [props["aria-describedby"], error ? `${selectId}-error` : undefined].filter(Boolean).join(" ") || undefined;
   return <div className="lf-field">
-    <label htmlFor={selectId}>{label}</label>
+    <label htmlFor={selectId} className={hideLabel ? "sr-only" : undefined}>{label}</label>
     <div className={`lf-select-wrap lf-select-wrap--${size}`} data-invalid={Boolean(error)}
       data-disabled={Boolean(props.disabled)} data-placeholder={!selected}>
       <select {...props} id={selectId} className="lf-select" aria-invalid={error ? "true" : props["aria-invalid"]}

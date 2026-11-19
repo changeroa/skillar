@@ -19,11 +19,12 @@ export function formatKstDateTime(timestamp: number): string {
   return new Date(timestamp + 9 * 60 * 60 * 1000).toISOString().slice(0, 23);
 }
 
-export function TimePeriodSelect({ label = "기간", options, value, onChange, disabled, icon }: {
+export function TimePeriodSelect({ label = "기간", options, value, onChange, disabled, icon, hideLabel = false }: {
   readonly label?: string; readonly options: readonly SelectOption[]; readonly value: string;
   readonly onChange: (value: string) => void; readonly disabled?: boolean; readonly icon?: ControlIcon;
+  readonly hideLabel?: boolean;
 }) {
-  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled} icon={icon}
+  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled} icon={icon} hideLabel={hideLabel}
     onChange={event => onChange(event.currentTarget.value)} /></div>;
 }
 
