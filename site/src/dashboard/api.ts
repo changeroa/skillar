@@ -29,6 +29,7 @@ export const GRANT_SCOPES = ["activity:read", "activity:ingest"] as const;
 const deviceListSchema = z.object({
   devices: z.array(z.object({
     deviceId: z.string().min(1), createdAt: z.number().int(), revokedAt: z.number().int().nullable(),
+    label: z.string().nullable(), lastUsedAt: z.number().int().nullable(),
   })),
 });
 const consentStateSchema = z.object({ version: z.number().int().nonnegative(), consent: consentSchema });

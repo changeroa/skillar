@@ -166,7 +166,7 @@ async function scenario(accounts) {
         .bind(who.accountId, `${who.accountId}@example.invalid`).run();
       await f.accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES (?,?)")
         .bind(who.accountId, who.accountId).run();
-      await f.accounts.prepare("INSERT INTO devices VALUES (?,?,0,NULL)")
+      await f.accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)")
         .bind(who.accountId, who.deviceId).run();
       await f.db.prepare("INSERT INTO tenant_fences VALUES (?,1,'active')").bind(who.accountId).run();
     }

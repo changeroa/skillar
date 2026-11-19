@@ -146,7 +146,7 @@ async function seed() {
   const now = Math.floor(Date.now() / 1000);
   let order = 0;
   for (const [deviceId, kind] of Object.entries(devices)) {
-    db.prepare("INSERT INTO devices VALUES (?,?,?,?)").run(accountId, deviceId, now - 86_400 * (7 - order++), kind === "revoked" ? now - 3600 : null);
+    db.prepare("INSERT INTO devices (account_id,device_id,created_at,revoked_at) VALUES (?,?,?,?)").run(accountId, deviceId, now - 86_400 * (7 - order++), kind === "revoked" ? now - 3600 : null);
     if (kind !== "full" && kind !== "partial") continue;
     const response = await call(`/api/devices/${deviceId}/consent`, { baseVersion: 0, consent: {
       mode: "managed-content", version: 1, grantedAtMs: 0, serverProcessingAcknowledged: true,

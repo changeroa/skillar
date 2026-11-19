@@ -109,13 +109,13 @@ export async function fixture(t, options = {}) {
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql", ...(options.migrations ?? [])]) {
     await migrate(db, new URL(`../../activity-migrations/${name}`, import.meta.url));
   }
-  for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql"]) {
+  for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql", "0012_device_labels.sql"]) {
     await migrate(accounts, new URL(`../../../site/migrations/${name}`, import.meta.url));
   }
   const rows = async (sql, ...args) => (await db.prepare(sql).bind(...args).all()).results;
   await accounts.prepare("INSERT INTO users VALUES ('account-a','a@example.com','','',0,0)").run();
   await accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES ('account-a','account-a')").run();
-  await accounts.prepare("INSERT INTO devices VALUES ('account-a','device-a',0,NULL)").run();
+  await accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES ('account-a','device-a',0,NULL)").run();
   await db.prepare("INSERT INTO tenant_fences VALUES ('account-a',1,'active')").run();
   const consent = async (begin, changes = {}) => {
     const grant = {

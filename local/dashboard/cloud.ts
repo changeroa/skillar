@@ -34,8 +34,8 @@ function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
   });
 }
 /** One adapter owns one profile lifetime; replace it rather than mutating its profile. */
-export function createCloudApi(input: DashboardSource, options: CloudApiOptions): CloudApi {
-  const profile = dashboardSourceSchema.parse(input);
+export function createCloudApi(input: DashboardSource & { readonly label?: string | null }, options: CloudApiOptions): CloudApi {
+  const profile = dashboardSourceSchema.unwrap().extend({ label: z.string().nullable().optional() }).parse(input);
   const lifetime = new AbortController();
   const handlers = new Set<EventHandlers>();
   const fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
@@ -159,6 +159,7 @@ export function createCloudApi(input: DashboardSource, options: CloudApiOptions)
   }
   return {
     mode: "cloud",
+    source: profile,
     sessions: async (filter) => {
       const rows = await query<SessionListRow[]>({ kind: "sessions", filter });
       snapshot = { filter, rows };

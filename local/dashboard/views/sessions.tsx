@@ -79,13 +79,29 @@ function When({ row }: { row: SessionListRow }) {
   );
 }
 
-function WaitingEmpty({ stats }: { stats: Stats }) {
-  if (api.mode === "cloud") return (
-    <section aria-live="polite">
-      <EmptyState title="이 기록에는 활동이 없습니다"
-        description="출처 기기에서 세션을 시작한 뒤 최신 기록을 올리고 출처를 다시 불러오세요." />
+// 호스팅 빈 상태의 "켜기": 같은 페이지의 기기 업로드 동의 토글(기기 및 비공개 팩 관리)을 연다.
+function openUploadConsent() {
+  const management = document.getElementById("dashboard-management");
+  if (management instanceof HTMLDetailsElement) {
+    management.open = true;
+    management.scrollIntoView({ block: "start" });
+    management.querySelector("summary")?.focus();
+  }
+}
+
+// 요청문: 빈 상태는 "업로드 꺼짐 · 켜기" 한 줄. 켜기는 기존 기기 업로드 동의 토글 위치를 연다.
+function UploadOffEmpty() {
+  return (
+    <section aria-live="polite" className="upload-off">
+      <p className="upload-off__line">업로드 꺼짐 ·{" "}
+        <button type="button" className="text-link" onClick={openUploadConsent}>켜기</button>
+      </p>
     </section>
   );
+}
+
+function WaitingEmpty({ stats }: { stats: Stats }) {
+  if (api.mode === "cloud") return <UploadOffEmpty />;
   const { ingest } = stats;
   return (
     <section className="session-waiting" aria-live="polite">
@@ -131,6 +147,7 @@ function FilteredEmpty({ route, navigate }: { route: Route; navigate: ViewProps[
 }
 
 function NoSessionsEmpty() {
+  // 이벤트는 올라왔지만 세션이 없는 경우(업로드는 켜져 있다): 기존 안내를 유지한다.
   return (
     <EmptyState title="아직 기록된 세션이 없습니다"
       description={api.mode === "cloud" ? "올린 기록에 이벤트는 있지만 세션은 없습니다. 출처 기기에서 최신 기록을 올리고 출처를 다시 불러오세요." : undefined}

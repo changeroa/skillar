@@ -74,8 +74,14 @@ export function VersionFiles({ preview, retry }: { readonly preview: Preview; re
 }
 
 export function UnmeasuredReads({ detail }: { readonly detail: PrivateSkillDetail }) {
+  // 읽기 수는 아직 측정하지 않는다(집계 연결 없음). 대신 현재 버전을 읽은 세션 목록으로 가는 링크를 둔다.
+  // 필터: 이 스킬의 현재 버전 URI + 읽기 성공 세션. 읽은 세션 0건이면 세션 화면의 빈 상태가 뜬다.
+  // 세션 목록 해시 필터와 같은 직렬화(local/dashboard/state.ts의 serializeFilter): skill,loadStatus 순.
+  const headUri = `skillar://private/${detail.skill.skillId}/${detail.skill.head.digest}/SKILL.md`;
+  const sessionsHref = `/sessions/#/sessions?skill=${encodeURIComponent(headUri)}&loadStatus=succeeded`;
   return h("section", { className: "skill-reads", "aria-label": "버전별 읽기 수" },
     h(BarChart, { title: "버전별 읽기 수", data: { labels: detail.versions.map(version => version.digest.slice(0, 8)),
       series: [{ label: "읽기 수 · 미측정", values: detail.versions.map(() => null) }] } }),
-    h("p", { className: "note" }, "아직 읽기 기록을 연결하지 않았습니다. 게시 기록은 읽기 기록이나 작업 성공의 근거가 아닙니다."));
+    h("p", null, h("a", { href: sessionsHref }, "현재 버전을 읽은 세션 보기")),
+    h("p", { className: "note" }, "읽기 수는 아직 측정하지 않습니다. 게시 기록은 읽기 기록이나 작업 성공의 근거가 아닙니다."));
 }

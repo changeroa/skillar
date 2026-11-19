@@ -53,7 +53,7 @@ function useLoad<T>(
 
 function SignedOut({ phase }: { readonly phase: Exclude<Phase, { kind: "signed-in" | "checking" }> }) {
   if (phase.kind === "signed-out") {
-    // 읽기 근거 탭과 해시 라우트(#/sessions 등)까지 보존해 로그인 뒤 같은 뷰로 돌아온다.
+    // /sessions/ 해시 라우트(#/sessions 등)까지 보존해 로그인 뒤 같은 뷰로 돌아온다.
     location.replace(`/login/?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`);
     return null;
   }
@@ -74,7 +74,7 @@ type SignedInProps = {
   readonly selected: DashboardProfile | null;
   readonly report: DashboardReportStatus | null;
   readonly failure: RequestFailure | null;
-  readonly onSelect: (profile: DashboardProfile) => void;
+  readonly onSelect: (profile: DashboardProfile, deviceLabel: string | null) => void;
   readonly onClose: () => void;
   readonly onRebuild: () => void;
   readonly onUnauthorized: () => void;
@@ -134,7 +134,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
               message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => {
                 if (sourcePicker.current) sourcePicker.current.open = false;
-                onSelect(profile);
+                onSelect(profile, devices.data?.find(device => device.deviceId === profile.deviceId)?.label ?? null);
               }} onReload={reload} />
           </details>
         </aside>}
@@ -196,14 +196,15 @@ export function Dashboard({ signal }: { readonly signal: AbortSignal }) {
     cloud.current?.dispose();
     cloud.current = null;
   }, []);
-  const select = (profile: DashboardProfile) => {
+  const select = (profile: DashboardProfile, deviceLabel: string | null = null) => {
     if (selected !== null && profileKey(selected) === profileKey(profile)) return;
     close();
     let sequence = 0;
     const runs = new Map<string, number>();
     const requests = new Map<string, number>();
     const jobs = new Map<string, { readonly key: string; readonly run: number; readonly epoch: number }>();
-    const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain }, {
+    // 기기 이름(label)이 /api/devices에 있으면 세션 화면의 기기 열에 실어 보낸다(C). 없으면 미제공 표시로 떨어진다.
+    const api = createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain, label: deviceLabel }, {
       signal, onUnauthorized: expire, live: {},
       onReport: status => setReports(current => new Map(current).set(status.jobId, status)),
       fetch: async (input, init) => {

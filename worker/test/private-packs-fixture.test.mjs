@@ -93,7 +93,7 @@ export async function fixture(t) {
       accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES (?,?)").bind(account, account),
       accounts.prepare("INSERT INTO sessions VALUES (?,?,?)")
         .bind(account === "account-a" ? browser().sessionId : "b".repeat(40), account, 1793730000),
-      accounts.prepare("INSERT INTO devices VALUES (?,?,0,NULL)").bind(account, "device-a"),
+      accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)").bind(account, "device-a"),
       accounts.prepare("INSERT INTO api_tokens VALUES (?,?,?,?,?,?,1,?,NULL)")
         .bind(account.padEnd(43, "t"), account, "device-a", JSON.stringify(["skills:read", "skills:write"]),
           "https://skillar.sh", "skillar:activity", 1793730000),

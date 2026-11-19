@@ -19,6 +19,8 @@ export type EventHandlers = {
 
 export type Api = {
   mode: "http" | "fixtures" | "cloud";
+  /** cloud 모드: 현재 출처(기기·도메인). label은 C(기기 이름) 적용 후 호스트가 채운다. */
+  readonly source?: { readonly deviceId: string; readonly sourceDomain: string; readonly label?: string | null };
   dispose?: () => void;
   sessions(filter: Filter): Promise<SessionListRow[]>;
   trace(sessionId: string): Promise<TraceStep[]>;
@@ -154,13 +156,17 @@ function fixtureRequestFlow(data: FixtureData, rows: SessionListRow[], unit: Flo
 /** Usage figures (unattributed counts, null attribution rates) live in their own lazily loaded file and override `stats`. */
 type UsageFixtureData = { stats: Partial<Stats>; statsEmpty: Partial<Stats> };
 
-export type FixtureVariant = "full" | "twelve" | "empty";
+// cloud/cloud-empty: 호스팅(cloud) 모드의 화면을 로컬 예시 기록으로 렌더하는 개발 전용 변형.
+// 실제 클라우드 API는 거치지 않고 mode만 "cloud"로 둔다(호스팅 시각 검증용, 운영 계정 불필요).
+export type FixtureVariant = "full" | "twelve" | "empty" | "cloud" | "cloud-empty";
 
 export function fixtureVariant(search: string = typeof location === "undefined" ? "" : location.search): FixtureVariant | undefined {
   const value = new URLSearchParams(search).get("fixtures");
   if (value === null) return undefined;
   if (value === "12") return "twelve";
   if (value === "0" || value === "empty" || value === "none") return "empty";
+  if (value === "cloud") return "cloud";
+  if (value === "cloud-empty") return "cloud-empty";
   return "full";
 }
 
@@ -175,10 +181,13 @@ if (process.env.NODE_ENV !== "production") {
     const loadUsage = (): Promise<UsageFixtureData> => (usage ??= import("./dev-fixtures-usage.json").then((m) => m.default as unknown as UsageFixtureData));
     const rowsOf = (data: FixtureData): SessionListRow[] => {
       const twelve = new Set(data.sessions12);
-      return (variant === "empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions).map((row) => ({ ...row, requests: summarizeRequests(fixtureRequests(data.traces[row.id] ?? [])) }));
+      return (variant === "empty" || variant === "cloud-empty" ? [] : variant === "twelve" ? data.sessions.filter((row) => twelve.has(row.id)) : data.sessions).map((row) => ({ ...row, requests: summarizeRequests(fixtureRequests(data.traces[row.id] ?? [])) }));
     };
     return {
-      mode: "fixtures",
+      mode: variant === "cloud" || variant === "cloud-empty" ? "cloud" : "fixtures",
+      // fixture cloud 변형: label 미제공 상태의 전방호환 표시("이름 없음 · id 앞6")를 재현한다.
+      source: variant === "cloud" || variant === "cloud-empty"
+        ? { deviceId: "fx9c2k47d1m8", sourceDomain: "fixtures.local", label: null } : undefined,
       sessions: (filter) => settle((data) => rowsOf(data).filter((row) => matchesFilter(row, filter))),
       trace: (sessionId) => settle((data) => data.traces[sessionId] ?? []),
       // The fixture file carries no herdr topology, so the flow APIs answer like a daemon that has never seen herdr.
@@ -204,7 +213,7 @@ if (process.env.NODE_ENV !== "production") {
       skillWeek: () => settle((data) => (variant === "empty" ? { ...data.skillWeek, rows: [] } : variant === "twelve" ? data.skillWeek12 : data.skillWeek)),
       stats: async () => {
         const [data, extra] = await Promise.all([load(), loadUsage()]);
-        return variant === "empty" ? { ...data.statsEmpty, ...extra.statsEmpty } : { ...data.stats, ...extra.stats };
+        return variant === "empty" || variant === "cloud-empty" ? { ...data.statsEmpty, ...extra.statsEmpty } : { ...data.stats, ...extra.stats };
       },
       skills: () => settle((data) => data.skills),
       addEvalCase: () => Promise.resolve(),

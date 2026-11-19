@@ -20,6 +20,7 @@ export async function loadDevices(signal: AbortSignal): Promise<readonly DeviceS
 
 export type DeviceState = {
   readonly deviceId: string; readonly createdAt: number; readonly revokedAt: number | null;
+  readonly label: string | null; readonly lastUsedAt: number | null;
   readonly version: number; readonly consent: Consent;
 };
 type Common = {

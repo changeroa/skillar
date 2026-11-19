@@ -19,7 +19,7 @@ async function fixture(t) {
   const shard = await activityFixture(t);
   primary.db.exec(`INSERT INTO users VALUES ('owner','fixture@example.com','','',1,1);
     INSERT INTO accounts(account_id,user_sub) VALUES ('account-a','owner');
-    INSERT INTO devices VALUES ('account-a','fixture-device',1,NULL);`);
+    INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES ('account-a','fixture-device',1,NULL);`);
   const consent = (version = 1) => primary.db.prepare(`INSERT INTO device_consents VALUES
     ('account-a','fixture-device',1,?,'{"mode":"local-only"}',1)`).run(version);
   const pending = () => primary.db.prepare("SELECT count(*) AS n FROM account_control_outbox").get().n;

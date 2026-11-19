@@ -138,9 +138,9 @@ test("two ArrowDown presses and Enter navigate to the third destination", async 
   const { field, navigations, dialog } = await palette(t);
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "ArrowDown" })));
-  assert.equal(field.getAttribute("aria-activedescendant"), "app-command-option-evidence");
+  assert.equal(field.getAttribute("aria-activedescendant"), "app-command-option-connections");
   await act(() => field.dispatchEvent(new FakeEvent("keydown", { key: "Enter" })));
-  assert.deepEqual(navigations, ["/skills/?tab=evidence"]);
+  assert.deepEqual(navigations, ["/connections/"]);
   assert.equal(dialog.open, false);
 });
 

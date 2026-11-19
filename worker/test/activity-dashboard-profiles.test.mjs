@@ -68,7 +68,7 @@ test("profile availability exposes revoked and current partial consent rather th
   const f = await fixture(t);
   for (const [id, mode] of [["device-a", "managed-content"], ["device-b", "metadata"],
     ["device-c", "local-only"], ["device-d", "managed-content"]]) {
-    if (id !== "device-a") await f.accounts.prepare("INSERT INTO devices VALUES ('account-a',?,1,NULL)").bind(id).run();
+    if (id !== "device-a") await f.accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES ('account-a',?,1,NULL)").bind(id).run();
     const consent = mode === "local-only" ? { mode } : {
       mode, version: 2, grantedAtMs: 0, scope: { deviceId: id, projectIds: [`device:${id}`], rootIds: [] },
       ...(mode === "managed-content" ? { serverProcessingAcknowledged: true,

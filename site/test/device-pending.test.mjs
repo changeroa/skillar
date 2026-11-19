@@ -340,3 +340,47 @@ test('scope upgrade: a device id owned by another account is unapprovable', asyn
   assert.equal(outcome.kind, 'conflict');
   assert.equal(f.db.prepare('SELECT count(*) AS n FROM device_grants').get().n, 0);
 });
+
+test('approval copies the pending device label sanitized into devices.label', async t => {
+  // Given a pending code whose label carries control characters and padding
+  // (intake caps length at 120; approval additionally strips control chars and trims)
+  const f = await fixture(t);
+  const issued = await createPendingCode({ deviceLabel: '  작업실\u0007 맥북\u0001  ', scopes: ['activity:ingest'] }, f.env);
+  // When
+  const approved = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
+  assert.equal(approved.kind, 'approved');
+  // Then: control characters are stripped and ends trimmed
+  const row = f.db.prepare('SELECT label FROM devices WHERE device_id=?').get(approved.deviceId);
+  assert.equal(row.label, '작업실 맥북');
+  assert.ok(!/[\u0000-\u001F\u007F-\u009F]/.test(row.label));
+});
+
+test('approval of a blank pending label stores NULL (UI falls back to id prefix)', async t => {
+  // Given
+  const f = await fixture(t);
+  const issued = await createPendingCode({ deviceLabel: '  \u0007  ', scopes: ['activity:ingest'] }, f.env);
+  // When
+  const approved = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
+  // Then
+  assert.equal(approved.kind, 'approved');
+  assert.equal(f.db.prepare('SELECT label FROM devices WHERE device_id=?').get(approved.deviceId).label, null);
+});
+
+test('scope upgrade: fills a NULL label from the pending name but never overwrites an existing one', async t => {
+  // Given: an already-connected device with no label
+  const f = await fixture(t);
+  const deviceId = 'd'.repeat(43);
+  f.db.prepare('INSERT INTO devices(account_id,device_id,created_at) VALUES(?,?,?)').run('a', deviceId, now);
+  const label = () => f.db.prepare('SELECT label FROM devices WHERE device_id=?').get(deviceId).label;
+  // When: a scope-upgrade approval names it with a fresh label
+  const issued = await createPendingCode(
+    { deviceLabel: ' 작업실 맥북 ', scopes: ['activity:read', 'skills:read'], deviceId }, f.env);
+  assert.equal((await approvePendingCode(f.principal, { code: issued.userCode }, f.env)).kind, 'approved');
+  // Then: the NULL label is filled with the sanitized name
+  assert.equal(label(), '작업실 맥북');
+  // And: a later re-approval does not overwrite the existing name
+  const again = await createPendingCode(
+    { deviceLabel: '다른 이름', scopes: ['activity:read', 'skills:read'], deviceId }, f.env);
+  assert.equal((await approvePendingCode(f.principal, { code: again.userCode }, f.env)).kind, 'approved');
+  assert.equal(label(), '작업실 맥북');
+});

@@ -25,6 +25,7 @@ const grantRequestSchema = z.strictObject({
 const exchangeSchema = z.strictObject({ grant: z.string().min(32).max(128) });
 const deviceListSchema = z.array(z.strictObject({
   deviceId: z.string(), createdAt: z.number(), revokedAt: z.number().nullable(),
+  label: z.string().nullable(), lastUsedAt: z.number().nullable(),
 }));
 
 async function handle(request: Request, env: ActivityEnv): Promise<Response> {
@@ -123,7 +124,8 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
   }
   if (path === "/api/devices" && request.method === "GET") {
     const rows = await env.ACCOUNTS.prepare(`SELECT device_id AS deviceId,
-      created_at AS createdAt, revoked_at AS revokedAt FROM devices
+      created_at AS createdAt, revoked_at AS revokedAt,
+      label AS label, last_used_at AS lastUsedAt FROM devices
       WHERE account_id=? ORDER BY device_id`).bind(principal.accountId).all();
     return Response.json({ devices: deviceListSchema.parse(rows.results) }, { headers: noStore });
   }

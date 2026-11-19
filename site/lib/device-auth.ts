@@ -102,7 +102,7 @@ export async function readDevicePrincipal(
   const hash = await pkceChallenge(token);
   const row = await env.ACCOUNTS.prepare(`SELECT t.account_id AS accountId,
     t.device_id AS deviceId, t.auth_generation AS generation, a.shard_id AS shardId,
-    t.issuer, t.scopes_json AS scopesJson FROM api_tokens t
+    t.issuer, t.scopes_json AS scopesJson, d.last_used_at AS lastUsedAt FROM api_tokens t
     JOIN accounts a ON a.account_id=t.account_id
     JOIN devices d ON d.account_id=t.account_id AND d.device_id=t.device_id
     WHERE t.token_hash=? AND t.expires_at>? AND t.revoked_at IS NULL
@@ -112,7 +112,7 @@ export async function readDevicePrincipal(
   if (row === null) return null;
   const parsed = devicePrincipalSchema.unwrap().omit({
     kind: true, sessionId: true, scopes: true,
-  }).extend({ scopesJson: z.string() }).safeParse(row);
+  }).extend({ scopesJson: z.string(), lastUsedAt: z.number().int().nullable() }).safeParse(row);
   if (!parsed.success) return null;
   let scopes: unknown;
   try {
@@ -123,7 +123,15 @@ export async function readDevicePrincipal(
   }
   const allowed = deviceScopes.safeParse(scopes);
   if (!allowed.success) return null;
-  const { scopesJson, ...identity } = parsed.data;
+  const { scopesJson, lastUsedAt, ...identity } = parsed.data;
+  // 최근 사용 시각: 앞 SELECT로 읽은 값이 10분 이상 지났을 때만 UPDATE한다(요청마다 쓰기 왕복 방지).
+  // WHERE 조건은 동시 요청 사이의 경쟁 대비로 유지한다.
+  const touchedAt = Math.floor(Date.now() / 1000);
+  if (lastUsedAt === null || lastUsedAt < touchedAt - 600) {
+    await env.ACCOUNTS.prepare(`UPDATE devices SET last_used_at=?
+      WHERE account_id=? AND device_id=? AND (last_used_at IS NULL OR last_used_at<?)`)
+      .bind(touchedAt, identity.accountId, identity.deviceId, touchedAt - 600).run();
+  }
   return devicePrincipalSchema.parse({ ...identity, kind: "device", sessionId: null, scopes: allowed.data });
 }
 
