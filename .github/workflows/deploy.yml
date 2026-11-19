@@ -53,8 +53,9 @@ jobs:
       - if: inputs.target == 'pages'
         run: npm ci
         working-directory: local
-      - if: inputs.target == 'pages'
-        run: npm ci
+      # Worker tests and bundles import site/lib (zod etc.), so every target
+      # needs site dependencies, not only Pages.
+      - run: npm ci
         working-directory: site
       # The theme build resolves the Astryx CLI from site node_modules, so it
       # must run after site npm ci (local node_modules has no CLI package).
