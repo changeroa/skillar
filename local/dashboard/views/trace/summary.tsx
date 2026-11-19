@@ -24,15 +24,19 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
   const Title = embedded || peek ? "h2" : "h1";
   const prompt = firstPromptOf(steps, row);
   // 2차 declutter: 길이·검색 수·오류 수는 제거(이벤트 목록이 같은 정보를 보여준다).
+  // icon-swap: 시작=clock, 읽은 스킬=book-open+숫자(0이면 생략). 시각은 텍스트가 남으므로
+  // 아이콘은 장식(aria-hidden), 읽은 스킬은 dt를 숨기고 dd에 이름/툴팁을 단다(inbox85).
   const line = [
     { id: "runtime", label: "실행 환경", hidden: true, value: <span className="pe-pill">{row ? RUNTIME_LABEL[row.runtime] : "미측정"}</span> },
-    { id: "started", label: "시작", hidden: true, value: bounds.startedAt === undefined ? "미측정" : <time dateTime={new Date(bounds.startedAt).toISOString()}>{date.format(bounds.startedAt)}</time> },
-    { id: "reads", label: "읽은 스킬", value: `${facts.reads.length}개` },
+    { id: "started", label: "시작", hidden: true, value: bounds.startedAt === undefined ? "미측정" : <><Icon name="clock" size={16} /><time dateTime={new Date(bounds.startedAt).toISOString()}>{date.format(bounds.startedAt)}</time></> },
+    ...(facts.reads.length > 0 ? [{ id: "reads", label: "읽은 스킬", hidden: true, labelled: `읽은 스킬 ${facts.reads.length}개`,
+      value: <><Icon name="book-open" size={16} />{facts.reads.length}</> }] : []),
   ];
   return <header className="trace-summary" data-component="session-summary">
     <div className="trace-summary__title"><Title className="trace__title"><code>{sessionId}</code></Title>{!peek && <CopyButton value={sessionId} />}</div>
     <dl className="trace-summary__line trace__meta" aria-label="세션 요약">
-      {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+      {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt>
+        <dd {...("labelled" in fact ? { role: "img", "aria-label": fact.labelled, title: fact.labelled } : {})}>{fact.value}</dd></div>)}
     </dl>
     {facts.reads.length > 0 && <div className="trace-summary__reads">{facts.reads.map(uri => <span className="pe-pill" key={uri} title={uri}><code>{skillName(uri)}</code></span>)}</div>}
     {peek && <dl className="trace-summary__kv">
