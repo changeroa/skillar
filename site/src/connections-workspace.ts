@@ -18,7 +18,8 @@ type Row = {
   readonly mcp?: Model["connections"][number];
 };
 const kinds = ["기기", "OAuth", "개인 토큰"];
-const states = ["활성", "만료", "해제됨"];
+// 해제된 기기·토큰은 화면에 보이지 않는다(서버 응답·감사 기록은 그대로). 상태 필터에도 없다.
+const states = ["활성", "만료"];
 const date = (seconds: number) => `${new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: KST_TIME_ZONE }).format(seconds * 1000)} KST`;
 const statusText = { active: "활성", expired: "만료", revoked: "해제됨" } as const;
 
@@ -39,13 +40,10 @@ export function connectionRows(model: Model, devices: readonly DeviceState[], no
 function readView() {
   const query = new URL(location.href).searchParams;
   const direction = query.get("direction") === "ascending" ? "ascending" : "descending";
-  const showRevoked = query.get("revoked") === "1";
   return {
     q: query.get("q") ?? "",
     kind: query.getAll("kind").filter(value => kinds.includes(value)),
-    status: query.has("status") ? query.getAll("status").filter(value => states.includes(value))
-      : showRevoked ? [] : ["활성"],
-    showRevoked,
+    status: query.has("status") ? query.getAll("status").filter(value => states.includes(value)) : ["활성"],
     sort: { column: query.get("sort") ?? "created", direction } satisfies TableSort,
   };
 }
@@ -87,23 +85,20 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
   }, [revision]);
   const change = (next: typeof view) => {
     const url = new URL(location.href);
-    for (const key of ["q", "kind", "status", "revoked", "sort", "direction"]) url.searchParams.delete(key);
+    for (const key of ["q", "kind", "status", "sort", "direction"]) url.searchParams.delete(key);
     if (next.q) url.searchParams.set("q", next.q);
     next.kind.forEach(value => url.searchParams.append("kind", value));
     if (next.status.length) next.status.forEach(value => url.searchParams.append("status", value));
     else url.searchParams.set("status", "all");
-    if (next.showRevoked) url.searchParams.set("revoked", "1");
     url.searchParams.set("sort", next.sort.column);
     url.searchParams.set("direction", next.sort.direction);
     history.replaceState(null, "", url);
     setView(next);
   };
-  const rows = connectionRows(model, devices, Date.now() / 1000);
+  const rows = connectionRows(model, devices, Date.now() / 1000).filter(row => row.status !== "해제됨");
   const filtered = rows.filter(row => (!view.kind.length || view.kind.includes(row.kind)) &&
     (!view.status.length || view.status.includes(row.status)) &&
     `${row.name} ${row.id}`.toLocaleLowerCase("ko").includes(view.q.toLocaleLowerCase("ko")));
-  const revoked = rows.filter(row => row.status === "해제됨").length;
-  const hiddenRevoked = revoked - filtered.filter(row => row.status === "해제됨").length;
   const busy = loading || model.phase === "checking" || model.phase === "loading";
   const countKnown = !busy && !failure && model.phase === "ready";
   const current = rows.find(row => row.id === selected);
@@ -136,11 +131,8 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
       h("label", { className: "connections-search" }, h("span", { className: "sr-only" }, "연결 검색"),
         h("span", { className: "connections-search__box" }, iconEl("search"),
           h("input", { type: "search", placeholder: "연결 검색", value: view.q,
-            onInput: event => change({ ...view, q: event.currentTarget.value }) }))),
-      h("button", { type: "button", id: "connections-show-revoked", className: "button secondary",
-        "aria-pressed": view.showRevoked, disabled: !countKnown,
-        onClick: () => change({ ...view, showRevoked: !view.showRevoked, status: view.showRevoked ? ["활성"] : [] }),
-      }, countKnown ? `해제됨 보기 (${revoked})` : "해제됨 보기")),
+            onInput: event => change({ ...view, q: event.currentTarget.value }) })))),
+
     h("p", { className: "note" }, "받은 목록 안에서 검색·정렬합니다. 활성은 온라인 상태가 아닙니다."),
     failure && h("p", { role: "status", className: "note" }, failure,
       h("button", { type: "button", className: "button secondary", onClick: common.onChanged }, "기기 다시 불러오기")),
@@ -154,8 +146,7 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
             { id: "status", label: "상태", values: states.map(label => ({ id: label, label, count: rows.filter(row => row.status === label).length })) },
           ], selected: { kind: view.kind, status: view.status },
           onChange: (group, values) => change({ ...view, [group]: [...values] }) })),
-      h(DataTable<Row>, { caption: countKnown
-        ? `연결 ${filtered.length}개${hiddenRevoked ? ` · 해제됨 ${hiddenRevoked}개 숨김` : ""}` : "연결 수 확인 불가",
+      h(DataTable<Row>, { caption: countKnown ? `연결 ${filtered.length}개` : "연결 수 확인 불가",
         rows: filtered, columns, rowId: row => row.id, sort: view.sort, onSort: sort => change({ ...view, sort }) })),
     countKnown && rows.length === 0 && h("p", { className: "ui-empty" },
       "아직 연결이 없습니다. ", h("a", { className: "button secondary", href: "#endpoint-title" }, "MCP 설정으로 연결하기")),

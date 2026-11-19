@@ -124,31 +124,28 @@ async function workspaceFixture(t, { query = "", response, phase = "ready" } = {
   };
 }
 
-test("connections default to active rows and the revoked toggle round trips through the URL", async t => {
+test("revoked connections never appear, and there is no revoked toggle (inbox86)", async t => {
+  // 해제된 기기·토큰은 화면에 보이지 않는다. 서버 응답은 그대로 두고 목록에서만 숨긴다.
   // Given
   const fixture = await workspaceFixture(t);
   await waitFor(fixture.dom, () => fixture.rows().length === 2, "active rows");
   assert.deepEqual(fixture.rows().map(row => byTag(row, "button")[0].getAttribute("data-id")), ["active", "device:test"]);
-  // When
-  await act(() => all(fixture.container, node => node.id === "connections-show-revoked")[0].click());
-  const url = fixture.win.location.href;
-  await fixture.restore("https://skillar.sh/connections/");
-  await fixture.restore(url);
+  assert.equal(all(fixture.container, node => node.id === "connections-show-revoked").length, 0);
+  // When: even a legacy ?revoked=1 link cannot bring revoked rows back
+  await fixture.restore("https://skillar.sh/connections/?revoked=1&status=%ED%95%B4%EC%A0%9C%EB%90%A8");
   // Then
-  assert.equal(new URL(url).searchParams.get("revoked"), "1");
-  assert.equal(fixture.rows().length, 4);
-  assert.equal(all(fixture.container, node => node.id === "connections-show-revoked")[0].getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.rows().some(row => byTag(row, "button")[0]?.getAttribute("data-id") === "revoked"), false);
 });
 
 test("explicit cleared and selected status facets survive URL restoration", async t => {
   // Given
   const fixture = await workspaceFixture(t, { query: "?status=all&kind=기기&q=test&sort=name&direction=ascending" });
   await waitFor(fixture.dom, () => fixture.rows().length === 1, "filtered device");
-  // When
-  await fixture.restore("https://skillar.sh/connections/?revoked=1&status=해제됨&sort=name&direction=ascending");
+  // When: 해제됨 is no longer a selectable status, so it reads as cleared; sort still restores
+  await fixture.restore("https://skillar.sh/connections/?status=%EB%A7%8C%EB%A3%8C&sort=name&direction=ascending");
   // Then
   assert.equal(fixture.rows().length, 1);
-  assert.equal(byTag(fixture.rows()[0], "button")[0].getAttribute("data-id"), "revoked");
+  assert.equal(byTag(fixture.rows()[0], "button")[0].getAttribute("data-id"), "expired");
   assert.equal(byTag(fixture.container, "th")[0].getAttribute("aria-sort"), "ascending");
 });
 
