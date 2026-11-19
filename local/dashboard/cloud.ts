@@ -36,6 +36,9 @@ function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
 /** One adapter owns one profile lifetime; replace it rather than mutating its profile. */
 export function createCloudApi(input: DashboardSource & { readonly label?: string | null }, options: CloudApiOptions): CloudApi {
   const profile = dashboardSourceSchema.unwrap().extend({ label: z.string().nullable().optional() }).parse(input);
+  // 요청 본문의 profile은 strict 스키마(deviceId·sourceDomain뿐)라 label을 실으면 400으로 거절된다.
+  // label은 화면 표시 전용으로 유지하고, 서버로 보낼 때는 벗겨 낸다.
+  const source: DashboardSource = { deviceId: profile.deviceId, sourceDomain: profile.sourceDomain };
   const lifetime = new AbortController();
   const handlers = new Set<EventHandlers>();
   const fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
@@ -129,7 +132,7 @@ export function createCloudApi(input: DashboardSource & { readonly label?: strin
   function query<T>(query: ActivityQuery, extra?: AbortSignal): Promise<T> {
     return run(async (post, signal) => {
       let status = dashboardReportStatusSchema.parse(await post(dashboardPaths.query, {
-        profile, requestId: crypto.randomUUID(), query, tz: options.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+        profile: source, requestId: crypto.randomUUID(), query, tz: options.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
       }));
       const jobId = status.jobId;
       let polls = 0;
@@ -142,12 +145,12 @@ export function createCloudApi(input: DashboardSource & { readonly label?: strin
           case "failed": throw cloudError(status.error ?? "cloud_failed", "클라우드 보고서 생성에 실패했습니다. 출처를 사용할 수 있는지 확인하고 다시 시도해 주세요.");
           case "complete":
             if (status.pending) throw cloudError("cloud_integrity", "클라우드 보고서의 완료 상태가 올바르지 않습니다.");
-            return readCloudReport<T>(status, (part) => post(dashboardPaths.reportResult, { profile, jobId, part }), signal);
+            return readCloudReport<T>(status, (part) => post(dashboardPaths.reportResult, { profile: source, jobId, part }), signal);
           case "preparing": case "queued": case "running":
             if (polls++ >= maxPolls) throw cloudError("cloud_pending", "클라우드 보고서가 아직 준비 중입니다. 새로고침해 다시 시도해 주세요.");
             await (options.wait ?? wait)(interval, signal);
             signal.throwIfAborted();
-            status = dashboardReportStatusSchema.parse(await post(dashboardPaths.reportStatus, { profile, jobId }));
+            status = dashboardReportStatusSchema.parse(await post(dashboardPaths.reportStatus, { profile: source, jobId }));
             break;
           default: {
             const exhaustive: never = status.state;
@@ -179,7 +182,7 @@ export function createCloudApi(input: DashboardSource & { readonly label?: strin
     stats: (filter = {}) => query({ kind: "stats", filter }),
     skills: () => query({ kind: "skills" }),
     addEvalCase: (input) => run(async (post) => {
-      dashboardEvalReceiptSchema.parse(await post(dashboardPaths.evalCases, { profile, requestId: crypto.randomUUID(), input }));
+      dashboardEvalReceiptSchema.parse(await post(dashboardPaths.evalCases, { profile: source, requestId: crypto.randomUUID(), input }));
     }),
     health: () => run(async (post) => {
       return z.object({ ok: z.boolean(), version: z.string(), transport: z.enum(["snapshot", "live"]) })
