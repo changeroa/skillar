@@ -6,6 +6,17 @@ import { describeConsent } from "./consent";
 import { ConsentForm } from "./consent-form";
 import { connectSteps, downloadTextFile, grantFileName, grantFileText } from "./grant";
 import { formatSeconds, shortId } from "./status";
+import { readConsent, readDevices } from "./api";
+
+export async function loadDevices(signal: AbortSignal): Promise<readonly DeviceState[]> {
+  const devices = await readDevices(signal);
+  const states = await Promise.all(devices.map(async (device): Promise<DeviceState> => {
+    if (device.revokedAt !== null) return { ...device, version: 0, consent: { mode: "local-only" } };
+    const state = await readConsent(device.deviceId, signal);
+    return { ...device, version: state.version, consent: state.consent };
+  }));
+  return states.sort((a, b) => b.createdAt - a.createdAt);
+}
 
 export type DeviceState = {
   readonly deviceId: string; readonly createdAt: number; readonly revokedAt: number | null;
