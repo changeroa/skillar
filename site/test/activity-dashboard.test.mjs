@@ -28,7 +28,7 @@ async function fixture(t) {
     }) });
   await request("/api/dashboard/status");
   const accountId = db.prepare("SELECT account_id FROM accounts WHERE user_sub='a'").get().account_id;
-  db.prepare("INSERT INTO devices VALUES (?,?,?,NULL)").run(accountId, profile.deviceId, now);
+  db.prepare("INSERT INTO devices (account_id,device_id,created_at,revoked_at) VALUES (?,?,?,NULL)").run(accountId, profile.deviceId, now);
   env.ACTIVITY_SERVICE = { async fetch(request) {
     const input = await request.json(), identity = JSON.parse(request.headers.get("x-skillar-principal"));
     calls.push({ request, input, identity });
@@ -213,4 +213,22 @@ test("command status is readable with ingest disabled but not after logout durin
   // Then protected command results are discarded.
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { error: "unauthorized" });
+});
+
+test("profile discovery overlays D1 device label and last_used_at without a service change", async t => {
+  const f = await fixture(t);
+  f.env.ACTIVITY_INGEST_ENABLED = "true";
+  // Given: 승인 시 저장된 이름과 사용 시각은 D1 devices에만 있다(활동 서비스는 모른다).
+  f.db.prepare("UPDATE devices SET label=?, last_used_at=? WHERE account_id=? AND device_id=?")
+    .run("작업실 맥북", now - 300, f.accountId, profile.deviceId);
+  f.env.ACTIVITY_SERVICE.fetch = async () => Response.json({
+    schemaVersion: 1, ingestEnabled: true, profiles: [],
+    devices: [{ deviceId: profile.deviceId, createdAt: now, revokedAt: null, consentVersion: 1,
+      consent: { mode: "local-only" } }],
+  });
+  // When
+  const body = await (await f.request("/api/dashboard/profiles")).json();
+  // Then: 서비스가 보내지 않은 label/lastUsedAt이 D1 값으로 채워진다.
+  assert.equal(body.devices[0].label, "작업실 맥북");
+  assert.equal(body.devices[0].lastUsedAt, now - 300);
 });

@@ -115,7 +115,7 @@ test("two Google accounts and two devices with identical source IDs have separat
   const pa = await principal(a), pb = await principal(b);
   for (const p of [pa, pb]) {
     for (const device of ["same-device", "second-device"]) {
-      f.db.prepare("INSERT INTO devices VALUES (?,?,?,NULL)").run(p.accountId, device, now);
+      f.db.prepare("INSERT INTO devices (account_id,device_id,created_at,revoked_at) VALUES (?,?,?,NULL)").run(p.accountId, device, now);
     }
   }
   const source = { deviceId: "same-device", sourceDomain: "same-domain", sourceId: "same-session" };

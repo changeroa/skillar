@@ -146,6 +146,13 @@ async function countApproveAttempt(env: ActivityEnv, accountId: string, clientIp
     z.object({ attempts: z.number() }).parse(result?.results[0]).attempts > (limits[index] ?? 0));
 }
 
+/** 승인 화면에 보였던 임시 기기 이름을 저장 가능한 형태로 정제한다: 제어 문자 제거, 앞뒤 공백 정리, 120자 제한. */
+function sanitizeDeviceLabel(value: string): string | null {
+  const cleaned = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+  const capped = Array.from(cleaned).slice(0, 120).join("").trim();
+  return capped === "" ? null : capped;
+}
+
 export async function approvePendingCode(
   principal: BrowserPrincipal, input: unknown, env: ActivityEnv, clientIp = "unknown",
 ): Promise<ApproveOutcome> {
@@ -157,11 +164,12 @@ export async function approvePendingCode(
   const now = Math.floor(Date.now() / 1000);
   const nowMs = Date.now();
   const row = await env.ACCOUNTS.prepare(`SELECT scopes_json AS scopesJson,
-    requested_device_id AS requestedDeviceId FROM device_pending_codes
+    requested_device_id AS requestedDeviceId, device_label AS deviceLabel FROM device_pending_codes
     WHERE code_hash=? AND expires_at>? AND approved_at IS NULL AND failed_attempts<?`)
     .bind(hash, now, MAX_FAILED_APPROVALS).first();
   if (row === null) return { kind: "unknown" };
-  const pending = z.object({ scopesJson: z.string(), requestedDeviceId: z.string().nullable() }).parse(row);
+  const pending = z.object({ scopesJson: z.string(), requestedDeviceId: z.string().nullable(),
+    deviceLabel: z.string() }).parse(row);
   deviceScopes.parse(JSON.parse(pending.scopesJson));
   // Upgrade path: the CLI named a device it believes it owns. Ownership is
   // proven by the devices-row guard inside the approving account's write, and
@@ -177,14 +185,22 @@ export async function approvePendingCode(
       AND EXISTS (SELECT 1 FROM devices WHERE account_id=? AND device_id=? AND revoked_at IS NULL)`)
       .bind(principal.accountId, principal.sessionId, deviceId, now,
         hash, now, MAX_FAILED_APPROVALS, principal.accountId, deviceId);
-  const statements = upgrade ? [updatePending] : [
+  const statements = upgrade ? [
+    // 재승인(업그레이드) 경로: 기존 label은 덮지 않고 NULL일 때만 정제된 임시 이름을 채운다.
+    env.ACCOUNTS.prepare(`UPDATE devices SET label=COALESCE(label, ?)
+      WHERE account_id=? AND device_id=? AND revoked_at IS NULL`)
+      .bind(sanitizeDeviceLabel(pending.deviceLabel), principal.accountId, deviceId),
+    updatePending,
+  ] : [
     // Conditional on the request still being approvable so a lost race inserts
     // nothing — the batch has no rollback, every statement guards itself.
-    env.ACCOUNTS.prepare(`INSERT INTO devices(account_id,device_id,created_at)
-      SELECT ?,?,? WHERE EXISTS (${liveApproval})
+    // 승인 시 임시 기기 이름을 devices.label로 옮긴다(정제·120자 제한, 빈 값은 null).
+    env.ACCOUNTS.prepare(`INSERT INTO devices(account_id,device_id,created_at,label)
+      SELECT ?,?,?,? WHERE EXISTS (${liveApproval})
       AND EXISTS (SELECT 1 FROM device_pending_codes
         WHERE code_hash=? AND approved_at IS NULL AND expires_at>? AND failed_attempts<?)`)
-      .bind(principal.accountId, deviceId, now, ...live, hash, now, MAX_FAILED_APPROVALS),
+      .bind(principal.accountId, deviceId, now, sanitizeDeviceLabel(pending.deviceLabel),
+        ...live, hash, now, MAX_FAILED_APPROVALS),
     updatePending,
   ];
   // Pre-validation: a wrong consent version is a client error, not an attempt

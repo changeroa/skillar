@@ -14,6 +14,7 @@ import { iconEl } from "./icon";
 type Row = {
   readonly id: string; readonly name: string; readonly kind: string;
   readonly status: string; readonly scope: string; readonly created: number;
+  readonly lastUsedAt?: number | null; readonly localOnly?: boolean;
   readonly device?: DeviceState;
   readonly mcp?: Model["connections"][number];
 };
@@ -21,14 +22,27 @@ const kinds = ["기기", "OAuth", "개인 토큰"];
 // 해제된 기기·토큰은 화면에 보이지 않는다(서버 응답·감사 기록은 그대로). 상태 필터에도 없다.
 const states = ["활성", "만료"];
 const date = (seconds: number) => `${new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: KST_TIME_ZONE }).format(seconds * 1000)} KST`;
+const relativeFormat = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
+// "방금/N분 전/N일 전" 수준의 좁은 상대 시각.
+const relative = (seconds: number) => {
+  const delta = Math.floor(Date.now() / 1000) - seconds;
+  if (delta < 60) return "방금";
+  if (delta < 3600) return relativeFormat.format(-Math.floor(delta / 60), "minute");
+  if (delta < 86400) return relativeFormat.format(-Math.floor(delta / 3600), "hour");
+  return relativeFormat.format(-Math.floor(delta / 86400), "day");
+};
 const statusText = { active: "활성", expired: "만료", revoked: "해제됨" } as const;
 
 export function connectionRows(model: Model, devices: readonly DeviceState[], now: number): readonly Row[] {
   return [
     ...devices.map(device => ({
-      id: `device:${device.deviceId}`, name: device.deviceId, kind: "기기",
+      // 토큰 해시 대신 기기 이름(승인 시 저장된 label). 없으면 "이름 없음 · id 앞6"로 미제공을 명시.
+      id: `device:${device.deviceId}`,
+      name: device.label?.trim() ? device.label.trim() : `이름 없음 · ${device.deviceId.slice(0, 6)}`,
+      kind: "기기",
       status: device.revokedAt === null ? "활성" : "해제됨",
-      scope: describeConsent(device.consent), created: device.createdAt, device,
+      scope: describeConsent(device.consent), created: device.createdAt,
+      lastUsedAt: device.lastUsedAt, localOnly: device.consent.mode === "local-only", device,
     })),
     ...model.connections.map(mcp => ({
       id: mcp.connectionId, name: mcp.name, kind: mcp.kind === "oauth" ? "OAuth" : "개인 토큰",
@@ -73,7 +87,8 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
     signal.current = controller;
     setLoading(true);
     void readProfiles(controller.signal).then(result => {
-      setDevices(result.devices.map(device => ({ ...device, version: device.consentVersion })));
+      setDevices(result.devices.map(device => ({ ...device, version: device.consentVersion,
+        label: device.label ?? null, lastUsedAt: device.lastUsedAt ?? null })));
       setIngestEnabled(result.ingestEnabled);
       setFailure("");
     }).catch((error: unknown) => {
@@ -118,7 +133,18 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
         ? h("span", { className: `status-badge status-badge--${row.status === "활성" ? "active" : "revoked"}` },
             iconEl(row.status === "활성" ? "circle-check" : "circle-x"), h("span", { className: "status-badge__text" }, row.status))
         : h(Pill, null, row.status) },
-    { id: "scope", label: "범위", value: row => row.scope },
+    { id: "scope", label: "범위", value: row => row.scope, render: row =>
+      // 로컬 전용은 문장 대신 아이콘 하나(툴팁에 설명). 다른 동의는 기존 문장 유지.
+      row.localOnly
+        ? h("span", { className: "scope-local", title: "로컬 전용. 아무것도 업로드하지 않습니다." },
+            iconEl("cloud-off"), h("span", { className: "sr-only" }, "로컬 전용. 아무것도 업로드하지 않습니다."))
+        : row.scope },
+    // 좁은 상대 시각 열("방금/12일 전"). 아직 기록이 없으면 미측정을 명시한다.
+    { id: "lastUsed", label: "최근 사용", value: row => row.lastUsedAt ?? 0, render: row =>
+      row.kind === "기기"
+        ? h("span", { className: "last-used", title: row.lastUsedAt ? date(row.lastUsedAt) : "아직 사용 기록이 없습니다" },
+            row.lastUsedAt ? relative(row.lastUsedAt) : "미측정")
+        : "-" },
     { id: "created", label: "생성일", value: row => row.created, render: row => date(row.created) },
   ];
   const common = {
@@ -133,7 +159,6 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
           h("input", { type: "search", placeholder: "연결 검색", value: view.q,
             onInput: event => change({ ...view, q: event.currentTarget.value }) })))),
 
-    h("p", { className: "note" }, "받은 목록 안에서 검색·정렬합니다. 활성은 온라인 상태가 아닙니다."),
     failure && h("p", { role: "status", className: "note" }, failure,
       h("button", { type: "button", className: "button secondary", onClick: common.onChanged }, "기기 다시 불러오기")),
     busy && h(Skeleton, { label: "연결 목록을 불러오는 중", rows: 2 }),

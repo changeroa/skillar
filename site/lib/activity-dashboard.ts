@@ -74,8 +74,17 @@ export async function dashboardRequest(
     const checked = await release(request, env, principal, response, dashboardProfilesSchema);
     if (!checked.ok) return checked;
     const profiles = dashboardProfilesSchema.parse(await checked.json());
+    // core-minimum C: 기기 이름·최근 사용은 D1 devices가 원천이다(활동 서비스 변경 없이 제공).
+    const rows = await env.ACCOUNTS.prepare(
+      `SELECT device_id, label, last_used_at FROM devices WHERE account_id=? AND revoked_at IS NULL`)
+      .bind(principal.accountId).all();
+    const byDevice = new Map((rows.results ?? []).map(row => [row["device_id"], row]));
     return Response.json({
       ...profiles, ingestEnabled: profiles.ingestEnabled && env.ACTIVITY_INGEST_ENABLED === "true",
+      devices: profiles.devices.map(device => {
+        const local = byDevice.get(device.deviceId);
+        return local === undefined ? device : { ...device, label: local["label"] ?? null, lastUsedAt: local["last_used_at"] ?? null };
+      }),
     }, { headers: noStore });
   }
   if (request.method !== "POST") return activityError(404, "not_found");

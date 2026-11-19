@@ -30,6 +30,8 @@ export const dashboardSourceHeadSchema = dashboardSourceSchema.unwrap().extend({
 export const dashboardDeviceSchema = z.strictObject({
   deviceId: deviceIdSchema, createdAt: timestamp, revokedAt: timestamp.nullable(),
   consentVersion: z.number().int().nonnegative(), consent: consentSchema,
+  // core-minimum C: 기기 이름·최근 사용. 활동 서비스가 아직 보내지 않을 수 있어 optional(미제공 시 UI가 명시).
+  label: z.string().nullable().optional(), lastUsedAt: timestamp.nullable().optional(),
 }).readonly();
 export const dashboardProfileSchema = dashboardSourceHeadSchema.unwrap().extend({
   availability: z.enum(["local-only", "metadata-only", "partial", "awaiting-runtime", "ready", "revoked"]),

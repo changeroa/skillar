@@ -185,7 +185,7 @@ test('revocation is tenant scoped even with identical device and source IDs', as
   const f = await fixture(t);
   const other = f.browser('b');
   const token = await f.credential();
-  f.db.prepare('INSERT INTO devices VALUES(?,?,?,NULL)').run('b', token.deviceId, now);
+  f.db.prepare('INSERT INTO devices (account_id,device_id,created_at,revoked_at) VALUES(?,?,?,NULL)').run('b', token.deviceId, now);
   f.db.prepare(`INSERT INTO api_tokens SELECT ?, 'b', device_id, scopes_json, issuer,
     audience, auth_generation, expires_at, NULL FROM api_tokens`).run(await pkceChallenge('b'.repeat(43)));
   const source = { deviceId: token.deviceId, sourceDomain: 'codex', sourceId: 'same' };
@@ -260,3 +260,21 @@ for (const operation of ['exchange', 'revoke']) {
     else assert.equal(f.db.prepare('SELECT count(*) AS n FROM api_tokens').get().n, 0);
   });
 }
+
+test('device token validation touches last_used_at only when stale by 10 minutes', async t => {
+  // Given
+  const f = await fixture(t);
+  const token = await f.credential();
+  // When: first use stamps the timestamp (NULL -> now)
+  assert.ok(await readDevicePrincipal(f.request(token.token), f.env));
+  const stamp = () => f.db.prepare('SELECT last_used_at AS t FROM devices WHERE device_id=?').get(token.deviceId).t;
+  assert.equal(stamp(), now);
+  // Then: a recent stamp is not rewritten (no per-request write)
+  f.db.prepare('UPDATE devices SET last_used_at=? WHERE device_id=?').run(now - 300, token.deviceId);
+  assert.ok(await readDevicePrincipal(f.request(token.token), f.env));
+  assert.equal(stamp(), now - 300);
+  // And: a stamp older than 10 minutes is refreshed
+  f.db.prepare('UPDATE devices SET last_used_at=? WHERE device_id=?').run(now - 700, token.deviceId);
+  assert.ok(await readDevicePrincipal(f.request(token.token), f.env));
+  assert.equal(stamp(), now);
+});

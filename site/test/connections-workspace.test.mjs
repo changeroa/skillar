@@ -7,7 +7,7 @@ const { connectionRows, ConnectionsWorkspace } = await loadViews('export { conne
 const now = 1793870000;
 const mcp = { connectionId: "test", name: "test", kind: "pat", createdAt: now - 10, expiresAt: now + 10,
   revokedAt: null, scopes: ["skills:read"], recordActivity: false };
-const device = { deviceId: "test", createdAt: now - 20, revokedAt: null, version: 1, consent: { mode: "local-only" } };
+const device = { deviceId: "test", createdAt: now - 20, revokedAt: null, version: 1, consent: { mode: "local-only" }, label: null, lastUsedAt: null };
 
 test("device and MCP identifiers cannot collide in a combined connection table", () => {
   // Given
@@ -37,6 +37,8 @@ test("switching devices clears the previous consent draft and revoke confirmatio
   // Given: both devices have the same consent version, so version alone cannot isolate their drafts.
   const devices = ["device-a", "device-b"].map(deviceId => ({
     deviceId, createdAt: device.createdAt, revokedAt: null, consentVersion: 1, consent: device.consent,
+    // 기기 이름: B는 저장된 label이 있고 A는 없다(없으면 "이름 없음 · id 앞6").
+    label: deviceId === "device-b" ? "작업실 맥북" : null, lastUsedAt: null,
   }));
   const calls = [];
   t.mock.method(globalThis, "fetch", async (path, init) => {
@@ -81,7 +83,7 @@ test("switching devices clears the previous consent draft and revoke confirmatio
   // When: select B directly while A's draft and destructive confirmation are still open.
   await act(() => row("device-b").click());
   // Then: B starts with only its own stored consent and requires a fresh disconnect request.
-  assert.equal(all(container, node => node.id === "connection-peek-title")[0].textContent, "device-b");
+  assert.equal(all(container, node => node.id === "connection-peek-title")[0].textContent, "작업실 맥북");
   const nextConsent = all(container, node => node.getAttribute("class") === "device__consent")[0];
   assert.deepEqual({
     modes: byTag(nextConsent, "input").filter(field => field.type === "radio" && field.checked).map(field => field.value),
