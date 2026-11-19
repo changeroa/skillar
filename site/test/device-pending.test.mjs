@@ -39,7 +39,7 @@ test('full flow: issue, poll pending, approve, one pickup, replay refused', asyn
   // And: the approval page summary is readable but carries no secrets
   const summary = await readPendingCode(issued.userCode, f.env);
   assert.deepEqual(summary, {
-    deviceLabel: '테스트 맥북', scopes: ['activity:ingest'], expiresAt: now + 600,
+    deviceLabel: '테스트 맥북', scopes: ['activity:ingest'], upgrade: false, expiresAt: now + 600,
   });
   // And: approval binds the request to the approving account
   const approved = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
@@ -276,4 +276,67 @@ test('summary API exposes the expiry as epoch milliseconds (expiresAtMs), never 
   // Then the expiry is epoch ms matching the stored seconds, and no raw-seconds field leaks
   assert.equal(body.expiresAtMs, (now + 600) * 1000);
   assert.equal('expiresAt' in body, false);
+});
+
+test('publish approval: skills scopes issue and approve like activity scopes', async t => {
+  // Given: a pending code asking for the private-skill pair
+  const f = await fixture(t);
+  const issued = await createPendingCode(
+    { deviceLabel: '테스트 맥북', scopes: ['skills:read', 'skills:write'] }, f.env);
+  // When
+  const summary = await readPendingCode(issued.userCode, f.env);
+  assert.deepEqual(summary?.scopes, ['skills:read', 'skills:write']);
+  assert.equal(summary?.upgrade, false);
+  const approved = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
+  assert.equal(approved.kind, 'approved');
+  f.clock.t += 6;
+  const pickup = await pollPendingCode({ pollToken: issued.pollToken }, f.env, origin);
+  // Then: the grant carries exactly the skills scopes
+  assert.equal(pickup.kind, 'issued');
+  const grantRow = f.db.prepare('SELECT scopes_json AS s FROM device_grants').get();
+  assert.deepEqual(JSON.parse(grantRow.s), ['skills:read', 'skills:write']);
+});
+
+test('scope upgrade: approval reuses the named device and refuses consent', async t => {
+  // Given: an already-connected device on this account
+  const f = await fixture(t);
+  const deviceId = 'd'.repeat(43);
+  f.db.prepare('INSERT INTO devices(account_id,device_id,created_at) VALUES(?,?,?)')
+    .run('a', deviceId, now);
+  // And: a pending code that names that device for a scope upgrade
+  const issued = await createPendingCode(
+    { deviceLabel: '테스트 맥북', scopes: ['activity:read', 'activity:ingest', 'skills:read', 'skills:write'],
+      deviceId }, f.env);
+  const summary = await readPendingCode(issued.userCode, f.env);
+  assert.equal(summary?.upgrade, true);
+  // When: an upload-consent submission is a client error, not an attempt
+  await assert.rejects(
+    approvePendingCode(f.principal, { code: issued.userCode, consent: { mode: 'metadata' } }, f.env),
+    /consent_not_allowed/);
+  // And: approval adds scopes to the same device instead of minting a new one
+  const approved = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
+  assert.deepEqual(approved, { kind: 'approved', deviceId });
+  assert.equal(f.db.prepare('SELECT count(*) AS n FROM devices').get().n, 1);
+  f.clock.t += 6;
+  const pickup = await pollPendingCode({ pollToken: issued.pollToken }, f.env, origin);
+  assert.equal(pickup.kind, 'issued');
+  assert.equal(pickup.deviceId, deviceId);
+  const grantRow = f.db.prepare('SELECT scopes_json AS s FROM device_grants').get();
+  assert.deepEqual(JSON.parse(grantRow.s),
+    ['activity:read', 'activity:ingest', 'skills:read', 'skills:write']);
+});
+
+test('scope upgrade: a device id owned by another account is unapprovable', async t => {
+  // Given: someone else's device named in the pending code
+  const f = await fixture(t);
+  f.db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run('b', 'b@example.com', '', '', now, now);
+  f.db.prepare('INSERT INTO accounts(account_id,user_sub) VALUES(?,?)').run('b', 'b');
+  f.db.prepare('INSERT INTO devices(account_id,device_id,created_at) VALUES(?,?,?)')
+    .run('b', 'e'.repeat(43), now);
+  const issued = await createPendingCode(
+    { deviceLabel: '테스트 맥북', scopes: ['skills:read'], deviceId: 'e'.repeat(43) }, f.env);
+  // When / Then: the device guard fails and the request stays approvable by nobody
+  const outcome = await approvePendingCode(f.principal, { code: issued.userCode }, f.env);
+  assert.equal(outcome.kind, 'conflict');
+  assert.equal(f.db.prepare('SELECT count(*) AS n FROM device_grants').get().n, 0);
 });

@@ -7,6 +7,7 @@ import { previewSkill } from "../skills/plan.js";
 import { rollbackSkill } from "../skills/rollback.js";
 import { previewPrivatePublication } from "../skills/cloud-plan.js";
 import { pullPrivateSkill, pushPrivateSkill } from "../skills/transfer.js";
+import { ensurePrivateSkillAccess } from "../skills/cloud.js";
 
 class SkillsUsageError extends Error {
   readonly code = "usage";
@@ -43,7 +44,11 @@ export async function runPrivateSkills(
     switch (command) {
       case "push-preview": {
         const values = options(rest, ["--source-dir", "--plan"], [], ["--skill-id"]);
-        const plan = await previewPrivatePublication(resolveSkillarHome(env), {
+        const home = resolveSkillarHome(env);
+        // Preview reads the current head, so the same one browser approval that
+        // later publishes covers it — ask once, before any cloud call.
+        await ensurePrivateSkillAccess(home, { write: true, io, env });
+        const plan = await previewPrivatePublication(home, {
           sourceRoot: required(values, "--source-dir"), planPath: required(values, "--plan"),
           skillId: values.get("--skill-id") ?? randomUUID(),
         });
@@ -55,7 +60,11 @@ export async function runPrivateSkills(
       }
       case "push": {
         const values = options(rest, ["--plan"], ["--allow-private-upload"]);
-        const result = await pushPrivateSkill(resolveSkillarHome(env), required(values, "--plan"),
+        const home = resolveSkillarHome(env);
+        // Missing connection or skills scopes: one browser approval, then the
+        // publish continues — no grant file, no path pasting.
+        await ensurePrivateSkillAccess(home, { write: true, io, env });
+        const result = await pushPrivateSkill(home, required(values, "--plan"),
           values.has("--allow-private-upload"));
         io.out(JSON.stringify(result) + "\n");
         return 0;
@@ -63,7 +72,9 @@ export async function runPrivateSkills(
       case "pull": {
         const values = options(rest, ["--skill-id", "--output"], [], ["--version"]);
         const version = values.get("--version");
-        io.out(JSON.stringify(await pullPrivateSkill(resolveSkillarHome(env), {
+        const home = resolveSkillarHome(env);
+        await ensurePrivateSkillAccess(home, { write: false, io, env });
+        io.out(JSON.stringify(await pullPrivateSkill(home, {
           skillId: required(values, "--skill-id"), outputPath: required(values, "--output"),
           ...(version === undefined ? {} : { digest: version }),
         })) + "\n");

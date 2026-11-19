@@ -21,6 +21,10 @@ export const connectionSchema = z.strictObject({
   accountId: z.string().min(1), deviceId: z.string().min(1),
   generation: z.number().int().positive(), token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   expiresAt: z.number().int().positive(),
+  // Last scopes the server confirmed for this device; absent in files written
+  // before scopes were persisted, where the caller probes or assumes instead.
+  scopes: z.array(z.enum(["activity:read", "activity:ingest", "skills:read", "skills:write"]))
+    .min(1).optional(),
 });
 export type CloudConnection = z.infer<typeof connectionSchema>;
 
@@ -57,10 +61,14 @@ export function disconnectCloud(home: string): void {
 
 /** Connection exchanges a browser-issued grant; it never grants upload consent. */
 export async function connectCloud(
-  home: string, input: { readonly origin: string; readonly grant: string },
+  home: string, input: { readonly origin: string; readonly grant: string; readonly replaceDeviceId?: string },
   fetcher: typeof fetch = fetch,
 ): Promise<Omit<CloudConnection, "token">> {
-  if (readConnection(home) !== null) throw new CloudSyncError("already_connected");
+  const existing = readConnection(home);
+  if (existing !== null &&
+      (input.replaceDeviceId === undefined || existing.deviceId !== input.replaceDeviceId)) {
+    throw new CloudSyncError("already_connected");
+  }
   const exchange = new CloudHttp(input.origin, null, fetcher);
   const credential = z.strictObject({
     token: z.string().regex(/^[A-Za-z0-9_-]{43}$/), deviceId: z.string().min(1),
@@ -71,10 +79,14 @@ export async function connectCloud(
   const self = deviceSelfSchema.parse(await new CloudHttp(input.origin, credential.token, fetcher)
     .request("/v1/devices/self"));
   if (self.deviceId !== credential.deviceId) throw new CloudSyncError("device_identity_mismatch");
+  // A scope upgrade must land on the device it was approved for, nothing else.
+  if (input.replaceDeviceId !== undefined && credential.deviceId !== input.replaceDeviceId) {
+    throw new CloudSyncError("device_identity_mismatch");
+  }
   const connection = connectionSchema.parse({
     version: 1, instanceId: randomUUID(), origin: input.origin, accountId: self.accountId,
     deviceId: self.deviceId, generation: self.generation,
-    token: credential.token, expiresAt: credential.expiresAt,
+    token: credential.token, expiresAt: credential.expiresAt, scopes: [...self.scopes],
   });
   atomicCloudJson(home, "connection.json", connection);
   const { token: _secret, ...visible } = connection;

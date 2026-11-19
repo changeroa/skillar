@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { pkceChallenge, randomToken } from "./auth.ts";
+import { ActivityRequestError } from "./activity-body.ts";
 import { ACTIVITY_AUDIENCE, connectorScopeSchema } from "./activity-auth.ts";
 import type { ActivityEnv, BrowserPrincipal } from "./activity-auth.ts";
 import { consentSchema } from "../../shared/dist/activity-consent.js";
@@ -26,6 +27,10 @@ const CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const createSchema = z.strictObject({
   deviceLabel: z.string().min(1).max(120),
   scopes: z.array(connectorScopeSchema).min(1).max(4).readonly(),
+  // Set when the CLI asks to add scopes to a device it already owns; approval
+  // then reuses that device row instead of minting a new one. Ownership is
+  // verified against the approving account at approve time, never trusted here.
+  deviceId: z.string().min(1).max(512).optional(),
 });
 const pollSchema = z.strictObject({ pollToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/) });
 // The browser submits only the user's choice; the server builds the consent
@@ -81,10 +86,11 @@ export async function createPendingCode(input: unknown, env: ActivityEnv): Promi
   const pollToken = randomToken();
   const now = Math.floor(Date.now() / 1000);
   await env.ACCOUNTS.prepare(`INSERT INTO device_pending_codes
-    (code_hash,poll_hash,device_label,scopes_json,created_at,expires_at)
-    VALUES(?,?,?,?,?,?)`)
+    (code_hash,poll_hash,device_label,scopes_json,requested_device_id,created_at,expires_at)
+    VALUES(?,?,?,?,?,?,?)`)
     .bind(await pkceChallenge(code.replace("-", "")), await pkceChallenge(pollToken),
-      request.deviceLabel, JSON.stringify(request.scopes), now, now + PENDING_CODE_TTL_SECONDS)
+      request.deviceLabel, JSON.stringify(request.scopes), request.deviceId ?? null,
+      now, now + PENDING_CODE_TTL_SECONDS)
     .run();
   return {
     userCode: code, pollToken,
@@ -94,21 +100,27 @@ export async function createPendingCode(input: unknown, env: ActivityEnv): Promi
 
 export type PendingSummary = {
   readonly deviceLabel: string; readonly scopes: readonly string[]; readonly expiresAt: number;
+  /** True when the CLI asked to add scopes to a device it already owns. */
+  readonly upgrade: boolean;
 };
 
 export async function readPendingCode(code: string, env: ActivityEnv): Promise<PendingSummary | null> {
   const bare = normalizeCode(code);
   if (bare === null) return null;
   const row = await env.ACCOUNTS.prepare(`SELECT device_label AS deviceLabel,
-    scopes_json AS scopesJson, expires_at AS expiresAt FROM device_pending_codes
+    scopes_json AS scopesJson, requested_device_id AS requestedDeviceId, expires_at AS expiresAt
+    FROM device_pending_codes
     WHERE code_hash=? AND expires_at>? AND approved_at IS NULL AND failed_attempts<?`)
     .bind(await pkceChallenge(bare), Math.floor(Date.now() / 1000), MAX_FAILED_APPROVALS).first();
   if (row === null) return null;
-  const parsed = z.object({ deviceLabel: z.string(), scopesJson: z.string(), expiresAt: z.number() })
-    .parse(row);
+  const parsed = z.object({
+    deviceLabel: z.string(), scopesJson: z.string(),
+    requestedDeviceId: z.string().nullable(), expiresAt: z.number(),
+  }).parse(row);
   return {
     deviceLabel: parsed.deviceLabel,
     scopes: deviceScopes.parse(JSON.parse(parsed.scopesJson)),
+    upgrade: parsed.requestedDeviceId !== null,
     expiresAt: parsed.expiresAt,
   };
 }
@@ -144,14 +156,28 @@ export async function approvePendingCode(
   const hash = await pkceChallenge(bare);
   const now = Math.floor(Date.now() / 1000);
   const nowMs = Date.now();
-  const row = await env.ACCOUNTS.prepare(`SELECT scopes_json AS scopesJson FROM device_pending_codes
+  const row = await env.ACCOUNTS.prepare(`SELECT scopes_json AS scopesJson,
+    requested_device_id AS requestedDeviceId FROM device_pending_codes
     WHERE code_hash=? AND expires_at>? AND approved_at IS NULL AND failed_attempts<?`)
     .bind(hash, now, MAX_FAILED_APPROVALS).first();
   if (row === null) return { kind: "unknown" };
-  deviceScopes.parse(JSON.parse(z.object({ scopesJson: z.string() }).parse(row).scopesJson));
-  const deviceId = randomToken();
+  const pending = z.object({ scopesJson: z.string(), requestedDeviceId: z.string().nullable() }).parse(row);
+  deviceScopes.parse(JSON.parse(pending.scopesJson));
+  // Upgrade path: the CLI named a device it believes it owns. Ownership is
+  // proven by the devices-row guard inside the approving account's write, and
+  // upload consent is never changed by a scope upgrade — the approval page
+  // does not offer it, and a submitted one is a client error, not an attempt.
+  const upgrade = pending.requestedDeviceId !== null;
+  if (upgrade && request.consent !== undefined) throw new ActivityRequestError("consent_not_allowed");
+  const deviceId = pending.requestedDeviceId ?? randomToken();
   const live = [principal.accountId, principal.generation, principal.sessionId, now];
-  const statements = [
+  const updatePending = env.ACCOUNTS.prepare(`UPDATE device_pending_codes SET
+      account_id=?, session_id=?, device_id=?, approved_at=?
+      WHERE code_hash=? AND approved_at IS NULL AND expires_at>? AND failed_attempts<?
+      AND EXISTS (SELECT 1 FROM devices WHERE account_id=? AND device_id=? AND revoked_at IS NULL)`)
+      .bind(principal.accountId, principal.sessionId, deviceId, now,
+        hash, now, MAX_FAILED_APPROVALS, principal.accountId, deviceId);
+  const statements = upgrade ? [updatePending] : [
     // Conditional on the request still being approvable so a lost race inserts
     // nothing — the batch has no rollback, every statement guards itself.
     env.ACCOUNTS.prepare(`INSERT INTO devices(account_id,device_id,created_at)
@@ -159,12 +185,7 @@ export async function approvePendingCode(
       AND EXISTS (SELECT 1 FROM device_pending_codes
         WHERE code_hash=? AND approved_at IS NULL AND expires_at>? AND failed_attempts<?)`)
       .bind(principal.accountId, deviceId, now, ...live, hash, now, MAX_FAILED_APPROVALS),
-    env.ACCOUNTS.prepare(`UPDATE device_pending_codes SET
-      account_id=?, session_id=?, device_id=?, approved_at=?
-      WHERE code_hash=? AND approved_at IS NULL AND expires_at>? AND failed_attempts<?
-      AND EXISTS (SELECT 1 FROM devices WHERE account_id=? AND device_id=? AND revoked_at IS NULL)`)
-      .bind(principal.accountId, principal.sessionId, deviceId, now,
-        hash, now, MAX_FAILED_APPROVALS, principal.accountId, deviceId),
+    updatePending,
   ];
   // Pre-validation: a wrong consent version is a client error, not an attempt
   // against the code, so it is rejected before any write or counter change.
@@ -201,7 +222,8 @@ export async function approvePendingCode(
     await bumpFailedAttempts(env, hash);
     throw error;
   }
-  if (results[1]?.meta.changes !== 1 ||
+  const updateResult = upgrade ? results[0] : results[1];
+  if (updateResult?.meta.changes !== 1 ||
       (consentPayload !== null && results[2]?.meta.changes === 0)) {
     // Lost a race against another approver or the request turned unapprovable
     // between the read and the batch; nothing was written by statement 1.
