@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse } from "./json-config.js";
+import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 
 // Hook shape confirmed against https://cursor.com/docs/agent/hooks : hooks.json is { "version": 1, "hooks": { <event>: [{ "command": ... }] } }
 // and Cursor reloads hooks config files automatically. MCP servers live in ~/.cursor/mcp.json under mcpServers.
@@ -55,8 +55,11 @@ export const cursorPack: RuntimePack = {
     if (ctx.disableRemote && isRemoteEntry(servers.gisul, URL_KEYS)) {
       notes.push("Remote skillar MCP entry left enabled: Cursor's disable key is unverified, so disable it manually.");
     }
-    if (isRemoteEntry(servers.skillar, URL_KEYS)) return refuse(mcpPath, "remote_name_conflict", "The skillar entry is remote; resolve its registration before installing the local daemon");
-    servers[localServerName(servers)] = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
+    const remoteUrl = remoteEntryUrl(servers.skillar, URL_KEYS);
+    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+    // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
+    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) notes.push(REMOTE_ALREADY_REGISTERED);
+    else servers[localServerName(servers)] = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
     nextMcp.mcpServers = servers;
 
     if (hooksFile.obj.version !== undefined && hooksFile.obj.version !== 1) {

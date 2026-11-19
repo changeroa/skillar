@@ -1,6 +1,6 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
-import { localServerName } from "./json-config.js";
+import { localServerName, noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 import type { PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 
 export type PiPackSpec = {
@@ -98,17 +98,22 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
         return plan;
       }
       const servers: Record<string, unknown> = { ...(isObject(cfg.mcpServers) ? cfg.mcpServers : {}) };
-      if (isRemoteSkillar(servers.skillar)) {
-        plan.conflicts.push({ path: mcpPath, code: "remote_name_conflict", detail: "The skillar entry is remote; resolve it before installing the local daemon" });
-        return plan;
+      const remoteUrl = remoteEntryUrl(servers.skillar, ["url"]);
+      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+      if (remoteUrl === null && isRemoteSkillar(servers.skillar)) return noop(remoteConflictWarning("unparsed remote target"));
+      // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
+      if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
+        plan.notes.push(REMOTE_ALREADY_REGISTERED);
+      } else {
+        servers[localServerName(servers)] = { type: "http", url: `http://127.0.0.1:${ctx.port}/mcp`, headers: { Authorization: `Bearer ${ctx.token}` } };
       }
-      servers[localServerName(servers)] = { type: "http", url: `http://127.0.0.1:${ctx.port}/mcp`, headers: { Authorization: `Bearer ${ctx.token}` } };
       if (ctx.disableRemote && isRemoteSkillar(servers.gisul)) {
         servers.gisul = { ...(servers.gisul as Record<string, unknown>), enabled: false };
         plan.notes.push("legacy remote gisul entry set to enabled:false (original definition kept)");
       }
       const mcpAfter = JSON.stringify({ ...cfg, mcpServers: servers }, null, 2) + "\n";
-      plan.files.push({ path: mcpPath, before, after: mcpAfter, mode: 0o600 });
+      const mcpUnchanged = before !== null && JSON.stringify(JSON.parse(before)) === JSON.stringify({ ...cfg, mcpServers: servers });
+      if (!mcpUnchanged) plan.files.push({ path: mcpPath, before, after: mcpAfter, mode: 0o600 });
 
       const dir = extDir(agentDir);
       const source = join(ctx.packageRoot, "packs", spec.id, "extension");

@@ -1,6 +1,6 @@
 import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
 import { join, delimiter } from "node:path";
-import { localServerName } from "./json-config.js";
+import { localServerName, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
 
 type Env = NodeJS.ProcessEnv;
@@ -109,24 +109,34 @@ export const claudeCodePack: RuntimePack = {
     }
 
     let name: "skillar" | "gisool" = "skillar";
+    let remoteUrl: string | null = null;
     try {
       const servers = JSON.parse(readText(join(ctx.home, ".claude.json")) ?? "{}").mcpServers;
       if (isObj(servers)) {
         name = localServerName(servers);
-        if (isObj(servers.skillar) && typeof servers.skillar.url === "string" && !isLoopback(servers.skillar.url)) {
-          plan.conflicts.push({ path: join(ctx.home, ".claude.json"), code: "remote_name_conflict", detail: "Resolve the remote skillar registration before installing the local daemon" });
-          return plan;
+        remoteUrl = remoteEntryUrl(servers.skillar, ["url"]);
+        if (remoteUrl === null && isObj(servers.skillar) && JSON.stringify(servers.skillar).includes("mcp-remote")) {
+          remoteUrl = "unparsed remote target";
         }
       }
     } catch { /* Claude owns its registration file; the CLI will validate it. */ }
-    const argv = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", name,
-      `http://127.0.0.1:${ctx.port}/mcp`, "--header", `Authorization: Bearer ${ctx.token}`];
-    const shown = `claude mcp add --transport http --scope user ${name} http://127.0.0.1:${ctx.port}/mcp --header "Authorization: Bearer ${ctx.token}"`;
-    if (onPath("claude", ctx.env) && !(ctx.env.SKILLAR_NO_CLI ?? ctx.env.GISOOL_NO_CLI)) {
-      plan.commands.push({ argv, description: "Register the skillar MCP server with Claude Code (user scope)",
-        undo: { argv: ["claude", "mcp", "remove", "--scope", "user", name], description: "Remove the skillar MCP server" } });
+    // A different remote MCP holding the skillar name: hands off this runtime entirely.
+    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) {
+      return { files: [], commands: [], notes: [remoteConflictWarning(remoteUrl)], conflicts: [] };
+    }
+    // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
+    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
+      plan.notes.push(REMOTE_ALREADY_REGISTERED);
     } else {
-      plan.notes.push(`manual step: run ${shown}`);
+      const argv = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", name,
+        `http://127.0.0.1:${ctx.port}/mcp`, "--header", `Authorization: Bearer ${ctx.token}`];
+      const shown = `claude mcp add --transport http --scope user ${name} http://127.0.0.1:${ctx.port}/mcp --header "Authorization: Bearer ${ctx.token}"`;
+      if (onPath("claude", ctx.env) && !(ctx.env.SKILLAR_NO_CLI ?? ctx.env.GISOOL_NO_CLI)) {
+        plan.commands.push({ argv, description: "Register the skillar MCP server with Claude Code (user scope)",
+          undo: { argv: ["claude", "mcp", "remove", "--scope", "user", name], description: "Remove the skillar MCP server" } });
+      } else {
+        plan.notes.push(`manual step: run ${shown}`);
+      }
     }
     if (ctx.disableRemote && remoteRegistered(ctx.home)) {
       plan.notes.push("manual step: run claude mcp remove --scope user gisul");
