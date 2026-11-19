@@ -38,7 +38,7 @@ for (const name of [user.name, ""]) {
 }
 
 for (const state of ["loading", "failed", "none"]) {
-  test(`${state} source guidance precedes the first asset widget`, async t => {
+  test(`${state} source guidance is the only panel before a source choice`, async t => {
     // Given
     const held = Promise.withResolvers();
     t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
@@ -53,7 +53,7 @@ for (const state of ["loading", "failed", "none"]) {
     // Then
     const panels = all(container, node => node.localName === "section" &&
       ["dash-empty", "home-widgets"].includes(node.getAttribute("class")?.split(" ")[0]));
-    assert.deepEqual(panels.map(node => node.getAttribute("class").split(" ")[0]), ["dash-empty", "home-widgets"]);
+    assert.deepEqual(panels.map(node => node.getAttribute("class").split(" ")[0]), ["dash-empty"]);
   });
 }
 
@@ -108,18 +108,18 @@ test("selected-source refresh failure exposes retry and stale facts without losi
   assert.equal(all(container, node => node.getAttribute("data-stale") === "true").length, 0);
 });
 
-test("explicitly selected data exposes the distinct sessions heading required by C6", async t => {
+test("explicitly selected data mounts the embedded local views inside the snapshot panel", async t => {
   // Given
   globalThis.__t10Cloud = () => ({ mode: "cloud", dispose() {}, refresh() {} });
   t.mock.method(globalThis, "fetch", async url => url === routes.session ? Response.json({ user }) :
     url === routes.profiles ? Response.json(response([profile])) : Response.json({ devices: [] }));
   const { dom, container } = await mount(t, Dashboard, { signal });
   await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
-  assert.equal(all(container, node => node.id === "dash-data-title").length, 0);
+  assert.equal(all(container, node => node.id === "snapshot-title").length, 0);
   // When
   await act(() => buttonNamed(container, "기록 보기")[0].click());
-  // Then
-  assert.equal(all(container, node => node.localName === "h2" && node.id === "dash-data-title")[0]?.textContent, "세션");
+  // Then: the snapshot panel appears; the embedded local app labels its own views (세션/스킬)
+  assert.ok(all(container, node => node.localName === "h2" && node.id === "snapshot-title")[0]);
 });
 
 test("source loading transitions through failure and retry to explicit choice", async t => {

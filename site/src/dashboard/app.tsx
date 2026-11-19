@@ -12,7 +12,6 @@ import { PrivatePacks } from "./packs";
 import { DevicesSection } from "./devices";
 import { SnapshotSection, SourcesSection } from "./sources";
 import { HomeChecklist } from "./home-checklist";
-import { HomeWidgets } from "./home-widgets";
 import { loadDevices, PermissionSummary } from "./permission-summary";
 import { mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
@@ -139,7 +138,6 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
         </aside>}
         <div className="dash-activity">
           {selected === null && needsSourceGuidance && checklist}
-          {selected === null && <HomeWidgets signal={signal} devices={devices} onRetryDevices={reloadDevices} onUnauthorized={onUnauthorized} />}
           {selected === null && !needsSourceGuidance && checklist}
           {selected !== null && current !== null && (
             <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}
@@ -147,7 +145,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
                 <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
                   signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />
               }>
-              <h2 id="dash-data-title">세션</h2><LocalViews key={profileKey(selected)} embedded />
+              <LocalViews key={profileKey(selected)} embedded />
             </SnapshotSection>
           )}
         </div>
