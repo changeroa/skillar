@@ -1,4 +1,4 @@
-import {createRef, type RefObject} from "react";
+import {createRef, Fragment, type RefObject} from "react";
 import { useRef } from "react";
 import type { SessionSkillReportDto, TraceStep } from "../../../src/types.js";
 import { EVENT_ICON, Icon } from "../../components/icons";
@@ -94,6 +94,8 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
   const selected = route.event === undefined
     ? source.find(item => item.step.kind === "prompt")?.key ?? items[0]?.key
     : items.find(item => item.key === route.event)?.key;
+  // "읽은 뒤" 구분선: 마지막 스킬 읽기(load) 직후의 모든 활동을 시각적으로 구분한다.
+  const lastLoadKey = [...items].reverse().find(item => item.kind === "step" && item.step.kind === "load")?.key;
   const roving = useEventRoving(items.map(item => item.key), selected);
   const Heading = embedded ? "h3" : "h2";
   const TreeRoot = embedded ? "div" : "main";
@@ -104,9 +106,11 @@ export function EventConsole({ source, report, bounds, route, navigate, embedded
        <div id={`${prefix}-tree-panel`}>
         <div className="event-console__heading"><Heading>이벤트 순서</Heading><span className="pe-muted">{source.length}개{spans.length ? ` · 구간 ${spans.length}개` : ""}</span></div>
         <ol aria-label="세션 이벤트 순서" role="tree"
-          onKeyDown={roving.onKeyDown}>{items.map((item, index) => <EventRow key={item.key} item={item} selected={selected === item.key}
+          onKeyDown={roving.onKeyDown}>{items.map((item, index) => <Fragment key={item.key}><EventRow item={item} selected={selected === item.key}
           index={index + 1} count={items.length} active={roving.active === item.key} onFocus={() => roving.onFocus(item.key)}
-          narrow={narrow} bounds={bounds} trigger={triggerFor(item.key)} route={route} navigate={navigate} />)}</ol>
+          narrow={narrow} bounds={bounds} trigger={triggerFor(item.key)} route={route} navigate={navigate} />
+          {item.key === lastLoadKey && <li className="trace-after-read" role="separator" aria-label="읽은 뒤"><span className="trace-after-read__label">읽은 뒤</span></li>}
+          </Fragment>)}</ol>
         {!items.length && <p>이 세션에 수집된 이벤트가 없습니다.</p>}
        </div>
       </TreeRoot>

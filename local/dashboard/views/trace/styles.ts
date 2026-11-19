@@ -108,4 +108,8 @@ export const TRACE_CSS = `
   .cand__cov { text-align: right; }
   .cand__desc { white-space: normal; }
 }
+.trace-after-read{list-style:none;display:flex;align-items:center;gap:var(--s-3);margin:var(--s-2) 0;color:var(--ink-3);font-size:var(--fs-cap)}
+.trace-after-read::before,.trace-after-read::after{content:"";flex:1;border-top:1px dashed var(--line)}
+.trace-after-read__label{white-space:nowrap}
+
 `;

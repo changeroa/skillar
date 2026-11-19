@@ -10,10 +10,17 @@ import { firstPromptOf, formatCost, formatDuration, sessionBounds, traceCounts }
 const date = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 export function summaryFacts(steps: readonly TraceStep[]) {
   const reads = [...new Set(steps.flatMap(step => step.kind === "load" && typeof step.detail.uri === "string" ? [step.detail.uri] : []))];
+  // 읽은 스킬의 버전: load 이벤트의 manifestDigest를 URI별 첫 값으로 기억한다(칩의 @digest 표시).
+  const readDigests: Record<string, string> = {};
+  for (const step of steps) {
+    if (step.kind !== "load" || typeof step.detail.uri !== "string") continue;
+    const digest = step.detail.manifestDigest;
+    if (typeof digest === "string" && digest !== "" && readDigests[step.detail.uri] === undefined) readDigests[step.detail.uri] = digest;
+  }
   const models = steps.filter(step => step.kind === "llm_call");
   const costs = models.flatMap(step => typeof step.detail.costUsd === "number" ? [step.detail.costUsd] : []);
   const unmeasuredSearches = steps.filter(step => step.kind === "search" && step.detail.elapsedMs === undefined).length;
-  return { reads, modelCount: models.length, costCount: costs.length, cost: costs.reduce((sum, cost) => sum + cost, 0), unmeasuredSearches };
+  return { reads, readDigests, modelCount: models.length, costCount: costs.length, cost: costs.reduce((sum, cost) => sum + cost, 0), unmeasuredSearches };
 }
 
 export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref }: {
@@ -38,7 +45,13 @@ export function SessionSummary({ sessionId, steps, row, peek, embedded, backHref
       {line.map(fact => <div key={fact.id} data-fact={fact.id}><dt className={fact.hidden ? "sr-only" : undefined}>{fact.label}</dt>
         <dd {...("labelled" in fact ? { role: "img", "aria-label": fact.labelled, title: fact.labelled } : {})}>{fact.value}</dd></div>)}
     </dl>
-    {facts.reads.length > 0 && <div className="trace-summary__reads">{facts.reads.map(uri => <span className="pe-pill" key={uri} title={uri}><code>{skillName(uri)}</code></span>)}</div>}
+    {facts.reads.length > 0 && <div className="trace-summary__reads">{facts.reads.map(uri => {
+      const digest = facts.readDigests[uri];
+      const short = digest === undefined ? undefined : digest.replace(/^sha256:/, "").slice(0, 7);
+      return <span className="pe-pill" key={uri} title={digest === undefined ? uri : `${uri}\n버전 다이제스트 ${digest}`}>
+        <code>{skillName(uri)}</code>{short !== undefined && <code className="pe-pill__digest">@{short}</code>}
+      </span>;
+    })}</div>}
     {peek && <dl className="trace-summary__kv">
       <div><dt>시작</dt><dd>{bounds.startedAt === undefined ? "미측정" : date.format(bounds.startedAt)}</dd></div>
       <div><dt>이벤트</dt><dd>{counts.steps}개</dd></div>

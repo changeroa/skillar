@@ -8,6 +8,7 @@ import type { SkillarConfig, PackCtx, PackPlan, PackPlanFile, RuntimeId, Runtime
 import { assertPlatform } from "../version.js";
 import { type AppliedFile, WriterError, applyFiles, changedFiles, maskSecrets, removeEmptyDirs, restoreFiles, unifiedDiff, unparseable } from "./config-writer.js";
 import { readConnection } from "../sync/cloud-connection.js";
+import { dashboardUrl } from "./open.js";
 import { connectCloudDeviceFlow } from "../sync/cloud-pending.js";
 import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
@@ -253,6 +254,8 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
       io.out("나중에 `skillar sync connect`로 연결할 수 있습니다.\n");
     }
   }
+  // 마지막 줄: 로컬 대시보드 주소(토큰 포함, `skillar open`과 같은 값).
+  io.out(`dashboard: ${dashboardUrl(config.port, token)}\n`);
   return 0;
 }
 
