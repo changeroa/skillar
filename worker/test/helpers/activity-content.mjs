@@ -101,7 +101,7 @@ export async function fixture(t) {
       .bind(who.accountId, `${who.accountId}@example.com`).run();
     await accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES (?,?)")
       .bind(who.accountId, who.accountId).run();
-    await accounts.prepare("INSERT INTO devices VALUES (?,?,0,NULL)")
+    await accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)")
       .bind(who.accountId, who.deviceId).run();
     await db.prepare("INSERT INTO tenant_fences VALUES (?,?,'active')")
       .bind(who.accountId, who.generation).run();

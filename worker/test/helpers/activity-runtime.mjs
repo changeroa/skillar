@@ -153,7 +153,7 @@ export async function fixture(t) {
   }
   await accounts.prepare("INSERT INTO users VALUES ('account-a','a@example.com','','',0,0)").run();
   await accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES ('account-a','account-a')").run();
-  await accounts.prepare("INSERT INTO devices VALUES ('account-a','device-a',0,NULL)").run();
+  await accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES ('account-a','device-a',0,NULL)").run();
   await db.prepare("INSERT INTO tenant_fences VALUES ('account-a',1,'active')").run();
   const consent = async (value = grant()) => {
     await accounts.prepare(`INSERT INTO device_consents VALUES ('account-a','device-a',1,?,?,0)

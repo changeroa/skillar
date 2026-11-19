@@ -92,7 +92,7 @@ export async function fixture(t) {
       accounts.prepare("INSERT INTO users VALUES (?,?,'','',0,0)").bind(account, `${account}@example.com`),
       accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES (?,?)").bind(account, account),
       accounts.prepare("INSERT INTO sessions VALUES (?,?,?)").bind(who.sessionId, account, now / 1000 + 10000),
-      accounts.prepare("INSERT INTO devices VALUES (?,?,0,NULL)").bind(account, token.deviceId),
+      accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)").bind(account, token.deviceId),
       accounts.prepare("INSERT INTO api_tokens VALUES (?,?,?,?,?,?,1,?,NULL)")
         .bind(token.tokenHash, account, token.deviceId, JSON.stringify(token.scopes),
           token.issuer, "skillar:activity", now / 1000 + 10000),

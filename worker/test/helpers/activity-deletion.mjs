@@ -129,7 +129,7 @@ export async function fixture(t) {
       accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES(?,?)").bind(accountId, accountId),
       accounts.prepare("INSERT INTO sessions VALUES(?,?,?)")
         .bind(principal.sessionId, accountId, now / 1000 + 86400 * 90),
-      accounts.prepare("INSERT INTO devices VALUES(?,?,0,NULL)").bind(accountId, `device-${accountId}`),
+      accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)").bind(accountId, `device-${accountId}`),
     ]);
     await activity.prepare("INSERT INTO tenant_fences VALUES(?,1,'active')").bind(accountId).run();
     const { cookie } = await (await send("/test/cookie", { sub: accountId, sid: principal.sessionId })).json();

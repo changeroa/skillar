@@ -115,7 +115,7 @@ async function fixture(t) {
       .bind(who.accountId, who.accountId + "@example.com").run();
     await accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES (?,?)")
       .bind(who.accountId, who.accountId).run();
-    await accounts.prepare("INSERT INTO devices VALUES (?,?,0,NULL)").bind(who.accountId, who.deviceId).run();
+    await accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES (?,?,0,NULL)").bind(who.accountId, who.deviceId).run();
     await db.prepare("INSERT INTO tenant_fences VALUES (?,?,'active')").bind(who.accountId, who.generation).run();
     await accounts.prepare("INSERT INTO device_consents VALUES (?,?,?,1,?,0)")
       .bind(who.accountId, who.deviceId, who.generation, JSON.stringify({
@@ -383,7 +383,7 @@ test("foreign source domain cannot read or ACK another domain's command", async 
 test("another authorized device cannot observe or ACK the command", async t => {
   // Given two consented devices on the same account.
   const f = await fixture(t), { request, command } = await queued(f);
-  await f.accounts.prepare("INSERT INTO devices VALUES ('account-a','device-b',0,NULL)").run();
+  await f.accounts.prepare("INSERT INTO devices(account_id,device_id,created_at,revoked_at) VALUES ('account-a','device-b',0,NULL)").run();
   await f.accounts.prepare(`INSERT INTO device_consents SELECT account_id,'device-b',generation,version,
     json_set(consent_json,'$.scope.deviceId','device-b','$.scope.projectIds',json('["device:device-b"]')),granted_at_ms
     FROM device_consents WHERE device_id='device-a'`).run();
