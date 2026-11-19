@@ -64,6 +64,10 @@ jobs:
       - if: inputs.target == 'pages'
         run: npm test && npm run build
         working-directory: site
+      # Worker tests also import server/ (MCP SDK), matching scripts/verify.mjs.
+      - if: inputs.target != 'pages'
+        run: npm ci
+        working-directory: server
       - if: inputs.target != 'pages'
         run: npm ci && npm run typecheck && npm test
         working-directory: worker
