@@ -244,6 +244,7 @@ test("bootstrap reconciles the final upload after head adoption and ignores the 
   older.resolve(Response.json(held.status));
   await ui.act(async () => { await Promise.allSettled(initialReads); });
   // Then: no second upload or manual refresh is needed, even when R arrives last.
-  assert.ok(h.root.textContent.includes(latest.firstPrompt));
-  assert.ok(!h.root.textContent.includes(previous.firstPrompt));
+  // 호스팅 세션 표는 식별 열(시작/기기/읽은 스킬)만 남겨 요청문을 렌더하지 않으므로 행 링크의 세션 id로 확인한다.
+  assert.ok(h.root.querySelector('a[href*="latest-upload"]') !== null);
+  assert.ok(h.root.querySelector(`a[href*="${previous.id}"]`) === null);
 });
