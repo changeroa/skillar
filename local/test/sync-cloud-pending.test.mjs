@@ -192,3 +192,128 @@ test("offer connect failure keeps install success; explicit --connect failure re
     assert.ok(lines.some(l => l.includes("cloud connect failed")));
   }
 });
+
+test("publish approval: fresh device gets skills scopes; upgrade reuses the same device", { timeout: 30000 }, async t => {
+  const { ensurePrivateSkillAccess } = await distImport("skills/cloud.js");
+  const approveFromLines = async (f, lines) => {
+    let codeLine;
+    for (let i = 0; i < 2000 && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
+      await new Promise(r => setTimeout(r, 5));
+    }
+    assert.ok(codeLine !== undefined, "flow prints the user code");
+    const code = codeLine.split(":")[1].trim();
+    const approved = await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+      method: "POST",
+      headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    }), f.env);
+    assert.equal(approved.status, 200);
+    return code;
+  };
+  // Fresh device: pull needs the read scope only
+  {
+    const f = await fixture(t);
+    const home = join(f.dir, ".skillar");
+    const lines = [];
+    const io = { out: s => lines.push(s), err: () => {} };
+    const run = ensurePrivateSkillAccess(home, {
+      write: false, open: false, io, fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+    });
+    await approveFromLines(f, lines);
+    await run;
+    const connection = readConnection(home);
+    assert.deepEqual(connection.scopes, ["skills:read"]);
+    assert.ok(lines.some(l => l.includes("이 링크를 열어 승인하세요")));
+  }
+  // Connected device (activity scopes): push asks for the union on the same device
+  {
+    const f = await fixture(t);
+    const home = join(f.dir, ".skillar");
+    const lines = [];
+    const io = { out: s => lines.push(s), err: () => {} };
+    const connect = connectCloudDeviceFlow(home, {
+      origin: "https://skillar.sh", open: false, io,
+      fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+    });
+    const firstCode = await approveFromLines(f, lines);
+    await connect;
+    const before = readConnection(home);
+    assert.deepEqual(before.scopes, ["activity:read", "activity:ingest"]);
+    const devicesBefore = f.accountsDb.prepare("SELECT count(*) AS n FROM devices").get().n;
+    // When: publish needs more than the device holds
+    const upgrade = ensurePrivateSkillAccess(home, {
+      write: true, open: false, io, fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+    });
+    let upgradeLine;
+    for (let i = 0; i < 2000 && (upgradeLine = lines.findLast(l => l.includes("연결 코드:") && !l.includes(firstCode))) === undefined; i++) {
+      await new Promise(r => setTimeout(r, 5));
+    }
+    assert.ok(upgradeLine !== undefined, "upgrade flow prints its own code");
+    await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+      method: "POST",
+      headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+      body: JSON.stringify({ code: upgradeLine.split(":")[1].trim() }),
+    }), f.env);
+    await upgrade;
+    // Then: same device, union scopes, one grant per approval
+    const after = readConnection(home);
+    assert.equal(after.deviceId, before.deviceId);
+    assert.deepEqual(after.scopes, ["activity:read", "activity:ingest", "skills:read", "skills:write"]);
+    assert.equal(f.accountsDb.prepare("SELECT count(*) AS n FROM devices").get().n, devicesBefore);
+    assert.ok(lines.some(l => l.includes("권한을 추가합니다")));
+    // And: with the scopes in place the ensure call is a no-op
+    const pendingBefore = f.accountsDb.prepare("SELECT count(*) AS n FROM device_pending_codes").get().n;
+    await ensurePrivateSkillAccess(home, {
+      write: true, open: false, io, fetcher: f.fetcher, wait: async () => {},
+    });
+    assert.equal(f.accountsDb.prepare("SELECT count(*) AS n FROM device_pending_codes").get().n, pendingBefore);
+  }
+});
+
+test("publish approval: legacy connection file without scopes probes device-self", { timeout: 30000 }, async t => {
+  const { ensurePrivateSkillAccess } = await distImport("skills/cloud.js");
+  const { readFileSync, writeFileSync } = await import("node:fs");
+  const f = await fixture(t);
+  const home = join(f.dir, ".skillar");
+  const lines = [];
+  const io = { out: s => lines.push(s), err: () => {} };
+  const connect = connectCloudDeviceFlow(home, {
+    origin: "https://skillar.sh", open: false, io,
+    fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+  });
+  let codeLine;
+  for (let i = 0; i < 2000 && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
+    await new Promise(r => setTimeout(r, 5));
+  }
+  const firstCode = codeLine.split(":")[1].trim();
+  await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+    method: "POST",
+    headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+    body: JSON.stringify({ code: firstCode }),
+  }), f.env);
+  await connect;
+  // Given: a legacy file where the scopes field is absent
+  const path = join(home, "cloud", "connection.json");
+  const legacy = JSON.parse(readFileSync(path, "utf8"));
+  delete legacy.scopes;
+  writeFileSync(path, JSON.stringify(legacy));
+  // When: publish asks for more — the probe must recover the activity scopes
+  const upgrade = ensurePrivateSkillAccess(home, {
+    write: true, open: false, io, fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+  });
+  let upgradeLine;
+  for (let i = 0; i < 2000 && (upgradeLine = lines.findLast(l => l.includes("연결 코드:") && !l.includes(firstCode))) === undefined; i++) {
+    await new Promise(r => setTimeout(r, 5));
+  }
+  const secondCode = upgradeLine.split(":")[1].trim();
+  await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+    method: "POST",
+    headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+    body: JSON.stringify({ code: secondCode }),
+  }), f.env);
+  await upgrade;
+  // Then: the union kept the probed activity scopes and landed on the same device
+  const after = readConnection(home);
+  assert.equal(after.deviceId, legacy.deviceId);
+  assert.deepEqual(after.scopes, ["activity:read", "activity:ingest", "skills:read", "skills:write"]);
+});

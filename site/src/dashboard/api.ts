@@ -37,7 +37,8 @@ const grantSchema = z.object({
 });
 const revokedSchema = z.object({ revoked: z.literal(true) });
 const pendingSummarySchema = z.object({
-  deviceLabel: z.string().min(1), scopes: z.array(z.string()).min(1), expiresAtMs: z.number().int(),
+  deviceLabel: z.string().min(1), scopes: z.array(z.string()).min(1),
+  upgrade: z.boolean().optional(), expiresAtMs: z.number().int(),
 });
 export type PendingSummary = z.infer<typeof pendingSummarySchema>;
 const errorSchema = z.object({ error: z.string().min(1).max(100) });

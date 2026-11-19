@@ -12,6 +12,9 @@ import type { CloudConnection } from "./cloud-connection.js";
 
 /** The CLI asks for exactly these scopes; the approval page shows them for comparison. */
 export const PENDING_CONNECT_SCOPES = ["activity:read", "activity:ingest"] as const;
+/** Private-skill read needs only the read scope; publishing adds the write scope. */
+export const PENDING_SKILLS_READ_SCOPES = ["skills:read"] as const;
+export const PENDING_SKILLS_WRITE_SCOPES = ["skills:read", "skills:write"] as const;
 
 const issueSchema = z.strictObject({
   userCode: z.string().min(8).max(16), pollToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
@@ -37,12 +40,15 @@ export function defaultDeviceLabel(): string {
 
 export async function createPendingConnect(
   origin: string,
-  input: { readonly deviceLabel: string; readonly scopes: readonly string[] },
+  input: { readonly deviceLabel: string; readonly scopes: readonly string[]; readonly deviceId?: string },
   fetcher: typeof fetch = fetch,
 ): Promise<PendingConnectIssue> {
   const http = new CloudHttp(origin, null, fetcher);
   return issueSchema.parse(await http.request("/v1/devices/pending", {
-    body: JSON.stringify({ deviceLabel: input.deviceLabel, scopes: [...input.scopes] }),
+    body: JSON.stringify({
+      deviceLabel: input.deviceLabel, scopes: [...input.scopes],
+      ...(input.deviceId === undefined ? {} : { deviceId: input.deviceId }),
+    }),
   }));
 }
 
@@ -134,6 +140,9 @@ export async function connectCloudDeviceFlow(
   options: {
     readonly origin: string;
     readonly deviceLabel?: string;
+    readonly scopes?: readonly string[];
+    /** Set to add scopes to this already-connected device instead of a fresh connect. */
+    readonly upgradeDeviceId?: string;
     readonly uploadIntent?: boolean;
     readonly open?: boolean;
     readonly env?: NodeJS.ProcessEnv;
@@ -142,9 +151,13 @@ export async function connectCloudDeviceFlow(
     readonly wait?: (ms: number) => Promise<void>;
   },
 ): Promise<Omit<CloudConnection, "token">> {
-  if (readConnection(home) !== null) throw new CloudSyncError("already_connected");
+  if (options.upgradeDeviceId === undefined && readConnection(home) !== null) {
+    throw new CloudSyncError("already_connected");
+  }
   const issue = await createPendingConnect(options.origin, {
-    deviceLabel: options.deviceLabel ?? defaultDeviceLabel(), scopes: PENDING_CONNECT_SCOPES,
+    deviceLabel: options.deviceLabel ?? defaultDeviceLabel(),
+    scopes: options.scopes ?? PENDING_CONNECT_SCOPES,
+    ...(options.upgradeDeviceId === undefined ? {} : { deviceId: options.upgradeDeviceId }),
   }, options.fetcher);
   const url = pendingApproveUrl(options.origin, issue.userCode);
   const io = options.io;
@@ -163,6 +176,7 @@ export async function connectCloudDeviceFlow(
   });
   const connected = await connectCloud(home, {
     origin: options.origin, grant: issued.grant,
+    ...(options.upgradeDeviceId === undefined ? {} : { replaceDeviceId: options.upgradeDeviceId }),
   }, options.fetcher);
   markConsentNoticed(home, connected.deviceId);
   return connected;

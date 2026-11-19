@@ -21,6 +21,17 @@ const MODES: readonly { readonly value: Mode; readonly label: string; readonly d
   { value: "managed-content", label: "메타데이터와 전체 내용", detail: "아래 일곱 가지 범주를 모두 업로드합니다. 사이트의 보고서 전체를 쓰려면 필요하지만, 업로드 자체는 선택 사항입니다." },
 ];
 
+/** 요청 권한을 사람이 읽는 말로. 업로드 동의(아래 라디오)와는 별개의 기기 권한이다. */
+const SCOPE_COPY: Readonly<Record<string, { readonly label: string; readonly detail: (upgrade: boolean) => string }>> = {
+  "activity:read": { label: "활동 기록 읽기", detail: () => "이 기기가 내 활동 기록과 대시보드 데이터를 읽습니다." },
+  // upgrade에는 동의 선택이 없으므로(기존 동의 유지) 안내도 그 상태에 맞춘다.
+  "activity:ingest": { label: "활동 기록 보내기", detail: upgrade => upgrade
+    ? "이 기기의 기존 업로드 동의가 그대로 적용됩니다."
+    : "이 기기가 활동 기록을 보낼 수 있는 경로입니다. 실제 업로드는 아래 동의를 켤 때만 시작됩니다." },
+  "skills:read": { label: "비공개 스킬 읽기", detail: () => "이 기기가 내 비공개 스킬을 내려받습니다." },
+  "skills:write": { label: "비공개 스킬 게시", detail: () => "이 기기가 내 비공개 스킬을 올립니다. 게시할 때마다 CLI에서 명시적으로 확인합니다." },
+};
+
 function formatExpires(ms: number): string {
   return new Date(ms).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -108,10 +119,24 @@ export function PendingApproval({ code }: { readonly code: string }) {
       <dl className="pending-summary">
         <div><dt>연결 계정</dt><dd>{account}</dd></div>
         <div><dt>기기</dt><dd>{summary.deviceLabel}</dd></div>
-        <div><dt>요청 권한</dt><dd>{summary.scopes.join(", ")}</dd></div>
+        <div><dt>요청 권한</dt><dd>
+          <ul className="pending-scopes">
+            {summary.scopes.map(scope => (
+              <li key={scope}>
+                <strong>{SCOPE_COPY[scope]?.label ?? scope}</strong>
+                {SCOPE_COPY[scope] !== undefined &&
+                  <span className="choice__detail">{" — "}{SCOPE_COPY[scope].detail(summary.upgrade === true)}</span>}
+              </li>
+            ))}
+          </ul>
+        </dd></div>
         <div><dt>요청 만료</dt><dd>{formatExpires(summary.expiresAtMs)}까지</dd></div>
       </dl>
+      {summary.upgrade === true && (
+        <p className="note">이미 연결된 기기입니다. 목록은 승인 후 이 기기가 가지는 전체 권한이며, 아직 없는 권한만 추가됩니다. 업로드 동의는 바뀌지 않습니다.</p>
+      )}
       <form className="consent" onSubmit={submit}>
+        {summary.upgrade !== true && summary.scopes.includes("activity:ingest") && (
         <fieldset className="consent__group" disabled={busy}>
           <legend>이 기기가 업로드할 수 있는 것</legend>
           {MODES.map(choice => (
@@ -140,8 +165,9 @@ export function PendingApproval({ code }: { readonly code: string }) {
             </label>
           )}
         </fieldset>
+        )}
         <button className="button button--primary" type="submit" disabled={busy || managedBlocked}>
-          {busy ? "승인하는 중…" : "연결 승인"}
+          {busy ? "승인하는 중…" : summary.upgrade === true ? "권한 추가 승인" : "연결 승인"}
         </button>
       </form>
     </section>

@@ -195,8 +195,11 @@ export function DevicesSection({ devices, ingestEnabled, origin, settled, messag
   return (
     <section className="panel" aria-labelledby="devices-title">
       <h2 id="devices-title">기기와 동의</h2>
-      <p className="account-lead">각 기기는 일회성 연결 승인으로 연결되며 로컬 전용으로 시작합니다. 업로드는 기기 행의 토글 또는 세부 설정에서 해당 기기의 동의를 저장한 뒤에만 시작됩니다. 업로드 끄기와 기기 연결 해제는 별개의 작업입니다.</p>
-      <ConnectDevice origin={origin} {...common} />
+      <p className="account-lead">기기 연결은 CLI가 띄운 요청을 이 페이지에서 승인하는 방식이 기본입니다(<code>skillar sync connect</code> 또는 <code>skillar skills push</code> 실행 시 안내). 업로드는 기기 행의 토글 또는 세부 설정에서 해당 기기의 동의를 저장한 뒤에만 시작됩니다. 업로드 끄기와 기기 연결 해제는 별개의 작업입니다.</p>
+      <details className="connect-advanced">
+        <summary>고급: 일회성 파일로 연결(구 방식)</summary>
+        <ConnectDevice origin={origin} {...common} />
+      </details>
       {message !== "" && <p className="note" role="status">{message}</p>}
       {(() => {
         // 해제된 기기는 화면에 보이지 않는다(서버 응답·감사 기록은 그대로). 연결 화면(PR#125) 및
