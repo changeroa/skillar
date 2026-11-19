@@ -41,14 +41,19 @@
     <header class="shell header app-topbar">
       <a class="wordmark" href="/" aria-label="skillar 홈"><img class="wordmark-light" src="/wordmark-light.svg" width="120" height="24" alt=""><img class="wordmark-dark" src="/wordmark-dark.svg" width="120" height="24" alt=""></a>
       <nav class="app-breadcrumb" aria-label="현재 위치"><details><summary>설정</summary><div><a href="/dashboard/">대시보드</a><a href="/skills/">스킬</a><a href="/connections/">연결</a><a href="/login/">계정</a></div></details><span aria-hidden="true">›</span><span>연결</span></nav>
-      <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command">이동… <kbd>⌘K</kbd></button>
-      <label class="theme-label">테마
-        <select id="theme"><option value="system">시스템</option><option value="light">라이트</option><option value="dark">다크</option></select>
-      </label>
+      <button id="app-jump" class="button secondary app-jump" type="button" aria-haspopup="dialog" aria-controls="app-command" aria-label="이동…" title="이동…"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg> <kbd>⌘K</kbd></button>
+      <div class="theme-label theme-picker">
+        <button id="theme" class="theme-picker__button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" aria-label="테마 선택" title="테마 선택"></button>
+        <div id="theme-menu" class="theme-picker__menu" role="menu" aria-label="테마" hidden>
+          <button type="button" role="menuitemradio" data-theme-value="system"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>시스템</button>
+          <button type="button" role="menuitemradio" data-theme-value="light"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>라이트</button>
+          <button type="button" role="menuitemradio" data-theme-value="dark"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>다크</button>
+        </div>
+      </div>
       <button id="app-menu" class="app-menu" type="button" aria-label="메뉴 열기" aria-controls="app-drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>메뉴</button>
       <aside id="app-navigation" class="app-navigation">
-        <nav aria-label="주요 메뉴"><a href="/skills/?tab=evidence#/sessions">세션</a><a href="/skills/">스킬</a><a href="/connections/" aria-current="page">연결</a></nav>
-        <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/">계정</a></nav><div id="sidebar-account" data-shell-account hidden><div class="account-user"><div><p id="user-name" class="account-name"></p><p id="user-email" class="account-email"></p></div></div><form method="post" action="/auth/logout"><button class="button secondary" type="submit">로그아웃</button></form></div></div>
+        <nav aria-label="주요 메뉴"><a href="/skills/?tab=evidence#/sessions"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>세션</a><a href="/skills/"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>스킬</a><a href="/connections/" aria-current="page"><svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>연결</a></nav>
+        <div class="app-account"><nav aria-label="계정 메뉴"><a href="/login/">계정</a></nav><div id="sidebar-account" data-shell-account hidden><div class="account-user"><div><p id="user-name" class="account-name"></p><p id="user-email" class="account-email"></p></div></div><form method="post" action="/auth/logout"><button class="button secondary" type="submit"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>로그아웃</button></form></div></div>
       </aside>
       <dialog id="app-drawer" class="app-drawer" aria-label="주요 탐색">
         <div class="app-navigation__title"><strong>탐색</strong><button id="app-menu-close" class="app-menu-close" type="button">닫기</button></div>
@@ -79,9 +84,9 @@
           <section><h2>3 · 업로드 동의</h2><a class="button secondary" href="#connection-list">기기별 동의 확인</a><p class="note">기기를 선택하면 동의를 확인·변경합니다.</p></section>
         </div>
         <section class="panel" aria-labelledby="endpoint-title">
-          <div class="panel__head"><h2 id="endpoint-title">MCP 연결 명령</h2><button class="button secondary" type="button" data-copy-command="#mcp-command">명령 복사</button></div>
+          <div class="panel__head"><h2 id="endpoint-title">MCP 연결 명령</h2><button class="button secondary icon-button" type="button" data-copy-command="#mcp-command" aria-label="명령 복사" title="명령 복사"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button></div>
           <pre id="mcp-command" class="command">claude mcp add --transport http skillar <span data-resource></span></pre>
-          <details class="connections-help"><summary>OAuth 연결 안내와 클라이언트 설정</summary>
+          <details class="connections-help"><summary><svg class="disclosure" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>OAuth 연결 안내와 클라이언트 설정</summary>
           <p class="account-lead">아래 주소를 에이전트의 원격 HTTP MCP 서버로 추가하세요. 에이전트가 브라우저에서 skillar 승인 화면을 열면 Google로 로그인하고 읽기를 허용합니다. 이곳에서 인증 정보를 입력하거나 복사하지 않습니다. 브라우저 로그인 쿠키와 기기 연결 토큰은 MCP 인증 정보가 아닙니다.</p>
           <dl class="account-status connections__facts">
             <div><dt>서버 주소</dt><dd><code id="resource" data-resource></code></dd></div>
@@ -107,7 +112,7 @@
           <p id="connections-empty" class="note" hidden></p>
           <div id="connection-list"></div>
         </section>
-        <details class="connections-token-form"><summary>개인 액세스 토큰 만들기</summary>
+        <details class="connections-token-form"><summary><svg class="disclosure" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>개인 액세스 토큰 만들기</summary>
         <section class="panel" aria-labelledby="pat-title">
           <div class="panel__head"><h2 id="pat-title">개인 액세스 토큰 만들기</h2></div>
           <p class="account-lead">브라우저를 열 수 없는 에이전트를 위한 토큰입니다. 생성 직후 한 번만 표시되며, skillar는 해시만 저장하므로 다시 볼 수 없습니다. 선택한 기간(최대 30일) 후 만료되며 아래에서 언제든 해제할 수 있습니다.</p>

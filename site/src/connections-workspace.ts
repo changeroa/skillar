@@ -9,6 +9,7 @@ import { describeConsent } from "./dashboard/consent";
 import { DataTable, FacetPanel, KeyValueGrid, PeekPanel, Pill, Skeleton, usePeekSelection } from "./ui";
 import type { TableColumn, TableSort } from "./ui";
 import { KST_TIME_ZONE } from "./time.ts";
+import { iconEl } from "./icon";
 
 type Row = {
   readonly id: string; readonly name: string; readonly kind: string;
@@ -113,8 +114,15 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
           if (event.currentTarget instanceof HTMLElement) setOpener(event.currentTarget);
           select(row.id);
         } }, row.name) },
-    { id: "kind", label: "종류", value: row => row.kind },
-    { id: "status", label: "상태", value: row => row.status, render: row => h(Pill, null, row.status) },
+    { id: "kind", label: "종류", value: row => row.kind, render: row =>
+      h("span", { className: "kind-badge" },
+        iconEl(row.kind === "개인 토큰" ? "key-round" : row.kind === "OAuth" ? "shield-check" : "monitor"),
+        h("span", { className: "kind-badge__text" }, row.kind)) },
+    { id: "status", label: "상태", value: row => row.status, render: row =>
+      row.status === "활성" || row.status === "해제됨"
+        ? h("span", { className: `status-badge status-badge--${row.status === "활성" ? "active" : "revoked"}` },
+            iconEl(row.status === "활성" ? "circle-check" : "circle-x"), h("span", { className: "status-badge__text" }, row.status))
+        : h(Pill, null, row.status) },
     { id: "scope", label: "범위", value: row => row.scope },
     { id: "created", label: "생성일", value: row => row.created, render: row => date(row.created) },
   ];
@@ -125,8 +133,10 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
   return h("div", null,
     h("div", { className: "connections-toolbar" },
       h("h2", { id: "connections-title" }, "토큰 / 기기"),
-      h("label", { className: "connections-search" }, "연결 검색",
-        h("input", { type: "search", value: view.q, onInput: event => change({ ...view, q: event.currentTarget.value }) })),
+      h("label", { className: "connections-search" }, h("span", { className: "sr-only" }, "연결 검색"),
+        h("span", { className: "connections-search__box" }, iconEl("search"),
+          h("input", { type: "search", placeholder: "연결 검색", value: view.q,
+            onInput: event => change({ ...view, q: event.currentTarget.value }) }))),
       h("button", { type: "button", id: "connections-show-revoked", className: "button secondary",
         "aria-pressed": view.showRevoked, disabled: !countKnown,
         onClick: () => change({ ...view, showRevoked: !view.showRevoked, status: view.showRevoked ? ["활성"] : [] }),
@@ -137,7 +147,7 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
     busy && h(Skeleton, { label: "연결 목록을 불러오는 중", rows: 2 }),
     !busy && h("div", { className: "connections-grid" },
       h("details", { className: "connections-filters" },
-        h("summary", null, "필터"),
+        h("summary", null, iconEl("chevron-right", 16, "icon disclosure"), iconEl("funnel"), "필터"),
         h(FacetPanel, { title: "연결 필터", scope: countKnown ? `받은 전체 목록 ${rows.length}개 기준` : "일부 목록을 확인하지 못했습니다.",
           groups: [
             { id: "kind", label: "종류", values: kinds.map(label => ({ id: label, label, count: rows.filter(row => row.kind === label).length })) },
@@ -149,7 +159,8 @@ export function ConnectionsWorkspace({ model, operationMessage, onUnauthorized }
         rows: filtered, columns, rowId: row => row.id, sort: view.sort, onSort: sort => change({ ...view, sort }) })),
     countKnown && rows.length === 0 && h("p", { className: "ui-empty" },
       "아직 연결이 없습니다. ", h("a", { className: "button secondary", href: "#endpoint-title" }, "MCP 설정으로 연결하기")),
-    h("details", { className: "connections-pairing" }, h("summary", null, "새 기기 연결"),
+    h("details", { className: "connections-pairing" },
+      h("summary", null, iconEl("chevron-right", 16, "icon disclosure"), iconEl("plus"), "새 기기 연결"),
       h(ConnectDevice, { ...common, origin: location.origin })),
     selected !== null && (opener !== null || !loading) && h(PeekPanel, {
       children: null,

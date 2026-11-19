@@ -24,7 +24,7 @@ export function TimePeriodSelect({ label = "기간", options, value, onChange, d
   readonly onChange: (value: string) => void; readonly disabled?: boolean; readonly icon?: ControlIcon;
   readonly hideLabel?: boolean;
 }) {
-  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled} icon={icon} hideLabel={hideLabel}
+  return <div className="lf-time-period"><Select label={label} options={options} value={value} disabled={disabled} {...(icon !== undefined ? { icon } : {})} hideLabel={hideLabel}
     onChange={event => onChange(event.currentTarget.value)} /></div>;
 }
 

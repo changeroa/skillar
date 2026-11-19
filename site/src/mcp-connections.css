@@ -74,3 +74,24 @@
   .token { padding: var(--s3); }
   .account-main > #retry, .pat-form__actions .button, .token__actions .button, .connection__actions .button { width: 100%; justify-content: center; }
 }
+
+/* icon-swap: 상태·종류 배지 아이콘, 검색 입력 아이콘, disclosure chevron */
+.status-badge, .kind-badge { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.status-badge .icon, .kind-badge .icon { flex:none; }
+.status-badge--active { color:var(--color-text-success, #23603B); }
+.status-badge--revoked { color:var(--lf-muted-foreground, #565C51); }
+.connections-search__box { display:inline-flex; align-items:center; gap:6px; padding-inline-start:10px; border:1px solid var(--lf-border); border-radius:var(--lf-radius-md); background:var(--lf-background); color:var(--lf-muted-foreground); }
+.connections-search__box:focus-within { outline:var(--lf-focus-width,2px) solid var(--lf-ring, currentColor); outline-offset:1px; }
+.connections-search__box .icon { flex:none; }
+.connections-search__box input { border:0; background:transparent; min-height:42px; color:var(--lf-foreground); outline:none; }
+details > summary .disclosure { transition:transform .12s ease; }
+details[open] > summary .disclosure { transform:rotate(90deg); }
+details > summary { list-style:none; }
+details > summary::-webkit-details-marker { display:none; }
+details > summary .icon { vertical-align:-3px; margin-right:4px; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+@media (max-width: 720px) {
+  /* 모바일에서는 상태·종류 열을 아이콘만으로 표시(텍스트는 스크린리더에 남긴다) */
+  .status-badge__text, .kind-badge__text { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .status-badge, .kind-badge { gap:0; }
+}
