@@ -2,6 +2,7 @@ import { accessSync, constants, existsSync, readdirSync, readFileSync, realpathS
 import { join, delimiter, resolve } from "node:path";
 import { resolveSkillarHome } from "../config.js";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
+import { noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 
 type Env = NodeJS.ProcessEnv;
 const BEGIN = "# >>> skillar managed";
@@ -41,7 +42,24 @@ function splitManaged(text: string): { outside: string; start: number; end: numb
 }
 
 const OTEL_RE = /^\s*(\[\[?\s*otel\s*(\]|\.)|otel\s*\.)/m;
-const SKILLAR_TABLE_RE = /^\s*\[\s*mcp_servers\.(?:skillar|gisool)\s*\]/m;
+const LOOPBACK_URL_RE = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:|\/|$)/;
+
+/** Locates an unmanaged [mcp_servers.skillar]/[mcp_servers.gisool] table and its body. */
+function skillarTable(text: string): { start: number; end: number; body: string } | null {
+  const m = /^\[\s*mcp_servers\.(?:skillar|gisool)\s*\][^\n]*\n?/m.exec(text);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  const next = /^\s*\[/m.exec(text.slice(start));
+  const end = next ? start + next.index : text.length;
+  return { start: m.index, end, body: text.slice(start, end) };
+}
+
+/** Remote MCP URL an unmanaged skillar table points at (url key or mcp-remote argv), normalized; null when local/absent. */
+function skillarTableRemoteUrl(body: string): string | null {
+  const url = /^\s*url\s*=\s*"([^"]*)"/m.exec(body)?.[1] ?? (/mcp-remote/.test(body) ? /https?:\/\/[^"\s\\]+/.exec(body)?.[0] : undefined);
+  if (url === undefined || LOOPBACK_URL_RE.test(url)) return null;
+  return url.replace(/\/+$/, "");
+}
 
 /** Returns the retired hosted [mcp_servers.gisul] table, distinct from the local daemon. */
 function legacyRemoteTable(text: string): { start: number; end: number; body: string } | null {
@@ -100,6 +118,14 @@ function block(ctx: PackCtx): string {
     .replaceAll("{{PORT}}", String(ctx.port)).replaceAll("{{TOKEN}}", tomlEsc(ctx.token));
 }
 
+/** Managed block without the local [mcp_servers.skillar] registration, for configs that keep the hosted one. */
+function captureOnlyBlock(ctx: PackCtx): string {
+  const full = block(ctx);
+  const start = full.indexOf("[mcp_servers.skillar]");
+  const end = full.indexOf("[otel]");
+  return full.slice(0, start) + full.slice(end);
+}
+
 export const codexPack: RuntimePack = {
   id: "codex",
   async detect(ctx) {
@@ -119,13 +145,25 @@ export const codexPack: RuntimePack = {
     const outside = managed ? managed.outside : text;
     if (OTEL_RE.test(outside)) {
       plan.conflicts.push({ path, code: "unmanaged_otel", detail: "config.toml already has an unmanaged [otel] table or otel.* keys; refusing to edit" });
+      return plan;
     }
-    if (SKILLAR_TABLE_RE.test(outside)) {
-      plan.conflicts.push({ path, code: "unmanaged_skillar_mcp", detail: "config.toml already has an unmanaged [mcp_servers.skillar] table" });
+    let keepRemoteRegistration = false;
+    const table = skillarTable(outside);
+    if (table) {
+      const remoteUrl = skillarTableRemoteUrl(table.body);
+      // A different remote MCP holding the skillar name: hands off this runtime entirely, no abort.
+      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+      // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
+      if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
+        keepRemoteRegistration = true;
+        plan.notes.push(REMOTE_ALREADY_REGISTERED);
+      } else {
+        plan.conflicts.push({ path, code: "unmanaged_skillar_mcp", detail: "config.toml already has an unmanaged [mcp_servers.skillar] table" });
+        return plan;
+      }
     }
-    if (plan.conflicts.length) return plan;
 
-    const wanted = block(ctx);
+    const wanted = keepRemoteRegistration ? captureOnlyBlock(ctx) : block(ctx);
     let after: string;
     if (managed) {
       after = text.slice(0, managed.start) + wanted + text.slice(managed.end);
@@ -173,7 +211,8 @@ export const codexPack: RuntimePack = {
     }
     return [
       { name: "codex OTel block present", ok: inner.includes("[otel]") && inner.includes(endpoint), detail: managed ? path : `no managed block in ${path}` },
-      { name: "codex MCP entry present", ok: (inner.includes("[mcp_servers.skillar]") || inner.includes("[mcp_servers.gisool]")) && inner.includes(`http://127.0.0.1:${ctx.port}/mcp`), detail: path },
+      { name: "codex MCP entry present", ok: ((inner.includes("[mcp_servers.skillar]") || inner.includes("[mcp_servers.gisool]")) && inner.includes(`http://127.0.0.1:${ctx.port}/mcp`))
+        || (text !== null && (() => { const t = skillarTable(splitManaged(text)?.outside ?? text); return t !== null && skillarTableRemoteUrl(t.body) === SKILLAR_REMOTE_MCP_URL; })()), detail: path },
       { name: "codex [otel] not in project-local config", ok: localOutside === null || !OTEL_RE.test(localOutside),
         detail: local === null ? "no project-local config" : "project-local .codex/config.toml defines otel" },
       { name: "codex app-server daemon loaded the OTel block", ok: !staleDaemon, detail: daemonDetail },
