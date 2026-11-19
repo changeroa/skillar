@@ -39,3 +39,17 @@ test("icon-only controls keep an accessible name and matching tooltip", () => {
   assert.match(jump, /aria-label="이동…"/);
   assert.match(jump, /title="이동…"/);
 });
+
+test("landing, login and 404 static icons come from the shared icon map", () => {
+  const landing = page("index.html");
+  expectIcon(landing, "user", "예시 카드 세션 요청");
+  expectIcon(landing, "book-open", "예시 카드 검색/읽기");
+  expectIcon(landing, "file-text", "예시 카드 기록");
+  expectIcon(landing, "arrow-up-right", "소스/문서 링크");
+  const login = page("login/index.html");
+  expectIcon(login, "arrow-left", "skillar로 돌아가기");
+  expectIcon(login, "arrow-up-right", "문서 링크");
+  expectIcon(login, "shield", "계정 정보와 기록 범위");
+  expectIcon(login, "arrow-right", "Google로 계속하기");
+  expectIcon(page("404.html"), "house", "홈으로");
+});

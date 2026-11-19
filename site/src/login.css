@@ -46,3 +46,8 @@
   .login-route .account-grid { grid-template-columns: 1fr; }
   .login-route .account-main { padding-block: var(--s5) var(--s7); }
 }
+
+/* icon-swap: 텍스트 줄 안의 인라인 아이콘 */
+.icon--inline { vertical-align:-2px; }
+.button .icon--inline, .text-link .icon--inline, .lf-link .icon--inline { margin:0 2px; }
+.trace-step .icon--inline { margin-right:2px; }
