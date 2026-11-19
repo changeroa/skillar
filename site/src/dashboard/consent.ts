@@ -136,6 +136,15 @@ export function buildConsent(draft: ConsentDraft, deviceId: string, baseVersion:
   return { ok: true, consent: parsed.data };
 }
 
+/** One-click "upload on" from the device row: metadata only, default retention, no backfill. */
+export function buildMetadataConsent(deviceId: string, baseVersion: number, nowMs: number): Consent {
+  return consentSchema.parse({
+    mode: "metadata", version: baseVersion + 1, grantedAtMs: nowMs,
+    scope: { deviceId, projectIds: [projectIdFor(deviceId)], rootIds: [] },
+    retention: { contentDays: DEFAULT_RETENTION_DAYS, projectionDays: DEFAULT_RETENTION_DAYS, backupDays: MAX_BACKUP_DAYS },
+  });
+}
+
 export function describeConsent(consent: Consent): string {
   switch (consent.mode) {
     case "local-only": return "로컬 전용. 아무것도 업로드하지 않습니다.";

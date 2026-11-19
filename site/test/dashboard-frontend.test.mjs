@@ -3,7 +3,8 @@ import test from "node:test";
 import { consentSchema } from "../../shared/dist/activity-consent.js";
 import { contentKinds } from "../../shared/dist/activity-schema.js";
 import { createGrant, GRANT_SCOPES, routes } from "../src/dashboard/api.ts";
-import { buildConsent, draftFromConsent, emptyDraft, projectIdFor } from "../src/dashboard/consent.ts";
+import { readFile } from "node:fs/promises";
+import { buildConsent, buildMetadataConsent, draftFromConsent, emptyDraft, projectIdFor } from "../src/dashboard/consent.ts";
 import { connectSteps, grantFileName, grantFileText } from "../src/dashboard/grant.ts";
 import { AVAILABILITY_COPY, mergeReports, snapshotLines } from "../src/dashboard/status.ts";
 
@@ -188,4 +189,52 @@ test("snapshot lines report pending, stale and failed states separately from emp
   assert.deepEqual(tones(failed), ["failed", "failed"]);
   assert.equal(failed.find(line => line.term === "보고서")?.tone, "failed");
   assert.equal(failed.at(-1)?.term, "요청 실패");
+});
+
+test("device row one-click on writes a metadata-only consent with defaults and no backfill", () => {
+  const consent = buildMetadataConsent(deviceId, 2, now);
+  assert.deepEqual(consentSchema.parse(consent), consent);
+  assert.equal(consent.mode, "metadata");
+  assert.equal(consent.version, 3);
+  assert.equal(consent.grantedAtMs, now);
+  assert.deepEqual(consent.scope, { deviceId, projectIds: [projectIdFor(deviceId)], rootIds: [] });
+  assert.deepEqual(consent.retention, { contentDays: 30, projectionDays: 30, backupDays: 30 });
+  assert.equal(consent.backfill, undefined);
+});
+
+test("device row has one upload toggle wired to writeConsent, and the standalone withdraw button is gone", async () => {
+  const source = await readFile(new URL("../src/dashboard/devices.tsx", import.meta.url), "utf8");
+  assert.equal(source.includes("aria-pressed={device.consent.mode !== \"local-only\"}"), true);
+  assert.equal(source.includes("buildMetadataConsent(device.deviceId, device.version"), true);
+  assert.equal(source.includes("writeConsent(device.deviceId, device.version, consent, signal)"), true);
+  assert.equal(source.includes("동의 철회"), false);
+  assert.equal(source.includes("<summary>세부 설정</summary>"), true);
+});
+
+test("connections page no longer carries a separate upload-consent step", async () => {
+  const html = await readFile(new URL("../connections/index.html", import.meta.url), "utf8");
+  assert.equal(html.includes("업로드 동의"), false);
+  assert.equal((html.match(/connections-steps/g) ?? []).length > 0, true);
+});
+
+test("pending approval sends only the code unless the user explicitly chose upload consent", async t => {
+  // Given
+  const calls = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    calls.push({ url, body: options?.body === undefined ? undefined : JSON.parse(options.body) });
+    return url.includes("/approve") ? Response.json({ deviceId: "d".repeat(43) }) :
+      Response.json({ deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+  });
+  const { readPending, approvePending } = await import("../src/dashboard/api.ts");
+  // When: summary read carries no secrets
+  assert.deepEqual(await readPending("ABCD-EFGH"), {
+    deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+  // And: default off — no consent key leaves the browser without an explicit choice
+  await approvePending("ABCD-EFGH", undefined);
+  assert.deepEqual(calls[1].body, { code: "ABCD-EFGH" });
+  // And: an explicit managed-content choice carries the kinds and the acknowledgement
+  await approvePending("ABCD-EFGH", {
+    mode: "managed-content", contentKinds: [...contentKinds], serverProcessingAcknowledged: true });
+  assert.deepEqual(calls[2].body, { code: "ABCD-EFGH", consent: {
+    mode: "managed-content", contentKinds: [...contentKinds], serverProcessingAcknowledged: true } });
 });

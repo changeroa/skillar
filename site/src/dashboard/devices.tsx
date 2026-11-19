@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Consent } from "../../../shared/dist/activity-consent.js";
 import { createGrant, describeFailure, isUnauthorized, revokeDevice, writeConsent } from "./api";
 import type { DeviceGrant } from "./api";
-import { describeConsent } from "./consent";
+import { buildMetadataConsent, describeConsent } from "./consent";
 import { ConsentForm } from "./consent-form";
 import { connectSteps, downloadTextFile, grantFileName, grantFileText } from "./grant";
 import { formatSeconds, shortId } from "./status";
@@ -128,8 +128,13 @@ export function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnautho
       setConfirming(false);
     }
   };
-  const withdraw = () => run("동의 철회", async () => {
-    await writeConsent(device.deviceId, device.version, LOCAL_ONLY, signal);
+  // 이연 설계 결정 4: 기기 행 토글 하나가 온/오프를 맡고, 세부 범주·보존 기간·과거 범위는
+  // '세부 설정'의 기존 폼이 담당한다. 켜기는 메타데이터만(기본 보존, 과거 범위 없음)으로 기록한다.
+  const toggleUpload = () => run(device.consent.mode === "local-only" ? "업로드 켜기" : "업로드 끄기", async () => {
+    const consent = device.consent.mode === "local-only"
+      ? buildMetadataConsent(device.deviceId, device.version, Date.now())
+      : LOCAL_ONLY;
+    await writeConsent(device.deviceId, device.version, consent, signal);
   });
   const revoke = () => run("기기 연결 해제", () => revokeDevice(device.deviceId, signal));
   return (
@@ -144,8 +149,19 @@ export function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnautho
         <p className="note">지금은 서버에서 업로드가 꺼져 있습니다. 동의는 저장되지만 다시 켜지기 전까지는 아무것도 업로드되지 않습니다.</p>
       )}
       {!revoked && (
+        <div className="device__upload">
+          <button className="button secondary" type="button" aria-pressed={device.consent.mode !== "local-only"}
+            disabled={busy} onClick={toggleUpload}>
+            {device.consent.mode === "local-only" ? "업로드 켜기" : "업로드 끄기"}
+          </button>
+          <p className="note">{device.consent.mode === "local-only"
+            ? "켜면 메타데이터만 올라갑니다. 내용 범주·보존 기간·과거 기록은 세부 설정에서 정합니다."
+            : "끄면 즉시 로컬 전용으로 돌아갑니다. 내용 범주·보존 기간·과거 기록은 세부 설정에서 정합니다."}</p>
+        </div>
+      )}
+      {!revoked && (
         <details className="device__consent">
-          <summary>{device.consent.mode === "local-only" ? "업로드 동의 설정" : "업로드 동의 변경"}</summary>
+          <summary>세부 설정</summary>
           <ConsentForm key={device.version} deviceId={device.deviceId} version={device.version} consent={device.consent}
             signal={signal} onUnauthorized={onUnauthorized}
             onSaved={saved => {
@@ -156,9 +172,6 @@ export function DeviceCard({ device, ingestEnabled, signal, onChanged, onUnautho
       )}
       {!revoked && (
         <div className="cluster device__actions">
-          {device.consent.mode !== "local-only" && (
-            <button className="button secondary" type="button" disabled={busy} onClick={withdraw}>동의 철회</button>
-          )}
           {confirming ? (
             <>
               <button className="button primary" type="button" disabled={busy} onClick={revoke}>연결 해제 확인</button>
@@ -182,7 +195,7 @@ export function DevicesSection({ devices, ingestEnabled, origin, settled, messag
   return (
     <section className="panel" aria-labelledby="devices-title">
       <h2 id="devices-title">기기와 동의</h2>
-      <p className="account-lead">각 기기는 일회성 연결 승인으로 연결되며 로컬 전용으로 시작합니다. 업로드는 여기에서 해당 기기의 동의를 저장한 뒤에만 시작됩니다. 동의 철회와 기기 연결 해제는 별개의 작업입니다.</p>
+      <p className="account-lead">각 기기는 일회성 연결 승인으로 연결되며 로컬 전용으로 시작합니다. 업로드는 기기 행의 토글 또는 세부 설정에서 해당 기기의 동의를 저장한 뒤에만 시작됩니다. 업로드 끄기와 기기 연결 해제는 별개의 작업입니다.</p>
       <ConnectDevice origin={origin} {...common} />
       {message !== "" && <p className="note" role="status">{message}</p>}
       {(() => {

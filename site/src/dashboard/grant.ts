@@ -18,7 +18,7 @@ export function connectSteps(fileName: string, origin: string): readonly Connect
       command: `skillar sync connect --grant-file ~/Downloads/${fileName}${originFlag}` },
     { text: "선택 사항: 과거 스냅샷을 준비합니다. 이 명령은 동의를 저장할 때 입력할 스냅샷 ID와 저널 컷을 출력합니다.",
       command: "skillar sync prepare" },
-    { text: "다시 이 페이지로 돌아와 기기의 업로드 동의를 저장하세요. 그때까지는 로컬 전용으로 유지됩니다." },
+    { text: "다시 이 페이지로 돌아와 기기 행의 업로드 토글을 켜세요. 그때까지는 로컬 전용으로 유지됩니다." },
     { text: "기기에서 업로드를 시작하세요. 과거 기록 업로드는 동의한 스냅샷에만 사용하세요.",
       command: "skillar sync run" },
   ];

@@ -10,6 +10,9 @@ import {
   exchangeDeviceGrant, issueDeviceGrant, readDevicePrincipal, revokeDevice,
 } from "./device-auth.ts";
 import { currentDeviceConsent, readDeviceConsent, setDeviceConsent } from "./activity-consent.ts";
+import {
+  approvePendingCode, createPendingCode, pollPendingCode, readPendingCode,
+} from "./device-pending.ts";
 import { ActivityRequestError, readBody } from "./activity-body.ts";
 import { dashboardRequest } from "./activity-dashboard.ts";
 import { eventRequest } from "./activity-events.ts";
@@ -38,6 +41,24 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
     const result = await exchangeDeviceGrant(grant, env, config.PUBLIC_ORIGIN);
     return result === null ? activityError(401, "invalid_grant") :
       Response.json(result, { headers: noStore });
+  }
+  if (path === "/v1/devices/pending" && request.method === "POST") {
+    return Response.json(await createPendingCode(await readBody(request), env),
+      { status: 201, headers: noStore });
+  }
+  if (path === "/v1/devices/pending/poll" && request.method === "POST") {
+    const outcome = await pollPendingCode(await readBody(request), env, config.PUBLIC_ORIGIN);
+    switch (outcome.kind) {
+      case "issued": {
+        const { kind: _, ...issued } = outcome;
+        return Response.json(issued, { headers: noStore });
+      }
+      case "pending":
+        return Response.json({ state: "pending", retryAfter: 5 }, { status: 202, headers: noStore });
+      case "throttled": return activityError(429, "poll_too_fast");
+      case "consumed": return activityError(410, "gone");
+      default: return activityError(404, "not_found");
+    }
   }
   if (path.startsWith("/v1/")) {
     const principal = await readDevicePrincipal(request, env);
@@ -106,7 +127,23 @@ async function handle(request: Request, env: ActivityEnv): Promise<Response> {
       WHERE account_id=? ORDER BY device_id`).bind(principal.accountId).all();
     return Response.json({ devices: deviceListSchema.parse(rows.results) }, { headers: noStore });
   }
+  const pendingRead = /^\/api\/devices\/pending\/([^/]+)$/.exec(path);
+  if (pendingRead?.[1] !== undefined && request.method === "GET") {
+    const summary = await readPendingCode(decodeURIComponent(pendingRead[1]), env);
+    return summary === null ? activityError(404, "not_found") :
+      Response.json(summary, { headers: noStore });
+  }
   if (!principal.scopes.includes("device:manage")) return activityError(403, "insufficient_scope");
+  if (path === "/api/devices/pending/approve" && request.method === "POST") {
+    const clientIp = request.headers.get("cf-connecting-ip") ?? "unknown";
+    const outcome = await approvePendingCode(principal, await readBody(request), env, clientIp);
+    switch (outcome.kind) {
+      case "approved": return Response.json({ deviceId: outcome.deviceId }, { headers: noStore });
+      case "conflict": return activityError(409, "consent_conflict");
+      case "limited": return activityError(429, "rate_limited");
+      default: return activityError(404, "not_found");
+    }
+  }
   const consent = /^\/api\/devices\/([^/]+)\/consent$/.exec(path);
   if (consent?.[1] !== undefined) {
     const deviceId = decodeURIComponent(consent[1]);

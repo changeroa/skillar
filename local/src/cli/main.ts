@@ -6,6 +6,7 @@ import type { CliDeps, ExportImportApi } from "../types.js";
 import { runDoctor } from "./doctor.js";
 import { runInit, serviceInstall, serviceRemove } from "./init.js";
 import { runOpen } from "./open.js";
+import { createInterface } from "node:readline";
 import { type Io, makeCliDeps, packageVersion, processIo, runServe, serviceStatus } from "./serve.js";
 
 export type EvalApi = { runEval(opts: { cases?: string; json?: boolean }, deps: CliDeps): Promise<number> };
@@ -21,7 +22,7 @@ export const HELP = `skillar - local skill router
 Usage:
   skillar serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
   skillar open [--print]                      print and open the dashboard URL
-  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote]
+  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote] [--connect|--no-connect] [--upload]
   skillar init --rollback [--all]             undo the newest (or every) init run
   skillar doctor [--json]                     check service, daemon, packs, index and backups
   skillar service install|remove|status       manage the LaunchAgent / systemd user unit
@@ -74,9 +75,21 @@ function oneDir(p: Parsed, command: string): string {
   return p.positional[0]!;
 }
 
+/** Interactive terminals get a prompt channel; piped/test runs stay non-interactive. */
+function defaultIo(): Io {
+  if (process.stdin.isTTY !== true) return processIo;
+  return {
+    ...processIo,
+    ask: (question: string) => new Promise<string>(resolve => {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      rl.question(question, answer => { rl.close(); resolve(answer); });
+    }),
+  };
+}
+
 export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; io?: Io; loaders?: Loaders } = {}): Promise<number> {
   const env = opts.env ?? process.env;
-  const io = opts.io ?? processIo;
+  const io = opts.io ?? defaultIo();
   const loaders = opts.loaders ?? defaultLoaders;
   const [command, ...rest] = argv;
   try {
@@ -103,12 +116,15 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         return await runOpen({ print: p.flags.has("--print") }, env, io);
       }
       case "init": {
-        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote"], multi: ["--runtime"] });
+        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote", "--connect", "--no-connect", "--upload"], multi: ["--runtime"] });
+        if (p.flags.has("--connect") && p.flags.has("--no-connect")) throw new UsageError("--connect and --no-connect cannot be used together");
         if (p.positional.length) throw new UsageError(`unexpected argument ${p.positional[0]}`);
         if (p.flags.has("--all") && !p.flags.has("--rollback")) throw new UsageError("--all is only valid with --rollback");
         return await runInit({
           dryRun: p.flags.has("--dry-run"), rollback: p.flags.has("--rollback"), all: p.flags.has("--all"),
           noService: p.flags.has("--no-service"), disableRemote: p.flags.has("--disable-remote"), runtimes: p.values.get("--runtime") ?? [],
+          connect: p.flags.has("--connect") ? true : p.flags.has("--no-connect") ? false : undefined,
+          upload: p.flags.has("--upload"),
         }, env, io);
       }
       case "doctor": {
