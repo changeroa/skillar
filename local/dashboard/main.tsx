@@ -4,7 +4,7 @@ import { Theme } from "@astryxdesign/core/theme";
 import { skillarTheme } from "./design/skillar-theme/dist/skillar.js";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Filter } from "../src/types.js";
-import { api, type LiveState, type SessionListRow } from "./api";
+import { api, fixtureVariant, type LiveState, type SessionListRow } from "./api";
 import {
   DOW_LABEL, FILTER_KEYS, RUNTIME_LABEL, STATE_LABEL, buildHash, parseHash, skillName, withoutFilterKey,
   type FilterKey, type LiveInfo, type Route, type View,
@@ -292,4 +292,6 @@ export function mount(element: Element, options: AppOptions = {}): () => void {
   return () => render(null, element);
 }
 const el = typeof document === "undefined" ? null : document.getElementById("app");
-if (el && api.mode !== "cloud") mount(el);
+// cloud 모드는 호스트(호스팅 /sessions/)가 마운트한다. 단, 개발 fixture 변형(?fixtures=cloud 등)은
+// 호스트 없이 단독 렌더하므로 예외로 마운트한다(로컬 시각 검증 전용, 프로덕션 영향 없음).
+if (el && (api.mode !== "cloud" || fixtureVariant() !== undefined)) mount(el);
