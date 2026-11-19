@@ -185,6 +185,9 @@ if (process.env.NODE_ENV !== "production") {
     };
     return {
       mode: variant === "cloud" || variant === "cloud-empty" ? "cloud" : "fixtures",
+      // fixture cloud 변형: label 미제공 상태의 전방호환 표시("이름 없음 · id 앞6")를 재현한다.
+      source: variant === "cloud" || variant === "cloud-empty"
+        ? { deviceId: "fx9c2k47d1m8", sourceDomain: "fixtures.local", label: null } : undefined,
       sessions: (filter) => settle((data) => rowsOf(data).filter((row) => matchesFilter(row, filter))),
       trace: (sessionId) => settle((data) => data.traces[sessionId] ?? []),
       // The fixture file carries no herdr topology, so the flow APIs answer like a daemon that has never seen herdr.
