@@ -109,7 +109,7 @@ export function PendingApproval({ code }: { readonly code: string }) {
         <div><dt>연결 계정</dt><dd>{account}</dd></div>
         <div><dt>기기</dt><dd>{summary.deviceLabel}</dd></div>
         <div><dt>요청 권한</dt><dd>{summary.scopes.join(", ")}</dd></div>
-        <div><dt>요청 만료</dt><dd>{formatExpires(summary.expiresAt)}까지</dd></div>
+        <div><dt>요청 만료</dt><dd>{formatExpires(summary.expiresAtMs)}까지</dd></div>
       </dl>
       <form className="consent" onSubmit={submit}>
         <fieldset className="consent__group" disabled={busy}>

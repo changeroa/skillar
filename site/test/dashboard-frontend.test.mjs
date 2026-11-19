@@ -223,12 +223,12 @@ test("pending approval sends only the code unless the user explicitly chose uplo
   t.mock.method(globalThis, "fetch", async (url, options) => {
     calls.push({ url, body: options?.body === undefined ? undefined : JSON.parse(options.body) });
     return url.includes("/approve") ? Response.json({ deviceId: "d".repeat(43) }) :
-      Response.json({ deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+      Response.json({ deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAtMs: 1800000600000 });
   });
   const { readPending, approvePending } = await import("../src/dashboard/api.ts");
   // When: summary read carries no secrets
   assert.deepEqual(await readPending("ABCD-EFGH"), {
-    deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAt: 1800000600 });
+    deviceLabel: "테스트 맥북", scopes: ["activity:ingest"], expiresAtMs: 1800000600000 });
   // And: default off — no consent key leaves the browser without an explicit choice
   await approvePending("ABCD-EFGH", undefined);
   assert.deepEqual(calls[1].body, { code: "ABCD-EFGH" });
