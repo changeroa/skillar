@@ -35,9 +35,10 @@
 .hosted-screen .button.danger { color: var(--lf-destructive-foreground); background: var(--lf-destructive); border: 0 solid var(--lf-border); }
 .hosted-screen .button.danger-quiet { color: var(--lf-destructive); border-color: var(--lf-border-contrast); }
 .hosted-screen .button:active:not(:focus-visible) { outline: none; outline-offset: 0; }
-.hosted-screen .text-field, .hosted-screen select:not(.lf-select) {
-  padding-block: var(--lf-space-2); border-color: var(--lf-input);
-}
+.hosted-screen .text-field { padding-block: var(--lf-space-2); border-color: var(--lf-input); }
+/* A select stays fixed at --lf-control-height; 8px block padding leaves a 14px content box
+   at the desktop 32px height, shorter than the 20px line box, so the glyphs clip. */
+.hosted-screen select:not(.lf-select) { padding-block: var(--lf-space-1); border-color: var(--lf-input); }
 .hosted-screen .text-field:focus { border-color: var(--lf-input); box-shadow: none; }
 .hosted-screen select:not(.lf-select) {
   appearance: none; line-height: var(--lf-leading-sm);
