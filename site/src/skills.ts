@@ -1,5 +1,10 @@
 import "./main.ts";
 import { render } from "./react-mount";
+// 게시 스킬 화면의 astryx 컨트롤(체크박스 등)이 쓰는 전역 리셋·테마. 옛 읽기 근거 탭
+// 모듈(evidence.tsx)이 함께 불러오던 것을 탭 제거 후 이쪽이 직접 불러온다.
+import "@astryxdesign/core/reset.css";
+import "./dashboard/astryx-source.css";
+import "../../local/dashboard/design/skillar-theme/dist/theme.css";
 import "./skills/skills.css";
 import "./ui/ui.css";
 import "./skills/hosted-skills.css";
