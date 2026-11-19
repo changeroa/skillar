@@ -41,7 +41,7 @@ export function sessionsStyles() {
 .session-table-frame{overflow-x:auto}.session-table th,.session-table td{padding:0 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 .session-table th{height:44px;font-weight:500;color:var(--ink-2)}.session-table th>button{display:flex;align-items:center;justify-content:space-between;gap:4px;background:none;border:0;padding:0;color:inherit;min-height:44px;width:100%;cursor:pointer}
 .session-table td{height:44px}.session-table[data-density=normal] td{height:52px}.session-table[data-density=comfortable] td{height:64px}
-.session-table .cell-started{width:112px}.session-table .cell-runtime{width:106px}
+.session-table .cell-started{width:112px}.session-table .cell-runtime{width:106px}.session-table .cell-device{width:130px}
 .session-table .cell-reads{width:118px}
 .session-table .cell-search{width:220px}
 .session-table .session-table__candidates{display:inline-flex;margin-inline-start:8px;vertical-align:middle}
@@ -76,8 +76,10 @@ export function sessionsStyles() {
  .session-table td{display:none;border:0;height:auto!important;padding:0;width:auto!important;min-width:0}
  .session-table-frame.lf-table-surface .session-table td{border-bottom:0}
  .session-table-frame.lf-table-surface .session-table :is(th,td){padding:0}
- .session-table .cell-started,.session-table .cell-runtime,.session-table .cell-duration{display:block;font-size:12px}
+ .session-table .cell-started,.session-table .cell-runtime,.session-table .cell-duration,.session-table .cell-device{display:block;font-size:12px}
  .session-table .cell-started{grid-column:1}.session-table .cell-runtime{grid-column:2}.session-table .cell-duration{grid-column:4;text-align:right}
+ /* 호스팅(cloud) 모바일 카드: 기기 열을 실행 환경 자리에 표시한다. */
+ .session-table .cell-device{grid-column:2}
  .session-table .cell-runtime .pe-pill{font-size:11px;padding:0 4px}.session-table .cell-runtime code{display:none}
  .session-table .cell-prompt{display:block;grid-column:1/-1;grid-row:2}.session-table .rowlink{min-height:44px;font-size:14px}
  .session-table .cell-reads{display:block;grid-column:1/-1;grid-row:3}.session-table .cell-reads::before{content:"읽은 스킬 ";color:var(--ink-2)}
