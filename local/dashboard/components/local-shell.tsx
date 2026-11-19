@@ -8,7 +8,7 @@ import { Icon } from "./icons";
 import { useNarrow } from "./use-narrow";
 import { Sheet } from "../foundation/overlays/dialog";
 import { Sidebar, NavItem, Breadcrumb, Topbar } from "../foundation/shell/navigation";
-import { Button, IconButton, Link } from "../foundation/controls/buttons";
+import { IconButton, Link } from "../foundation/controls/buttons";
 import { KeyboardShortcut } from "../foundation/controls/labels";
 
 const LIVE_TEXT = { connecting: "연결 중", live: "연결됨", paused: "일시 중지", offline: "연결 끊김", fixtures: "예시 기록" };
@@ -68,11 +68,11 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     <div id={narrow ? undefined : "app-navigation"} className="pe-sidebar">
     <Sidebar label="로컬 대시보드" header={<Wordmark href={buildHash(destination(route, "sessions"))} />}
       footer={<div className="pe-sidebar__foot">{sourceInfo}
-        {automation}<Link href="https://skillar.sh" text="skillar.sh 열기" />
+        {automation}<Link href="https://skillar.sh" text="skillar.sh" icon="external-link" />
       </div>}>{links()}</Sidebar>
     </div>
     <div className="pe-body"><Topbar actions={<div className="pe-jump">
-      <Button text="이동…" variant="ghost" aria-haspopup="dialog" onClick={() => setOpen(true)} />
+      <IconButton label="이동…" icon="search" variant="ghost" aria-haspopup="dialog" onClick={() => setOpen(true)} />
       <KeyboardShortcut keys={["Mod", "K"]} />
     </div>}>
       {narrow && <IconButton label="출처와 탐색 메뉴" icon="panelLeft" aria-haspopup="dialog"
@@ -89,7 +89,7 @@ export function LocalShell({ route, navigate, live, embedded, automation, childr
     {narrow && drawer && <Sheet id="pe-source-drawer" open title="출처와 탐색" side="left" size="navigation" onClose={() => setDrawer(false)}>
       {sourceInfo}
       {automation}
-      <Link href="https://skillar.sh" text="skillar.sh 열기" />
+      <Link href="https://skillar.sh" text="skillar.sh" icon="external-link" />
       <div onClick={event => {
         if (event.target instanceof Element && event.target.closest("a")) setDrawer(false);
       }}><Sidebar label="메뉴 화면">{links()}</Sidebar></div>

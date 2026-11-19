@@ -21,7 +21,7 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
     <div className="session-toolbar"><TableToolbar>
       <SearchInput id="session-search" label="요청문과 스킬 검색" value={draft} placeholder="요청문 · 스킬 · 세션 ID"
         onChange={setDraft} onSubmit={value => update({ q: value.trim() || undefined })} />
-      <TimePeriodSelect label="기간" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
+      <TimePeriodSelect label="기간" icon="calendar" value={route.filter.from === undefined && route.filter.to === undefined ? "all" : "custom"}
         options={[{ value: "all", label: "전체 기간" }, { value: "custom", label: "지정 기간", disabled: true },
           { value: "7", label: "최근 7일", badge: "7d" }, { value: "30", label: "최근 30일", badge: "30d" },
           { value: "60", label: "최근 60일", badge: "60d" }]}
@@ -33,7 +33,7 @@ export function SessionToolbar({ route, navigate, count, facetsOpen, toggleFacet
       <span className="session-facets-toggle"><Button text="필터" variant="outline"
         aria-controls={sheet ? "session-filter-sheet" : "session-facets"} aria-expanded={facetsOpen}
         aria-haspopup={sheet ? "dialog" : undefined} onClick={toggleFacets} /></span>
-      <DropdownMenu id="session-request-state" label="요청 상태" width="wide" items={[
+      <DropdownMenu id="session-request-state" label="요청 상태" width="wide" buttonIcon="funnel" items={[
         ...(["searchStatus", "loadStatus"] as const).flatMap(key => [
           { id: `${key}-all`, label: `${key === "searchStatus" ? "검색" : "읽기"} 상태 전체`,
             checked: !route.filter[key]?.length, separatorBefore: key === "loadStatus",

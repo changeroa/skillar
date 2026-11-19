@@ -606,6 +606,15 @@ button, input, select { font: inherit; color: inherit; }
 .badge--in_progress { --badge-c: var(--warn); }
 .badge--cancelled, .badge--unknown, .badge--not_attempted { --badge-c: var(--neutral); }
 .request-counts { display: flex; flex-wrap: wrap; gap: 4px; overflow-wrap: anywhere; }
+
+/* Icon-swap: status shown as shape + color instead of a color dot (inbox85).
+   Icon-only states carry role="img" with aria-label and a matching title tooltip. */
+.state-icon { display: inline-flex; align-items: center; color: var(--neutral); }
+.state-pill { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.state-pill .pe-icon { flex: none; }
+.state-pill--succeeded { color: var(--ok); }
+.state-pill--candidates { color: var(--neutral); }
+
 .request-summary { display: grid; gap: 8px; }
 .request-details { padding: 16px; margin-top: 16px; overflow-x: auto; }
 .request-details table { width: 100%; border-collapse: collapse; }
