@@ -31,6 +31,7 @@
 .account-status div[hidden] { display: none; }
 .account-times[hidden] { display: none; }
 .account-header a[aria-current="page"], .view-nav a[aria-current="page"] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: var(--accent); }
+.skills-tabs a.button[aria-current="page"], .skills-tabs a.button[aria-current="page"]:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); text-decoration: none; }
 .account-footer { border-top: 1px solid var(--muted); padding-block: var(--s4); font-size: var(--small); }
 .account-footer .text-link { margin-top: 0; }
 .account-status { margin-block: var(--s5) var(--s4); }

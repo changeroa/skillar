@@ -158,3 +158,10 @@
   .command__facts div { grid-template-columns: 1fr; gap: var(--s1); }
   .command-form .button, .command-lookup .button, .command-item .button { width: 100%; justify-content: center; }
 }
+/* 출처 선택·임베드 레이아웃(구 home-widgets.css에서 잔여분만 유지) */
+.dashboard-page .dash-workspace { grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s3); }
+.dashboard-page .dash-sources { border: 0; border-bottom: 1px solid var(--rule); padding: 0; }
+.dashboard-page .dash-sources .source-list { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.dashboard-page .dash-empty { max-width: none; padding-block: var(--s4); }
+.dashboard-page .dash-empty p { margin-top: var(--s2); }
+.dashboard-page .dash-embed .wsrow__title { display: inline-flex; align-items: center; min-height: 44px; }

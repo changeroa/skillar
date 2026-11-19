@@ -10,6 +10,11 @@ import { render } from "../react-mount";
 import { Dashboard } from "./app";
 
 const root = document.getElementById("skills-app");
+// 읽기 근거 탭(원문82)의 기본 화면은 로컬 스킬 뷰(KPI 3 + 스킬·버전 표): 해시가 없으면 #/dashboard로 보낸다.
+// #/sessions 등 명시 해시는 그대로 존중한다.
+if (new URLSearchParams(location.search).get("tab") === "evidence" && !location.hash.startsWith("#/")) {
+  history.replaceState(null, "", `${location.pathname}?tab=evidence#/dashboard`);
+}
 const evidence = new URLSearchParams(location.search).get("tab") === "evidence" || location.hash.startsWith("#/");
 if (root !== null && evidence) {
   let controller: AbortController | null = null;
