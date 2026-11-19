@@ -89,12 +89,13 @@ function openUploadConsent() {
   }
 }
 
+// 요청문: 빈 상태는 "업로드 꺼짐 · 켜기" 한 줄. 켜기는 기존 기기 업로드 동의 토글 위치를 연다.
 function UploadOffEmpty() {
   return (
-    <section aria-live="polite">
-      <EmptyState title="업로드 꺼짐"
-        description="기기가 로컬 전용이라 올라온 세션이 없습니다. 업로드를 켜면 다음 동기화부터 세션이 표시됩니다."
-        action={<button type="button" className="btn" onClick={openUploadConsent}>켜기</button>} />
+    <section aria-live="polite" className="upload-off">
+      <p className="upload-off__line">업로드 꺼짐 ·{" "}
+        <button type="button" className="text-link" onClick={openUploadConsent}>켜기</button>
+      </p>
     </section>
   );
 }

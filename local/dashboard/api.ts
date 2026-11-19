@@ -19,6 +19,8 @@ export type EventHandlers = {
 
 export type Api = {
   mode: "http" | "fixtures" | "cloud";
+  /** cloud 모드: 현재 출처(기기·도메인). label은 C(기기 이름) 적용 후 호스트가 채운다. */
+  readonly source?: { readonly deviceId: string; readonly sourceDomain: string; readonly label?: string | null };
   dispose?: () => void;
   sessions(filter: Filter): Promise<SessionListRow[]>;
   trace(sessionId: string): Promise<TraceStep[]>;

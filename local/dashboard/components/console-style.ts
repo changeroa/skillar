@@ -53,6 +53,9 @@ export function consoleStyles() {
 .pe-sheet .pe-source{margin-bottom:12px}
 .pe-overlay{position:fixed;inset:0;z-index:100;background:#0007;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px}
 .pe-sessions-region{display:grid;grid-template-columns:minmax(0,1fr);min-width:0}
+/* 호스팅 세션 목록: 1440px에서 화면 절반(720px) 안쪽, 가로 스크롤 없이(요청문 A). */
+.pe-cloud{max-width:44rem}
+.upload-off__line{margin:8px 0;color:var(--muted,#666)}
 .pe-sessions-region:has(.session-peek){grid-template-columns:minmax(0,1fr) 560px;gap:16px}
 @media(max-width:1279px){.pe-sessions-region:has(.session-peek){grid-template-columns:minmax(0,1fr) 480px}}
 @media(max-width:1023px){
