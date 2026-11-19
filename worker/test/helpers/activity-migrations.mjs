@@ -109,7 +109,7 @@ export async function fixture(t, options = {}) {
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql", ...(options.migrations ?? [])]) {
     await migrate(db, new URL(`../../activity-migrations/${name}`, import.meta.url));
   }
-  for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql"]) {
+  for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql", "0012_device_labels.sql"]) {
     await migrate(accounts, new URL(`../../../site/migrations/${name}`, import.meta.url));
   }
   const rows = async (sql, ...args) => (await db.prepare(sql).bind(...args).all()).results;

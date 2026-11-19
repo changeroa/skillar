@@ -107,7 +107,7 @@ async function fixture(t) {
   for (const file of ["0001_activity_ledger.sql", "0002_content.sql", "0010_connector_commands.sql"]) {
     await migrate(db, new URL(`../activity-migrations/${file}`, import.meta.url));
   }
-  for (const file of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql"]) {
+  for (const file of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql", "0012_device_labels.sql"]) {
     await migrate(accounts, new URL(`../../site/migrations/${file}`, import.meta.url));
   }
   const seed = async (who = principal()) => {
