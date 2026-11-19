@@ -1,7 +1,13 @@
 # README artwork
 
-Original illustration generated with the built-in image generation tool on 2026-10-12 for these repositories. No third-party logo or reference image was supplied. Shared across Skillar and iyen-skills.
+`skillar-wordmark-light.svg` and `skillar-wordmark-dark.svg` are copies of the
+skillar.sh site wordmark (`site/public/wordmark-light.svg` and
+`wordmark-dark.svg`): a vermilion chevron plus the skillar wordmark, one
+variant for light backgrounds and one for dark. The READMEs select between
+them with a `<picture>` `prefers-color-scheme` block.
 
-## Prompt
-
-Create an original premium editorial illustration for the GitHub README of gisul, an open-source library serving practical workflow instruction cards to AI agents. Wide landscape banner, 3:1 composition. Black ink linocut / risograph on warm ivory paper with a single vivid vermilion accent, tactile grain. A mechanical articulated gripper picks one instruction card from a craftsman's modular index-card cabinet and brings it to a working bench with measuring tools and a checked specimen. Concrete working procedures, not uploading a magical human brain. Confident independent engineering zine. Cards carry only geometric diagrams and check marks, no legible text. No gradients, glowing circuits, brains, brand logos, or watermarks. Generous ivory margins.
+`gisul-workshop.png` keeps its historical filename so the npm pages of
+already-published releases (0.2.1 and earlier), which reference it by
+absolute `raw.githubusercontent.com` URL, keep rendering. Its content is now
+the current skillar wordmark on warm ivory; the earlier illustration under
+the old product name was replaced.

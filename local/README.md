@@ -6,7 +6,13 @@
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
 </p>
-<p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../docs/assets/skillar-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../docs/assets/skillar-wordmark-light.svg">
+    <img src="../docs/assets/skillar-wordmark-light.svg" width="500" alt="The skillar logo: a vermilion chevron followed by the skillar wordmark.">
+  </picture>
+</p>
 
 skillar is a local skill router for coding agents. One daemon on `127.0.0.1` indexes your existing `SKILL.md` folders, serves them over MCP, and records searches and reads in a local dashboard. Skill files stay in place.
 
