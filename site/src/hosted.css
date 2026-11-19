@@ -116,3 +116,9 @@
 .hosted-screen .not-found :is(p,.cluster) { margin: 0; }
 .hosted-screen .not-found .cluster { justify-content: center; gap: var(--lf-space-2); }
 .hosted-screen:has(.not-found) > .header { min-height: var(--lf-space-16); padding-block: var(--lf-space-2); }
+/* 좁은 화면에서는 연결 표의 보조 열(범위·생성일)을 접어 이름·상태·최근 사용이 읽히게 한다.
+   (CSS 숨김이라 열 토글 상태와는 별개로 적용) 표 프레임은 가로 스크롤을 허용한다. */
+.hosted-screen .connections-grid .ui-table .ui-table-scroll { overflow-x: auto; }
+@media (max-width: 720px) {
+  .hosted-screen .connections-grid .ui-table :is(th, td):is([data-column=scope], [data-column=created]) { display: none; }
+}
