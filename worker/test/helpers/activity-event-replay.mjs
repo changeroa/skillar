@@ -41,7 +41,7 @@ export default {async fetch(request,env) {
     let value;
     switch(op) {
       case "read": value=await readAccountChanges(env.ACTIVITY,principal,input.since);break;
-      case "sweep": await sweepAccountChanges(env.ACTIVITY);value={};break;
+      case "sweep": await sweepAccountChanges(env.ACTIVITY,input.limit);value={};break;
       case "dispatch": await dispatchAccountEvents(env);value={};break;
       case "commit": value=await commitActivityBatch(env.ACTIVITY,{principal,batch:input,receivedAtMs:100});break;
       default: throw new Error("unknown_fixture_operation");

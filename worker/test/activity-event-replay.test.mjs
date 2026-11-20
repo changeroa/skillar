@@ -124,3 +124,40 @@ test("head and page stay coherent during racing real D1 writes and retention", {
     Array.from({ length: page.head - 50 }, (_, i) => i + 51));
   assert.equal(page.cursor, cursor(page.head));
 });
+
+test("sweep bounds each pass and drains a retention backlog over consecutive runs", { timeout: 30000 }, async t => {
+  // Given: five expired changes with outbox intent
+  const f = await fixture(t);
+  await f.append(5);
+  await f.db.prepare("UPDATE account_changes SET created_at=1").run();
+  await f.db.prepare("UPDATE account_event_outbox SET created_at=1").run();
+  // When: one bounded cron pass removes at most limit rows per statement
+  await f.send("sweep", { limit: 2 });
+  // Then: four rows left via the two bounded passes, one still queued
+  assert.equal((await f.rows("SELECT seq FROM account_changes")).length, 1);
+  assert.equal((await f.rows("SELECT seq FROM account_event_outbox")).length, 1);
+  // When: the next cron pass drains the rest
+  await f.send("sweep", { limit: 2 });
+  // Then
+  assert.equal((await f.rows("SELECT seq FROM account_changes")).length, 0);
+  assert.equal((await f.rows("SELECT seq FROM account_event_outbox")).length, 0);
+  assert.deepEqual(await f.rows("SELECT min_replay_seq FROM account_heads"),
+    [{ min_replay_seq: 5 }]);
+});
+
+test("dispatch leaves retention to cron instead of sweeping on the request path", { timeout: 30000 }, async t => {
+  // Given: expired changes and deliverable outbox intent
+  const f = await fixture(t);
+  await f.append(3);
+  await f.db.prepare("UPDATE account_changes SET created_at=1").run();
+  await f.db.prepare("UPDATE account_event_outbox SET created_at=1").run();
+  // When: dispatch notifies without running the retention sweep
+  await f.send("dispatch");
+  // Then: replay history is untouched; only the acknowledged outbox intent is consumed
+  assert.equal((await f.rows("SELECT seq FROM account_changes")).length, 3);
+  assert.equal((await f.rows("SELECT seq FROM account_event_outbox")).length, 0);
+  // When: the cron sweep runs
+  await f.send("sweep");
+  // Then
+  assert.equal((await f.rows("SELECT seq FROM account_changes")).length, 0);
+});
