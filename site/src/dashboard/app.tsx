@@ -103,8 +103,22 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     const key = profileKey(selected);
     if (!list.some(profile => profileKey(profile) === key && profile.availability === "ready")) onClose();
   }, [profiles]);
+  // 살아 있는(연결 해제되지 않은) 출처가 정확히 하나뿐이면 선택지가 없으므로 자동으로 연다.
+  // 사용자가 닫은 출처는 dismissed에 남겨 다시 자동으로 열지 않는다.
+  const dismissedAutoSelect = useRef<string | null>(null);
+  const autoSelectedKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (profiles.status !== "ready" || devices.status !== "ready" || selected !== null) return;
+    const live = list.filter(profile => profile.availability !== "revoked");
+    if (live.length !== 1 || live[0].availability !== "ready") return;
+    const key = profileKey(live[0]);
+    if (autoSelectedKey.current === key || dismissedAutoSelect.current === key) return;
+    autoSelectedKey.current = key;
+    onSelect(live[0], devices.data?.find(device => device.deviceId === live[0].deviceId)?.label ?? null);
+  }, [profiles, devices, selected]);
   const current = selected === null ? null : list.find(profile => profileKey(profile) === profileKey(selected)) ?? selected;
   const closeRecord = () => {
+    dismissedAutoSelect.current = selected === null ? dismissedAutoSelect.current : profileKey(selected);
     onClose();
     if (sourcePicker.current) {
       sourcePicker.current.open = true;

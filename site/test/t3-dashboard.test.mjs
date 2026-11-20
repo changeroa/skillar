@@ -122,26 +122,25 @@ test("selected-source refresh failure exposes retry and stale facts without losi
   assert.equal(all(container, node => node.getAttribute("data-stale") === "true").length, 0);
 });
 
-test("explicitly selected data mounts the embedded local views inside the snapshot panel", async t => {
+test("a single live source opens its record automatically and mounts the embedded local views", async t => {
   // Given
   globalThis.__t10Cloud = () => ({ mode: "cloud", dispose() {}, refresh() {} });
   t.mock.method(globalThis, "fetch", async url => url === routes.session ? Response.json({ user }) :
     url === routes.profiles ? Response.json(response([profile])) : Response.json({ devices: [] }));
   const { dom, container } = await mount(t, Dashboard, { signal });
-  await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
-  assert.equal(all(container, node => node.id === "snapshot-title").length, 0);
-  // When
-  await act(() => buttonNamed(container, "기록 보기")[0].click());
+  // When: no click — the only live source is selected automatically
+  await waitFor(dom, () => all(container, node => node.id === "snapshot-title")[0], "auto-opened record");
   // Then: the snapshot panel appears; the embedded local app labels its own views (세션/스킬)
   assert.ok(all(container, node => node.localName === "h2" && node.id === "snapshot-title")[0]);
 });
 
-test("source loading transitions through failure and retry to explicit choice", async t => {
+test("source loading transitions through failure and retry to explicit choice among multiple live sources", async t => {
   // Given
   const held = Promise.withResolvers();
+  const second = { ...profile, deviceId: "device-second", sourceDomain: "source-second" };
   let reads = 0, selections = 0;
   t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
-    ++reads === 1 ? held.promise : Response.json(response([profile])) : Response.json({ devices: [] }));
+    ++reads === 1 ? held.promise : Response.json(response([profile, second])) : Response.json({ devices: [] }));
   const { dom, container } = await mount(t, SignedIn, { ...common, onSelect() { selections++; } });
   assert.equal(home(container)?.getAttribute("data-state"), "loading");
   assert.equal(picker(container), undefined);
@@ -186,14 +185,13 @@ test("refreshed profile facts replace the originally selected snapshot facts", a
   assert.ok(facts.textContent.includes("929"));
 });
 
-test("closing a selected record restores focus to the reopened source picker", async t => {
+test("closing an auto-opened record restores focus to the reopened source picker and stays closed", async t => {
   // Given
   globalThis.__t10Cloud = () => ({ mode: "cloud", dispose() {}, refresh() {} });
   t.mock.method(globalThis, "fetch", async url => url === routes.session ? Response.json({ user }) :
     url === routes.profiles ? Response.json(response([profile])) : Response.json({ devices: [] }));
   const { dom, container } = await mount(t, Dashboard, { signal });
-  await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
-  await act(() => buttonNamed(container, "기록 보기")[0].click());
+  await waitFor(dom, () => all(container, node => node.id === "snapshot-title")[0], "auto-opened record");
   const close = buttonNamed(container, "기록 닫기")[0];
   close.focus();
   // When
@@ -203,10 +201,58 @@ test("closing a selected record restores focus to the reopened source picker", a
   assert.equal(picker(container).open, true);
   assert.equal(dom.activeElement.localName, "summary");
   assert.ok(picker(container).contains(dom.activeElement));
+  // And: a later source refresh must not reopen the dismissed record
+  await act(() => buttonNamed(container, "출처 다시 읽기")[0].click());
+  await waitFor(dom, () => all(container, node => node.getAttribute("class") === "source__revisions")[0], "refreshed source");
+  assert.equal(all(container, node => node.id === "snapshot-title").length, 0);
 });
 
 const localDevice = { deviceId: profile.deviceId, createdAt: 1, revokedAt: null, version: 0, consent: { mode: "local-only" } };
 const readyDevices = data => ({ status: "ready", data, message: "", technical: "" });
+
+test("revoked sources do not block auto-selection of the only live source", async t => {
+  // Given: one live ready source plus revoked ones
+  let selections = 0;
+  t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+    Response.json(response([profile,
+      { ...profile, deviceId: "device-old", sourceDomain: "source-old", availability: "revoked" },
+      { ...profile, deviceId: "device-older", sourceDomain: "source-older", availability: "revoked" }])) :
+    Response.json({ devices: [] }));
+  const { dom } = await mount(t, SignedIn, { ...common, onSelect() { selections++; } });
+  // When
+  await waitFor(dom, () => selections === 1, "auto-select");
+  // Then: fired once for the live source only
+  assert.equal(selections, 1);
+});
+
+test("a single live source that is not ready does not auto-select", async t => {
+  // Given
+  let selections = 0;
+  t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+    Response.json(response([{ ...profile, availability: "awaiting-runtime" }])) : Response.json({ devices: [] }));
+  const { dom, container } = await mount(t, SignedIn, { ...common, onSelect() { selections++; } });
+  // When
+  await waitFor(dom, () => all(container, node => node.getAttribute("data-analysis-dashboard") !== null)[0], "empty skills view");
+  // Then
+  assert.equal(selections, 0);
+});
+
+test("revoked sources are hidden by default and revealed by the toggle", async t => {
+  // Given
+  t.mock.method(globalThis, "fetch", async url => url === routes.profiles ?
+    Response.json(response([profile,
+      { ...profile, deviceId: "device-old", sourceDomain: "source-old", availability: "revoked" }])) :
+    Response.json({ devices: [] }));
+  const { dom, container } = await mount(t, SignedIn, common);
+  await waitFor(dom, () => buttonNamed(container, "연결 해제된 출처 1개 보이기")[0], "toggle");
+  // Then: only the live source is listed
+  assert.equal(all(container, node => node.getAttribute("class") === "source").length, 1);
+  // When
+  await act(() => buttonNamed(container, "연결 해제된 출처 1개 보이기")[0].click());
+  // Then
+  assert.equal(all(container, node => node.getAttribute("class") === "source").length, 2);
+  assert.ok(buttonNamed(container, "연결 해제된 출처 1개 숨기기")[0]);
+});
 
 
 for (const [error, expected] of [[new SyntaxError("bad JSON"), "unexpected"], [new TypeError("offline"), "unreachable"]]) {
