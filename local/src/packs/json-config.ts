@@ -41,6 +41,11 @@ export function noop(note: string): PackPlan {
   return { files: [], commands: [], notes: [note], conflicts: [] };
 }
 
+/** Plan that changes nothing and records why this runtime keeps its local daemon MCP entry in connected mode. */
+export function keptLocal(note: string, reason: string): PackPlan {
+  return { files: [], commands: [], notes: [note], conflicts: [], mcp: { state: "kept_local", reason } };
+}
+
 export function isRemoteEntry(entry: unknown, urlKeys: string[]): boolean {
   if (!isObject(entry)) return false;
   return urlKeys.some((key) => {

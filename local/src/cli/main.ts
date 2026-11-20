@@ -22,7 +22,7 @@ export const HELP = `skillar - local skill router
 Usage:
   skillar serve [--port <n>] [--foreground]   run the daemon in the foreground (used by the service)
   skillar open [--print]                      print and open the dashboard URL
-  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote] [--connect|--no-connect] [--upload|--no-upload]
+  skillar init [--dry-run] [--runtime <id>...] [--no-service] [--disable-remote] [--connect|--no-connect] [--upload|--no-upload] [--local-only]
   skillar init --rollback [--all]             undo the newest (or every) init run
   skillar doctor [--json]                     check service, daemon, packs, index and backups
   skillar service install|remove|status       manage the LaunchAgent / systemd user unit
@@ -39,6 +39,7 @@ Usage:
   skillar skills preview --package <export.json> --destination-root <dir> --plan <file> [--allow-overwrite]
   skillar skills push-preview --source-dir <dir> --plan <file> [--skill-id <uuid>]
   skillar skills push --plan <file> --allow-private-upload
+  skillar skills sync-plan [--json] [--include <root>/<dir>]          dry run: which local skills a connected-mode sync would include (no network, no writes)
                                             asks for one browser approval when skills scopes are missing
   skillar skills pull --skill-id <uuid> --output <export.json> [--version <digest>]
                                             same one-link approval when the read scope is missing
@@ -120,8 +121,9 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
         return await runOpen({ print: p.flags.has("--print") }, env, io);
       }
       case "init": {
-        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote", "--connect", "--no-connect", "--upload", "--no-upload"], multi: ["--runtime"] });
+        const p = parseArgs(rest, { flags: ["--dry-run", "--rollback", "--all", "--no-service", "--disable-remote", "--connect", "--no-connect", "--upload", "--no-upload", "--local-only"], multi: ["--runtime"] });
         if (p.flags.has("--connect") && p.flags.has("--no-connect")) throw new UsageError("--connect and --no-connect cannot be used together");
+        if (p.flags.has("--local-only") && p.flags.has("--connect")) throw new UsageError("--local-only and --connect cannot be used together");
         if (p.flags.has("--upload") && p.flags.has("--no-upload")) throw new UsageError("--upload and --no-upload cannot be used together");
         if (p.positional.length) throw new UsageError(`unexpected argument ${p.positional[0]}`);
         if (p.flags.has("--all") && !p.flags.has("--rollback")) throw new UsageError("--all is only valid with --rollback");
@@ -130,6 +132,7 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
           noService: p.flags.has("--no-service"), disableRemote: p.flags.has("--disable-remote"), runtimes: p.values.get("--runtime") ?? [],
           connect: p.flags.has("--connect") ? true : p.flags.has("--no-connect") ? false : undefined,
           upload: p.flags.has("--upload") ? true : p.flags.has("--no-upload") ? false : undefined,
+          localOnly: p.flags.has("--local-only"),
         }, env, io);
       }
       case "doctor": {

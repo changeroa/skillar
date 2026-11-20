@@ -402,3 +402,50 @@ test("scope upgrade never asks the upload question and never carries the pre-che
   assert.equal(asked, false);
   assert.equal(upgradeLines.some(l => l.includes("upload=1")), false);
 });
+
+test("connected mode connects first and writes the hosted MCP as the final state; --local-only and a declined connect register the local entry", { timeout: 90000 }, async t => {
+  const { runInit } = await distImport("cli/init.js");
+  const { writeStub } = await import("./helpers/cli.mjs");
+  const { mkdirSync, readFileSync, existsSync, writeFileSync } = await import("node:fs");
+  const scenario = async (opts, answer) => {
+    const f = await fixture(t);
+    mkdirSync(join(f.dir, ".claude"), { recursive: true });
+    // The stub claude binary writes nothing, so seed the entry a real `claude mcp add` would have left.
+    writeFileSync(join(f.dir, ".claude.json"), JSON.stringify({ mcpServers: { skillar: { type: "http", url: "http://127.0.0.1:8799/mcp" } } }));
+    const bin = join(f.dir, "bin"); mkdirSync(bin);
+    const log = join(f.dir, "argv.log");
+    writeStub(bin, "claude", log);
+    const env = { HOME: f.dir, PATH: bin };
+    const lines = [];
+    const io = { out: s => lines.push(s), err: s => lines.push(s), ask: async q => { lines.push(q); return answer; } };
+    const run = runInit({ noService: true, runtimes: ["claude-code"], ...opts }, env, io,
+      { fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)) });
+    let settled = false; run.then(() => { settled = true; }, () => { settled = true; });
+    if (answer !== "n" && !opts.localOnly) {
+      // Poll until the pairing code shows up (slow under parallel load) instead of a fixed short budget; fail with the output if init ends without one.
+      let codeLine;
+      for (let i = 0; i < 6000 && !settled && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) await new Promise(r => setTimeout(r, 5));
+      assert.ok(codeLine, "no pairing code printed: " + lines.join(""));
+      const code = codeLine.split(":")[1].trim();
+      const ok = await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+        method: "POST", headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" }, body: JSON.stringify({ code }) }), f.env);
+      assert.equal(ok.status, 200);
+    }
+    assert.equal(await run, 0, lines.join(""));
+    return { log: existsSync(log) ? readFileSync(log, "utf8") : "", out: lines.join("") };
+  };
+  const connected = await scenario({}, "");
+  // Connect comes first, so the hosted entry is the final state and the local daemon entry is never added then removed.
+  assert.doesNotMatch(connected.log, /127\.0\.0\.1:\d+\/mcp --header/, "local entry must not be re-added before the switch");
+  assert.match(connected.log, /^claude mcp remove --scope user skillar$/m);
+  assert.match(connected.log, /^claude mcp add --transport http --scope user skillar https:\/\/skillar\.sh\/mcp$/m);
+  assert.match(connected.out, /session upload consent is separate and unchanged/);
+  assert.ok(connected.out.indexOf("cloud: connected device") < connected.out.indexOf("applied "), "connect precedes apply");
+  const localOnly = await scenario({ localOnly: true }, "");
+  assert.doesNotMatch(localOnly.log, /skillar\.sh\/mcp/);
+  assert.match(localOnly.log, /127\.0\.0\.1:\d+\/mcp --header/);
+  const declined = await scenario({}, "n");
+  assert.doesNotMatch(declined.log, /skillar\.sh\/mcp/);
+  assert.match(declined.log, /127\.0\.0\.1:\d+\/mcp --header/);
+  assert.match(declined.out, /registering the local daemon MCP entries instead/);
+});

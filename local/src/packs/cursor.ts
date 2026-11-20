@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
+import type { McpOutcome, PackCtx, PackPlan, RuntimePack } from "../types.js";
+import { type JsonObject, keptLocal, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 
 // Hook shape confirmed against https://cursor.com/docs/agent/hooks : hooks.json is { "version": 1, "hooks": { <event>: [{ "command": ... }] } }
 // and Cursor reloads hooks config files automatically. MCP servers live in ~/.cursor/mcp.json under mcpServers.
@@ -56,10 +56,16 @@ export const cursorPack: RuntimePack = {
       notes.push("Remote skillar MCP entry left enabled: Cursor's disable key is unverified, so disable it manually.");
     }
     const remoteUrl = remoteEntryUrl(servers.skillar, URL_KEYS);
-    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return ctx.mcp === "hosted" ? keptLocal(remoteConflictWarning(remoteUrl), "a different remote MCP holds the skillar name") : noop(remoteConflictWarning(remoteUrl));
+    let mcpOutcome: McpOutcome | undefined;
     // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
-    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) notes.push(REMOTE_ALREADY_REGISTERED);
-    else servers[localServerName(servers)] = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
+    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) { notes.push(REMOTE_ALREADY_REGISTERED); mcpOutcome = { state: "already_hosted" }; }
+    else if (ctx.mcp === "hosted") {
+      const local = localServerName(servers);
+      if (local !== "skillar") delete servers[local];
+      servers.skillar = { url: SKILLAR_REMOTE_MCP_URL };
+      mcpOutcome = { state: "hosted" };
+    } else servers[localServerName(servers)] = { url: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
     nextMcp.mcpServers = servers;
 
     if (hooksFile.obj.version !== undefined && hooksFile.obj.version !== 1) {
@@ -79,7 +85,7 @@ export const cursorPack: RuntimePack = {
       (f) => f !== null,
     );
     notes.push("Restart Cursor or reload MCP servers to load the skillar MCP entry; Cursor reloads hooks.json on change.");
-    return { files, commands: [], notes, conflicts: [] };
+    return { files, commands: [], notes, conflicts: [], ...(mcpOutcome ? { mcp: mcpOutcome } : {}) };
   },
 
   async doctorChecks({ home, port }) {

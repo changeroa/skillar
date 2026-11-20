@@ -122,11 +122,34 @@ export const claudeCodePack: RuntimePack = {
     } catch { /* Claude owns its registration file; the CLI will validate it. */ }
     // A different remote MCP holding the skillar name: hands off this runtime entirely.
     if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) {
-      return { files: [], commands: [], notes: [remoteConflictWarning(remoteUrl)], conflicts: [] };
+      return { files: [], commands: [], notes: [remoteConflictWarning(remoteUrl)], conflicts: [],
+        ...(ctx.mcp === "hosted" ? { mcp: { state: "kept_local" as const, reason: "a different remote MCP holds the skillar name" } } : {}) };
     }
     // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
     if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
       plan.notes.push(REMOTE_ALREADY_REGISTERED);
+      if (ctx.mcp === "hosted") plan.mcp = { state: "already_hosted" };
+    } else if (ctx.mcp === "hosted") {
+      // Connected mode: hosted entry is the final state; the local daemon entry is never added first.
+      let hasLocal = false;
+      try {
+        const servers = JSON.parse(readText(join(ctx.home, ".claude.json")) ?? "{}").mcpServers;
+        const entry = isObj(servers) ? servers[name] : undefined;
+        hasLocal = isObj(entry) && typeof entry.url === "string" && isLoopback(entry.url);
+      } catch { /* Claude owns its registration file. */ }
+      const addRemote = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", "skillar", SKILLAR_REMOTE_MCP_URL];
+      if (onPath("claude", ctx.env) && !(ctx.env.SKILLAR_NO_CLI ?? ctx.env.GISOOL_NO_CLI)) {
+        if (hasLocal) {
+          plan.commands.push({ argv: ["claude", "mcp", "remove", "--scope", "user", name], description: "Remove the local daemon skillar MCP entry (connected mode)",
+            undo: { argv: ["claude", "mcp", "add", "--transport", "http", "--scope", "user", name, `http://127.0.0.1:${ctx.port}/mcp`, "--header", `Authorization: Bearer ${ctx.token}`], description: "Restore the local daemon skillar MCP entry" } });
+        }
+        plan.commands.push({ argv: addRemote, description: "Register the hosted skillar MCP server with Claude Code (user scope)",
+          undo: { argv: ["claude", "mcp", "remove", "--scope", "user", "skillar"], description: "Remove the hosted skillar MCP entry" } });
+        plan.mcp = { state: "hosted" };
+      } else {
+        plan.notes.push(`manual step: run ${hasLocal ? `claude mcp remove --scope user ${name}; then ` : ""}${addRemote.join(" ")}`);
+        plan.mcp = { state: "kept_local", reason: "claude CLI not available; hosted MCP registration is a manual step" };
+      }
     } else {
       const argv = ["claude", "mcp", "add", "--transport", "http", "--scope", "user", name,
         `http://127.0.0.1:${ctx.port}/mcp`, "--header", `Authorization: Bearer ${ctx.token}`];
