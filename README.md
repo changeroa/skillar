@@ -40,7 +40,7 @@ macOS or Linux · **Node.js 24.15+**
 
    `init` installs a LaunchAgent on macOS or a systemd user unit on Linux; the daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
 
-   `init` also offers to connect your skillar.sh account. Approval happens in your browser, and uploads stay off unless you turn them on in the approval screen.
+   `init` also offers to connect your skillar.sh account and asks whether to upload session history (`[y/N]`, off by default). Approval happens in your browser: the approval screen has one "session history upload" checkbox, and upload consent is recorded only when you approve with it checked.
 
 3. **Use it from your agent** - connected agents search with `search_skills` and read the chosen `SKILL.md` over MCP `resources/read`:
 

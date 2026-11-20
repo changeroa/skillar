@@ -38,7 +38,7 @@ macOS 또는 Linux · **Node.js 24.15 이상**
 
    `init`은 macOS LaunchAgent 또는 Linux systemd 사용자 유닛을 설치하고, 데몬은 `127.0.0.1:8799`에서 수신합니다. 포그라운드로 실행하려면 `skillar init --no-service` 후 `skillar serve`를 사용하세요.
 
-   `init`에서 skillar.sh 계정 연결도 제안합니다. 승인은 브라우저에서 진행하고, 업로드는 승인 화면에서 켤 때만 동작합니다.
+   `init`에서 skillar.sh 계정 연결과 함께 세션 기록 업로드를 켤지 묻습니다(`[y/N]`, 기본은 끔). 승인은 브라우저에서 진행하며, 승인 화면의 "세션 기록 업로드" 체크박스를 켠 채로 승인할 때만 업로드 동의가 기록됩니다.
 
 3. **에이전트에서 사용** - 연결된 에이전트는 `search_skills`로 검색하고 MCP `resources/read`로 선택한 `SKILL.md`를 읽습니다:
 
