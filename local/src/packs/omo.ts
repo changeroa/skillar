@@ -1,8 +1,8 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
-import { localServerName, noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
-import type { PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
+import { keptLocal, localServerName, noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
+import type { McpOutcome, PackCtx, PackPlan, PackPlanFile, RuntimeId, RuntimePack } from "../types.js";
 
 export type PiPackSpec = {
   id: "omo" | "gajae";
@@ -120,11 +120,19 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
       }
       const servers: Record<string, unknown> = { ...(isObject(cfg.mcpServers) ? cfg.mcpServers : {}) };
       const remoteUrl = remoteEntryUrl(servers.skillar, ["url"]);
-      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
-      if (remoteUrl === null && isRemoteSkillar(servers.skillar)) return noop(remoteConflictWarning("unparsed remote target"));
+      const hosted = ctx.mcp === "hosted";
+      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return hosted ? keptLocal(remoteConflictWarning(remoteUrl), "a different remote MCP holds the skillar name") : noop(remoteConflictWarning(remoteUrl));
+      if (remoteUrl === null && isRemoteSkillar(servers.skillar)) return hosted ? keptLocal(remoteConflictWarning("unparsed remote target"), "an existing remote bridge holds the skillar name") : noop(remoteConflictWarning("unparsed remote target"));
+      let mcpOutcome: McpOutcome | undefined;
       // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
       if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
         plan.notes.push(REMOTE_ALREADY_REGISTERED);
+        mcpOutcome = { state: "already_hosted" };
+      } else if (hosted) {
+        const local = localServerName(servers);
+        if (local !== "skillar") delete servers[local];
+        servers.skillar = { type: "http", url: SKILLAR_REMOTE_MCP_URL };
+        mcpOutcome = { state: "hosted" };
       } else {
         servers[localServerName(servers)] = { type: "http", url: `http://127.0.0.1:${ctx.port}/mcp`, headers: { Authorization: `Bearer ${ctx.token}` } };
       }
@@ -142,7 +150,10 @@ export function createPiPack(spec: PiPackSpec): RuntimePack {
         const f: PackPlanFile = { path, before: readOrNull(path), after, mode: 0o644 };
         plan.files.push(f);
       };
-      for (const name of EXT_FILES) add(join(dir, name), readFileSync(join(source, name), "utf8"));
+      // Connected mode: the discovery guidance must describe the hosted (account) search, not this machine.
+      const guidance = (text: string) => (mcpOutcome ? text.replace("skillar searches skills on this machine through MCP 2026-07-28.", "skillar searches skills in your connected skillar.sh account through MCP 2026-07-28.") : text);
+      for (const name of EXT_FILES) add(join(dir, name), guidance(readFileSync(join(source, name), "utf8")));
+      if (mcpOutcome) plan.mcp = mcpOutcome;
       add(join(dir, "config.json"), JSON.stringify({ port: ctx.port }, null, 2) + "\n");
       plan.notes.push(`extension forwarder installed at ${dir}; it reads the token from $SKILLAR_HOME/token at load`);
       return plan;

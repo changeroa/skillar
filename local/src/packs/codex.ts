@@ -2,7 +2,7 @@ import { accessSync, constants, existsSync, readdirSync, readFileSync, realpathS
 import { join, delimiter, resolve } from "node:path";
 import { resolveSkillarHome } from "../config.js";
 import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
+import { keptLocal, noop, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 
 type Env = NodeJS.ProcessEnv;
 const BEGIN = "# >>> skillar managed";
@@ -152,24 +152,31 @@ export const codexPack: RuntimePack = {
     if (table) {
       const remoteUrl = skillarTableRemoteUrl(table.body);
       // A different remote MCP holding the skillar name: hands off this runtime entirely, no abort.
-      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+      if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return ctx.mcp === "hosted" ? keptLocal(remoteConflictWarning(remoteUrl), "a different remote MCP holds the skillar name") : noop(remoteConflictWarning(remoteUrl));
       // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
       if (remoteUrl === SKILLAR_REMOTE_MCP_URL) {
         keepRemoteRegistration = true;
         plan.notes.push(REMOTE_ALREADY_REGISTERED);
+        if (ctx.mcp === "hosted") plan.mcp = { state: "already_hosted" };
       } else {
         plan.conflicts.push({ path, code: "unmanaged_skillar_mcp", detail: "config.toml already has an unmanaged [mcp_servers.skillar] table" });
         return plan;
       }
     }
 
-    const wanted = keepRemoteRegistration ? captureOnlyBlock(ctx) : block(ctx);
+    // Connected mode: capture-only managed block plus the hosted table at the end of the file; the local daemon table is never written.
+    const hostedNow = ctx.mcp === "hosted" && !keepRemoteRegistration;
+    const wanted = keepRemoteRegistration || hostedNow ? captureOnlyBlock(ctx) : block(ctx);
     let after: string;
     if (managed) {
       after = text.slice(0, managed.start) + wanted + text.slice(managed.end);
     } else {
       const sep = text === "" ? "" : text.endsWith("\n") ? "\n" : "\n\n";
       after = text + sep + wanted;
+    }
+    if (hostedNow) {
+      after = after.replace(/\s*$/, "") + `\n\n[mcp_servers.skillar]\nurl = "${SKILLAR_REMOTE_MCP_URL}"\n`;
+      plan.mcp = { state: "hosted" };
     }
 
     if (ctx.disableRemote) {

@@ -147,9 +147,13 @@ export type PaneUsageRow = { paneId: string; skills: string[]; tools: string[] }
 export type SkillarConfig = { port: number; captureLevel: CaptureLevel; retentionDays: number | null;
   roots: { id: string; path: string }[]; runtimes: Partial<Record<RuntimeId, { enabled: boolean }>> };
 export type PackPlanFile = { path: string; before: string | null; after: string; mode: number };
-export type PackPlan = { files: PackPlanFile[]; commands: { argv: string[]; env?: Record<string, string>; description: string; undo?: { argv: string[]; description: string } }[];
+export type PackPlan = { mcp?: McpOutcome; files: PackPlanFile[]; commands: { argv: string[]; env?: Record<string, string>; description: string; undo?: { argv: string[]; description: string } }[];
   notes: string[]; conflicts: { path: string; code: string; detail: string }[] };
-export type PackCtx = { home: string; env: NodeJS.ProcessEnv; port: number; token: string; nodePath: string; packageRoot: string; disableRemote: boolean };
+/** Where a runtime's skillar MCP entry ends up. "kept_local" is never reported as connected. */
+export type McpOutcome = { state: "hosted" | "already_hosted" | "kept_local"; reason?: string };
+export type PackCtx = { home: string; env: NodeJS.ProcessEnv; port: number; token: string; nodePath: string; packageRoot: string; disableRemote: boolean;
+  /** "hosted" = connected mode: register https://skillar.sh/mcp instead of the local daemon entry. Planning in this mode never registers the local entry first. */
+  mcp?: "local" | "hosted" };
 export interface RuntimePack { id: RuntimeId; detect(ctx: { home: string; env: NodeJS.ProcessEnv }): Promise<{ installed: boolean; evidence: string[]; remoteSkillarRegistered: boolean }>;
   plan(ctx: PackCtx): Promise<PackPlan>;
   doctorChecks(ctx: { home: string; env: NodeJS.ProcessEnv; port: number }): Promise<{ name: string; ok: boolean; detail: string }[]> }

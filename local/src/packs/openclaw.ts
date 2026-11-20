@@ -117,7 +117,11 @@ export const openclawPack: RuntimePack = {
     else commands.push({ argv: install, description: "Install the skillar capture plugin into OpenClaw (restart the OpenClaw Gateway afterwards)", undo: { argv: uninstall, description: "Uninstall the skillar OpenClaw plugin" } });
 
     if (ctx.disableRemote) notes.push("Remote skillar OpenClaw bundle is not removed automatically. To disable it run: openclaw plugins disable gisul-openclaw; to remove it run: openclaw plugins uninstall gisul-openclaw");
-    return { files, commands, notes, conflicts: [] };
+    // No verified way to register the hosted MCP for OpenClaw: its bundle reaches the local daemon through a stdio proxy.
+    const mcp = ctx.mcp === "hosted"
+      ? { mcp: { state: "kept_local" as const, reason: "no verified hosted-MCP registration for OpenClaw (its plugin bundle uses a stdio proxy to the local daemon); stays local until that is designed" } }
+      : {};
+    return { files, commands, notes, conflicts: [], ...mcp };
   },
 
   async doctorChecks({ home, env }) {

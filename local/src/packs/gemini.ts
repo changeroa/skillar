@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { PackCtx, PackPlan, RuntimePack } from "../types.js";
-import { type JsonObject, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
+import type { McpOutcome, PackCtx, PackPlan, RuntimePack } from "../types.js";
+import { type JsonObject, keptLocal, isObject, isRemoteEntry, localServerName, noop, planJsonFile, readJsonConfig, refuse, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
 
 // Hook shape confirmed against https://geminicli.com/docs/hooks/ : settings.json "hooks" maps an event name to groups
 // of { matcher?, hooks: [{ type: "command", name, command, timeout }] }; timeout is in milliseconds. BeforeAgent is a
@@ -58,10 +58,17 @@ export const geminiPack: RuntimePack = {
       notes.push("Remote skillar MCP entry left enabled: Gemini's disable key is unverified, so disable it manually.");
     }
     const remoteUrl = remoteEntryUrl(servers.skillar, URL_KEYS);
-    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return noop(remoteConflictWarning(remoteUrl));
+    if (remoteUrl !== null && remoteUrl !== SKILLAR_REMOTE_MCP_URL) return ctx.mcp === "hosted" ? keptLocal(remoteConflictWarning(remoteUrl), "a different remote MCP holds the skillar name") : noop(remoteConflictWarning(remoteUrl));
+    let mcp: McpOutcome | undefined;
     // Already pointing at the hosted skillar MCP: keep the registration, still install capture.
-    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) notes.push(REMOTE_ALREADY_REGISTERED);
-    else servers[localServerName(servers)] = { httpUrl: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
+    if (remoteUrl === SKILLAR_REMOTE_MCP_URL) { notes.push(REMOTE_ALREADY_REGISTERED); mcp = { state: "already_hosted" }; }
+    else if (ctx.mcp === "hosted") {
+      // Connected mode: the hosted entry is the final state; the local daemon entry is never written first.
+      const local = localServerName(servers);
+      if (local !== "skillar") delete servers[local];
+      servers.skillar = { httpUrl: SKILLAR_REMOTE_MCP_URL };
+      mcp = { state: "hosted" };
+    } else servers[localServerName(servers)] = { httpUrl: localMcpUrl(ctx.port), headers: { Authorization: `Bearer ${ctx.token}` } };
     next.mcpServers = servers;
 
     for (const { event, matcher } of HOOK_EVENTS) {
@@ -77,7 +84,7 @@ export const geminiPack: RuntimePack = {
 
     const file = planJsonFile(path, current, next);
     notes.push("Restart Gemini CLI to load the skillar MCP server and capture hooks.");
-    return { files: file ? [file] : [], commands: [], notes, conflicts: [] };
+    return { files: file ? [file] : [], commands: [], notes, conflicts: [], ...(mcp ? { mcp } : {}) };
   },
 
   async doctorChecks({ home, port }) {

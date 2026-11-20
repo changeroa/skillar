@@ -42,6 +42,30 @@ export async function runPrivateSkills(
   const [command, ...rest] = args;
   try {
     switch (command) {
+      case "sync-plan": {
+        // Read-only dry run: no network, no consent change, no writes.
+        const json = rest.includes("--json");
+        const include: string[] = [];
+        for (let i = 0; i < rest.length; i++) {
+          if (rest[i] === "--json") continue;
+          if (rest[i] === "--include" && rest[i + 1] && !rest[i + 1]!.startsWith("--")) { include.push(rest[++i]!); continue; }
+          throw new SkillsUsageError("sync-plan only accepts --json and --include <rootId>/<dir>");
+        }
+        const { defaultConfigFile, expandHome, resolveHome, resolveSkillarHome: skHome } = await import("../config.js");
+        const { existsSync, readFileSync } = await import("node:fs");
+        const { readConnection } = await import("../sync/cloud-connection.js");
+        const { planSkillSync, renderSyncPlan } = await import("../skills/sync-plan.js");
+        const conn = readConnection(skHome(env));
+        // Read config without loadConfig(): that creates SKILLAR_HOME, config.json and a token, and a dry run writes nothing.
+        const home = resolveHome(env);
+        const configPath = join(skHome(env), "config.json");
+        let rawRoots: { id: string; path: string }[] | undefined;
+        if (existsSync(configPath)) rawRoots = (JSON.parse(readFileSync(configPath, "utf8")) as { roots?: { id: string; path: string }[] }).roots;
+        const roots = (rawRoots ?? defaultConfigFile().roots).map((r) => ({ id: r.id, path: expandHome(r.path, home) }));
+        const plan = await planSkillSync(roots, { deviceId: conn?.deviceId ?? null, include });
+        io.out(json ? JSON.stringify(plan) + "\n" : renderSyncPlan(plan));
+        return 0;
+      }
       case "push-preview": {
         const values = options(rest, ["--source-dir", "--plan"], [], ["--skill-id"]);
         const home = resolveSkillarHome(env);
