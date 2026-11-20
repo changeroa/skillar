@@ -29,19 +29,35 @@ export function preparedPath(home: string, snapshotId: string): string {
 export function bindSource(path: string, connection: CloudConnection): void {
   const db = openDb(path);
   try {
-    const marker = db.prepare("SELECT value FROM meta WHERE key='cloud.binding'").get();
-    if (marker?.["value"] === connection.instanceId) return;
-    if (db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined) {
+    const readMarker = (key: string): unknown =>
+      db.prepare("SELECT value FROM meta WHERE key=?").get(key)?.["value"];
+    const instance = readMarker("cloud.binding");
+    const bound = readMarker("cloud.device");
+    const deviceKey = `${connection.deviceId}:${connection.generation}`;
+    // Reconnects and scope upgrades of the SAME device mint a new instanceId but
+    // must keep the source: fork only on a real device-identity change (or the
+    // first bind, the historical behavior). A legacy install with cloud.binding
+    // but no cloud.device marker adopts the current device without forking.
+    const fork = bound === undefined ? instance === undefined : bound !== deviceKey;
+    if (!fork && instance === connection.instanceId && bound === deviceKey) return;
+    if (fork && db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined) {
       throw new CloudSyncError("pending_identity_change");
     }
     db.exec("BEGIN IMMEDIATE");
     try {
-      // Fork identity without moving the durable clock backwards. Existing row
-      // vectors retain their original domains; future marks use this new domain.
-      db.prepare("UPDATE recording_clock SET domain=? WHERE singleton=1").run(randomUUID());
-      db.prepare("UPDATE sync_identity SET source_domain=? WHERE singleton=1").run(randomUUID());
+      if (fork) {
+        // Fork identity without moving the durable clock backwards. Existing row
+        // vectors retain their original domains; future marks use this new domain.
+        // The clock domain and the sync source domain stay the same value, as the
+        // initial schema migration set them.
+        const domain = randomUUID();
+        db.prepare("UPDATE recording_clock SET domain=? WHERE singleton=1").run(domain);
+        db.prepare("UPDATE sync_identity SET source_domain=? WHERE singleton=1").run(domain);
+      }
       db.prepare(`INSERT INTO meta(key,value) VALUES('cloud.binding',?)
         ON CONFLICT(key) DO UPDATE SET value=excluded.value`).run(connection.instanceId);
+      db.prepare(`INSERT INTO meta(key,value) VALUES('cloud.device',?)
+        ON CONFLICT(key) DO UPDATE SET value=excluded.value`).run(deviceKey);
       db.exec("COMMIT");
     } catch (error) {
       db.exec("ROLLBACK");
