@@ -149,6 +149,42 @@ export class CloudBlobs {
     if (batch === null) throw new CloudSyncError("spool_sequence_gap");
     return batch;
   }
+  /** Stream identity is the device+source, not one connection instance: a
+   * re-approval mints a new instanceId for the same device, and the existing
+   * stream must be found again instead of staging a second baseline. */
+  liveStreamFor(deviceId: string, sourceDomain: string): string | null {
+    const row = this.#db.prepare(`SELECT stream_id FROM sync_streams
+      WHERE device_id=? AND source_domain=? AND stream_id GLOB 'cloud-live:*'
+      ORDER BY ack_sequence DESC, rowid DESC LIMIT 1`).get(deviceId, sourceDomain);
+    return row === undefined ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
+  }
+  pendingMigration(deviceId: string, sourceDomain: string) {
+    const row = this.#db.prepare(`SELECT o.stream_id FROM sync_outbox o
+      JOIN sync_streams s ON s.stream_id=o.stream_id
+      WHERE s.device_id=? AND s.source_domain=? AND o.stream_id GLOB 'cloud-migration:*'
+      ORDER BY o.rowid LIMIT 1`).get(deviceId, sourceDomain);
+    if (row === undefined) return null;
+    const { stream_id: streamId } = z.object({ stream_id: z.string() }).parse(row);
+    const batch = pendingBatch(this.#db, streamId);
+    if (batch === null) throw new CloudSyncError("spool_sequence_gap");
+    return batch;
+  }
+  backfillAcked(sourceDomain: string, snapshotId: string): boolean {
+    return this.#db.prepare(`SELECT 1 FROM sync_streams
+      WHERE source_domain=? AND stream_id GLOB 'cloud-migration:*'
+        AND substr(stream_id, 0 - length(?)) = ? AND ack_sequence > 0`)
+      .get(sourceDomain, snapshotId, snapshotId) !== undefined;
+  }
+  /** A staged batch that was never acked never left this device; dropping it is
+   * local-only cleanup of a stale spool entry, never a server change. */
+  discardStream(streamId: string): void {
+    z.string().min(1).max(512).parse(streamId);
+    this.#transaction(() => {
+      this.assertLease();
+      this.#db.prepare("DELETE FROM sync_outbox WHERE stream_id=?").run(streamId);
+      this.#db.prepare("DELETE FROM sync_streams WHERE stream_id=?").run(streamId);
+    });
+  }
   acknowledge(receipt: Parameters<typeof acknowledgeBatch>[1]): void {
     acknowledgeBatch(this.#db, receipt, () => this.assertLease());
   }

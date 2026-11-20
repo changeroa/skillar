@@ -92,7 +92,11 @@ export async function stageBaseline(
 export async function stageLive(
   source: Db, blobs: CloudBlobs, connection: CloudConnection, consent: Consent,
 ) {
-  const head = journalHead(source), streamId = liveStream(connection.instanceId, head.sourceDomain);
+  const head = journalHead(source);
+  // Same device+source resolution as the sync loop: a re-approval mints a new
+  // instanceId, and the live cursor belongs to the device, not the instance.
+  const streamId = blobs.liveStreamFor(connection.deviceId, head.sourceDomain)
+    ?? liveStream(connection.instanceId, head.sourceDomain);
   const cursor = blobs.cursor(streamId);
   if (cursor === null) throw new CloudSyncError("baseline_required");
   if (head.cut < cursor.ack_cut) throw new CloudSyncError("source_history_rewound");

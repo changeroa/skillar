@@ -8,7 +8,7 @@ import { deliverCloudJob } from "./cloud-delivery.js";
 import { CloudHttp, CloudRequestError } from "./cloud-http.js";
 import { liveStream, requireJob } from "./cloud-jobs.js";
 import { bindSource } from "./cloud-prepare.js";
-import { migrationPrefix, stageBaseline, stageLive } from "./cloud-stage.js";
+import { stageBaseline, stageLive } from "./cloud-stage.js";
 import { journalHead } from "./journal.js";
 import { SyncError } from "./tables.js";
 import { contractDiagnostic } from "./contract-diagnostic.js";
@@ -89,19 +89,35 @@ export async function runCloudStep(
     bindSource(sourcePath, connection);
     const source = openDb(sourcePath);
     try {
-      const head = journalHead(source), streamId = liveStream(connection.instanceId, head.sourceDomain);
-      let migration = blobs.pendingPrefix(migrationPrefix(connection, head.sourceDomain));
+      const head = journalHead(source);
+      // A re-approval of the same device mints a new instanceId; resolve the
+      // stream by device+source so the existing epoch is resumed, not rebuilt.
+      const streamId = blobs.liveStreamFor(connection.deviceId, head.sourceDomain)
+        ?? liveStream(connection.instanceId, head.sourceDomain);
+      let migration = blobs.pendingMigration(connection.deviceId, head.sourceDomain);
       const cursor = blobs.cursor(streamId);
+      if (cursor !== null && migration !== null) {
+        const staged = requireJob(migration.payload);
+        const stagedCursor = blobs.cursor(migration.stream_id);
+        if (staged.kind === "migration" && staged.begin.purpose === "initial" &&
+            (stagedCursor?.ack_sequence ?? 0) === 0) {
+          // Staged by an earlier reconnect of this same device; the server must
+          // reject a second initial epoch (migration_epoch_required). It was
+          // never accepted, so drop the local spool entry and resume live.
+          blobs.discardStream(migration.stream_id);
+          migration = null;
+        }
+      }
       const historical = self.consent.backfill;
-      const backfillDone = historical !== undefined && (blobs.cursor(
-        `${migrationPrefix(connection, head.sourceDomain)}${historical.snapshotId}`)?.ack_sequence ?? 0) > 0;
+      const backfillDone = historical !== undefined &&
+        blobs.backfillAcked(head.sourceDomain, historical.snapshotId);
       if (cursor === null && migration === null) {
         await stageBaseline(home, source, blobs, connection, self.consent, "initial");
-        migration = blobs.pendingPrefix(migrationPrefix(connection, head.sourceDomain));
+        migration = blobs.pendingMigration(connection.deviceId, head.sourceDomain);
       } else if (cursor !== null && migration === null && !backfillDone &&
           (options.backfill || historical !== undefined)) {
         await stageBaseline(home, source, blobs, connection, self.consent, "backfill");
-        migration = blobs.pendingPrefix(migrationPrefix(connection, head.sourceDomain));
+        migration = blobs.pendingMigration(connection.deviceId, head.sourceDomain);
       }
       let batch = blobs.pending(streamId);
       const migrationTurn = migration !== null && (cursor === null || (same?.liveTurns ?? 0) >= 5);
