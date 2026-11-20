@@ -11,6 +11,7 @@ import { bindSource } from "./cloud-prepare.js";
 import { migrationPrefix, stageBaseline, stageLive } from "./cloud-stage.js";
 import { journalHead } from "./journal.js";
 import { SyncError } from "./tables.js";
+import { contractDiagnostic } from "./contract-diagnostic.js";
 import { ActivityContractError, authorizeUpload, parseContentBatch } from "./cloud-wire.js";
 import type { Consent, UploadScope } from "./cloud-wire.js";
 
@@ -142,7 +143,7 @@ export async function runCloudStep(
       error.state === "quarantined" ? "quarantine" : error.state, {
       code: error.code, retryAtMs: error.retryAtMs ?? undefined, attempts: (same?.attempts ?? 0) + 1,
     });
-    if (error instanceof z.ZodError) return save("quarantine", { code: "invalid_contract" });
+    if (error instanceof z.ZodError) return save("quarantine", { code: contractDiagnostic(error) });
     if (error instanceof CloudSyncError || error instanceof SyncError || error instanceof ActivityContractError) return save(
       /consent/.test(error.code) ? "consent-required" :
         /credentials|identity/.test(error.code) ? "auth-required" : "quarantine",

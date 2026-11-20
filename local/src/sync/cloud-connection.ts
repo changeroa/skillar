@@ -89,6 +89,11 @@ export async function connectCloud(
     token: credential.token, expiresAt: credential.expiresAt, scopes: [...self.scopes],
   });
   atomicCloudJson(home, "connection.json", connection);
+  // A fresh browser approval is the explicit act that (re)starts sync. A pause
+  // flag left over from an earlier `sync pause`/`sync rollback`/`sync disconnect`
+  // belongs to the previous connection; without this reset the new connection
+  // would sit at phase "paused" with zero attempts until a separate `--resume`.
+  atomicCloudJson(home, "control.json", { paused: false });
   const { token: _secret, ...visible } = connection;
   return visible;
 }

@@ -36,15 +36,15 @@ test("browser-approval connect: pending, approve, poll, exchange; consent only f
     io: { out: s => lines.push(s), err: () => {} },
     fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
   });
-  // Given: the flow prints the code, the approval URL and the --upload guidance
+  // Given: the flow prints the code and the approval URL with the upload pre-check
   let codeLine;
   for (let i = 0; i < 500 && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
     await new Promise(r => setTimeout(r, 5));
   }
   assert.ok(codeLine !== undefined, "flow prints the user code");
   const code = codeLine.split(":")[1].trim();
-  assert.ok(lines.some(l => l.includes(`/connections/?code=${encodeURIComponent(code)}`)));
-  assert.ok(lines.some(l => l.includes("--upload")));
+  assert.ok(lines.some(l => l.includes(`/connections/?code=${encodeURIComponent(code)}&upload=1`)));
+  assert.ok(lines.some(l => l.includes("체크된 상태로 열립니다")));
   // And: the approval page summary matches the request (no secrets)
   const summaryResponse = await activityRequest(new Request(
     `https://skillar.sh/api/devices/pending/${encodeURIComponent(code)}`, { headers: { cookie: f.cookie } }), f.env);
@@ -316,4 +316,89 @@ test("publish approval: legacy connection file without scopes probes device-self
   const after = readConnection(home);
   assert.equal(after.deviceId, legacy.deviceId);
   assert.deepEqual(after.scopes, ["activity:read", "activity:ingest", "skills:read", "skills:write"]);
+});
+
+test("upload question: y pre-checks the approval page, empty/n does not, non-TTY never asks", { timeout: 30000 }, async t => {
+  const approveOnce = async (f, lines) => {
+    let codeLine;
+    for (let i = 0; i < 2000 && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
+      await new Promise(r => setTimeout(r, 5));
+    }
+    const code = codeLine.split(":")[1].trim();
+    const approved = await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+      method: "POST",
+      headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    }), f.env);
+    assert.equal(approved.status, 200);
+  };
+  const run = async (t, answer) => {
+    const f = await fixture(t);
+    const lines = [];
+    const ask = answer === undefined ? undefined : async q => { lines.push(q); return answer; };
+    const flow = connectCloudDeviceFlow(f.dir, {
+      origin: "https://skillar.sh", open: false,
+      io: { out: s => lines.push(s), err: () => {}, ...(ask === undefined ? {} : { ask }) },
+      fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+    });
+    await approveOnce(f, lines);
+    await flow;
+    return lines;
+  };
+  // y answers carry the pre-check in the approval URL
+  const yesLines = await run(t, "y");
+  assert.ok(yesLines.some(l => l.includes("세션 기록 업로드도 켤까요? [y/N]")));
+  assert.ok(yesLines.some(l => l.includes("upload=1")));
+  // empty answer (default N) keeps the URL plain
+  const noLines = await run(t, "");
+  assert.ok(noLines.some(l => l.includes("[y/N]")));
+  assert.equal(noLines.some(l => l.includes("upload=1")), false);
+  // no TTY: never asks, never pre-checks
+  const quietLines = await run(t, undefined);
+  assert.equal(quietLines.some(l => l.includes("[y/N]")), false);
+  assert.equal(quietLines.some(l => l.includes("upload=1")), false);
+});
+
+test("scope upgrade never asks the upload question and never carries the pre-check", { timeout: 30000 }, async t => {
+  const f = await fixture(t);
+  const lines = [];
+  const first = connectCloudDeviceFlow(f.dir, {
+    origin: "https://skillar.sh", open: false,
+    io: { out: s => lines.push(s), err: () => {} },
+    fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+  });
+  let codeLine;
+  for (let i = 0; i < 2000 && (codeLine = lines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
+    await new Promise(r => setTimeout(r, 5));
+  }
+  const code = codeLine.split(":")[1].trim();
+  await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+    method: "POST",
+    headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+    body: JSON.stringify({ code }),
+  }), f.env);
+  const connected = await first;
+  // Upgrade with uploadIntent true AND an interactive channel: no question, no upload=1
+  const upgradeLines = [];
+  let asked = false;
+  const upgrade = connectCloudDeviceFlow(f.dir, {
+    origin: "https://skillar.sh", open: false, upgradeDeviceId: connected.deviceId,
+    scopes: ["activity:read", "activity:ingest", "skills:read"], uploadIntent: true,
+    io: { out: s => upgradeLines.push(s), err: () => {}, ask: async () => { asked = true; return "y"; } },
+    fetcher: f.fetcher, wait: () => new Promise(r => setTimeout(r, 10)),
+  });
+  let upgradeCodeLine;
+  for (let i = 0; i < 2000 && (upgradeCodeLine = upgradeLines.find(l => l.includes("연결 코드:"))) === undefined; i++) {
+    await new Promise(r => setTimeout(r, 5));
+  }
+  const upgradeCode = upgradeCodeLine.split(":")[1].trim();
+  const approved = await activityRequest(new Request("https://skillar.sh/api/devices/pending/approve", {
+    method: "POST",
+    headers: { cookie: f.cookie, origin: "https://skillar.sh", "content-type": "application/json" },
+    body: JSON.stringify({ code: upgradeCode }),
+  }), f.env);
+  assert.equal(approved.status, 200);
+  await upgrade;
+  assert.equal(asked, false);
+  assert.equal(upgradeLines.some(l => l.includes("upload=1")), false);
 });

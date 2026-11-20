@@ -220,7 +220,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     } else {
       try {
         const connected = await connectCloudDeviceFlow(skillarHome, {
-          origin: "https://skillar.sh", uploadIntent: opts.upload ?? false, env, io,
+          origin: "https://skillar.sh", uploadIntent: opts.upload, env, io,
           fetcher: hooks.fetcher, wait: hooks.wait,
         });
         io.out(`cloud: connected device ${connected.deviceId}\n`);
@@ -240,7 +240,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     if (answer === "" || answer === "y" || answer === "yes") {
       try {
         const connected = await connectCloudDeviceFlow(skillarHome, {
-          origin: "https://skillar.sh", uploadIntent: opts.upload ?? false, env, io,
+          origin: "https://skillar.sh", uploadIntent: opts.upload, env, io,
           fetcher: hooks.fetcher, wait: hooks.wait,
         });
         io.out(`cloud: connected device ${connected.deviceId}\n`);

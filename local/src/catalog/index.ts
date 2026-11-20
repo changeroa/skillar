@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import type { Catalog, CatalogDelta, SkillarConfig, SkillEntry, SkillUri } from "../types.js";
 import { applyFamilies } from "./fields.js";
 import { assertRegularSkillPath, CatalogError, scanRoot, sha256 } from "./scanner.js";
+import type { ScanLog, SkillSkip } from "./scanner.js";
 import { parseSkillUri, skillUri } from "./uri.js";
 import { watchRoots } from "./watcher.js";
 
@@ -27,6 +28,21 @@ function deltaIsEmpty(d: CatalogDelta): boolean {
 export function createCatalog(config: CatalogOptions): ManagedCatalog {
   const roots = config.roots.map((r) => ({ id: r.id, path: r.path }));
   const log = config.log ?? console.error;
+  // Skipped skills are re-scanned on every watcher poll (2s fallback): log a
+  // skip once per (skill, reason, SKILL.md mtime) instead of every scan, and
+  // again only when the file actually changes.
+  const skipLogSeen = new Map<string, string>();
+  const scanLog: ScanLog = (msg, skip?: SkillSkip) => {
+    if (skip === undefined) {
+      log(msg);
+      return;
+    }
+    const key = `${skip.rootId}/${skip.dir}`;
+    const signature = `${skip.mtimeMs ?? ""}${msg}`;
+    if (skipLogSeen.get(key) === signature) return;
+    skipLogSeen.set(key, signature);
+    log(msg);
+  };
   let entries = new Map<SkillUri, SkillEntry>();
   let resourceIndex = new Map<SkillUri, { entry: SkillEntry; digest: string; size: number }>();
   let families: Report["families"] = [];
@@ -40,7 +56,7 @@ export function createCatalog(config: CatalogOptions): ManagedCatalog {
     const status: Report["roots"] = [];
     const seen = new Set<SkillUri>();
     for (const root of roots) {
-      const { readable, skills } = await scanRoot(root, log);
+      const { readable, skills } = await scanRoot(root, scanLog);
       let count = 0;
       for (const { entry, explicitGroup } of skills) {
         if (seen.has(entry.uri)) continue;

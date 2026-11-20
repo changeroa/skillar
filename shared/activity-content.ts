@@ -138,6 +138,26 @@ const textColumns: Readonly<Record<ContentTable, readonly string[]>> = {
 };
 const nonTimeColumns = new Set(["text_length", "version", "start_order", "end_order", "singleton", "position"]);
 
+/**
+ * Filesystem/stat sources carry sub-millisecond precision (lstat().mtimeMs is
+ * fractional on macOS/APFS), while the wire contract is integer milliseconds.
+ * Round only numeric time columns at the local boundary, before contract
+ * validation; other columns and values stay untouched.
+ */
+type ContentValues = z.infer<typeof contentValuesSchema>;
+function normalizeTimes(table: ContentTable, values: ContentValues | null | undefined): ContentValues | null | undefined {
+  if (values == null) return values;
+  let normalized: Record<string, string | number | null> | null = null;
+  for (const column of numericColumns[table]) {
+    if (nonTimeColumns.has(column)) continue;
+    const value = values[column];
+    if (typeof value === "number" && !Number.isInteger(value) && Number.isFinite(value)) {
+      (normalized ??= { ...values })[column] = Math.round(value);
+    }
+  }
+  return normalized ?? values;
+}
+
 export const contentRowSchema = z.strictObject({
   table: contentTableSchema, key: z.string().max(MAX_CONTENT_BYTES),
   revision: revisionSchema, operation: z.enum(["upsert", "delete"]),
@@ -232,11 +252,12 @@ export async function transformContentRows(
   for (const input of rows) {
     const local = localRowSchema.parse(input);
     const { beforeValues, ...wire } = local;
-    const row = contentRowSchema.parse(wire);
+    const row = contentRowSchema.parse({ ...wire, values: normalizeTimes(local.table, wire.values) });
     checkTimes(row, scope);
     // Delete before-images provide local range evidence, never wire data.
     if (beforeValues !== undefined && beforeValues !== null) {
-      checkTimes(contentRowSchema.parse({ ...wire, operation: "upsert", values: beforeValues }), scope);
+      const before = normalizeTimes(local.table, beforeValues);
+      checkTimes(contentRowSchema.parse({ ...wire, operation: "upsert", values: before }), scope);
     }
     const key = allowsKey(consent, scope, row.table) ? row.key :
       await hashContent(encoder.encode(`${row.table}\0${row.key}`));

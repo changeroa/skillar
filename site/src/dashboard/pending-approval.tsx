@@ -3,6 +3,7 @@ import { z } from "zod";
 import { approvePending, describeFailure, readPending } from "./api";
 import type { PendingConsentChoice, PendingSummary } from "./api";
 import { CONTENT_KINDS, CONTENT_KIND_COPY } from "./consent";
+import type { ContentKind } from "../../../shared/dist/activity-schema.js";
 import { Radio } from "../../../local/dashboard/foundation/controls/choices";
 
 const sessionSchema = z.object({ user: z.object({ name: z.string(), email: z.string() }) });
@@ -18,10 +19,10 @@ type Phase =
 const MODES: readonly { readonly value: Mode; readonly label: string; readonly detail: string }[] = [
   { value: "local-only", label: "로컬 전용", detail: "기본값입니다. 활동은 기기에 남고 아무것도 업로드하지 않습니다." },
   { value: "metadata", label: "메타데이터만", detail: "세션 시각, 실행 환경 이름, 이벤트 종류만 업로드합니다. 프롬프트, 검색어, 인자, 경로, 스킬 본문은 포함하지 않습니다." },
-  { value: "managed-content", label: "메타데이터와 전체 내용", detail: "아래 일곱 가지 범주를 모두 업로드합니다. 사이트의 보고서 전체를 쓰려면 필요하지만, 업로드 자체는 선택 사항입니다." },
+  { value: "managed-content", label: "메타데이터와 선택한 내용", detail: "아래에서 체크한 내용 범주만 추가로 업로드합니다." },
 ];
 
-/** 요청 권한을 사람이 읽는 말로. 업로드 동의(아래 라디오)와는 별개의 기기 권한이다. */
+/** 요청 권한을 사람이 읽는 말로. 업로드 동의(아래 체크박스)와는 별개의 기기 권한이다. */
 const SCOPE_COPY: Readonly<Record<string, { readonly label: string; readonly detail: (upgrade: boolean) => string }>> = {
   "activity:read": { label: "활동 기록 읽기", detail: () => "이 기기가 내 활동 기록과 대시보드 데이터를 읽습니다." },
   // upgrade에는 동의 선택이 없으므로(기존 동의 유지) 안내도 그 상태에 맞춘다.
@@ -38,15 +39,27 @@ function formatExpires(ms: number): string {
 
 /**
  * 승인 페이지: CLI가 띄운 연결 요청을 이 브라우저 세션으로 승인한다.
- * 업로드 동의는 항상 기본 해제이며, 실제 동의 기록은 이 페이지의 명시적 제출로만 생긴다.
+ * 기본 보기는 계정·기기 요약 + "세션 기록 업로드" 체크박스 하나다. 체크는
+ * managed-content 일곱 범주 전체 + 서버 처리 확인을 한 번에 뜻한다(체크 자체가
+ * 확인). 메타데이터만·종류별 선택은 "자세히 설정" 안에 있다.
+ * CLI가 ?upload=1로 열었으면 체크된 상태로 시작하지만, 실제 동의 기록은
+ * 어느 경우든 이 페이지에서 내용을 보고 승인 버튼을 누르는 명시적 제출뿐이다.
  * 토큰 등 비밀 값은 화면에 표시하지 않는다(CLI의 폴링이 가져간다).
  */
-export function PendingApproval({ code }: { readonly code: string }) {
+export function PendingApproval({ code, uploadPreset = false }: { readonly code: string; readonly uploadPreset?: boolean }) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [mode, setMode] = useState<Mode>("local-only");
-  const [acknowledged, setAcknowledged] = useState(false);
+  const [mode, setMode] = useState<Mode>(uploadPreset ? "managed-content" : "local-only");
+  const [kinds, setKinds] = useState<readonly ContentKind[]>(CONTENT_KINDS);
+  const [acknowledged, setAcknowledged] = useState(uploadPreset);
   const [busy, setBusy] = useState(false);
   const cancelled = useRef(false);
+  // The master checkbox has three states: on (the whole grant: managed-content
+  // with every content kind plus the server-processing acknowledgment), off
+  // (local-only) and mixed (anything narrower, chosen under 자세히 설정).
+  const uploadAll = mode === "managed-content" && kinds.length === CONTENT_KINDS.length && acknowledged;
+  const partial = !uploadAll && mode !== "local-only";
+  const masterRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (masterRef.current !== null) masterRef.current.indeterminate = partial; }, [partial]);
   useEffect(() => {
     cancelled.current = false;
     const session = fetch("/auth/session", { credentials: "same-origin", cache: "no-store" })
@@ -93,16 +106,43 @@ export function PendingApproval({ code }: { readonly code: string }) {
   }
 
   const { summary, account } = phase;
+  // Master clicks only ever settle on or off: off→전체 켜기, 켜짐·부분→끄기.
+  // A narrower scope is reachable only under 자세히 설정, never by master click.
+  const toggleMaster = () => {
+    if (uploadAll || partial) {
+      setMode("local-only");
+    } else {
+      setMode("managed-content");
+      setKinds(CONTENT_KINDS);
+      setAcknowledged(true);
+    }
+  };
+  const masterDetail = mode === "local-only"
+    ? "켜면 프롬프트·검색어·도구 인자·오류·파일 경로·스팬 속성·스킬 본문이 올라갑니다. 외부 모델로 전송하지 않고 30일간 보관합니다."
+    : uploadAll
+      ? "모든 범주가 켜져 있습니다: 프롬프트·검색어·도구 인자·오류·파일 경로·스팬 속성·스킬 본문이 올라갑니다. 외부 모델로 전송하지 않고 30일간 보관합니다."
+      : mode === "metadata"
+        ? "메타데이터만 업로드합니다. 세션 시각·실행 환경 이름·이벤트 종류만 올라가고 프롬프트·검색어·인자·경로·스킬 본문은 올라가지 않습니다."
+        : kinds.length === 0
+          ? "자세히 설정에서 업로드할 내용 범주가 선택되지 않았습니다."
+          : !acknowledged
+            ? `자세히 설정에서 고른 ${kinds.length}종을 업로드하려면 서버 처리 확인을 켜야 합니다.`
+            : `자세히 설정에서 고른 ${kinds.length}종의 내용만 업로드합니다.`;
+  const toggleKind = (kind: ContentKind, checked: boolean) =>
+    setKinds(current => checked ? [...current.filter(k => k !== kind), kind] : current.filter(k => k !== kind));
+  const managedBlocked = mode === "managed-content" && (!acknowledged || kinds.length === 0);
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
+      // 재승인(upgrade)은 동의를 바꾸지 않는다. 서버도 동의 제출을 거절한다.
       const consent: PendingConsentChoice | undefined =
-        mode === "local-only" ? undefined :
+        summary.upgrade === true || mode === "local-only" ? undefined :
         mode === "metadata" ? { mode: "metadata" } :
-        { mode: "managed-content", contentKinds: [...CONTENT_KINDS], serverProcessingAcknowledged: true };
-      if (mode === "managed-content" && !acknowledged) return;
+        { mode: "managed-content", serverProcessingAcknowledged: true,
+          contentKinds: CONTENT_KINDS.filter(kind => kinds.includes(kind)) };
+      if (consent !== undefined && managedBlocked) return;
       await approvePending(code, consent);
       if (!cancelled.current) setPhase({ kind: "done" });
     } catch (error) {
@@ -111,7 +151,6 @@ export function PendingApproval({ code }: { readonly code: string }) {
       setBusy(false);
     }
   };
-  const managedBlocked = mode === "managed-content" && !acknowledged;
   return (
     <section className="panel" aria-label="CLI 연결 요청">
       <h2>CLI 연결 요청</h2>
@@ -139,31 +178,46 @@ export function PendingApproval({ code }: { readonly code: string }) {
         {summary.upgrade !== true && summary.scopes.includes("activity:ingest") && (
         <fieldset className="consent__group" disabled={busy}>
           <legend>이 기기가 업로드할 수 있는 것</legend>
-          {MODES.map(choice => (
-            <div key={choice.value}>
-              <Radio label={choice.label} name="pending-consent-mode" value={choice.value} checked={mode === choice.value}
-                aria-describedby={`pending-mode-${choice.value}-detail`} onChange={() => setMode(choice.value)} />
-              <p className="choice__detail" id={`pending-mode-${choice.value}-detail`}>{choice.detail}</p>
-            </div>
-          ))}
-          {mode === "managed-content" && (
-            <ul className="consent__kinds">
-              {CONTENT_KINDS.map(kind => (
-                <li key={kind}><strong>{CONTENT_KIND_COPY[kind].label}</strong>{" — "}
-                  <span className="choice__detail">{CONTENT_KIND_COPY[kind].detail}</span></li>
-              ))}
-            </ul>
-          )}
-          {mode === "managed-content" && (
-            <label className="choice choice--ack">
-              <input type="checkbox" checked={acknowledged}
-                onChange={event => setAcknowledged(event.currentTarget.checked)} />
-              <span>
-                <strong>skillar 서버가 체크한 내용을 읽고 처리해 보고서를 만들 수 있습니다.</strong>
-                <span className="choice__detail">내용을 업로드하려면 반드시 필요합니다. 내용은 외부 모델로 전송되지 않습니다.</span>
-              </span>
-            </label>
-          )}
+          <label className="choice">
+            <input type="checkbox" ref={masterRef} checked={uploadAll}
+              onChange={() => toggleMaster()} />
+            <span>
+              <strong>세션 기록 업로드</strong>
+              <span className="choice__detail">{masterDetail}</span>
+            </span>
+          </label>
+          <details className="consent__advanced">
+            <summary>자세히 설정</summary>
+            {MODES.map(choice => (
+              <div key={choice.value}>
+                <Radio label={choice.label} name="pending-consent-mode" value={choice.value} checked={mode === choice.value}
+                  aria-describedby={`pending-mode-${choice.value}-detail`} onChange={() => setMode(choice.value)} />
+                <p className="choice__detail" id={`pending-mode-${choice.value}-detail`}>{choice.detail}</p>
+              </div>
+            ))}
+            {mode === "managed-content" && (
+              <>
+                {CONTENT_KINDS.map(kind => (
+                  <label className="choice" key={kind}>
+                    <input type="checkbox" checked={kinds.includes(kind)}
+                      onChange={event => toggleKind(kind, event.currentTarget.checked)} />
+                    <span><strong>{CONTENT_KIND_COPY[kind].label}</strong><span className="choice__detail">{CONTENT_KIND_COPY[kind].detail}</span></span>
+                  </label>
+                ))}
+                <label className="choice choice--ack">
+                  <input type="checkbox" checked={acknowledged}
+                    onChange={event => setAcknowledged(event.currentTarget.checked)} />
+                  <span>
+                    <strong>skillar 서버가 업로드된 내용을 읽고 처리할 수 있습니다.</strong>
+                    <span className="choice__detail">내용을 업로드하려면 반드시 필요합니다. 내용은 외부 모델로 전송되지 않습니다.</span>
+                  </span>
+                </label>
+                {mode === "managed-content" && kinds.length === 0 && (
+                  <p className="note" role="alert">하나 이상의 내용 범주를 선택하거나 메타데이터만으로 바꾸세요.</p>
+                )}
+              </>
+            )}
+          </details>
         </fieldset>
         )}
         <button className="button button--primary" type="submit" disabled={busy || managedBlocked}>
