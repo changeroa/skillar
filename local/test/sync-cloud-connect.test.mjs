@@ -26,12 +26,15 @@ async function fixture(t) {
     ACCOUNTS: accounts, ACTIVITY_ENABLED: "true",
   };
   const cookie = `${SESSION_COOKIE}=${await signCookie({ sub: "sub", sid }, "session", env, now)}`;
-  const response = await activityRequest(new Request("https://skillar.sh/api/devices/grants", {
-    method: "POST", headers: {
-      cookie, origin: "https://skillar.sh", "content-type": "application/json",
-    }, body: JSON.stringify({ scopes: ["activity:read", "activity:ingest"] }),
-  }), env);
-  const issued = await response.json(), calls = [];
+  const issueGrant = async () => {
+    const response = await activityRequest(new Request("https://skillar.sh/api/devices/grants", {
+      method: "POST", headers: {
+        cookie, origin: "https://skillar.sh", "content-type": "application/json",
+      }, body: JSON.stringify({ scopes: ["activity:read", "activity:ingest"] }),
+    }), env);
+    return response.json();
+  };
+  const issued = await issueGrant(), calls = [];
   const fetcher = async (url, init) => {
     calls.push(String(url));
     return activityRequest(new Request(url, init), env);
@@ -41,7 +44,7 @@ async function fixture(t) {
   db.prepare(`INSERT INTO sessions(id,runtime,started_at,first_prompt)
     VALUES('session','codex',100,'PRIVATE_LOCAL_FIXTURE')`).run();
   db.close();
-  return { dir, source, issued, calls, fetcher, accountsDb };
+  return { dir, source, issued, calls, fetcher, accountsDb, issueGrant };
 }
 
 test("real device exchange connects without granting upload and local preparation sends no bytes", async t => {
@@ -88,4 +91,21 @@ test("backup concurrent writer restarts yield one internally consistent value an
     WHERE table_name='sessions' ORDER BY seq DESC LIMIT 1`).get();
   assert.equal(JSON.parse(last.row_json).first_prompt, "AFTER_BACKUP_START");
   frozen.close();
+});
+
+test("a fresh approved connect clears a pause left over from the previous connection", async t => {
+  const f = await fixture(t);
+  const { pauseCloud, runCloudStep } = await distImport("sync/cloud.js");
+  await connectCloud(f.dir, { origin: "https://skillar.sh", grant: f.issued.grant }, f.fetcher);
+  pauseCloud(f.dir);
+  const paused = await runCloudStep(f.dir, f.source, { fetcher: f.fetcher });
+  assert.equal(paused.phase, "paused");
+  assert.equal(paused.attempts, 0);
+  // Re-approval in the browser mints a new grant; reconnecting must resume
+  // sync without a separate `sync run --resume`.
+  disconnectCloud(f.dir);
+  const again = await f.issueGrant();
+  await connectCloud(f.dir, { origin: "https://skillar.sh", grant: again.grant }, f.fetcher);
+  const resumed = await runCloudStep(f.dir, f.source, { fetcher: f.fetcher });
+  assert.equal(resumed.phase, "local-only");
 });
