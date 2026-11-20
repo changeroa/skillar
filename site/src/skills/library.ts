@@ -103,19 +103,19 @@ export function LibraryPanel(props: LibraryProps) {
       : "읽기 기록이 쌓이면 사용할 수 있어요.";
   const groups = [
     ...(activityMap === undefined ? [{
-      id: "read", label: "읽힘 상태 · 최근 30일 기록", values: [],
+      id: "read", label: "읽힘 상태 · 최근 30일 · KST", values: [],
       disabledNote: activityNote,
     }, {
-      id: "agent", label: "읽은 에이전트 · 최근 30일 기록", values: [],
+      id: "agent", label: "읽은 에이전트 · 최근 30일 · KST", values: [],
       disabledNote: activityNote,
     }] : [{
-      id: "read", label: "읽힘 상태 · 최근 30일 기록",
+      id: "read", label: "읽힘 상태 · 최근 30일 · KST",
       values: READ_STATE_IDS.map(id => ({
         id, label: READ_STATE_LABEL[id],
         count: skills.filter(skill => readStateOf(activityMap.get(skill.skillId)) === id).length,
       })),
     }, {
-      id: "agent", label: "읽은 에이전트 · 최근 30일 기록",
+      id: "agent", label: "읽은 에이전트 · 최근 30일 · KST",
       values: [...agentCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
         .map(([id, count]) => ({ id, label: id, count })),
     }]),

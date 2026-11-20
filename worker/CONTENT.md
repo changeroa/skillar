@@ -13,10 +13,19 @@ not be sent to it. After P5, a device with explicit browser-granted managed-cont
 consent can stage immutable encrypted chunks and finalize their exact manifest
 in the same generation-fenced transaction as its receipt and projections. Receipt
 JSON, Queue/job intent and D1 manifests contain no raw text/args/span payloads.
+For the skills-tab activity filter, the server additionally keeps a plaintext D1
+aggregation of skill names (URIs), per-KST-day read/search-exposure counts and the
+reading agent (user-approved option 1; the coarse daily rollup granularity is a lead
+design decision). It stores no session IDs, second-precision timestamps or event
+ledger, and carries no prompts, arguments or other raw text beyond those fields.
 
 P5는 운영 원문 수집을 활성화하지 않습니다. 기본 local-only는 유지되며, 로그인한
 사용자가 기기·프로젝트/root·내용 종류·과거 범위를 명시적으로 허용해야 합니다.
 원문은 비공개 R2에 저장되고 서버는 복호화할 수 있으므로 E2EE가 아닙니다.
+스킬 탭 활동 필터를 위해 스킬 이름·KST 일자별 읽힘/검색 노출 횟수·읽은 에이전트
+집계는 서버 DB에 평문 저장됩니다(사용자 승인 1안; 일별 롤업 세밀도는 리드 설계
+결정이며, 세션 ID·초 단위 시각·이벤트 원장은 저장하지 않고 프롬프트·인자 등
+다른 원문은 포함하지 않습니다).
 
 ## Authentication, consent and kill switch
 

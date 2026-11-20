@@ -79,6 +79,9 @@ async function post(path: string, body: object, signal: AbortSignal): Promise<un
   return response.json();
 }
 
+/** 활동 필터 등 다른 스킬 화면에서도 같은 대시보드 POST 도우미를 쓴다. */
+export const postDashboard = post;
+
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as Uint8Array<ArrayBuffer>)),
     byte => byte.toString(16).padStart(2, "0")).join("");

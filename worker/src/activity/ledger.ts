@@ -1,5 +1,7 @@
 import { parseActivityBatch, timestampSchema } from "../../../shared/activity-schema.ts";
+import type { ContentRow } from "../../../shared/activity-content.ts";
 import { commitGuard, projectMutation } from "./projections.ts";
+import { skillUsageStatements, skillUsageTombstoneStatements } from "./skill-usage.ts";
 import { ActivityLedgerError, receiptSchema } from "./types.ts";
 import type { IngestPrincipal, IngestReceipt } from "./types.ts";
 
@@ -8,6 +10,8 @@ export type DurableContentCommit = {
   readonly contentHash: string;
   readonly totalBytes: number;
   readonly manifestJson: string;
+  // 복호화·검증을 마친 콘텐츠 행. 스킬 사용 집계(평문 D1, 사용자 승인 1안)의 입력으로만 쓴다.
+  readonly contentRows?: readonly ContentRow[];
 };
 
 export async function commitActivityBatch(
@@ -41,6 +45,12 @@ export async function commitActivityBatch(
     deviceId: principal.deviceId, sourceDomain: batch.sourceDomain, commitId,
   };
   const identity = [stream.accountId, stream.generation, stream.deviceId, stream.sourceDomain];
+  // 스킬 사용 평문 집계는 콘텐츠 커밋이 있을 때만, 같은 트랜잭션에서 멱등으로 갱신된다.
+  const skillUsage = input.durableContent?.contentRows === undefined ? [] :
+    skillUsageStatements(db,
+      { ...stream, batchId: batch.batchId, journalFrom: batch.journal.from,
+        journalThrough: batch.journal.through },
+      input.durableContent.contentRows);
   const statements: D1PreparedStatement[] = [
     db.prepare(`INSERT INTO ingest_receipts
       (account_id,generation,device_id,source_domain,batch_id,payload_hash,metadata_json,sequence,
@@ -49,7 +59,11 @@ export async function commitActivityBatch(
       ON CONFLICT(account_id,generation,device_id,source_domain,batch_id) DO NOTHING`)
       .bind(...identity, batch.batchId, payloadHash, metadataJson, batch.sequence,
         batch.journal.from, batch.journal.through, commitId, receivedAt),
-    ...batch.mutations.flatMap(mutation => projectMutation(db, stream, mutation)),
+    ...batch.mutations.flatMap(mutation => [
+      ...projectMutation(db, stream, mutation),
+      ...(mutation.entity === "tombstone" && mutation.target !== "span"
+        ? skillUsageTombstoneStatements(db, stream) : []),
+    ]),
     db.prepare(`INSERT INTO device_streams
       (account_id,generation,device_id,source_domain,sequence,journal_through)
       SELECT ?,?,?,?,?,? WHERE ${commitGuard}
@@ -64,6 +78,8 @@ export async function commitActivityBatch(
       (account_id,generation,device_id,source_domain,batch_id,state)
       SELECT ?,?,?,?,?,'pending' WHERE ${commitGuard}`)
       .bind(...identity, batch.batchId, commitId),
+    // 스킬 사용 평문 집계(콘텐츠 커밋이 있을 때만, 멱등).
+    ...skillUsage,
     db.prepare(`INSERT INTO account_heads(account_id,generation,head_seq)
       SELECT ?,?,0 WHERE ${commitGuard}
       ON CONFLICT(account_id,generation) DO NOTHING`)

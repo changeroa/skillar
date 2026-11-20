@@ -86,6 +86,10 @@ export async function fixture(t, { seed = true } = {}) {
   }
   assert.equal(current, "", "migration must contain complete SQL statements");
   await db.batch(statements);
+  const skillUsage = await readFile(new URL("../../activity-migrations/0012_skill_usage.sql", import.meta.url), "utf8");
+  const skillStatements = skillUsage.replace(/^--.*$/gm, "").split(";").map(statement => statement.trim())
+    .filter(statement => statement.length > 0).map(statement => db.prepare(statement));
+  await db.batch(skillStatements);
   const rows = async (sql, ...args) => (await db.prepare(sql).bind(...args).all()).results;
   const seedFence = (account = "account-a", generation = 1, state = "active") =>
     db.prepare("INSERT INTO tenant_fences VALUES (?,?,?)").bind(account, generation, state).run();

@@ -10,6 +10,7 @@ import type { ContentEnv } from "./content-env.ts";
 import type { ReportEnv } from "./report-types.ts";
 import { ReportError } from "./report-types.ts";
 import { dispatchPendingReports, reportResult, reportStatus, startReport } from "./report-api.ts";
+import { backfillSkillUsage, readSkillUsage } from "./skill-usage.ts";
 import { sweepReports } from "./report-objects.ts";
 import { commitRuntime, readRuntimeContext } from "./runtime-api.ts";
 import { RuntimeError } from "./runtime-store.ts";
@@ -125,6 +126,7 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     url.pathname === "/v1/activity/migrations/export" || url.pathname === "/v1/activity/export" ||
     url.pathname === "/v1/activity/query" || url.pathname === "/v1/activity/reports/status" ||
     url.pathname === "/v1/activity/reports/result" || url.pathname === "/v1/activity/context/read" ||
+    url.pathname === "/v1/activity/skill-usage" ||
     url.pathname === acceleratorStatusPath;
   if (!readOnly && env.ACTIVITY_INGEST_ENABLED !== "true") {
     return Response.json({ error: "not_found" }, { status: 404, headers });
@@ -176,6 +178,12 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     }
     if (path === "/v1/activity/batches") {
       return Response.json(await acceptContentBatch(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/skill-usage") {
+      return Response.json(await readSkillUsage(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/skill-usage/backfill") {
+      return Response.json(await backfillSkillUsage(env, principal, await body(request)), { headers });
     }
     return Response.json({ error: "not_found" }, { status: 404, headers });
   } catch (error) {
