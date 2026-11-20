@@ -102,3 +102,38 @@ export function readStateOf(activity: SkillActivity | undefined): ReadState {
   if (activity.searched) return "searched";
   return "unread";
 }
+
+/** 서버 평문 집계(스킬 URI·읽힘/검색 노출·읽은 에이전트) 한 행. */
+export type SkillUsageRow = {
+  readonly skillUri: string;
+  readonly agent: string | null;
+  readonly reads: number;
+  readonly exposures: number;
+};
+
+/** 서버 집계 행을 보관함 스킬별로 접는다. read는 읽힘 1건 이상, searched는 노출 1건 이상.
+    에이전트 수는 읽힘만 센다(기존 세션 집계와 같은 기준). */
+export function aggregateSkillUsage(
+  rows: readonly SkillUsageRow[], skillIds: ReadonlySet<string>,
+): ReadonlyMap<string, SkillActivity> {
+  const bySkill = new Map<string, { read: boolean; searched: boolean; agents: Map<string, number> }>();
+  const entry = (skillId: string) => {
+    const existing = bySkill.get(skillId);
+    if (existing !== undefined) return existing;
+    const created = { read: false, searched: false, agents: new Map<string, number>() };
+    bySkill.set(skillId, created);
+    return created;
+  };
+  for (const row of rows) {
+    const skillId = skillIdFromUri(row.skillUri);
+    if (skillId === null || !skillIds.has(skillId)) continue;
+    const acc = entry(skillId);
+    if (row.exposures > 0) acc.searched = true;
+    if (row.reads > 0) {
+      acc.read = true;
+      const agent = row.agent ?? "알 수 없음";
+      acc.agents.set(agent, (acc.agents.get(agent) ?? 0) + row.reads);
+    }
+  }
+  return bySkill;
+}

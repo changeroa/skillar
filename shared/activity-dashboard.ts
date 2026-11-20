@@ -8,6 +8,8 @@ export const dashboardPaths = {
   profiles: "/api/dashboard/profiles",
   status: "/api/dashboard/status",
   query: "/api/dashboard/query",
+  skillUsage: "/api/dashboard/skill-usage",
+  skillUsageBackfill: "/api/dashboard/skill-usage/backfill",
   reportStatus: "/api/dashboard/reports/status",
   reportResult: "/api/dashboard/reports/result",
   evalCases: "/api/dashboard/eval-cases",
@@ -45,6 +47,29 @@ export type DashboardProfile = z.infer<typeof dashboardProfileSchema>;
 export const dashboardQuerySchema = z.strictObject({
   profile: dashboardSourceSchema, requestId: z.string().uuid(),
   query: activityQuerySchema, tz: z.string().min(1).max(100).default("UTC"),
+}).readonly();
+/** 스킬 탭 활동 필터용 평문 일별 집계 조회/백필 요청. 조회 창(최근 30개 KST 일자)은 서버가
+ *  KST 일자 경계로 계산한다. 백필은 관리용 1회 경로이며 최신 스냅샷 전체를 재계산한다. */
+export const dashboardSkillUsageSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+}).readonly();
+export const dashboardSkillUsageBackfillSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+}).readonly();
+export const dashboardSkillUsageRowSchema = z.strictObject({
+  skillUri: z.string(), agent: z.string().nullable(),
+  reads: z.number().int().nonnegative(), exposures: z.number().int().nonnegative(),
+}).readonly();
+export const dashboardSkillUsageResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  coverage: z.enum(["current", "pending_backfill", "empty"]),
+  rows: z.array(dashboardSkillUsageRowSchema).readonly(),
+}).readonly();
+export type DashboardSkillUsageResult = z.infer<typeof dashboardSkillUsageResultSchema>;
+export const dashboardSkillUsageBackfillResultSchema = z.strictObject({
+  schemaVersion: z.literal(1), deviceId: z.string(), sourceDomain: z.string(),
+  snapshotCut: z.number().int(), rows: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
 }).readonly();
 export const dashboardReferenceSchema = z.strictObject({
   profile: dashboardSourceSchema, jobId: z.string().uuid(),

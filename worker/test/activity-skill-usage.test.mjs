@@ -1,0 +1,380 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { randomUUID } from "node:crypto";
+import assert from "node:assert/strict";
+import test from "node:test";
+import { fixture as migrationFixture, snapshot, ref } from "./helpers/activity-migrations.mjs";
+import { packet } from "./helpers/activity-content.mjs";
+
+const row = (table, key, values, revision = 1) => ({ table, key: JSON.stringify([key]), revision,
+  operation: "upsert", sourceOrder: 1, values });
+// 수집 배치의 행은 journal (from, through] 범위의 revision이어야 한다(from=1, through=2 → 2).
+const row2 = (table, key, values) => row(table, key, values, 2);
+const SKILL = "skill://private/00000000-0000-4000-8000-000000000001/aaaa/skill.md";
+const SKILL2 = "skill://private/00000000-0000-4000-8000-000000000002/bbbb/skill.md";
+const DAY = 86_400_000, START = 10000;
+// worker skill-usage.ts kstDay와 같은 정의(KST=UTC+9 고정).
+const kstDay = ms => new Date(ms + 9 * 3_600_000).toISOString().slice(0, 10);
+// 리드 결정(2026-11-20): 이벤트 단위 집계 — 이벤트의 ts(KST 일자)와 runtime(에이전트)을 쓴다.
+const ev = (id, kind, ts, runtime, { uri = null, data = {}, revision, sessionId } = {}) =>
+  (revision === undefined ? row2 : (t, k, v) => row(t, k, v, revision))("events", id,
+    { id, session_id: sessionId ?? `sess-${id}`, kind, ts, runtime, skill_uri: uri,
+      data_json: JSON.stringify(data) });
+const sess = (id, clientName, revision) =>
+  (revision === undefined ? row2 : (t, k, v) => row(t, k, v, revision))("sessions", id,
+    { id, runtime: "unknown", client_name: clientName, started_at: 1000, ended_at: null });
+
+async function fixture(t, { lifecycle = false } = {}) {
+  return migrationFixture(t, {
+    ...(lifecycle ? { sourceSuffix: `
+import { sweepSourceContent } from "./src/activity/content-retention.ts";
+let nowMs=10000;
+Date.now=()=>nowMs;
+fixtureActions.clock=(_env,_principal,input)=>{nowMs=input.nowMs;return {nowMs};};
+fixtureActions.sourceSweep=(env,_principal,input)=>sweepSourceContent(env,input);
+` } : {}),
+    migrations: ["0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql"],
+  });
+}
+async function publish(f, documents) {
+  const migration = await snapshot(f, documents, {
+    cut: 1, snapshotId: randomUUID(), projectId: "device:device-a",
+    range: { fromMs: -8_640_000_000_000_000, toMs: 8_640_000_000_000_000 },
+  });
+  await f.consent(migration.begin, { scope: {
+    deviceId: "device-a", projectIds: ["device:device-a"], rootIds: [],
+  } });
+  assert.equal((await f.send("begin", migration.begin)).status, 200);
+  for (let page = 0; page < documents.length; page++) { const staged = await migration.stage(page); assert.equal(staged.status, 200, JSON.stringify(staged.body)); }
+  assert.equal((await f.send("complete", ref(migration.begin))).status, 200);
+  return migration.begin;
+}
+async function ingest(f, begin, rows, options = {}) {
+  const p = await packet({ schemaVersion: 2, rows }, {
+    batchId: options.batchId ?? randomUUID(), sequence: options.sequence ?? 1,
+    from: options.from ?? 1, through: options.through ?? 2,
+    metadataMutations: options.metadataMutations ?? [],
+  });
+  const scope = scopeOf(begin);
+  for (const upload of p.uploads) {
+    assert.equal((await f.api("/v1/activity/chunks", { ...upload, ...scope })).status, 201);
+  }
+  const accepted = await f.api("/v1/activity/batches", { ...p.batch, ...scope });
+  return { status: accepted.status, body: await accepted.json() };
+}
+const scopeOf = begin => ({ deviceId: begin.deviceId, sourceDomain: begin.sourceDomain,
+  generation: begin.generation, consentVersion: begin.consentVersion,
+  projectId: begin.projectId, rootId: begin.rootId, range: begin.range, backfill: begin.backfill });
+async function readUsage(f, begin) {
+  const response = await f.api("/v1/activity/skill-usage", scopeOf(begin));
+  return { status: response.status, body: await response.json() };
+}
+
+test("ingest counts events per skill, agent and KST day without any session join", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const rows = [
+    ev("e1", "load", now - 1000, "claude-code", { uri: SKILL }),
+    ev("e2", "search", now - 1000, "claude-code",
+      { data: { candidates: [{ uri: SKILL }, { uri: SKILL2 }, { uri: SKILL }] } }),
+    // search 후보 안의 load 대체 위치(uri 필드 없이 data.uri)
+    ev("e3", "load", now - 2000, "codex", { data: { uri: SKILL2 } }),
+    // runtime 'unknown' → 에이전트 빈 값(표시는 '알 수 없음')
+    ev("e4", "load", now - 3000, "unknown", { uri: SKILL }),
+  ];
+  const accepted = await ingest(f, begin, rows);
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  // 저장은 (KST 일자, 스킬, 에이전트)별 횟수 행뿐: 세션 ID·시각·이벤트 원장 없음.
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.equal(stored.length, 4);
+  assert.deepEqual(stored.map(r => [r.day, r.skill_id, r.agent, r.reads, r.exposures]).sort(), [
+    [kstDay(now - 1000), SKILL, "claude-code", 1, 1],
+    [kstDay(now - 1000), SKILL2, "claude-code", 0, 1],
+    [kstDay(now - 2000), SKILL2, "codex", 1, 0],
+    [kstDay(now - 3000), SKILL, "", 1, 0],
+  ].sort());
+  assert.equal((await f.rows("SELECT * FROM skill_usage_batches")).length, 1);
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.status, 200, JSON.stringify(usage.body));
+  assert.equal(usage.body.coverage, "pending_backfill");
+  assert.deepEqual(usage.body.rows, [
+    { skillUri: SKILL, agent: null, reads: 1, exposures: 0 },
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 1 },
+    { skillUri: SKILL2, agent: "claude-code", reads: 0, exposures: 1 },
+    { skillUri: SKILL2, agent: "codex", reads: 1, exposures: 0 },
+  ]);
+});
+
+test("unknown runtime falls back to the recorded session client_name in the same batch", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  // 리드 결정(v3.1) 2번: runtime 'unknown'이면 실제 기록된 연결 정보(같은 배치의 세션
+  // client_name)으로 대체한다. 추정 매핑 없음.
+  const rows = [
+    sess("sess-a", "Claude Code"),
+    ev("e1", "load", now - 1000, "unknown", { uri: SKILL, sessionId: "sess-a" }),
+    // client_name이 null로 기록된 세션은 대체할 정보가 없다 → 알 수 없음 유지.
+    sess("sess-b", null),
+    ev("e2", "load", now - 1000, "unknown", { uri: SKILL, sessionId: "sess-b" }),
+  ];
+  const accepted = await ingest(f, begin, rows);
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.deepEqual(stored.map(r => [r.skill_id, r.agent, r.reads]).sort(), [
+    [SKILL, "", 1],
+    [SKILL, "Claude Code", 1],
+  ].sort());
+});
+
+test("session client_name in another batch is not substituted (no queryable record)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  // 세션 행이 먼저 수집되고 이벤트가 다음 배치에 오면 서버에는 조회 가능한 client_name
+  // 기록이 없다(콘텐츠 행은 보관하지 않고 session_facts는 runtime·시각만 보관).
+  // 이 경로는 리드 결정대로 '알 수 없음'을 유지한다.
+  assert.equal((await ingest(f, begin, [sess("sess-c", "Codex")])).status, 200);
+  const accepted = await ingest(f, begin,
+    [ev("e1", "load", now, "unknown", { uri: SKILL, sessionId: "sess-c", revision: 3 })],
+    { sequence: 2, from: 2, through: 3 });
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.deepEqual(stored.map(r => [r.skill_id, r.agent, r.reads]), [[SKILL, "", 1]]);
+});
+
+test("events split across batches are all counted (no cross-batch session dependency)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const batch1 = [ev("e1", "load", now, "claude-code", { uri: SKILL }),
+    ev("e2", "load", now, "claude-code", { uri: SKILL })];
+  assert.equal((await ingest(f, begin, batch1)).status, 200);
+  const later = Array.from({ length: 8 }, (_, i) =>
+    ev(`x${i}`, "load", now, "claude-code", { uri: SKILL, revision: 3 }));
+  assert.equal((await ingest(f, begin, later, { sequence: 2, from: 2, through: 3 })).status, 200);
+  // 10개 모두 집계(이벤트가 자기 ts·runtime을 가지므로 배치 분할과 무관).
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.equal(stored.reduce((sum, r) => sum + r.reads, 0), 10);
+  const usage = await readUsage(f, begin);
+  assert.deepEqual(usage.body.rows, [{ skillUri: SKILL, agent: "claude-code", reads: 10, exposures: 0 }]);
+});
+
+test("read window is the last 30 KST days: older day rows are stored but not read", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const rows = [
+    ev("e1", "load", now - 2 * DAY, "claude-code", { uri: SKILL }),
+    ev("e2", "load", now - 31 * DAY, "old", { uri: SKILL2 }),
+  ];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 2);
+  const usage = await readUsage(f, begin);
+  assert.deepEqual(usage.body.rows, [{ skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 }]);
+});
+
+test("same batch re-POST does not double count (batch receipt idempotency)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const batchId = randomUUID();
+  const rows = [ev("e1", "load", Date.now(), "claude-code", { uri: SKILL })];
+  assert.equal((await ingest(f, begin, rows, { batchId })).status, 200);
+  const retry = await ingest(f, begin, rows, { batchId });
+  assert.equal(retry.status, 200, JSON.stringify(retry.body));
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.equal(stored.length, 1);
+  assert.equal(stored[0].reads, 1);
+});
+
+test("retransmission of an applied journal range is rejected at intake; counts stay unchanged", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const rows = [ev("e1", "load", Date.now(), "claude-code", { uri: SKILL })];
+  assert.equal((await ingest(f, begin, rows, { from: 1, through: 2 })).status, 200);
+  // 다른 batch_id로 같은 저널 범위 (1,2] 재전송: 수집 계약이 sequence_gap 409로 거부한다.
+  // (SQL의 영수증 범위·cut 검사는 그 아래 방어선.)
+  const resent = await ingest(f, begin, rows, { sequence: 2, from: 1, through: 2 });
+  assert.equal(resent.status, 409);
+  const stored = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.equal(stored.reduce((sum, r) => sum + r.reads, 0), 1);
+  // 다음 구간 (2,3]의 정상 배치는 반영된다.
+  const next = [ev("e2", "load", Date.now(), "claude-code", { uri: SKILL2, revision: 3 })];
+  assert.equal((await ingest(f, begin, next, { sequence: 2, from: 2, through: 3 })).status, 200);
+  const usage = await readUsage(f, begin);
+  assert.deepEqual(usage.body.rows, [
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 },
+    { skillUri: SKILL2, agent: "claude-code", reads: 1, exposures: 0 },
+  ]);
+});
+
+test("tombstone invalidates the whole source scope (coarse rows cannot be decremented)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const rows = [ev("e1", "load", Date.now(), "claude-code", { uri: SKILL })];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 1);
+  const tombstone = (target, key, revision) => ({ entity: "tombstone", target, key, revision });
+  assert.equal((await ingest(f, begin, [], {
+    sequence: 2, from: 2, through: 3, metadataMutations: [tombstone("event", "e1", 3)],
+  })).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 0);
+  // 원본 콘텐츠는 남아 있으므로 coverage는 pending_backfill로 되돌아간다(재백필로 복구).
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.body.coverage, "pending_backfill");
+  assert.deepEqual(usage.body.rows, []);
+});
+
+test("backfill recomputes from the latest complete snapshot and flips coverage to current", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  const before = await readUsage(f, begin);
+  assert.equal(before.body.coverage, "pending_backfill");
+  const backfilled = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(backfilled.status, 200, JSON.stringify(await backfilled.clone().json().catch(() => null)));
+  const result = await backfilled.json();
+  assert.deepEqual(result, { schemaVersion: 1, deviceId: begin.deviceId,
+    sourceDomain: begin.sourceDomain, snapshotCut: begin.cut, rows: 1, skipped: 0 });
+  const after = await readUsage(f, begin);
+  assert.equal(after.body.coverage, "current");
+  assert.deepEqual(after.body.rows, [{ skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 }]);
+  // 재실행 멱등: 같은 스냅샷에서 같은 행으로 교체.
+  const again = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(again.status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 1);
+});
+
+test("backfill resolves unknown runtime from a session row on another snapshot page", async t => {
+  const f = await fixture(t);
+  // 세션 행이 다른 페이지에 있어도 스냅샷 전체를 모은 뒤 접으므로 client_name을 찾는다.
+  const begin = await publish(f, [
+    { schemaVersion: 2, rows: [
+      ev("e1", "load", Date.now(), "unknown", { uri: SKILL, revision: 0, sessionId: "sess-p" }),
+    ] },
+    { schemaVersion: 2, rows: [sess("sess-p", "Gemini CLI", 0)] },
+  ]);
+  const backfilled = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(backfilled.status, 200, JSON.stringify(await backfilled.clone().json().catch(() => null)));
+  const after = await readUsage(f, begin);
+  assert.deepEqual(after.body.rows, [{ skillUri: SKILL, agent: "Gemini CLI", reads: 1, exposures: 0 }]);
+});
+
+test("post-cut ingest after backfill is preserved and sums once with snapshot rows", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  // 스냅샷 cut(=1) 이후 구간 (1,2]의 정상 수집만 증분 반영된다.
+  const rows = [ev("e2", "load", Date.now(), "claude-code", { uri: SKILL2 })];
+  assert.equal((await ingest(f, begin, rows, { from: 1, through: 2 })).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 1);
+  // 재백필은 백필 테이블만 교체하고 수집 증분은 유지한다.
+  const again = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(again.status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 1);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 1);
+  const usage = await readUsage(f, begin);
+  assert.deepEqual(usage.body.rows, [
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 },
+    { skillUri: SKILL2, agent: "claude-code", reads: 1, exposures: 0 },
+  ]);
+});
+
+test("snapshot-covered journal ranges cannot re-arrive after backfill (intake 409; SQL cut guard is in-DB defense)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  // cut(=1) 이하 구간 (0,1]의 늦은 재도착은 수집 계약이 거부한다.
+  const late = [ev("e0", "load", Date.now(), "claude-code", { uri: SKILL })];
+  const lateResult = await ingest(f, begin, late, { from: 0, through: 1 });
+  assert.equal(lateResult.status, 409);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 0);
+  const usage = await readUsage(f, begin);
+  assert.deepEqual(usage.body.rows, [{ skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 }]);
+});
+
+test("read requires content read consent", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  await f.accounts.prepare("DELETE FROM device_consents").run();
+  const denied = await readUsage(f, begin);
+  assert.equal(denied.status, 403);
+  const deniedBackfill = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(deniedBackfill.status, 403);
+});
+
+test("out-of-consent scope is denied and a content-less source has no rows", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const other = { ...scopeOf(begin), deviceId: "device-b" };
+  const response = await f.api("/v1/activity/skill-usage", other);
+  assert.equal(response.status, 403);
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.body.coverage, "pending_backfill");
+  assert.deepEqual(usage.body.rows, []);
+});
+
+test("expiry sweep of the last original batch revokes the scope aggregate and marker", async t => {
+  const f = await fixture(t, { lifecycle: true });
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", 100, "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 1);
+  assert.equal((await readUsage(f, begin)).body.coverage, "current");
+  // 보존 만료: 마지막 원본 배치가 스윕되면 집계·영수증·표식도 함께 회수된다.
+  await f.send("clock", { nowMs: START + 30 * DAY + 1 });
+  const swept = await f.send("sourceSweep", {});
+  assert.equal(swept.status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 0);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 0);
+  assert.equal((await f.rows("SELECT * FROM skill_usage_batches")).length, 0);
+  assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 0);
+  assert.equal((await readUsage(f, begin)).body.coverage, "pending_backfill");
+});
+
+test("consent withdrawal purges the scope aggregate on the next sweep", async t => {
+  const f = await fixture(t, { lifecycle: true });
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", 100, "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 1);
+  // 동의 철회: 원본 grant가 사라지면 배치 만료가 즉시 과거가 되어 스윕이 원본과 집계를 함께 회수한다.
+  await f.accounts.prepare("DELETE FROM device_consents").run();
+  const swept = await f.send("sourceSweep", {});
+  assert.equal(swept.status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 0);
+  assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 0);
+});
+
+test("partial expiry keeps surviving batches' rows and cleans days beyond the retention window", async t => {
+  const f = await fixture(t, { lifecycle: true });
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", 100, "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  // 20일 뒤 신규 수집(살아 있는 배치), 31일 뒤 스윕: page 배치만 만료.
+  await f.send("clock", { nowMs: START + 20 * DAY });
+  const rows = [ev("e2", "load", START + 20 * DAY, "claude-code", { uri: SKILL2 })];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 1);
+  await f.send("clock", { nowMs: START + 31 * DAY });
+  const swept = await f.send("sourceSweep", {});
+  assert.equal(swept.status, 200);
+  // 잔여 원본(수집 배치)이 있으므로 범위 회수는 없고, 보존 창(30일) 밖 일자 행만 정리된다.
+  // 백필 행(1970-01-01)은 창 밖이라 삭제, 수집 행(20일차)은 창 안이라 유지.
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 0);
+  const live = await f.rows("SELECT * FROM skill_daily_usage");
+  assert.equal(live.length, 1);
+  assert.equal(live[0].skill_id, SKILL2);
+  assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 1);
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.body.coverage, "current");
+  assert.deepEqual(usage.body.rows, [{ skillUri: SKILL2, agent: "claude-code", reads: 1, exposures: 0 }]);
+});

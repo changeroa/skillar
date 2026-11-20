@@ -122,6 +122,7 @@ export async function acceptContentBatch(
       payloadHash,
       contentHash: batch.contentHash, totalBytes: batch.totalBytes,
       manifestJson: JSON.stringify(manifest),
+      contentRows: document.rows,
     },
   });
 }

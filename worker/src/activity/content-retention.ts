@@ -5,6 +5,7 @@ import type { ContentEnv } from "./content-env.ts";
 import { ContentStorageError } from "./content-keys.ts";
 import type { IngestPrincipal } from "./types.ts";
 import { ActivityLedgerError } from "./types.ts";
+import { kstDay as skillUsageKstDay } from "./skill-usage.ts";
 
 type SourceIdentity = {
   readonly account_id: string; readonly generation: number; readonly device_id: string;
@@ -50,6 +51,20 @@ export async function sourceBatchExpiry(
   ]);
   return grantExpiry(grants[0]?.results[0] ?? null, grants[1]?.results[0] ?? null,
     z.object({ created_at: z.number().nullable() }).parse(uploaded).created_at);
+}
+
+/** 출처의 현재 동의가 허용하는 보존 일수(없거나 managed-content가 아니면 null). */
+async function contentRetentionDays(
+  env: ContentEnv, scope: readonly [string, number, string, string],
+): Promise<number | null> {
+  const saved = await env.ACCOUNTS.prepare(`SELECT consent_json FROM device_consents
+    WHERE account_id=? AND generation=? AND device_id=? ORDER BY version DESC LIMIT 1`)
+    .bind(scope[0], scope[1], scope[2]).first();
+  if (saved === null) return null;
+  const grant = consentSchema.parse(JSON.parse(
+    z.object({ consent_json: z.string() }).parse(saved).consent_json));
+  if (grant.mode !== "managed-content") return null;
+  return Math.min(grant.retention.contentDays, grant.retention.projectionDays);
 }
 
 function grantExpiry(original: unknown, current: unknown, created: number | null): number {
@@ -142,9 +157,14 @@ export async function sweepSourceContent(
     account_id: z.string(), generation: z.number(), device_id: z.string(),
     source_domain: z.string(), batch_id: z.string(), object_key: z.string(), state: z.string(),
   })).parse(result.results);
+  const touchedScopes = new Map<string, [string, number, string, string]>();
   let deleted = 0;
   for (const row of rows) {
     const lineage = await sourceLineage(env, row);
+    if (lineage !== null) {
+      touchedScopes.set(`${row.account_id}\n${row.generation}\n${row.device_id}\n${row.source_domain}`,
+        [row.account_id, row.generation, row.device_id, row.source_domain]);
+    }
     if (row.state === "purging" || row.state === "purged" ||
         (lineage !== null &&
           await sourceBatchExpiry(env, row, lineage.consent_version) <= (options.now?.() ?? Date.now()))) {
@@ -175,6 +195,33 @@ export async function sweepSourceContent(
               AND ${active}`).bind(...identityArgs(row)),
         ]);
       }
+      // 스킬 사용 평문 일별 집계의 수명주기. 거친 행은 배치별 감산이 불가하므로, 회수 후
+      // 잔여 원본이 없는 출처(만료 완료·동의 철회·출처 삭제)는 집계·영수증·완료 표식을 모두 회수해
+      // coverage를 honest(pending_backfill/empty)로 되돌린다(재백필로 복구 가능).
+      // 잔여 원본이 있는 부분 만료는 창 밖 일자 행의 일자 경계 만료에 맡긴다(트레이드오프 명시).
+      if (lineage !== null) {
+        const active = `EXISTS (SELECT 1 FROM tenant_fences f
+          WHERE f.account_id=?1 AND f.generation=?2 AND f.state='active')`;
+        const surviving = await env.ACTIVITY.prepare(`SELECT 1 AS x FROM content_uploads
+          WHERE account_id=?1 AND generation=?2 AND device_id=?3 AND source_domain=?4
+            AND state!='purged' LIMIT 1`).bind(...identityArgs(row).slice(0, 4)).first();
+        if (surviving === null) {
+          await env.ACTIVITY.batch([
+            env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM skill_usage_batches
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM skill_usage_backfills
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+          ]);
+        }
+      }
       await env.ACTIVITY_RAW.delete(row.object_key);
       deleted++;
     }
@@ -182,6 +229,20 @@ export async function sweepSourceContent(
     await env.ACTIVITY.prepare(`UPDATE content_uploads
       SET purge_order=(SELECT COALESCE(MAX(purge_order),0)+1 FROM content_uploads)
       WHERE object_key=?`).bind(row.object_key).run();
+  }
+  // 집계 보존은 원본 보존 창에 맞춘다(리드 결정): 출처별 동의의 보존 일수 밖 KST 일자 행 삭제.
+  for (const scope of touchedScopes.values()) {
+    const days = await contentRetentionDays(env, scope);
+    if (days === null) continue;
+    const cutoff = skillUsageKstDay((options.now?.() ?? Date.now()) - days * 86_400_000);
+    await env.ACTIVITY.batch([
+      env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND day < ?`)
+        .bind(...scope, cutoff),
+      env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND day < ?`)
+        .bind(...scope, cutoff),
+    ]);
   }
   return { scanned: rows.length, deleted };
 }

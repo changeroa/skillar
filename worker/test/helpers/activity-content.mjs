@@ -89,7 +89,7 @@ export async function fixture(t) {
   const db = await runtime.getD1Database("ACTIVITY");
   const accounts = await runtime.getD1Database("ACCOUNTS");
   const bucket = await runtime.getR2Bucket("ACTIVITY_RAW");
-  for (const file of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql"]) {
+  for (const file of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql", "0012_skill_usage.sql"]) {
     await migrate(db, new URL(`../../activity-migrations/${file}`, import.meta.url));
   }
   for (const file of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql", "0012_device_labels.sql"]) {

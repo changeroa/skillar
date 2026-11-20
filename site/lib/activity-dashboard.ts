@@ -3,7 +3,8 @@ import {
   dashboardEvalReceiptSchema, dashboardEvalRequestSchema, dashboardPaths,
   dashboardProfilesSchema, dashboardQuerySchema, dashboardReferenceSchema,
   dashboardReportStatusSchema, dashboardResultPartRequestSchema, dashboardResultPartSchema,
-  dashboardServicePaths,
+  dashboardServicePaths, dashboardSkillUsageBackfillResultSchema, dashboardSkillUsageBackfillSchema,
+  dashboardSkillUsageResultSchema, dashboardSkillUsageSchema,
 } from "../../shared/dist/activity-dashboard.js";
 import type { DashboardSource } from "../../shared/dist/activity-dashboard.js";
 import { contentKinds } from "../../shared/dist/activity-schema.js";
@@ -89,9 +90,11 @@ export async function dashboardRequest(
   }
   if (request.method !== "POST") return activityError(404, "not_found");
   if (![dashboardPaths.query, dashboardPaths.reportStatus, dashboardPaths.reportResult,
-    dashboardPaths.evalCases, "/api/dashboard/commands", "/api/dashboard/commands/status"]
+    dashboardPaths.evalCases, dashboardPaths.skillUsage, dashboardPaths.skillUsageBackfill,
+    "/api/dashboard/commands", "/api/dashboard/commands/status"]
     .some(route => route === path)) return activityError(404, "not_found");
-  if ((path === dashboardPaths.evalCases || path === "/api/dashboard/commands") &&
+  if ((path === dashboardPaths.evalCases || path === "/api/dashboard/commands" ||
+      path === dashboardPaths.skillUsageBackfill) &&
       env.ACTIVITY_INGEST_ENABLED !== "true") {
     return activityError(404, "not_found");
   }
@@ -141,6 +144,37 @@ export async function dashboardRequest(
       });
       servicePath = "/v1/activity/query";
       schema = dashboardReportStatusSchema;
+      break;
+    }
+    case dashboardPaths.skillUsage: {
+      const usage = dashboardSkillUsageSchema.parse(input);
+      const backfill = consent.backfill;
+      body = {
+        ...profile, generation: principal.generation, consentVersion: saved.version,
+        projectId: `device:${profile.deviceId}`, rootId: null,
+        range: backfill?.range ?? { fromMs: consent.grantedAtMs, toMs: 8_640_000_000_000_000 },
+        backfill: backfill === undefined ? null : {
+          version: backfill.version, snapshotId: backfill.snapshotId, journalCut: backfill.journalCut,
+        },
+        from: usage.from, to: usage.to,
+      };
+      servicePath = "/v1/activity/skill-usage";
+      schema = dashboardSkillUsageResultSchema;
+      break;
+    }
+    case dashboardPaths.skillUsageBackfill: {
+      dashboardSkillUsageBackfillSchema.parse(input);
+      const backfill = consent.backfill;
+      body = {
+        ...profile, generation: principal.generation, consentVersion: saved.version,
+        projectId: `device:${profile.deviceId}`, rootId: null,
+        range: backfill?.range ?? { fromMs: consent.grantedAtMs, toMs: 8_640_000_000_000_000 },
+        backfill: backfill === undefined ? null : {
+          version: backfill.version, snapshotId: backfill.snapshotId, journalCut: backfill.journalCut,
+        },
+      };
+      servicePath = "/v1/activity/skill-usage/backfill";
+      schema = dashboardSkillUsageBackfillResultSchema;
       break;
     }
     case dashboardPaths.evalCases:
