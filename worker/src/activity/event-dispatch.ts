@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from "zod";
-import { sweepAccountChanges } from "./event-replay.ts";
 
 const pendingSchema = z.array(z.object({
   account_id: z.string(), generation: z.number().int().positive().safe(),
@@ -15,7 +14,6 @@ export async function dispatchAccountEvents(env: {
   // Post-commit boundary: even D1 preparation/retention failure must not turn a
   // published report into a failed calculation. No exception bytes enter logs.
   try {
-    await sweepAccountChanges(env.ACTIVITY);
     const pending = await env.ACTIVITY.prepare(`SELECT account_id,generation,max(seq) AS seq
       FROM account_event_outbox GROUP BY account_id,generation
       ORDER BY min(created_at),account_id,generation LIMIT 100`).all();

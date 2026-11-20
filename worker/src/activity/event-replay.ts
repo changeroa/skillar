@@ -62,22 +62,29 @@ export async function readAccountChanges(
   });
 }
 
-/** Cron bounds replay, undeliverable notifications and control retry receipts. */
-export async function sweepAccountChanges(db: D1Database): Promise<void> {
+/** Cron bounds replay, undeliverable notifications and control retry receipts.
+    Each delete is one indexed, bounded pass: splitting the retention OR keeps the
+    outer scan on an index instead of a full table walk, and the rowid subselect
+    caps every statement so a backlogged table drains over consecutive cron runs. */
+export async function sweepAccountChanges(db: D1Database, limit = 500): Promise<void> {
   const cutoff = Date.now() - EVENT_RETENTION_MS;
   await db.batch([
     db.prepare(`UPDATE account_heads SET min_replay_seq=max(min_replay_seq,COALESCE((
       SELECT max(seq) FROM account_changes c WHERE c.account_id=account_heads.account_id
         AND c.generation=account_heads.generation AND c.created_at<=?
     ),0))`).bind(cutoff),
-    db.prepare(`DELETE FROM account_changes WHERE created_at<=? OR EXISTS(
-      SELECT 1 FROM account_heads h WHERE h.account_id=account_changes.account_id
-        AND h.generation=account_changes.generation AND account_changes.seq<=h.min_replay_seq
-    )`).bind(cutoff),
-    db.prepare(`DELETE FROM account_event_outbox WHERE created_at<=? OR EXISTS(
-      SELECT 1 FROM account_heads h WHERE h.account_id=account_event_outbox.account_id
-        AND h.generation=account_event_outbox.generation AND account_event_outbox.seq<=h.min_replay_seq
-    )`).bind(cutoff),
+    db.prepare(`DELETE FROM account_changes WHERE rowid IN (
+      SELECT rowid FROM account_changes WHERE created_at<=? LIMIT ?)`).bind(cutoff, limit),
+    db.prepare(`DELETE FROM account_changes WHERE rowid IN (
+      SELECT c.rowid FROM account_heads h JOIN account_changes c
+        ON c.account_id=h.account_id AND c.generation=h.generation AND c.seq<=h.min_replay_seq
+      LIMIT ?)`).bind(limit),
+    db.prepare(`DELETE FROM account_event_outbox WHERE rowid IN (
+      SELECT rowid FROM account_event_outbox WHERE created_at<=? LIMIT ?)`).bind(cutoff, limit),
+    db.prepare(`DELETE FROM account_event_outbox WHERE rowid IN (
+      SELECT o.rowid FROM account_heads h JOIN account_event_outbox o
+        ON o.account_id=h.account_id AND o.generation=h.generation AND o.seq<=h.min_replay_seq
+      LIMIT ?)`).bind(limit),
     db.prepare("DELETE FROM account_control_receipts WHERE created_at_ms<=?").bind(cutoff),
   ]);
 }

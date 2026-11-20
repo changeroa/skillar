@@ -96,12 +96,17 @@ test("Cron discards permanently failed notifications after replay retention", { 
   await f.mode("fail");
   await f.db.prepare("UPDATE account_changes SET created_at=1").run();
   await f.db.prepare("UPDATE account_event_outbox SET created_at=1").run();
-  // When
+  // When: dispatch retries the failed delivery without running the retention sweep
   await f.send("dispatch");
+  // Then: the attempt happened and the undeliverable intent survives until Cron
+  assert.equal((await f.rows("SELECT * FROM test_notifications")).length, 1);
+  assert.equal((await f.rows("SELECT * FROM account_event_outbox")).length, 3);
+  assert.equal((await f.rows("SELECT * FROM account_changes")).length, 3);
+  // When
+  await f.send("sweep");
   // Then
   assert.deepEqual(await f.rows("SELECT * FROM account_event_outbox"), []);
   assert.deepEqual(await f.rows("SELECT * FROM account_changes"), []);
-  assert.deepEqual(await f.rows("SELECT * FROM test_notifications"), []);
   assert.equal((await f.read(cursor(0))).state, "resync_required");
 });
 
