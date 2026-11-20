@@ -16,6 +16,7 @@ import { cloudScope } from "./cloud-stage.js";
 import type { CloudProgress } from "./cloud.js";
 import { journalHead } from "./journal.js";
 import { SyncError } from "./tables.js";
+import { contractDiagnostic } from "./contract-diagnostic.js";
 import {
   ActivityContractError, analysisRuntimeSchema, authorizeUpload, contentChunkRefSchema,
   contentKinds, MAX_CONTENT_CHUNK_BYTES, parseContentChunkUpload, runtimeCommitSchema,
@@ -273,7 +274,7 @@ export async function runCloudRuntimeStep(
       phase: error.state === "quarantined" ? "quarantine" : error.state,
       code: error.code, retryAtMs: error.retryAtMs ?? undefined, attempts: progress.attempts + 1,
     });
-    if (error instanceof z.ZodError) return save({ phase: "quarantine", code: "invalid_contract" });
+    if (error instanceof z.ZodError) return save({ phase: "quarantine", code: contractDiagnostic(error) });
     if (error instanceof CloudSyncError || error instanceof SyncError || error instanceof ActivityContractError) {
       return save({ phase: /consent/.test(error.code) ? "consent-required" : "quarantine", code: error.code });
     }

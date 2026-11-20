@@ -143,6 +143,27 @@ test("lost runtime receipt preserves exact pending request and blobs across reop
   assert.equal((await f.remote.rows("SELECT count(*) n FROM runtime_contexts"))[0].n, 1);
 });
 
+test("schema-violating runtime receipt quarantines with a value-free diagnostic", async t => {
+  // Given one acknowledged runtime commit.
+  const f = await fixture(t);
+  assert.equal((await f.step()).phase, "caught-up");
+  assert.equal(f.calls.filter(call => call.path === "/v1/activity/context").length, 1);
+  const poisoned = async (url, init) => {
+    const response = await f.fetcher(url, init);
+    if (new URL(url).pathname !== "/v1/activity/context") return response;
+    return Response.json({ sequence: "RECEIPT_SECRET", sourceCut: 1, contentHash: "z".repeat(64) });
+  };
+  // When a changed state forces a new commit and the receipt violates the schema.
+  f.setContext(context({ capturedAtMs: 777, activeRequests: ["NEXT_STATE"] }));
+  const progress = await f.step({ fetcher: poisoned });
+  // Then the step quarantines with the failing path and issue kind, never the value.
+  assert.equal(progress.phase, "quarantine");
+  assert.match(progress.code, /^invalid_contract:/);
+  assert.match(progress.code, /sequence:invalid_type/);
+  assert.ok(!progress.code.includes("RECEIPT_SECRET"));
+  assert.equal(progress.attempts, 0);
+});
+
 test("idle runtime renews at half the current retention window across reopen", async t => {
   // Given an unchanged runtime acknowledged under a one-day projection policy.
   const f = await fixture(t), start = 1_000_000, halfDay = 43_200_000;
