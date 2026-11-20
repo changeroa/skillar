@@ -105,7 +105,9 @@ export async function buildSkillEntry(rootId: string, rootDir: string, dir: stri
       log(`Skipping skill ${rootId}/${dir}: SKILL.md must be a regular file`, { rootId, dir, mtimeMs: null });
       return null;
     }
-    mtimeMs = info.mtimeMs;
+    // lstat().mtimeMs is fractional on filesystems with sub-ms precision
+    // (APFS); the store and the upload contract keep integer milliseconds.
+    mtimeMs = Math.round(info.mtimeMs);
   } catch {
     return null;
   }
