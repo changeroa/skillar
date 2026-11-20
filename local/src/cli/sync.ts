@@ -18,10 +18,11 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
     case "connect": {
       const { values } = parseArgs({ args, options: {
         "grant-file": { type: "string" }, origin: { type: "string", default: "https://skillar.sh" },
-        upload: { type: "boolean", default: false }, "no-upload": { type: "boolean", default: false },
+        upload: { type: "boolean" }, "no-upload": { type: "boolean" },
         "no-open": { type: "boolean", default: false },
       } });
       if (values.upload && values["no-upload"]) throw new Error("sync connect takes only one of --upload or --no-upload");
+      // Undefined asks "세션 기록 업로드도 켤까요? [y/N]" on a TTY; flags never ask.
       if (values["grant-file"] !== undefined) {
         const connected = await connectCloud(home, {
           origin: values.origin, grant: readFileSync(values["grant-file"], "utf8").trim(),
@@ -30,9 +31,11 @@ export async function runSync(argv: string[], env: NodeJS.ProcessEnv, io: Io): P
         out(connected);
         return 0;
       }
-      // Browser-approval flow; --upload/--no-upload are terminal guidance only.
+      // Browser-approval flow; --upload/--no-upload preset the consent checkbox, never the consent.
       out(await connectCloudDeviceFlow(home, {
-        origin: values.origin, uploadIntent: values.upload, open: !values["no-open"], env, io,
+        origin: values.origin,
+        uploadIntent: values.upload === true ? true : values["no-upload"] === true ? false : undefined,
+        open: !values["no-open"], env, io,
       }));
       return 0;
     }

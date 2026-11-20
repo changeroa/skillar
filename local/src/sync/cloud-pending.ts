@@ -29,8 +29,11 @@ const pollIssuedSchema = z.strictObject({
 export type PendingConnectIssue = z.infer<typeof issueSchema>;
 export type PendingConnectGrant = z.infer<typeof pollIssuedSchema>;
 
-export function pendingApproveUrl(origin: string, userCode: string): string {
-  return `${origin}/connections/?code=${encodeURIComponent(userCode)}`;
+export function pendingApproveUrl(origin: string, userCode: string, upload = false): string {
+  const base = `${origin}/connections/?code=${encodeURIComponent(userCode)}`;
+  // upload=1 only pre-checks the page's upload checkbox; consent is still
+  // recorded solely by the browser-side explicit approval.
+  return upload ? `${base}&upload=1` : base;
 }
 
 export function defaultDeviceLabel(): string {
@@ -110,6 +113,8 @@ export function openBrowser(url: string, env: NodeJS.ProcessEnv): Promise<boolea
 
 const noticeSchema = z.strictObject({ deviceId: z.string().min(1), noticedAtMs: z.number() });
 
+export const UPLOAD_QUESTION = "세션 기록 업로드도 켤까요? [y/N] ";
+
 export function markConsentNoticed(home: string, deviceId: string): void {
   atomicCloudJson(home, "consent-notice.json", { deviceId, noticedAtMs: Date.now() });
 }
@@ -128,12 +133,15 @@ export function consentReviewNotice(home: string, connection: CloudConnection): 
   return `${connection.origin}/connections/`;
 }
 
-export type ConnectIo = { out(text: string): void; err(text: string): void };
+export type ConnectIo = { out(text: string): void; err(text: string): void;
+  /** Present only on an interactive terminal; absence means non-interactive (never prompt). */
+  ask?(question: string): Promise<string> };
 
 /**
  * Browser-approval connect: pending code -> approval page -> single-use grant
- * -> existing exchange. --upload is terminal guidance only; consent itself is
- * always off by default and can only be switched on in the browser.
+ * -> existing exchange. Upload consent defaults off; the [y/N] question (or
+ * --upload) only pre-checks the approval page's checkbox, and consent itself
+ * is recorded solely by the browser-side explicit approval.
  */
 export async function connectCloudDeviceFlow(
   home: string,
@@ -143,6 +151,13 @@ export async function connectCloudDeviceFlow(
     readonly scopes?: readonly string[];
     /** Set to add scopes to this already-connected device instead of a fresh connect. */
     readonly upgradeDeviceId?: string;
+    /**
+     * Pre-checks the approval page's upload checkbox via the approval URL.
+     * Undefined asks interactively ("켤까요? [y/N]", default off) when io.ask
+     * exists; explicit true/false never asks. Consent itself is always
+     * recorded only by the browser-side approval. Ignored on upgrades, where
+     * the existing consent never changes.
+     */
     readonly uploadIntent?: boolean;
     readonly open?: boolean;
     readonly env?: NodeJS.ProcessEnv;
@@ -154,17 +169,25 @@ export async function connectCloudDeviceFlow(
   if (options.upgradeDeviceId === undefined && readConnection(home) !== null) {
     throw new CloudSyncError("already_connected");
   }
+  const io = options.io;
+  // Upgrades keep the existing consent untouched, so the question and the
+  // pre-check only apply to a fresh connect.
+  const offersUpload = options.upgradeDeviceId === undefined;
+  let uploadIntent = options.uploadIntent === true && offersUpload;
+  if (options.uploadIntent === undefined && offersUpload && io?.ask !== undefined) {
+    const answer = (await io.ask(UPLOAD_QUESTION)).trim().toLowerCase();
+    uploadIntent = answer === "y" || answer === "yes";
+  }
   const issue = await createPendingConnect(options.origin, {
     deviceLabel: options.deviceLabel ?? defaultDeviceLabel(),
     scopes: options.scopes ?? PENDING_CONNECT_SCOPES,
     ...(options.upgradeDeviceId === undefined ? {} : { deviceId: options.upgradeDeviceId }),
   }, options.fetcher);
-  const url = pendingApproveUrl(options.origin, issue.userCode);
-  const io = options.io;
+  const url = pendingApproveUrl(options.origin, issue.userCode, uploadIntent);
   io?.out(`연결 코드: ${issue.userCode}\n`);
   io?.out(`브라우저에서 ${Math.max(1, Math.floor(issue.expiresIn / 60))}분 안에 승인하세요: ${url}\n`);
-  if (options.uploadIntent === true) {
-    io?.out("--upload: 브라우저 화면에서 업로드 동의를 직접 선택해야 업로드가 켜집니다(기본은 로컬 전용).\n");
+  if (uploadIntent) {
+    io?.out("승인 화면에 '세션 기록 업로드'가 체크된 상태로 열립니다. 동의는 브라우저에서 내용을 보고 연결 승인을 누를 때만 기록됩니다.\n");
   }
   if (options.open !== false) {
     const opened = await openBrowser(url, options.env ?? process.env);

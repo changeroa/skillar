@@ -157,3 +157,6 @@
 .dashboard-page .dash-empty { max-width: none; padding-block: var(--s4); }
 .dashboard-page .dash-empty p { margin-top: var(--s2); }
 .dashboard-page .dash-embed .wsrow__title { display: inline-flex; align-items: center; min-height: 44px; }
+.consent__advanced { background: var(--surface); padding: 0 var(--s3) var(--s3); }
+.consent__advanced > summary { font-size: var(--small); }
+.consent__advanced .choice { margin-top: var(--s2); }
