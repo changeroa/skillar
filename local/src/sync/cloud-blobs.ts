@@ -158,6 +158,12 @@ export class CloudBlobs {
       ORDER BY ack_sequence DESC, rowid DESC LIMIT 1`).get(deviceId, sourceDomain);
     return row === undefined ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
   }
+  runtimeStreamFor(deviceId: string, sourceDomain: string): string | null {
+    const row = this.#db.prepare(`SELECT stream_id FROM sync_streams
+      WHERE device_id=? AND source_domain=? AND stream_id GLOB 'cloud-runtime:*'
+      ORDER BY ack_sequence DESC, rowid DESC LIMIT 1`).get(deviceId, sourceDomain);
+    return row === undefined ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
+  }
   pendingMigration(deviceId: string, sourceDomain: string) {
     const row = this.#db.prepare(`SELECT o.stream_id FROM sync_outbox o
       JOIN sync_streams s ON s.stream_id=o.stream_id
