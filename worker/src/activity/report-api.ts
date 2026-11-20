@@ -52,10 +52,15 @@ async function statusOf(env: ReportEnv, principal: IngestPrincipal, original: Re
   }
   const current = await sourceRevision(env, principal, job.source_domain);
   const runtime = z.object({ sequence: z.number().int(), received_at_ms: z.number().nullable() }).parse(await env.ACTIVITY.prepare(
-    `SELECT COALESCE(max(sequence),0) AS sequence,
-      max(CASE WHEN sequence=? THEN received_at_ms END) AS received_at_ms FROM runtime_contexts
-      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`,
-  ).bind(job.input_runtime_sequence, principal.accountId, principal.generation, principal.deviceId, job.source_domain).first());
+    // Two indexed seeks instead of one prefix scan: the CASE aggregate defeats
+    // SQLite's max() optimization, so keep the head and the pinned receipt apart.
+    `SELECT COALESCE((SELECT max(sequence) FROM runtime_contexts
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?),0) AS sequence,
+      (SELECT received_at_ms FROM runtime_contexts
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND sequence=?) AS received_at_ms`,
+  ).bind(principal.accountId, principal.generation, principal.deviceId, job.source_domain,
+    principal.accountId, principal.generation, principal.deviceId, job.source_domain,
+    job.input_runtime_sequence).first());
   return {
     schemaVersion: 1, jobId: job.job_id, state: job.state,
     generatedAt: job.created_at, sourceCapturedAt: job.input_runtime_captured_at,
