@@ -147,7 +147,7 @@ export async function dashboardRequest(
       break;
     }
     case dashboardPaths.skillUsage: {
-      const usage = dashboardSkillUsageSchema.parse(input);
+      dashboardSkillUsageSchema.parse(input);
       const backfill = consent.backfill;
       body = {
         ...profile, generation: principal.generation, consentVersion: saved.version,
@@ -156,7 +156,6 @@ export async function dashboardRequest(
         backfill: backfill === undefined ? null : {
           version: backfill.version, snapshotId: backfill.snapshotId, journalCut: backfill.journalCut,
         },
-        from: usage.from, to: usage.to,
       };
       servicePath = "/v1/activity/skill-usage";
       schema = dashboardSkillUsageResultSchema;
