@@ -130,7 +130,13 @@ export async function runCloudRuntimeStep(
     authorizeUpload(self.consent, { ...scope, contentKinds });
     blobs = new CloudBlobs(join(cloudHome(home), "spool.sqlite"));
     if (!blobs.acquire()) return save({ phase: "busy" });
-    const streamId = runtimeStream(connection.instanceId, progress.sourceDomain);
+    // A re-approval of the same device mints a new instanceId, but the server
+    // dedupes runtime commits by device+source+sequence: restarting at
+    // sequence 1 collides with the existing epoch (batch_conflict). Resume the
+    // furthest acked epoch for this device+source instead. An unacknowledged
+    // stream staged under the new instance is left untouched, never discarded.
+    const streamId = blobs.runtimeStreamFor(connection.deviceId, progress.sourceDomain)
+      ?? runtimeStream(connection.instanceId, progress.sourceDomain);
     let batch = blobs.pending(streamId);
     if (batch === null) {
       const captured = await capture({
