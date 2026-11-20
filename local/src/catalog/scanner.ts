@@ -80,11 +80,20 @@ export async function listSkillEntryDirs(rootDir: string): Promise<string[]> {
 
 export type ScannedSkill = { entry: SkillEntry; explicitGroup?: { id: string; stage?: string } };
 
+/**
+ * Structured context on a "Skipping skill" line: the catalog dedupes repeat
+ * scans with it, so a skipped skill is logged once per file state instead of
+ * on every watcher poll. mtimeMs is null when SKILL.md was never statted.
+ */
+export type SkillSkip = { readonly rootId: string; readonly dir: string; readonly mtimeMs: number | null };
+export type ScanLog = (msg: string, skip?: SkillSkip) => void;
+
 /** Builds one entry; returns null (with a stderr note) for anything that must not be served. Reads but never writes. */
-export async function buildSkillEntry(rootId: string, rootDir: string, dir: string, log: (msg: string) => void = console.error): Promise<ScannedSkill | null> {
+export async function buildSkillEntry(rootId: string, rootDir: string, dir: string, log: ScanLog = msg => console.error(msg)): Promise<ScannedSkill | null> {
   const uri = skillUri(rootId, dir, "SKILL.md");
   if (!parseSkillUri(uri)) {
-    log(`Skipping skill ${rootId}/${dir}: directory cannot be addressed by a canonical skill URI`);
+    log(`Skipping skill ${rootId}/${dir}: directory cannot be addressed by a canonical skill URI`,
+      { rootId, dir, mtimeMs: null });
     return null;
   }
   const skillDir = path.join(rootDir, dir);
@@ -93,7 +102,7 @@ export async function buildSkillEntry(rootId: string, rootDir: string, dir: stri
   try {
     const info = await lstat(skillPath);
     if (!info.isFile() || info.isSymbolicLink()) {
-      log(`Skipping skill ${rootId}/${dir}: SKILL.md must be a regular file`);
+      log(`Skipping skill ${rootId}/${dir}: SKILL.md must be a regular file`, { rootId, dir, mtimeMs: null });
       return null;
     }
     mtimeMs = info.mtimeMs;
@@ -104,7 +113,8 @@ export async function buildSkillEntry(rootId: string, rootDir: string, dir: stri
   const files = await collectSkillRelativeFiles(skillDir);
   const declaredBytes = files.reduce((sum, f) => sum + f.size, 0);
   if (files.length > MAX_SKILL_RESOURCE_COUNT || declaredBytes > MAX_SKILL_TOTAL_BYTES) {
-    log(`Skipping skill ${rootId}/${dir}: exceeds SEP-2640 limits (${files.length} resources, ${declaredBytes} bytes)`);
+    log(`Skipping skill ${rootId}/${dir}: exceeds SEP-2640 limits (${files.length} resources, ${declaredBytes} bytes)`,
+      { rootId, dir, mtimeMs });
     return null;
   }
 
@@ -126,16 +136,19 @@ export async function buildSkillEntry(rootId: string, rootDir: string, dir: stri
     }
   }
   if (resources.length > MAX_SKILL_RESOURCE_COUNT || totalBytes > MAX_SKILL_TOTAL_BYTES) {
-    log(`Skipping skill ${rootId}/${dir}: exceeds SEP-2640 limits (${resources.length} resources, ${totalBytes} bytes)`);
+    log(`Skipping skill ${rootId}/${dir}: exceeds SEP-2640 limits (${resources.length} resources, ${totalBytes} bytes)`,
+      { rootId, dir, mtimeMs });
     return null;
   }
   if (!skillDigest) return null;
   if (!fields) {
-    log(`Skipping skill ${rootId}/${dir}: SKILL.md frontmatter requires name and description`);
+    log(`Skipping skill ${rootId}/${dir}: SKILL.md frontmatter requires name and description`,
+      { rootId, dir, mtimeMs });
     return null;
   }
   if (fields.name !== dir.split("/").pop()) {
-    log(`Skipping skill ${rootId}/${dir}: frontmatter name "${fields.name}" does not match directory name`);
+    log(`Skipping skill ${rootId}/${dir}: frontmatter name "${fields.name}" does not match directory name`,
+      { rootId, dir, mtimeMs });
     return null;
   }
 
@@ -155,7 +168,7 @@ export async function buildSkillEntry(rootId: string, rootDir: string, dir: stri
 }
 
 /** Scans one root; a missing or unreadable root is reported as readable: false, not thrown. */
-export async function scanRoot(root: { id: string; path: string }, log: (msg: string) => void = console.error): Promise<{ readable: boolean; skills: ScannedSkill[] }> {
+export async function scanRoot(root: { id: string; path: string }, log: ScanLog = msg => console.error(msg)): Promise<{ readable: boolean; skills: ScannedSkill[] }> {
   let dirs: string[];
   try {
     const info = await stat(root.path);

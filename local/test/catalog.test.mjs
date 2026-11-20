@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { distImport, makeTempDir, removeDir, writeFixtureSkill } from "./_helpers.mjs";
@@ -48,6 +48,31 @@ test("indexes fields in place with skill://local URIs", async () => {
     const r = await c.readResource("skill://local/agents/router/refs/notes.md");
     assert.equal(r.text, "notes");
     assert.equal(r.size, 5);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("skipped skill warning logs once per file state, not every refresh", async () => {
+  const s = setup();
+  try {
+    mkdirSync(join(s.b, "ccapi-proxy"), { recursive: true });
+    const skillPath = join(s.b, "ccapi-proxy", "SKILL.md");
+    writeFileSync(skillPath, "# no frontmatter\n");
+    const lines = [];
+    const c = createCatalog({ roots: s.roots, log: msg => lines.push(msg) });
+    await c.refresh();
+    await c.refresh();
+    await c.refresh();
+    const skips = () => lines.filter(l => l.includes("Skipping skill claude/ccapi-proxy"));
+    assert.equal(skips().length, 1, "repeated scans of an unchanged file must not re-log the skip");
+    // The warning matters again only when SKILL.md actually changes.
+    writeFileSync(skillPath, "# still no frontmatter, edited\n");
+    utimesSync(skillPath, new Date(), new Date(Date.now() + 5000));
+    await c.refresh();
+    assert.equal(skips().length, 2);
+    await c.refresh();
+    assert.equal(skips().length, 2);
   } finally {
     s.cleanup();
   }
