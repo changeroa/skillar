@@ -18,6 +18,8 @@ import { activeFence } from "./content-db.ts";
 import { contentScope, requireContentConsent, requireContentReadConsent } from "./content-consent.ts";
 import { commitGuard } from "./projections.ts";
 import { exportMigration } from "./migrations.ts";
+import { ContentStorageError } from "./content-keys.ts";
+import { readBatchContent } from "./content-service.ts";
 import { ReportError } from "./report-types.ts";
 import { ActivityLedgerError } from "./types.ts";
 import type { IngestPrincipal, StreamIdentity } from "./types.ts";
@@ -220,9 +222,16 @@ export async function readSkillUsage(env: ContentEnv, principal: IngestPrincipal
   };
 }
 
-/** 관리용 1회 백필: 최신 완료 스냅샷의 재구성 행에서 일별 집계를 다시 만들어 백필 테이블을
- *  교체한다(수집 경로의 skill_daily_usage는 건드리지 않는다). 멱등: 재실행하면 같은 스냅샷에서
- *  같은 행으로 교체된다(운영 실행은 리드가 수행). */
+/** 관리용 1회 백필: 최신 완료 스냅샷과 그 cut 이후에 이미 수신된 보관 배치를 재생해 일별
+ *  집계를 다시 만들어 백필 테이블을 교체한다(수집 경로의 skill_daily_usage는 건드리지 않는다).
+ *  스냅샷이 없는 출처(MCP 직접 수집 등)는 cut 0으로 보관 배치만 재생한다. 재생 대상은
+ *  journal_through > cut이고 skill_usage_batches 영수증이 없는 배치 — 영수증이 있는 배치는
+ *  수집 경로 증분에 이미 반영됐다(이중 계산 금지). 재생분에 영수증을 새로 쓰지 않는다:
+ *  영수증은 증분 적용과 같은 커밋에서만 쓰며, 여기서 쓰면 재백필 때 재생 대상에서 빠져
+ *  집계가 사라진다. 이후 증분과의 중복은 ingest_receipts의 배치/저널-범위 거부(409)가 막는다.
+ *  보관 기간이 지나 삭제된 배치는 재생할 수 없으므로 건너뛰고 skipped로 보고한다(없는 값을
+ *  0으로 채우지 않는다). 멱등: 재실행하면 같은 입력에서 같은 행으로 교체된다(운영 실행은
+ *  리드가 수행). */
 export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrincipal, input: unknown) {
   if (!principal.scopes.includes("activity:read")) throw new ActivityLedgerError("forbidden");
   const scope = reportScopeSchema.parse(input);
@@ -234,32 +243,68 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
       AND json_extract(begin_json,'$.projectId')=? AND json_extract(begin_json,'$.rootId') IS ?
     ORDER BY cut DESC,json_extract(begin_json,'$.counts.recording_clock') DESC,snapshot_id LIMIT 1`)
     .bind(...identity, scope.projectId, scope.rootId).first();
-  if (raw === null) throw new ReportError("source_missing", 404);
-  const begin = migrationBeginSchema.parse(JSON.parse(z.object({ begin_json: z.string() }).parse(raw).begin_json));
-  const reference = {
-    deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
-    generation: scope.generation, snapshotId: begin.snapshotId,
-  };
-  const status = await exportMigration(env, principal, reference);
-  if (!status.accepted || status.migration.snapshotHash !== begin.snapshotHash) {
-    throw new ReportError("source_gap");
+  // 스냅샷이 없는 출처는 보관 배치 재생만으로 집계한다(cut 0). 스냅샷도 수신 배치도 없는
+  // 출처만 source_missing.
+  const begin = raw === null ? null : migrationBeginSchema.parse(
+    JSON.parse(z.object({ begin_json: z.string() }).parse(raw).begin_json));
+  if (begin === null) {
+    const received = await env.ACTIVITY.prepare(`SELECT 1 AS x FROM ingest_receipts
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? LIMIT 1`)
+      .bind(...identity).first();
+    if (received === null) throw new ReportError("source_missing", 404);
+  } else {
+    const reference = {
+      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
+      generation: scope.generation, snapshotId: begin.snapshotId,
+    };
+    const status = await exportMigration(env, principal, reference);
+    if (!status.accepted || status.migration.snapshotHash !== begin.snapshotHash) {
+      throw new ReportError("source_gap");
+    }
   }
+  const cut = begin?.cut ?? 0;
   const statements: D1PreparedStatement[] = [
     env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
   ];
   const mergedDeltas: SkillUsageDeltas = { uses: [], sessionClients: new Map(), skipped: 0 };
-  for (let page = 0; page < begin.pageCount; page++) {
-    const exported = await exportMigration(env, principal, { ...reference, page });
-    if (exported.document === null || exported.migration.snapshotHash !== begin.snapshotHash) {
-      throw new ReportError("source_gap");
-    }
-    // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
-    const deltas = skillUsageDeltas(exported.document.rows);
+  const merge = (deltas: SkillUsageDeltas) => {
     mergedDeltas.uses.push(...deltas.uses);
     mergedDeltas.skipped += deltas.skipped;
     for (const [k, v] of deltas.sessionClients) {
       if (!mergedDeltas.sessionClients.has(k)) mergedDeltas.sessionClients.set(k, v);
+    }
+  };
+  for (let page = 0; page < (begin?.pageCount ?? 0); page++) {
+    const exported = await exportMigration(env, principal, {
+      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
+      generation: scope.generation, snapshotId: begin?.snapshotId ?? "", page,
+    });
+    if (exported.document === null || exported.migration.snapshotHash !== begin?.snapshotHash) {
+      throw new ReportError("source_gap");
+    }
+    // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
+    merge(skillUsageDeltas(exported.document.rows));
+  }
+  // 스냅샷 cut 이후에 이미 수신된 보관 배치를 재생한다. 보관 기간 만료·삭제로 읽을 수 없는
+  // 배치는 건너뛰고 skipped에 센다.
+  const retained = z.array(z.object({ batch_id: z.string() })).parse((await env.ACTIVITY.prepare(
+    `SELECT r.batch_id AS batch_id FROM ingest_receipts r
+    JOIN content_manifests m ON m.account_id=r.account_id AND m.generation=r.generation
+      AND m.device_id=r.device_id AND m.source_domain=r.source_domain AND m.batch_id=r.batch_id
+    WHERE r.account_id=? AND r.generation=? AND r.device_id=? AND r.source_domain=?
+      AND r.journal_through>? AND NOT EXISTS (SELECT 1 FROM skill_usage_batches b
+      WHERE b.account_id=r.account_id AND b.batch_id=r.batch_id)
+    ORDER BY r.journal_through`,
+  ).bind(...identity, cut).all()).results);
+  for (const candidate of retained) {
+    try {
+      const document = await readBatchContent(env, principal,
+        { sourceDomain: scope.sourceDomain, batchId: candidate.batch_id });
+      merge(skillUsageDeltas(document.rows));
+    } catch (error) {
+      if (!(error instanceof ContentStorageError)) throw error;
+      mergedDeltas.skipped++;
     }
   }
   const merged = skillUsageCounts(mergedDeltas);
@@ -275,10 +320,10 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
     VALUES (?,?,?,?,?,?)
     ON CONFLICT(account_id,generation,device_id,source_domain)
     DO UPDATE SET snapshot_cut=excluded.snapshot_cut,backfilled_at=excluded.backfilled_at`)
-    .bind(...identity, begin.cut, now));
+    .bind(...identity, cut, now));
   await env.ACTIVITY.batch(statements);
   return {
     schemaVersion: 1 as const, deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
-    snapshotCut: begin.cut, rows: merged.size, skipped: mergedDeltas.skipped,
+    snapshotCut: cut, rows: merged.size, skipped: mergedDeltas.skipped,
   };
 }
