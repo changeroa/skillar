@@ -1,22 +1,21 @@
-<h1 align="center">skillar</h1>
-<p align="center"><strong>Your skills. Your agents. One local workspace.</strong></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
+    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="skillar">
+  </picture>
+</p>
+<p align="center"><strong>One skill library for every agent. See what they actually read.</strong></p>
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
-    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="The skillar logo: a vermilion chevron followed by the skillar wordmark.">
-  </picture>
-</p>
 
-Connect the `SKILL.md` folders already on your machine to your coding agents. skillar searches them over MCP, records what each session searched and read, and makes that history visible in a local dashboard.
+skillar serves the `SKILL.md` folders on your machine and the private skills in your skillar.sh account to your coding agents over MCP, through the local daemon or `https://skillar.sh/mcp`. It records what each session searched and read. The history is visible in the local dashboard, and devices that consent to upload also see it in the skillar.sh sessions view.
 
-**Index in place · Read on demand · Keep history local**
+**Index in place · Serve over MCP · Upload only with consent**
 
 [Quick start](#quick-start) · [Supported runtimes](#supported-runtimes) · [Privacy](#privacy-and-storage) · [CLI & configuration](local/README.md)
 
@@ -25,8 +24,6 @@ Hosting the site or Workers yourself? Use the [deployment templates and private 
 ## Quick start
 
 macOS or Linux · **Node.js 24.15+**
-
-> **Upgrading from gisool?** Read the [migration guide](docs/migration-skillar.md) **before installing**. Both packages own the `gisool` command; a direct global install collides. Follow the stop, backup, and package-handoff steps rather than using `--force`.
 
 1. **Install** (Node.js 24.15 or newer):
 
@@ -43,6 +40,8 @@ macOS or Linux · **Node.js 24.15+**
 
    `init` installs a LaunchAgent on macOS or a systemd user unit on Linux; the daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
 
+   `init` also offers to connect your skillar.sh account. Approval happens in your browser, and uploads stay off unless you turn them on in the approval screen.
+
 3. **Use it from your agent** - connected agents search with `search_skills` and read the chosen `SKILL.md` over MCP `resources/read`:
 
    ```sh
@@ -51,8 +50,6 @@ macOS or Linux · **Node.js 24.15+**
    ```
 
    For a source checkout, see [development setup](local/README.md#develop).
-
-> **Coming in the next npm release (0.3.0, not yet published):** an interactive `init` also offers to connect your skillar.sh account. Approval happens in your browser, and uploads stay off (local only) unless you explicitly choose otherwise.
 
 ## From a skill folder to a session trace
 

@@ -1,30 +1,27 @@
-<h1 align="center">skillar</h1>
-<p align="center"><strong>내 스킬과 에이전트를 하나의 로컬 작업 공간으로.</strong></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
+    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="skillar">
+  </picture>
+</p>
+<p align="center"><strong>모든 에이전트가 함께 쓰는 스킬, 실제로 무엇을 읽었는지까지.</strong></p>
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/skillar-wordmark-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/skillar-wordmark-light.svg">
-    <img src="docs/assets/skillar-wordmark-light.svg" width="500" alt="skillar 로고: 주홍색 쉐브론과 skillar 워드마크.">
-  </picture>
-</p>
 
-이 머신에 있는 `SKILL.md` 폴더를 코딩 에이전트에 연결하세요. skillar는 MCP로 스킬을 검색하고, 세션마다 무엇을 검색하고 읽었는지 기록해 로컬 대시보드로 보여줍니다.
+내 컴퓨터의 `SKILL.md` 폴더와 skillar.sh 계정의 비공개 스킬을 MCP로 여러 에이전트에 제공합니다. 로컬 데몬이나 `https://skillar.sh/mcp`로 연결하고, 세션마다 무엇을 검색하고 읽었는지 기록합니다. 기록은 로컬 대시보드에서 확인하고, 업로드에 동의한 기기는 skillar.sh 세션 화면에서도 봅니다.
 
-**제자리에서 색인 · 필요할 때 읽기 · 로컬에 기록**
+**제자리 색인 · MCP로 제공 · 동의한 기록만 업로드**
 
 [빠른 시작](#빠른-시작) · [지원 런타임](#지원-런타임) · [개인정보](#개인정보와-저장소) · [CLI와 설정](local/README.md)
 
 ## 빠른 시작
 
 macOS 또는 Linux · **Node.js 24.15 이상**
-
-> **gisool에서 업그레이드하나요?** 설치 **전에** [마이그레이션 안내](docs/migration-skillar.md)를 읽어 주세요. 두 패키지가 같은 `gisool` 명령을 사용하므로 바로 전역 설치하면 충돌합니다. `--force` 대신 데몬 중지, 백업, 패키지 교체 절차를 따르세요.
 
 1. **설치** (Node.js 24.15 이상):
 
@@ -41,6 +38,8 @@ macOS 또는 Linux · **Node.js 24.15 이상**
 
    `init`은 macOS LaunchAgent 또는 Linux systemd 사용자 유닛을 설치하고, 데몬은 `127.0.0.1:8799`에서 수신합니다. 포그라운드로 실행하려면 `skillar init --no-service` 후 `skillar serve`를 사용하세요.
 
+   `init`에서 skillar.sh 계정 연결도 제안합니다. 승인은 브라우저에서 진행하고, 업로드는 승인 화면에서 켤 때만 동작합니다.
+
 3. **에이전트에서 사용** - 연결된 에이전트는 `search_skills`로 검색하고 MCP `resources/read`로 선택한 `SKILL.md`를 읽습니다:
 
    ```sh
@@ -49,8 +48,6 @@ macOS 또는 Linux · **Node.js 24.15 이상**
    ```
 
    소스에서 설치하려면 [개발 환경 안내](local/README.md#develop)를 참고하세요.
-
-> **다음 npm 배포(0.3.0, 아직 미발행)부터:** 대화형 `init`이 skillar.sh 계정 연결도 제안합니다. 승인은 브라우저에서 직접 하며, 명시적으로 선택하지 않으면 업로드는 꺼진 상태(로컬 전용)를 유지합니다.
 
 ## 스킬 폴더에서 세션 기록까지
 
