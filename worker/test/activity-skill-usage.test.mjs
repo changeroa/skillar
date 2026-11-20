@@ -246,6 +246,118 @@ test("backfill recomputes from the latest complete snapshot and flips coverage t
   assert.equal((await f.rows("SELECT * FROM skill_daily_usage_backfill")).length, 1);
 });
 
+test("backfill replays retained batches received after the snapshot cut (pre-deploy gap)", async t => {
+  // PR152+153 운영 회귀: 배포 전에 이미 받은 post-cut 배치가 어느 테이블에도 반영되지 않았다.
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await ingest(f, begin, [
+    ev("e2", "load", Date.now(), "codex", { uri: SKILL2 }),
+    ev("e3", "search", Date.now(), "codex", { data: { candidates: [{ uri: SKILL }] } }),
+  ])).status, 200);
+  // 배포 전 상태 시뮬레이션: 집계 행·영수증이 없던 시절에 수신된 배치(수신 기록·보관 콘텐츠는 남음).
+  await f.db.prepare("DELETE FROM skill_daily_usage").run();
+  await f.db.prepare("DELETE FROM skill_usage_batches").run();
+  const backfilled = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(backfilled.status, 200, JSON.stringify(await backfilled.clone().json().catch(() => null)));
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.body.coverage, "current");
+  assert.deepEqual(usage.body.rows, [
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 },
+    { skillUri: SKILL, agent: "codex", reads: 0, exposures: 1 },
+    { skillUri: SKILL2, agent: "codex", reads: 1, exposures: 0 },
+  ]);
+  // 재백필 멱등: 재생 대상은 영수증이 없는 보관 배치로 안정적이며 합계가 두 배가 되지 않는다.
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  const again = await readUsage(f, begin);
+  assert.deepEqual(again.body.rows, usage.body.rows);
+  assert.equal((await f.rows("SELECT * FROM skill_daily_usage")).length, 0);
+});
+
+test("repeated backfills over the same retained batches keep totals; a later overlapping ingest counts exactly once", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  // 배포 전 수신분(집계 없이 보관만 된 배치): 같은 스킬·에이전트·일자로 겹치게 둔다.
+  assert.equal((await ingest(f, begin, [
+    ev("e2", "load", Date.now(), "codex", { uri: SKILL2 }),
+  ], { batchId: "batch-old" })).status, 200);
+  await f.db.prepare("DELETE FROM skill_daily_usage").run();
+  await f.db.prepare("DELETE FROM skill_usage_batches").run();
+  // 배포 후 증분(영수증 있음)이 이미 있는 상태에서 신규 ingest: 같은 (스킬, 에이전트, 일자)에
+  // 정확히 한 번만 더해진다.
+  assert.equal((await ingest(f, begin, [
+    ev("e3", "load", Date.now(), "codex", { uri: SKILL2, revision: 3 }),
+  ], { sequence: 2, from: 2, through: 3, batchId: "batch-new" })).status, 200);
+  // 백필 전: 증분분(e3)만 보인다 — 배포 전 수신분(e2)과 스냅샷(e1)은 아직 어디에도 없다.
+  assert.deepEqual((await readUsage(f, begin)).body.rows, [
+    { skillUri: SKILL2, agent: "codex", reads: 1, exposures: 0 },
+  ]);
+  // 증분 7건이 있는 상태와 같은 구조에서 백필·재백필: 증분분은 영수증으로 재생 제외 — 합 불변.
+  const expectedWithNew = () => [
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 },
+    { skillUri: SKILL2, agent: "codex", reads: 2, exposures: 0 },
+  ];
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.deepEqual((await readUsage(f, begin)).body.rows, expectedWithNew());
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.deepEqual((await readUsage(f, begin)).body.rows, expectedWithNew());
+});
+
+test("snapshot-less source backfills from retained batches only; empty source stays 404", async t => {
+  const f = await fixture(t);
+  // 스냅샷이 없는 출처(MCP 직접 수집)를 만든다: 초기 마이그레이션으로 계정·동의를 구성한 뒤
+  // 마이그레이션 기록만 제거해 완료 스냅샷이 없는 상태로 둔다(수신 기록·보관 배치는 남음).
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  await f.db.prepare("DELETE FROM migration_pages").run();
+  await f.db.prepare("DELETE FROM migration_runs").run();
+  assert.equal((await ingest(f, begin, [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL }),
+  ])).status, 200);
+  assert.equal((await ingest(f, begin, [
+    ev("e2", "search", Date.now(), "claude-code", { data: { candidates: [{ uri: SKILL2 }] }, revision: 3 }),
+  ], { sequence: 2, from: 2, through: 3 })).status, 200);
+  await f.db.prepare("DELETE FROM skill_daily_usage").run();
+  await f.db.prepare("DELETE FROM skill_usage_batches").run();
+  const backfilled = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(backfilled.status, 200, JSON.stringify(await backfilled.clone().json().catch(() => null)));
+  const result = await backfilled.json();
+  assert.equal(result.snapshotCut, 0);
+  const usage = await readUsage(f, begin);
+  assert.equal(usage.body.coverage, "current");
+  assert.deepEqual(usage.body.rows, [
+    { skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 },
+    { skillUri: SKILL2, agent: "claude-code", reads: 0, exposures: 1 },
+  ]);
+  // 스냅샷도 수신 배치도 없는 출처는 여전히 source_missing.
+  const missing = await f.api("/v1/activity/skill-usage/backfill",
+    { ...scopeOf(begin), sourceDomain: "empty-source" });
+  assert.equal(missing.status, 404, JSON.stringify(await missing.json().catch(() => null)));
+});
+
+test("purged retained batch is skipped and reported, never zero-filled", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", Date.now(), "claude-code", { uri: SKILL, revision: 0 }),
+  ] }]);
+  assert.equal((await ingest(f, begin, [
+    ev("e2", "load", Date.now(), "codex", { uri: SKILL2 }),
+  ], { batchId: "batch-old" })).status, 200);
+  await f.db.prepare("DELETE FROM skill_daily_usage").run();
+  await f.db.prepare("DELETE FROM skill_usage_batches").run();
+  // 보관 기간 만료로 콘텐츠가 삭제된 배치는 재생할 수 없다(스냅샷 페이지는 그대로).
+  await f.db.prepare("UPDATE content_uploads SET state='purged' WHERE batch_id='batch-old'").run();
+  const backfilled = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(backfilled.status, 200);
+  const result = await backfilled.json();
+  assert.equal(result.skipped, 1);
+  const usage = await readUsage(f, begin);
+  // 스냅샷분만 남고, 삭제된 배치의 SKILL2 행은 만들어지지 않는다(0으로 채우지 않음).
+  assert.deepEqual(usage.body.rows, [{ skillUri: SKILL, agent: "claude-code", reads: 1, exposures: 0 }]);
+});
+
 test("backfill resolves unknown runtime from a session row on another snapshot page", async t => {
   const f = await fixture(t);
   // 세션 행이 다른 페이지에 있어도 스냅샷 전체를 모은 뒤 접으므로 client_name을 찾는다.
