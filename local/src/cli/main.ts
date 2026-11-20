@@ -34,6 +34,7 @@ Usage:
   skillar sync connect                      connect this device by one browser approval (no upload consent)
   skillar sync connect --grant-file <path>  advanced: connect with a downloaded grant file instead
   skillar sync status|prepare|run|backfill|pause|rollback|disconnect
+  skillar sync run --resume                  clear a pause and resume upload
   skillar sync restore --destination <db> --source-domain <id> --snapshot-id <id>
   skillar skills preview --package <export.json> --destination-root <dir> --plan <file> [--allow-overwrite]
   skillar skills push-preview --source-dir <dir> --plan <file> [--skill-id <uuid>]
