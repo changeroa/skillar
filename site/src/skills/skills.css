@@ -246,7 +246,7 @@ body:has(.skill--full) #skills-page-title { display: -webkit-box; -webkit-line-c
 @media (max-width: 1023px) {
   .skills-table-layout { grid-template-columns: minmax(0,1fr); gap: var(--s2); }
   .skills-facets > summary { display: list-item; min-height: 44px; padding-block: var(--s2); }
-  .skills-facets .ui-facets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s2); }
+  .skills-facets .ui-facets { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--s2); }
   .skills-facets .ui-facets > .note { grid-column: 1/-1; }
   .skills-list-workspace--peek { width: 100%; padding-right: 0; }
   #skill-peek { top: 0; height: 100dvh; }

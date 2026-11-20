@@ -16,8 +16,8 @@ const skills = [
 
 test("view URL round-trips facets, presentation, version, tab and selection without changing opaque ids", () => {
   // Given
-  const state = { ...view, q: "문서 검증", sort: "name", descending: false, revisions: ["1", "3"],
-    days: ["2026-11-05"], hidden: ["updated"], density: "normal", selected: id, full: true,
+  const state = { ...view, q: "문서 검증", sort: "name", descending: false, readStates: ["read", "searched"],
+    agents: ["claude-code"], days: ["7d"], hidden: ["updated"], density: "normal", selected: id, full: true,
     digest: "a".repeat(64), tab: "files" };
   // When
   const restored = readSkillsView(new URL(skillsViewUrl(state), "https://skillar.sh").href);
@@ -49,12 +49,20 @@ test("a peek document selection has explicit reproducible URL tab state", () => 
   assert.deepEqual(readSkillsView(url.href), state);
 });
 
-test("search revision and KST date facets intersect without changing the catalog", () => {
-  // Given / When
-  const rows = visibleSkills(skills, { ...view, q: "검증", revisions: ["1"], days: ["2026-11-04"] });
+test("search, read-state and changed-bucket facets intersect without changing the catalog", () => {
+  // Given
+  const now = Date.parse("2026-11-06T00:00:00+09:00");
+  const activity = new Map([
+    [id, { read: true, searched: false, agents: new Map([["claude-code", 2]]) }],
+    [skills[1].skillId, { read: false, searched: true, agents: new Map() }],
+  ]);
+  // When
+  const rows = visibleSkills(skills, { ...view, q: "검증", readStates: ["searched"], days: ["7d"] }, activity, now);
   // Then
   assert.deepEqual(rows.map(skill => skill.name), ["나"]);
-  assert.equal(visibleSkills(skills, { ...view, revisions: ["3"], days: ["2026-11-04"] }).length, 0);
+  assert.equal(visibleSkills(skills, { ...view, readStates: ["searched"], agents: ["claude-code"] }, activity, now).length, 0);
+  assert.deepEqual(visibleSkills(skills, { ...view, agents: ["claude-code"] }, activity, now).map(skill => skill.name), ["가"]);
+  assert.equal(visibleSkills(skills, { ...view, days: ["older"] }, activity, now).length, 0);
   assert.deepEqual(skills.map(skill => skill.name), ["가", "나"]);
 });
 
@@ -84,18 +92,18 @@ test("an empty filter retains the received catalog date domain as seven measured
   assert.ok(chart.bars.every(bar => bar.height === 1 && bar.y + bar.height === chart.baseline));
 });
 
-test("facets and histogram split skills exactly at the KST midnight boundary", () => {
+test("changed buckets split at KST midnight and week/month boundaries", () => {
   // Given
+  const now = Date.parse("2026-11-20T00:00:00+09:00");
   const catalog = [
-    { ...skills[0], updatedAt: Date.parse("2026-11-04T14:59:59.999Z") },
-    { ...skills[1], updatedAt: Date.parse("2026-11-04T15:00:00.000Z") },
+    { ...skills[0], updatedAt: Date.parse("2026-11-13T14:59:59.999Z") }, // KST 11/13 23:59:59.999 — 7일 밖
+    { ...skills[1], updatedAt: Date.parse("2026-11-13T15:00:00.000Z") }, // KST 11/14 00:00 — 7일 경계
+    { ...skills[0], skillId: "11223344-1122-4122-8122-112233445568", updatedAt: Date.parse("2026-10-20T15:00:00.000Z") }, // KST 10/21 — 30일 밖
   ];
-  // When
-  const selected = visibleSkills(catalog, { ...view, days: ["2026-11-05"] });
-  const data = updatedHistogram(catalog);
-  // Then
-  assert.deepEqual(selected.map(skill => skill.skillId), [skills[1].skillId]);
-  assert.deepEqual(data.series[0].values, [0, 0, 0, 0, 0, 1, 1]);
+  // When / Then
+  assert.deepEqual(visibleSkills(catalog, { ...view, days: ["7d"] }, undefined, now).map(skill => skill.skillId), [skills[1].skillId]);
+  assert.deepEqual(visibleSkills(catalog, { ...view, days: ["30d"] }, undefined, now).map(skill => skill.skillId), [skills[0].skillId]);
+  assert.deepEqual(visibleSkills(catalog, { ...view, days: ["older"] }, undefined, now).map(skill => skill.skillId), ["11223344-1122-4122-8122-112233445568"]);
 });
 
 test("shared table keyboard activation supplies the real row for focus restoration", async t => {

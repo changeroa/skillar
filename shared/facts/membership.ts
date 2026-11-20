@@ -10,9 +10,11 @@ export function createMembership(ctx: FactContext): Pick<FactStore,
       return loadSessions(ctx, f).sort((a, b) => b.startedAt - a.startedAt).map(s => ({
         id: s.id, runtime: s.runtime, startedAt: s.startedAt, requests: s.requests,
         skills: s.loaded.length > 0 ? s.loaded : s.firstTop ? [s.firstTop] : [],
+        exposed: s.exposed,
         state: s.state, attribution: s.attribution,
         ...(s.endedAt !== undefined ? { endedAt: s.endedAt } : {}),
         ...(s.firstPrompt !== undefined ? { firstPrompt: s.firstPrompt } : {}),
+        ...(s.clientName !== undefined ? { clientName: s.clientName } : {}),
         ...(s.automated !== undefined ? { automated: s.automated } : {}),
       }));
     },
