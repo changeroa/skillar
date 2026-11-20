@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { onRequest } from "../functions/api/[[path]].ts";
 import { signCookie, SESSION_COOKIE } from "../lib/auth.ts";
+import { reportScopeSchema } from "../../shared/dist/activity-query.js";
 import { activityDb } from "./helpers/activity-db.mjs";
 
 const origin = "https://skillar.sh", now = 1_800_000_000;
@@ -231,4 +232,54 @@ test("profile discovery overlays D1 device label and last_used_at without a serv
   // Then: 서비스가 보내지 않은 label/lastUsedAt이 D1 값으로 채워진다.
   assert.equal(body.devices[0].label, "작업실 맥북");
   assert.equal(body.devices[0].lastUsedAt, now - 300);
+});
+
+test("skill-usage read proxy validates with its own schema and forwards a worker-parseable scope", async t => {
+  // 회귀(PR152): 공통 파싱 체인이 dashboardReferenceSchema({profile, jobId} strict)로 검사해
+  // 유효한 {profile, requestId} 요청이 전부 400이었다. 이 테스트는 프록시 경로를 통과하는
+  // 요청이 워커 읽기 스키마(reportScopeSchema)와 맞는지 경계에서 고정한다.
+  const f = await fixture(t);
+  await f.consent();
+  const response = await f.request("/api/dashboard/skill-usage", {
+    profile, requestId: crypto.randomUUID(),
+  });
+  assert.equal(response.status, 404); // 모의 서비스의 report_missing 전달 — 400이 아니어야 한다.
+  const call = f.calls[0];
+  assert.equal(call.request.url, "https://activity.internal/v1/activity/skill-usage");
+  assert.equal(call.identity.kind, "device");
+  assert.deepEqual(call.identity.scopes, ["activity:read"]);
+  // site→Worker 경계 계약: 프록시가 보내는 본문은 워커가 거부하지 않아야 한다.
+  reportScopeSchema.parse(call.input);
+  assert.equal(call.input.deviceId, profile.deviceId);
+  assert.equal(call.input.sourceDomain, profile.sourceDomain);
+  assert.equal(call.input.consentVersion, 1);
+  assert.equal(call.input.projectId, `device:${profile.deviceId}`);
+  // 다른 경로의 입력 모양({profile, jobId})이나 여분 필드는 거부한다.
+  assert.equal((await f.request("/api/dashboard/skill-usage", {
+    profile, jobId: crypto.randomUUID(),
+  })).status, 400);
+  assert.equal((await f.request("/api/dashboard/skill-usage", {
+    profile, requestId: crypto.randomUUID(), from: 0, to: 1,
+  })).status, 400);
+});
+
+test("skill-usage backfill proxy validates with its own schema behind the ingest switch", async t => {
+  const f = await fixture(t);
+  await f.consent();
+  // ingest 스위치가 꺼져 있으면 노출 자체가 404(파싱 이전). 서비스 호출은 없다.
+  assert.equal((await f.request("/api/dashboard/skill-usage/backfill", {
+    profile, requestId: crypto.randomUUID(),
+  })).status, 404);
+  assert.equal(f.calls.length, 0);
+  f.env.ACTIVITY_INGEST_ENABLED = "true";
+  const response = await f.request("/api/dashboard/skill-usage/backfill", {
+    profile, requestId: crypto.randomUUID(),
+  });
+  assert.equal(response.status, 404); // 모의 서비스 전달 — 400 invalid_request 회귀가 아니다.
+  const call = f.calls[0];
+  assert.equal(call.request.url, "https://activity.internal/v1/activity/skill-usage/backfill");
+  reportScopeSchema.parse(call.input);
+  assert.equal((await f.request("/api/dashboard/skill-usage/backfill", {
+    profile, jobId: crypto.randomUUID(),
+  })).status, 400);
 });

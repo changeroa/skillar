@@ -104,6 +104,8 @@ export async function dashboardRequest(
     path === "/api/dashboard/commands/status" ? commandStatusRequestSchema.parse(input) :
     path === dashboardPaths.reportResult ? dashboardResultPartRequestSchema.parse(input) :
     path === dashboardPaths.evalCases ? dashboardEvalRequestSchema.parse(input) :
+    path === dashboardPaths.skillUsage ? dashboardSkillUsageSchema.parse(input) :
+    path === dashboardPaths.skillUsageBackfill ? dashboardSkillUsageBackfillSchema.parse(input) :
     dashboardReferenceSchema.parse(input);
   const { profile } = parsed;
   const saved = await ownedConsent(env, principal, profile);
