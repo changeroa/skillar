@@ -9,7 +9,8 @@ export type SkillsView = {
   readonly descending: boolean;
   readonly selected: PrivateSkillId | null;
   readonly full: boolean;
-  readonly revisions: readonly string[];
+  readonly readStates: readonly string[];
+  readonly agents: readonly string[];
   readonly days: readonly string[];
   readonly hidden: readonly string[];
   readonly density: "compact" | "normal" | "spacious";
@@ -32,7 +33,8 @@ export function readSkillsView(href: string): SkillsView {
     descending: url.searchParams.get("order") !== "asc",
     selected,
     full,
-    revisions: url.searchParams.getAll("revision"),
+    readStates: url.searchParams.getAll("read"),
+    agents: url.searchParams.getAll("agent"),
     days: url.searchParams.getAll("day"),
     hidden: [...new Set(url.searchParams.getAll("hide").filter(id => ["revision", "updated", "digest"].includes(id)))],
     density: url.searchParams.get("density") === "normal" ? "normal" : url.searchParams.get("density") === "spacious" ? "spacious" : "compact",
@@ -48,7 +50,8 @@ export function skillsViewUrl(view: SkillsView): string {
   query.set("order", view.descending ? "desc" : "asc");
   if (view.selected !== null) query.set("skill", view.selected);
   if (view.full && view.selected !== null) query.set("view", "full");
-  for (const revision of view.revisions) query.append("revision", revision);
+  for (const state of view.readStates) query.append("read", state);
+  for (const agent of view.agents) query.append("agent", agent);
   for (const day of view.days) query.append("day", day);
   for (const column of view.hidden) query.append("hide", column);
   query.set("density", view.density);

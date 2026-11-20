@@ -5,6 +5,7 @@ import type { AdoptionState, Attribution, Candidate, EventKind, Filter, RuntimeI
 export type SessionInfo = {
   id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; events: EvRow[];
   loaded: SkillUri[]; exposed: SkillUri[]; firstTop?: SkillUri; state: AdoptionState; attribution: Attribution["method"]; texts: string[];
+  clientName?: string;
   automated?: string; requests: RequestSummary; requestRecords: RequestRecord[];
 };
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
@@ -85,6 +86,7 @@ export function loadSessions(ctx: FactContext, f: Filter, ignoreCellFilter = fal
         attribution: attributed?.attribution_method ?? "none", texts,
         ...(r.ended_at !== null ? { endedAt: r.ended_at } : {}),
         ...(r.first_prompt !== null ? { firstPrompt: r.first_prompt } : {}),
+        ...(r.client_name !== null ? { clientName: r.client_name } : {}),
         ...(firstTop !== undefined ? { firstTop } : {}),
       };
       // A session with no prompt and no skill activity (e.g. a thread the Codex daemon reopened) tells nothing about usage.

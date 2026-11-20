@@ -10,6 +10,11 @@ import { readSkillsView } from "./view-state.ts";
 import type { SkillsView, SkillSort } from "./view-state.ts";
 import { kstDay } from "../time.ts";
 import { Button } from "../../../local/dashboard/foundation/controls/buttons";
+import {
+  CHANGED_BUCKET_IDS, CHANGED_BUCKET_LABEL, changedBucket, READ_STATE_IDS, READ_STATE_LABEL, readStateOf,
+} from "./activity-filters-core.ts";
+import type { SkillActivity } from "./activity-filters-core.ts";
+import type { LibraryActivity } from "./activity-filters.ts";
 
 export type LibraryProps = {
   readonly skills: readonly PrivateSkillSummary[];
@@ -24,6 +29,8 @@ export type LibraryProps = {
   readonly view?: SkillsView;
   readonly onViewChange?: (view: SkillsView) => void;
   readonly detail?: ComponentChildren;
+  /** 스킬별 읽힘/에이전트 활동. 없으면 활동 필터는 비활성 한 줄 안내로 둔다. */
+  readonly activity?: LibraryActivity;
 };
 
 export function when(ms: number) {
@@ -39,11 +46,16 @@ export function sortSkills(skills: readonly PrivateSkillSummary[], sort: SkillSo
 }
 
 export const skillDay = (skill: PrivateSkillSummary): string => kstDay(skill.updatedAt);
-export function visibleSkills(skills: readonly PrivateSkillSummary[], view: SkillsView) {
+export function visibleSkills(
+  skills: readonly PrivateSkillSummary[], view: SkillsView,
+  activity?: ReadonlyMap<string, SkillActivity>, now = Date.now(),
+) {
   return sortSkills(skills.filter(skill =>
     `${skill.name} ${skill.description}`.toLocaleLowerCase("ko").includes(view.q.toLocaleLowerCase("ko")) &&
-    (view.revisions.length === 0 || view.revisions.includes(String(skill.head.revision))) &&
-    (view.days.length === 0 || view.days.includes(skillDay(skill)))), view.sort, view.descending);
+    (view.readStates.length === 0 || view.readStates.includes(readStateOf(activity?.get(skill.skillId)))) &&
+    (view.agents.length === 0 ||
+      [...(activity?.get(skill.skillId)?.agents.keys() ?? [])].some(agent => view.agents.includes(agent))) &&
+    (view.days.length === 0 || view.days.includes(changedBucket(skill.updatedAt, now)))), view.sort, view.descending);
 }
 
 export function updatedHistogram(skills: readonly PrivateSkillSummary[], catalog: readonly PrivateSkillSummary[] = skills) {
@@ -70,11 +82,44 @@ export function LibraryPanel(props: LibraryProps) {
   }, []);
   const view = props.view ?? localView;
   const update = (next: SkillsView) => { setView(next); props.onViewChange?.(next); };
-  const revisions = [...new Set(skills.map(skill => String(skill.head.revision)))].sort((a, b) => Number(a) - Number(b));
-  const days = [...new Set(skills.map(skillDay))].sort().reverse();
+  const activity = props.activity;
+  const activityMap = activity?.kind === "ready" ? activity.bySkill : undefined;
+  const now = Date.now();
+  const agentCounts = new Map<string, number>();
+  if (activityMap !== undefined) {
+    for (const skill of skills) {
+      for (const agent of activityMap.get(skill.skillId)?.agents.keys() ?? []) {
+        agentCounts.set(agent, (agentCounts.get(agent) ?? 0) + 1);
+      }
+    }
+  }
+  // 비활성 안내는 사유별로 다르다: 0건(기록이 쌓이면) ≠ 응답 형식 불일치 ≠ 조회 불가.
+  const activityNote = activity?.kind === "unavailable" && activity.reason === "incompatible"
+    ? "활동 기록 응답 형식이 맞지 않아 지금은 사용할 수 없어요."
+    : activity?.kind === "unavailable" && activity.reason === "unavailable"
+      ? "지금은 읽기 기록을 확인할 수 없어요."
+      : "읽기 기록이 쌓이면 사용할 수 있어요.";
   const groups = [
-    { id: "revision", label: "리비전 수", values: revisions.map(id => ({ id, label: `현재 r${id}`, count: skills.filter(skill => String(skill.head.revision) === id).length })) },
-    { id: "day", label: "최근 변경 기간 · KST", values: days.map(id => ({ id, label: id.slice(5).replace("-", ". "), count: skills.filter(skill => skillDay(skill) === id).length })) },
+    ...(activityMap === undefined ? [{
+      id: "read", label: "읽힘 상태 · 최근 30일 기록", values: [],
+      disabledNote: activityNote,
+    }, {
+      id: "agent", label: "읽은 에이전트 · 최근 30일 기록", values: [],
+      disabledNote: activityNote,
+    }] : [{
+      id: "read", label: "읽힘 상태 · 최근 30일 기록",
+      values: READ_STATE_IDS.map(id => ({
+        id, label: READ_STATE_LABEL[id],
+        count: skills.filter(skill => readStateOf(activityMap.get(skill.skillId)) === id).length,
+      })),
+    }, {
+      id: "agent", label: "읽은 에이전트 · 최근 30일 기록",
+      values: [...agentCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+        .map(([id, count]) => ({ id, label: id, count })),
+    }]),
+    { id: "day", label: "최근 변경 기간 · KST", values: CHANGED_BUCKET_IDS.map(id => ({
+      id, label: CHANGED_BUCKET_LABEL[id],
+      count: skills.filter(skill => changedBucket(skill.updatedAt, now) === id).length })) },
   ];
   // 오너 피드백(ts 1795084225.603299): "스킬 목록도 스킬 이름만 둬. 리비전 이런건 상세에 있어도 됨".
   // 목록은 이름(아래 작은 글씨 설명 1줄)만, 리비전·최근 변경·digest·읽기 링크는 상세 패널에서 확인한다.
@@ -97,18 +142,19 @@ export function LibraryPanel(props: LibraryProps) {
       "아직 게시한 비공개 스킬이 없습니다. 아래의 ‘새 스킬 게시’에서 SKILL.md가 있는 폴더를 선택하고 업로드에 동의하세요."),
     h("div", { className: "skills-table-layout", "data-peeking": selectedId !== null },
       h("details", { className: "skills-facets", open: facetsOpen }, h("summary", null, "필터"),
-        h(FacetPanel, { title: "스킬 필터", scope: "받은 보관함 기준 · 현재 리비전 번호", groups,
-          selected: { revision: view.revisions, day: view.days },
-          onChange: (group, values) => update({ ...view, ...(group === "revision" ? { revisions: values } : { days: values }) }) })),
+        h(FacetPanel, { title: "스킬 필터", groups,
+          selected: { read: view.readStates, agent: view.agents, day: view.days },
+          onChange: (group, values) => update({ ...view,
+            ...(group === "read" ? { readStates: values } : group === "agent" ? { agents: values } : { days: values }) }) })),
       h("div", { className: "skills-table-main" },
         skills.length > 0 && selectedId === null && h("details", { className: "skills-distribution" },
           h("summary", null, "최근 변경일 분포 · KST"),
-          h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view), skills), height: 112 })),
+          h(BarChart, { title: "최근 변경일 분포 · 스킬 수 · KST", data: updatedHistogram(visibleSkills(skills, view, activityMap), skills), height: 112 })),
         h("div", { hidden: status === "failed" && skills.length === 0 },
-        h(DataTable<PrivateSkillSummary>, { caption: status === "ready" ? `스킬 ${visibleSkills(skills, view).length}개 · 받은 보관함 범위`
+        h(DataTable<PrivateSkillSummary>, { caption: status === "ready" ? `스킬 ${visibleSkills(skills, view, activityMap).length}개 · 받은 보관함 범위`
           : status === "failed" ? "마지막으로 받은 보관함 범위" : "스킬 보관함 확인 중",
           busy: status === "loading",
-          rows: visibleSkills(skills, view), columns, rowId: skill => `skill-row-${skill.skillId}`,
+          rows: visibleSkills(skills, view, activityMap), columns, rowId: skill => `skill-row-${skill.skillId}`,
           sort: { column: view.sort, direction: view.descending ? "descending" : "ascending" },
           onSort: next => {
             if (next.column === "name") update({ ...view, sort: "name", descending: next.direction === "descending" });
@@ -121,7 +167,7 @@ export function LibraryPanel(props: LibraryProps) {
           onRowOpen: (skill, target) => onOpen(skill.skillId, target),
           toolbar: h(SearchBox, { skills, signal: props.signal, onOpen, onUnauthorized: props.onUnauthorized,
             compact: true, query: view.q, onQueryChange: q => update({ ...view, q }) }) })),
-        skills.length > 0 && visibleSkills(skills, view).length === 0 && h("button", { className: "button secondary",
-          type: "button", onClick: () => update({ ...view, q: "", revisions: [], days: [] }) }, "검색·필터 해제"))),
+        skills.length > 0 && visibleSkills(skills, view, activityMap).length === 0 && h("button", { className: "button secondary",
+          type: "button", onClick: () => update({ ...view, q: "", readStates: [], agents: [], days: [] }) }, "검색·필터 해제"))),
     props.detail);
 }

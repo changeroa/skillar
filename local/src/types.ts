@@ -65,6 +65,10 @@ export type Filter = { from?: number; to?: number; runtime?: RuntimeId[]; skill?
   automated?: "include" | "only" };
 // dow: 0-6 with 0 = Sunday (JS getDay semantics, in the requested tz); hour: start hour 0-23; hourSpan: number of hours from `hour` (default 1; a 2 h bucket click sends hourSpan 2; shift-click ranges send the union span)
 export type SessionRow = { id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; skills: SkillUri[]; state: AdoptionState; attribution: Attribution["method"];
+  /** Skills surfaced by search candidates in the window; always present, [] when none were recorded. */
+  exposed: SkillUri[];
+  /** Recorded MCP client name when the ingest captured one; omitted otherwise. */
+  clientName?: string;
   /** Request-level counts; state is retained only for old API clients. */
   requests?: import("./request-status.js").RequestSummary;
   automated?: string };

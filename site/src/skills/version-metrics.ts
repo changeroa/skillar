@@ -119,7 +119,7 @@ async function readReportPayload(status: z.output<typeof dashboardReportStatusSc
   return envelope.payload;
 }
 
-async function runQuery(profile: DashboardSource, query: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
+export async function runQuery(profile: DashboardSource, query: Record<string, unknown>, signal: AbortSignal): Promise<unknown> {
   let status = dashboardReportStatusSchema.parse(await post(dashboardPaths.query, {
     profile, requestId: crypto.randomUUID(), query, tz: "Asia/Seoul",
   }, signal));

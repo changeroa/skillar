@@ -5,6 +5,7 @@ import type { SessionUser } from "../../lib/account.ts";
 import { classifyFailure, describeFailure, isUnauthorized, readCatalog, readSession } from "./api.ts";
 import type { SessionState } from "./api.ts";
 import { LibraryPanel, visibleSkills } from "./library.ts";
+import { useLibraryActivity } from "./activity-filters.ts";
 import { sortByUpdated } from "./model.ts";
 import { PublishPanel } from "./publish.ts";
 import { SkillPanel } from "./skill.ts";
@@ -80,6 +81,10 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
     setCatalog({ status: "loading", catalog: null, message: "" });
   }, []);
   const reload = useCallback(() => setTick(current => current + 1), []);
+  const activity = useLibraryActivity(
+    catalog.catalog === null ? [] : catalog.catalog.skills,
+    phase.kind === "signed-in" && catalog.status === "ready", signal, expire,
+  );
 
   useEffect(() => {
     readSession(signal).then(setPhase, (error: unknown) => {
@@ -152,7 +157,8 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const skills = catalog.catalog === null ? [] : sortByUpdated(catalog.catalog);
   const summary = selected === null ? null : skills.find(skill => skill.skillId === selected) ?? null;
   const libraryStatus = catalog.status === "ready" ? "ready" : catalog.status === "failed" ? "failed" : "loading";
-  const visible = visibleSkills(skills, view);
+  const activityMap = activity.kind === "ready" ? activity.bySkill : undefined;
+  const visible = visibleSkills(skills, view, activityMap);
   const index = visible.findIndex(skill => skill.skillId === selected);
   const adjacent = (offset: number) => {
     const skill = visible[index + offset];
@@ -164,7 +170,8 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
       : summary?.name ?? (selected === null ? "스킬" : "스킬을 확인하는 중") }),
     h("div", { hidden: view.full && selected !== null, className: selected !== null ? "skills-list-workspace skills-list-workspace--peek" : "skills-list-workspace" },
       h(LibraryPanel, { skills, status: libraryStatus, message: catalog.message, notice, selectedId: selected, signal,
-        onReload: reload, onOpen: open, onUnauthorized: expire, view, onViewChange: next => navigate(next, true) })),
+        onReload: reload, onOpen: open, onUnauthorized: expire, view, onViewChange: next => navigate(next, true),
+        activity })),
     selected !== null && h(SkillPanel, { key: selected, skillId: selected, summary, signal,
         focusHeading: 0,
         onChanged: reload, onDeleted: deleted, onBack: back, onUnauthorized: expire, onDirtyChange, onResolved,

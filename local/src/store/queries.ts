@@ -76,7 +76,7 @@ function llmTokens(data: Record<string, unknown>): number {
 type SessionInfo = {
   id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; events: EvRow[];
   loaded: SkillUri[]; exposed: SkillUri[]; firstTop?: SkillUri; state: AdoptionState; attribution: Attribution["method"]; texts: string[];
-  automated?: string; requests: RequestSummary; requestRecords: RequestRecord[];
+  automated?: string; clientName?: string; requests: RequestSummary; requestRecords: RequestRecord[];
 };
 
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
@@ -164,8 +164,8 @@ export function createQueries(ctx: StoreCtx): Queries {
     if (f.to !== undefined) { where.push("started_at < ?"); params.push(f.to); }
     if (f.runtime && f.runtime.length > 0) { where.push(`runtime IN (${f.runtime.map(() => "?").join(",")})`); params.push(...f.runtime); }
     const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
-    const rows = db.prepare(`SELECT id, runtime, started_at, ended_at, first_prompt FROM sessions ${clause}`).all(...params) as
-      { id: string; runtime: string; started_at: number; ended_at: number | null; first_prompt: string | null }[];
+    const rows = db.prepare(`SELECT id, runtime, started_at, ended_at, first_prompt, client_name FROM sessions ${clause}`).all(...params) as
+      { id: string; runtime: string; started_at: number; ended_at: number | null; first_prompt: string | null; client_name: string | null }[];
     // Model calls and tool runs say nothing about adoption state and outnumber every other kind, so sessions are built without them.
     const events = db.prepare(`SELECT * FROM events WHERE session_id IN (SELECT id FROM sessions ${clause}) AND kind NOT IN ('llm_call', 'tool_call')
       ORDER BY ts, rowid`).all(...params) as EvRow[];
@@ -204,6 +204,7 @@ export function createQueries(ctx: StoreCtx): Queries {
         attribution: attributed?.attribution_method ?? "none", texts,
         ...(r.ended_at !== null ? { endedAt: r.ended_at } : {}),
         ...(r.first_prompt !== null ? { firstPrompt: r.first_prompt } : {}),
+        ...(r.client_name !== null ? { clientName: r.client_name } : {}),
         ...(firstTop !== undefined ? { firstTop } : {}),
       };
       // A session with no prompt and no skill activity (e.g. a thread the Codex daemon reopened) tells nothing about usage.
@@ -390,9 +391,11 @@ export function createQueries(ctx: StoreCtx): Queries {
       return loadSessions(f)
         .sort((a, b) => b.startedAt - a.startedAt)
         .map((s) => ({
-          id: s.id, runtime: s.runtime, startedAt: s.startedAt, requests: s.requests, skills: sessionSkills(s), state: s.state, attribution: s.attribution,
+          id: s.id, runtime: s.runtime, startedAt: s.startedAt, requests: s.requests, skills: sessionSkills(s),
+          exposed: s.exposed, state: s.state, attribution: s.attribution,
           ...(s.endedAt !== undefined ? { endedAt: s.endedAt } : {}),
           ...(s.firstPrompt !== undefined ? { firstPrompt: s.firstPrompt } : {}),
+          ...(s.clientName !== undefined ? { clientName: s.clientName } : {}),
           ...(s.automated !== undefined ? { automated: s.automated } : {}),
         }));
     },
