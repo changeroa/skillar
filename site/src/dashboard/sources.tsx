@@ -1,5 +1,5 @@
 import type {ReactNode as ComponentChildren} from "react";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { DashboardProfile, DashboardReportStatus } from "../../../shared/dist/activity-dashboard.js";
 import { availabilityCopy, formatWhen, profileKey, shortId, snapshotLines } from "./status";
 import type { RequestFailure } from "./status";
@@ -14,6 +14,10 @@ type SourcesProps = {
 };
 
 export function SourcesSection({ profiles, selectedKey, busy, message, onSelect, onReload }: SourcesProps) {
+  // 연결 해제된 출처는 기록을 볼 수 없어 목록에서 기본 숨긴다. 필요하면 토글로 다시 본다.
+  const [showRevoked, setShowRevoked] = useState(false);
+  const revoked = profiles.filter(profile => profile.availability === "revoked");
+  const visible = showRevoked ? profiles : profiles.filter(profile => profile.availability !== "revoked");
   return (
     <section className="panel" aria-labelledby="sources-title">
       <div className="panel__head">
@@ -26,7 +30,7 @@ export function SourcesSection({ profiles, selectedKey, busy, message, onSelect,
         <p>아직 업로드한 출처가 없습니다. 아래에서 기기를 연결하고 동의를 저장하면 출처가 추가됩니다.</p>
       )}
       <ul className="source-list">
-        {profiles.map(profile => {
+        {visible.map(profile => {
           const copy = availabilityCopy(profile.availability);
           const key = profileKey(profile);
           const current = key === selectedKey;
@@ -56,6 +60,13 @@ export function SourcesSection({ profiles, selectedKey, busy, message, onSelect,
           );
         })}
       </ul>
+      {revoked.length > 0 && (
+        <p className="note">
+          <button className="button secondary" type="button" onClick={() => setShowRevoked(current => !current)}>
+            {showRevoked ? `연결 해제된 출처 ${revoked.length}개 숨기기` : `연결 해제된 출처 ${revoked.length}개 보이기`}
+          </button>
+        </p>
+      )}
     </section>
   );
 }

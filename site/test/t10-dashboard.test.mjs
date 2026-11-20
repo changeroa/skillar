@@ -37,8 +37,8 @@ test("CV-011 unrelated successes preserve failure while a matching recovery clea
     return failing ? Response.json({ error: "test_failure" }, { status: 503 }) : Response.json({});
   });
   const { dom, container } = await mount(t, Dashboard, { signal });
-  await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
-  await act(() => buttonNamed(container, "기록 보기")[0].click());
+  // The single live source opens its record automatically.
+  await waitFor(dom, () => all(container, node => node.id === "snapshot-title")[0], "auto-opened record");
   // When
   await act(async () => { await options.fetch("/report/a"); });
   const alert = () => container.textContent.includes("test_failure");
@@ -83,8 +83,8 @@ async function dashboardRequests(t, fetchReport) {
     return fetchReport(url, init);
   });
   const { dom, container } = await mount(t, Dashboard, { signal });
-  await waitFor(dom, () => buttonNamed(container, "기록 보기")[0], "source");
-  await act(() => buttonNamed(container, "기록 보기")[0].click());
+  // The single live source opens its record automatically.
+  await waitFor(dom, () => all(container, node => node.id === "snapshot-title")[0], "auto-opened record");
   return {
     failed: () => container.textContent.includes("gate_result_failed"),
     request: (path, body) => options.fetch(path, body === undefined ? {} : { method: "POST", body: JSON.stringify(body) }),
