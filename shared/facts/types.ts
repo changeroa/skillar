@@ -22,6 +22,10 @@ export type Filter = { from?: number; to?: number; runtime?: RuntimeId[]; skill?
   // automated sessions (first prompt sent by a harness or the runtime, see store/automation.ts) are excluded unless "include" or "only"
   automated?: "include" | "only" };
 export type SessionRow = { id: string; runtime: RuntimeId; startedAt: number; endedAt?: number; firstPrompt?: string; skills: SkillUri[]; state: AdoptionState; attribution: Attribution["method"];
+  /** Skills surfaced by search candidates in the window; always present, [] when none were recorded. */
+  exposed: SkillUri[];
+  /** Recorded MCP client name when the ingest captured one; omitted otherwise. */
+  clientName?: string;
   /** Request-level counts; state is retained only for old API clients. */
   requests?: import("./request-status.js").RequestSummary;
   automated?: string };
