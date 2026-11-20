@@ -93,8 +93,10 @@ export function LibraryPanel(props: LibraryProps) {
       }
     }
   }
-  // 비활성 안내는 사유별로 다르다: 0건(기록이 쌓이면) ≠ 응답 형식 불일치 ≠ 조회 불가.
-  const activityNote = activity?.kind === "unavailable" && activity.reason === "incompatible"
+  // 비활성 안내는 상태/사유별로 다르다: 불러오는 중 ≠ 0건(기록이 쌓이면) ≠ 응답 형식 불일치 ≠ 조회 불가.
+  const activityNote = activity?.kind === "loading"
+    ? "읽기 기록을 불러오는 중이에요."
+    : activity?.kind === "unavailable" && activity.reason === "incompatible"
     ? "활동 기록 응답 형식이 맞지 않아 지금은 사용할 수 없어요."
     : activity?.kind === "unavailable" && activity.reason === "unavailable"
       ? "지금은 읽기 기록을 확인할 수 없어요."
