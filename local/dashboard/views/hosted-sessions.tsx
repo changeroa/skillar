@@ -43,6 +43,8 @@ const listeners = new Set<() => void>();
 export function configureHostedSources(next: HostedSources | undefined): void {
   registry = next; for (const listener of listeners) listener();
 }
+/** 출처가 등록된 경우에만 호스팅 색인 목록을 쓴다. 등록이 없으면 기존 목록·리포트 경로를 그대로 둔다. */
+export function useHostedConfigured(): boolean { return useSyncExternalStore(subscribe, () => registry !== undefined); }
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const peekValue = (row: Pick<Row, "source" | "sessionId">) => `${row.source}/${row.sessionId}`;
 export const splitPeek = (peek: string): { source: string; sessionId: string } => {
