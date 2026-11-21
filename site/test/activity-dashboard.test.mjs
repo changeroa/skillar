@@ -294,3 +294,60 @@ test("skill-usage backfill proxy validates with its own schema behind the ingest
     })).status, 400);
   }
 });
+
+test("session routes forward a worker-parseable scope plus only their own filter fields, never requestId", async t => {
+  const f = await fixture(t);
+  await f.consent();
+  const cases = [
+    ["/api/dashboard/sessions", "/v1/activity/sessions",
+      { searchWithoutRead: true, runtimes: ["codex"], activeFromMs: 1, limit: 20, cursor: { lastEventMs: 5, sessionId: "s1" } }],
+    ["/api/dashboard/sessions/count", "/v1/activity/sessions/count", { searchWithoutRead: true }],
+    ["/api/dashboard/sessions/filter-options", "/v1/activity/sessions/filter-options", {}],
+    ["/api/dashboard/sessions/metrics", "/v1/activity/sessions/metrics", { sessionIds: ["s1", "s2"] }],
+    ["/api/dashboard/sessions/events", "/v1/activity/sessions/events", { sessionId: "s1", limit: 10 }],
+  ];
+  for (const [path, servicePath, extra] of cases) {
+    const before = f.calls.length;
+    const response = await f.request(path, { profile, requestId: crypto.randomUUID(), ...extra });
+    assert.notEqual(response.status, 400, path);
+    const call = f.calls[before];
+    assert.equal(call.request.url, `https://activity.internal${servicePath}`, path);
+    assert.deepEqual(call.identity.scopes, ["activity:read"]);
+    const scope = { ...call.input }; for (const key of Object.keys(extra)) delete scope[key];
+    reportScopeSchema.parse(scope);
+    assert.equal(call.input.requestId, undefined, path);
+    assert.equal(call.input.projectId, `device:${profile.deviceId}`);
+    for (const [key, value] of Object.entries(extra)) assert.deepEqual(call.input[key], value, `${path} ${key}`);
+    // 알 수 없는 필드와 다른 경로의 모양은 경계에서 거부한다.
+    assert.equal((await f.request(path, { profile, requestId: crypto.randomUUID(), ...extra, bogus: 1 })).status, 400, path);
+  }
+  assert.equal((await f.request("/api/dashboard/sessions/metrics", { profile, requestId: crypto.randomUUID(), sessionIds: [] })).status, 400);
+  assert.equal((await f.request("/api/dashboard/sessions", { profile, jobId: crypto.randomUUID() })).status, 400);
+});
+
+test("session route responses are validated: a well-formed list passes (unknown start stays null), malformed or extra fields never reach the browser", async t => {
+  const f = await fixture(t);
+  await f.consent();
+  const good = { schemaVersion: 1, sessions: [{ sessionId: "s1", startedMs: null, firstEventMs: 10, lastEventMs: 20,
+    events: 2, reads: 1, searches: 1, runtime: null, skills: [{ skillId: "k", digest: null, firstReadMs: 20, reads: 1 }] }],
+    nextCursor: null, rowsRead: 3 };
+  let reply = good;
+  f.env.ACTIVITY_SERVICE = { async fetch() { return Response.json(reply); } };
+  const ask = () => f.request("/api/dashboard/sessions", { profile, requestId: crypto.randomUUID() });
+  const ok = await ask();
+  assert.equal(ok.status, 200);
+  assert.deepEqual(await ok.json(), good);
+  // 시작 시각을 첫 이벤트로 채워 보내거나(필드 누락) 모르는 필드를 얹은 응답은 통과하지 못한다.
+  const bad = [
+    { ...good, sessions: [{ ...good.sessions[0], startedMs: undefined }] },
+    { ...good, sessions: [{ ...good.sessions[0], status: "ok" }] },
+    { ...good, rowsRead: -1 },
+    { ...good, extra: true },
+  ];
+  for (const candidate of bad) {
+    reply = candidate;
+    let status;
+    try { status = (await ask()).status; } catch { status = "threw"; }
+    assert.notEqual(status, 200, JSON.stringify(candidate).slice(0, 80));
+  }
+});

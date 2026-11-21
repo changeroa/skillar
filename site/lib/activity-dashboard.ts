@@ -3,7 +3,12 @@ import {
   dashboardEvalReceiptSchema, dashboardEvalRequestSchema, dashboardPaths,
   dashboardProfilesSchema, dashboardQuerySchema, dashboardReferenceSchema,
   dashboardReportStatusSchema, dashboardResultPartRequestSchema, dashboardResultPartSchema,
-  dashboardServicePaths, dashboardSkillUsageBackfillResultSchema, dashboardSkillUsageBackfillSchema,
+  dashboardServicePaths, dashboardSessionCountRequestSchema, dashboardSessionCountResultSchema,
+  dashboardSessionEventsRequestSchema, dashboardSessionEventsResultSchema,
+  dashboardSessionFilterOptionsRequestSchema, dashboardSessionFilterOptionsResultSchema,
+  dashboardSessionListRequestSchema, dashboardSessionListResultSchema,
+  dashboardSessionMetricsRequestSchema, dashboardSessionMetricsResultSchema,
+  dashboardSkillUsageBackfillResultSchema, dashboardSkillUsageBackfillSchema,
   dashboardSkillUsageResultSchema, dashboardSkillUsageSchema,
 } from "../../shared/dist/activity-dashboard.js";
 import type { DashboardSource } from "../../shared/dist/activity-dashboard.js";
@@ -18,6 +23,20 @@ import { readBody } from "./activity-body.ts";
 import {
   sourceCommandRequestSchema, commandStatusRequestSchema, commandStatusSchema,
 } from "../../shared/dist/activity-commands.js";
+
+const sessionRoutes = [
+  { path: dashboardPaths.sessions, servicePath: "/v1/activity/sessions",
+    request: dashboardSessionListRequestSchema, result: dashboardSessionListResultSchema },
+  { path: dashboardPaths.sessionsCount, servicePath: "/v1/activity/sessions/count",
+    request: dashboardSessionCountRequestSchema, result: dashboardSessionCountResultSchema },
+  { path: dashboardPaths.sessionsFilterOptions, servicePath: "/v1/activity/sessions/filter-options",
+    request: dashboardSessionFilterOptionsRequestSchema, result: dashboardSessionFilterOptionsResultSchema },
+  { path: dashboardPaths.sessionsMetrics, servicePath: "/v1/activity/sessions/metrics",
+    request: dashboardSessionMetricsRequestSchema, result: dashboardSessionMetricsResultSchema },
+  { path: dashboardPaths.sessionsEvents, servicePath: "/v1/activity/sessions/events",
+    request: dashboardSessionEventsRequestSchema, result: dashboardSessionEventsResultSchema },
+] as const;
+const sessionRoute = (path: string) => sessionRoutes.find(route => route.path === path);
 
 async function ownedConsent(env: ActivityEnv, principal: BrowserPrincipal, profile: DashboardSource) {
   const owned = await sourceNamespace(principal, { ...profile, sourceId: "dashboard" }, env.ACCOUNTS);
@@ -91,7 +110,7 @@ export async function dashboardRequest(
   if (request.method !== "POST") return activityError(404, "not_found");
   if (![dashboardPaths.query, dashboardPaths.reportStatus, dashboardPaths.reportResult,
     dashboardPaths.evalCases, dashboardPaths.skillUsage, dashboardPaths.skillUsageBackfill,
-    "/api/dashboard/commands", "/api/dashboard/commands/status"]
+    ...sessionRoutes.map(route => route.path), "/api/dashboard/commands", "/api/dashboard/commands/status"]
     .some(route => route === path)) return activityError(404, "not_found");
   if ((path === dashboardPaths.evalCases || path === "/api/dashboard/commands" ||
       path === dashboardPaths.skillUsageBackfill) &&
@@ -104,6 +123,7 @@ export async function dashboardRequest(
     path === "/api/dashboard/commands/status" ? commandStatusRequestSchema.parse(input) :
     path === dashboardPaths.reportResult ? dashboardResultPartRequestSchema.parse(input) :
     path === dashboardPaths.evalCases ? dashboardEvalRequestSchema.parse(input) :
+    sessionRoute(path) !== undefined ? sessionRoute(path)!.request.parse(input) :
     path === dashboardPaths.skillUsage ? dashboardSkillUsageSchema.parse(input) :
     path === dashboardPaths.skillUsageBackfill ? dashboardSkillUsageBackfillSchema.parse(input) :
     dashboardReferenceSchema.parse(input);
@@ -161,6 +181,29 @@ export async function dashboardRequest(
       };
       servicePath = "/v1/activity/skill-usage";
       schema = dashboardSkillUsageResultSchema;
+      break;
+    }
+    case dashboardPaths.sessions:
+    case dashboardPaths.sessionsCount:
+    case dashboardPaths.sessionsFilterOptions:
+    case dashboardPaths.sessionsMetrics:
+    case dashboardPaths.sessionsEvents: {
+      const route = sessionRoute(path)!;
+      // 서비스는 스코프(기기·출처·세대·동의 범위)만 신뢰하는 서버 생성 값으로 받는다. requestId는 넘기지 않는다.
+      const { profile: _profile, requestId: _requestId, ...filters } = route.request.parse(input) as
+        Record<string, unknown> & { profile: DashboardSource; requestId: string };
+      const backfill = consent.backfill;
+      body = {
+        ...filters,
+        ...profile, generation: principal.generation, consentVersion: saved.version,
+        projectId: `device:${profile.deviceId}`, rootId: null,
+        range: backfill?.range ?? { fromMs: consent.grantedAtMs, toMs: 8_640_000_000_000_000 },
+        backfill: backfill === undefined ? null : {
+          version: backfill.version, snapshotId: backfill.snapshotId, journalCut: backfill.journalCut,
+        },
+      };
+      servicePath = route.servicePath;
+      schema = route.result;
       break;
     }
     case dashboardPaths.skillUsageBackfill: {

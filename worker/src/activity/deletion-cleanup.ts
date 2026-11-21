@@ -16,7 +16,7 @@ const contentTables = [
   "connector_commands", "dispatch_outbox", "jobs", "ingest_receipts",
   "skill_daily_usage", "skill_daily_usage_backfill", "session_skill_reads",
   "session_skill_reads_backfill", "skill_usage_batches", "session_index_batches", "skill_usage_backfills",
-  "session_facts", "event_facts", "span_facts", "entity_tombstones", "device_streams",
+  "session_activity", "session_facts", "event_facts", "span_facts", "entity_tombstones", "device_streams",
   "account_event_outbox", "account_control_receipts", "account_changes", "account_heads",
 ] as const;
 const objectTables = [
