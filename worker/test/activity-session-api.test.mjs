@@ -138,3 +138,17 @@ test("session list/count/filter-options over the real ingest path (D1 triggers),
   assert.equal((await f.api("/v1/activity/sessions", { ...scopeOf(begin), deviceId: "device-b" })).status, 403);
   console.log("rowsRead list/count:", list.body.rowsRead, (await read(f, "/v1/activity/sessions/count", begin, {})).body.rowsRead);
 });
+
+test("a full 100-row list page returns every session's skill chips (D1 allows 100 bound variables per query)", async t => {
+  const f = await fixture(t);
+  const rows = [];
+  for (let i = 0; i < 100; i++) rows.push(ev(`e${i}`, "load", 1000 + i, "codex", { sessionId: `s${String(i).padStart(3, "0")}`, uri: SKILL, revision: 0 }));
+  const begin = await publish(f, [{ schemaVersion: 2, rows }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  for (const limit of [50, 100]) {
+    const list = await read(f, "/v1/activity/sessions", begin, { limit });
+    assert.equal(list.status, 200, JSON.stringify(list.body));
+    assert.equal(list.body.sessions.length, limit);
+    assert.ok(list.body.sessions.every(s => s.skills.length === 1 && s.skills[0].reads === 1));
+  }
+});

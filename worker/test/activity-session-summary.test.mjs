@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { DatabaseSync } from "node:sqlite";
-import { chipsSql, filterOptionsSql, sessionCountSql, sessionListSql } from "../src/activity/session-sql.ts";
+import { CHIP_ID_CHUNK, D1_MAX_BOUND_PARAMETERS, chipsSql, filterOptionsSql, sessionCountSql, sessionListSql } from "../src/activity/session-sql.ts";
 
 const sql = name => readFile(new URL(`../activity-migrations/${name}`, import.meta.url), "utf8");
 async function open() {
@@ -95,13 +95,24 @@ test("list/count/facet/filter-options plans: summary indexes only, no table or e
     VALUES ('a',1,'d','x',?,?,?,?,?)`).run(sid, skill, dg, ms, n);
   ins("session_skill_reads", "s001", "k1", "", 5, 2); ins("session_skill_reads_backfill", "s001", "k1", "", 3, 1);
   ins("session_skill_reads_backfill", "s001", "k2", "dg", 4, 1);
-  const chipArgs = [...SCOPE, "s001", "s002", ...SCOPE, "s001", "s002"];
-  assert.deepEqual(db.prepare(chipsSql(2)).all(...chipArgs).map(r => ({ ...r })), [
-    { sessionId: "s001", skillId: "k1", digest: "", firstReadMs: 3, reads: 3 },
-    { sessionId: "s001", skillId: "k2", digest: "dg", firstReadMs: 4, reads: 1 }]);
-  const cp = plan(chipsSql(2), chipArgs);
-  assert.doesNotMatch(cp, /SCAN session_skill_reads(_backfill)?(?! USING)/, cp);
-  assert.match(cp, /SEARCH session_skill_reads USING (COVERING )?INDEX sqlite_autoindex/, cp);
+  const chipArgs = [...SCOPE, "s001", "s002"];
+  const rowsOf = t => db.prepare(chipsSql(t, 2)).all(...chipArgs).map(r => ({ ...r }));
+  assert.deepEqual(rowsOf("session_skill_reads"), [{ sessionId: "s001", skillId: "k1", digest: "", firstReadMs: 5, reads: 2 }]);
+  assert.deepEqual(rowsOf("session_skill_reads_backfill").map(r => r.skillId).sort(), ["k1", "k2"]);
+  for (const t of ["session_skill_reads", "session_skill_reads_backfill"]) {
+    const cp = plan(chipsSql(t, 2), chipArgs);
+    assert.doesNotMatch(cp, /SCAN session_skill_reads(_backfill)?(?! USING)/, cp);
+    assert.match(cp, /SEARCH session_skill_reads(_backfill)? USING (COVERING )?INDEX sqlite_autoindex/, cp);
+  }
+  // 회귀: 목록 한 쪽 최대 100행에서 한 질의의 바인딩 수가 D1 한도(100)를 넘지 않는다(운영 503).
+  for (const n of [50, 100, CHIP_ID_CHUNK]) {
+    for (let from = 0; from < n; from += CHIP_ID_CHUNK) {
+      const count = Math.min(CHIP_ID_CHUNK, n - from);
+      assert.ok(4 + count <= D1_MAX_BOUND_PARAMETERS, `chips ${n}`);
+      assert.equal((chipsSql("session_skill_reads", count).match(/\?/g) ?? []).length, 4 + count);
+    }
+  }
+  assert.ok((sessionListSql({ runtimes: Array(20).fill("r"), activeFromMs: 1, activeToMs: 2 }, true).match(/\?/g) ?? []).length + 4 <= D1_MAX_BOUND_PARAMETERS);
   const first = db.prepare(sessionListSql({}, false)).all(...SCOPE, 50).map(r => r.sessionId);
   assert.equal(first.length, 50);
   assert.deepEqual(first.slice(0, 2), ["s119", "s118"]);

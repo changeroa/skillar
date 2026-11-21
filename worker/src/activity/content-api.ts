@@ -220,6 +220,8 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     }
     // HTTP boundary: no body, token, crypto material or database details in logs.
     if (error instanceof Error) {
+      // 분류되지 않은 실패의 진단: 경로와 오류 이름뿐(메시지·본문·식별자는 남기지 않는다).
+      console.error(JSON.stringify({ event: "activity_unclassified_error", route: url.pathname, name: error.name }));
       return Response.json({ error: "content_unavailable" }, { status: 503, headers });
     }
     throw error;
