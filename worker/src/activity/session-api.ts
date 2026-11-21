@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { contentKinds } from "../../../shared/activity-schema.ts";
 import { reportScopeSchema } from "../../../shared/activity-query.ts";
-import { chipsSql, eventsSql, filterOptionsSql, filterSql, metricsSql, sessionCountSql, sessionListSql } from "./session-sql.ts";
+import { CHIP_ID_CHUNK, chipTables, chipsSql, eventsSql, filterOptionsSql, filterSql, metricsSql, sessionCountSql, sessionListSql } from "./session-sql.ts";
 import { activeFence } from "./content-db.ts";
 import { contentScope, requireContentReadConsent } from "./content-consent.ts";
 import { ActivityLedgerError } from "./types.ts";
@@ -57,16 +57,26 @@ export async function readSessionList(env: ContentEnv, principal: IngestPrincipa
   const rows = z.array(listRow).parse(result.results);
   const page = rows.slice(0, request.limit);
   const last = page.at(-1);
-  let chips: z.infer<typeof chipRow>[] = [];
-  let chipRows: number | null = 0;
-  if (page.length > 0) {
-    const ids = page.map(row => row.sessionId);
-    const identity = [principal.accountId, request.generation, request.deviceId, request.sourceDomain];
-    const chipResult = await env.ACTIVITY.prepare(chipsSql(ids.length))
-      .bind(...identity, ...ids, ...identity, ...ids).all();
-    chips = z.array(chipRow).parse(chipResult.results);
-    chipRows = rowsRead(chipResult.meta);
+  const merged = new Map<string, z.infer<typeof chipRow>>();
+  const chipReads: (number | null)[] = [];
+  const identity = [principal.accountId, request.generation, request.deviceId, request.sourceDomain];
+  const pageIds = page.map(row => row.sessionId);
+  for (const table of chipTables) {
+    for (let from = 0; from < pageIds.length; from += CHIP_ID_CHUNK) {
+      const ids = pageIds.slice(from, from + CHIP_ID_CHUNK);
+      const chipResult = await env.ACTIVITY.prepare(chipsSql(table, ids.length)).bind(...identity, ...ids).all();
+      chipReads.push(rowsRead(chipResult.meta));
+      for (const chip of z.array(chipRow).parse(chipResult.results)) {
+        const key = JSON.stringify([chip.sessionId, chip.skillId, chip.digest]);
+        const seen = merged.get(key);
+        merged.set(key, seen === undefined ? chip : {
+          ...seen, firstReadMs: Math.min(seen.firstReadMs, chip.firstReadMs), reads: seen.reads + chip.reads,
+        });
+      }
+    }
   }
+  const chips = [...merged.values()].sort((a, b) => a.firstReadMs - b.firstReadMs ||
+    (a.skillId < b.skillId ? -1 : a.skillId > b.skillId ? 1 : 0) || (a.digest < b.digest ? -1 : a.digest > b.digest ? 1 : 0));
   return {
     schemaVersion: 1 as const,
     sessions: page.map(row => ({
@@ -78,7 +88,7 @@ export async function readSessionList(env: ContentEnv, principal: IngestPrincipa
     })),
     nextCursor: rows.length > request.limit && last !== undefined ?
       { lastEventMs: last.lastEventMs, sessionId: last.sessionId } : null,
-    rowsRead: sumRows([rowsRead(result.meta), chipRows]),
+    rowsRead: sumRows([rowsRead(result.meta), ...chipReads]),
   };
 }
 

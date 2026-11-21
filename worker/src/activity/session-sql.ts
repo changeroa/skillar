@@ -42,13 +42,15 @@ export const eventsSql = (withCursor: boolean) =>
    ORDER BY timestamp_ms, entity_key LIMIT ?`;
 
 
-/** 목록 한 쪽(세션 id ≤100)의 스킬 칩. 수집 경로 표와 백필 표를 합친다(일별 집계 readSkillUsage와 같은 UNION ALL:
- *  두 표는 영수증으로 서로 다른 배치만 세므로 겹치지 않는다). digest ''는 모름이라 응답에서 null이다. */
-export const chipsSql = (count: number) => {
-  const ids = Array.from({ length: count }, () => "?").join(",");
-  const part = (table: string) => `SELECT session_id, skill_id, digest, first_read_ms, reads FROM ${table}
-    WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND session_id IN (${ids})`;
-  return `SELECT session_id AS sessionId, skill_id AS skillId, digest, MIN(first_read_ms) AS firstReadMs, SUM(reads) AS reads
-    FROM (${part("session_skill_reads")} UNION ALL ${part("session_skill_reads_backfill")})
-    GROUP BY session_id, skill_id, digest ORDER BY session_id, firstReadMs, skill_id, digest`;
-};
+/** D1은 질의당 바인딩 변수를 100개로 제한한다(https://developers.cloudflare.com/d1/platform/limits/).
+ *  칩 질의는 스코프 4개 + 세션 id N개이므로 표마다 따로, N≤CHIP_ID_CHUNK씩 나눠 보낸다. */
+export const D1_MAX_BOUND_PARAMETERS = 100;
+export const CHIP_ID_CHUNK = 90;
+export const chipTables = ["session_skill_reads", "session_skill_reads_backfill"] as const;
+/** 목록 한 쪽의 스킬 칩(한 표, 세션 id ≤CHIP_ID_CHUNK). 수집 표와 백필 표는 호출 쪽에서 합친다
+ *  (일별 집계 readSkillUsage와 같은 UNION ALL 의미: 두 표는 영수증으로 서로 다른 배치만 센다).
+ *  digest ''는 모름이라 응답에서 null이다. */
+export const chipsSql = (table: (typeof chipTables)[number], count: number) =>
+  `SELECT session_id AS sessionId, skill_id AS skillId, digest, first_read_ms AS firstReadMs, reads
+   FROM ${table} WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?
+     AND session_id IN (${Array.from({ length: count }, () => "?").join(",")})`;
