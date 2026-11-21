@@ -121,3 +121,12 @@ export function snapshotLines(
   }
   return lines;
 }
+
+/**
+ * 세션 화면(출처 전체)은 기기 이름을 열 라벨에만 쓴다. /api/devices는 시간 제한이 없고 기기마다 동의 조회를 더해 읽으므로
+ * 느리거나 실패하거나 응답이 없을 수 있다. 세션 화면은 그 응답을 기다리지 않고 출처가 보이면 바로 열며, 이름은 도착하면 채우고
+ * 없으면 알 수 없음으로 둔다. 스킬 화면은 기존대로 기기 읽기가 성공한 뒤에 자동으로 연다.
+ */
+export function devicesSettledForAutoSelect(emptyView: "skills" | "sessions", devicesStatus: "loading" | "ready" | "failed"): boolean {
+  return emptyView === "sessions" ? true : devicesStatus === "ready";
+}

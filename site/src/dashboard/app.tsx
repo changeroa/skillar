@@ -16,7 +16,7 @@ import { SnapshotSection, SourcesSection } from "./sources";
 import { HomeChecklist } from "./home-checklist";
 import { SkillsEmpty } from "./skills-empty";
 import { loadDevices } from "./devices";
-import { mergeReports, profileKey, shortId } from "./status";
+import { devicesSettledForAutoSelect, mergeReports, profileKey, shortId } from "./status";
 import type { RequestFailure } from "./status";
 import { dashboardPaths, dashboardQuerySchema, dashboardReferenceSchema, dashboardReportStatusSchema, dashboardResultPartRequestSchema } from "../../../shared/dist/activity-dashboard.js";
 
@@ -109,7 +109,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   const dismissedAutoSelect = useRef<string | null>(null);
   const autoSelectedKey = useRef<string | null>(null);
   useEffect(() => {
-    if (profiles.status !== "ready" || devices.status !== "ready" || selected !== null) return;
+    if (profiles.status !== "ready" || !devicesSettledForAutoSelect(emptyView, devices.status) || selected !== null) return;
     // 출처 전체 보기가 기본이라 선택 단계가 없다: 보기 가능한 출처가 있으면 첫 출처를 리포트(본문·스킬 화면) 기준으로 연다.
     // 스킬 화면은 기존대로 출처가 하나뿐일 때만 자동으로 연다. 세션 화면만 출처 전체 보기라 첫 출처를 연다.
     const live = emptyView === "sessions" ? list.filter(profile => profile.availability === "ready") : list.filter(profile => profile.availability !== "revoked");
@@ -120,6 +120,8 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     onSelect(live[0], devices.data?.find(device => device.deviceId === live[0].deviceId)?.label ?? null);
   }, [profiles, devices, selected]);
   // 세션 목록은 보기 가능한 모든 출처를 합쳐 읽는다(출처 전체 기본). 출처마다 라이브 연결 없는 읽기 전용 어댑터를 둔다.
+  // 기기 이름이 늦게 도착해도 출처 등록은 이름이 바뀔 때만 다시 한다(이름 없이도 목록은 먼저 열린다).
+  const deviceLabelsKey = list.filter(profile => profile.availability === "ready").map(profile => devices.data?.find(device => device.deviceId === profile.deviceId)?.label ?? "").join("\n");
   const readyKeys = list.filter(profile => profile.availability === "ready").map(profileKey).join("\n");
   useEffect(() => {
     if (emptyView !== "sessions" || profiles.status !== "ready") return;
@@ -140,8 +142,9 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       },
     });
     return () => { configureHostedSources(undefined); for (const item of apis) item.api.dispose(); };
-  }, [emptyView, profiles.status, readyKeys, devices.data]);
+  }, [emptyView, profiles.status, readyKeys, deviceLabelsKey]);
   const allSources = emptyView === "sessions" && hasViewableSources; // 세션 화면: 출처 전체 보기(출처 선택 단계 없음)
+  const openingSessions = emptyView === "sessions" && profiles.status === "ready" && hasViewableSources && dismissedAutoSelect.current === null;
   const readyList = list.filter(profile => profile.availability === "ready");
   const lastReceived = readyList.reduce<number | null>((latest, profile) => profile.receivedAtMs === null ? latest : Math.max(latest ?? 0, profile.receivedAtMs), null);
   const current = selected === null ? null : list.find(profile => profileKey(profile) === profileKey(selected)) ?? selected;
@@ -186,8 +189,11 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           </details>
         </aside>}
         <div className="dash-activity">
-          {selected === null && needsSourceGuidance && checklist}
-          {selected === null && !needsSourceGuidance && checklist}
+          {/* 세션 화면은 출처가 보이면 자동으로 연다. 그 사이에 예전 "출처를 선택하세요" 화면을 보이지 않고 로딩으로 둔다.
+              사용자가 닫은 뒤(dismissed)에는 직접 고르도록 선택 화면을 둔다. */}
+          {selected === null && openingSessions && <p className="note session-status" role="status" aria-live="polite">세션을 여는 중{"\u2026"}</p>}
+          {selected === null && !openingSessions && needsSourceGuidance && checklist}
+          {selected === null && !openingSessions && !needsSourceGuidance && checklist}
           {allSources && selected !== null && current !== null && (
             <section className="panel snapshot" aria-label="세션 기록">
               <div className="dash-embed"><LocalViews key={profileKey(selected)} embedded /></div>
