@@ -83,7 +83,7 @@ export async function fixture(t) {
   }
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql",
     "0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql", "0007_account_events.sql",
-    "0008_private_skill_notifications.sql", "0012_skill_usage.sql"]) {
+    "0008_private_skill_notifications.sql", "0012_skill_usage.sql", "0014_session_index.sql"]) {
     await migrate(activity, new URL(`../../activity-migrations/${name}`, import.meta.url));
   }
   const seed = async (account = "account-a") => {

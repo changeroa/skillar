@@ -39,14 +39,17 @@ export function projectMutation(
   let sourceKey: string | null = null;
   switch (mutation.entity) {
     case "session":
-      columns = ["runtime", "started_ms", "ended_ms"];
-      values = [mutation.facts.runtime, mutation.facts.startedMs, mutation.facts.endedMs];
+      columns = ["runtime", "started_ms", "ended_ms", "automated"];
+      values = [mutation.facts.runtime, mutation.facts.startedMs, mutation.facts.endedMs,
+        mutation.facts.automated === null ? null : mutation.facts.automated ? 1 : 0];
       break;
     case "event":
-      columns = ["timestamp_ms", "source_order", "source_key", "recording_orders_json"];
+      columns = ["timestamp_ms", "source_order", "source_key", "recording_orders_json",
+        "session_id", "kind"];
       sourceKey = mutation.facts.sourceKey;
       values = [mutation.facts.timestampMs, mutation.facts.sourceOrder, sourceKey,
-        JSON.stringify(mutation.facts.recordingOrders)];
+        JSON.stringify(mutation.facts.recordingOrders), mutation.facts.sessionId,
+        mutation.facts.kind];
       break;
     case "span":
       columns = ["trace_id", "span_id", "start_ms", "end_ms", "recording_orders_json"];

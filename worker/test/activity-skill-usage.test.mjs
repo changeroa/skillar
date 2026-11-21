@@ -490,3 +490,169 @@ test("partial expiry keeps surviving batches' rows and cleans days beyond the re
   assert.equal(usage.body.coverage, "current");
   assert.deepEqual(usage.body.rows, [{ skillUri: SKILL2, agent: "claude-code", reads: 1, exposures: 0 }]);
 });
+
+// ---- 대시보드 재디자인 1단계: 세션 평문 인덱스 (0014_session_index.sql) ----
+const D1 = "a".repeat(64), D2 = "b".repeat(64);
+const PRIV = (digest, id = "00000000-0000-4000-8000-000000000009") =>
+  `skillar://private/${id}/${digest}/SKILL.md`;
+const loadRow = (id, digest) => row2("loads", id,
+  { load_id: id, trace_id: "t", uri: SKILL, manifest_digest: digest, resources_json: "[]" });
+const evLoad = (id, ts, sessionId, { loadId = null, uri = SKILL, revision } = {}) =>
+  (revision === undefined ? row2 : (t, k, v) => row(t, k, v, revision))("events", id,
+  { id, session_id: sessionId, kind: "load", ts, runtime: "codex", skill_uri: uri,
+    load_id: loadId, data_json: "{}" });
+const reads = f => f.rows(`SELECT session_id,skill_id,digest,digest_source,first_read_ms,reads
+  FROM session_skill_reads ORDER BY session_id,skill_id,digest`);
+
+test("session_skill_reads keeps reads only, with digest evidence and source, never guessed", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const rows = [
+    loadRow("l1", "sha256:loaded"),
+    // s1: URI digest (event), loads digest (event), then a read with no evidence after an explicit one
+    evLoad("e1", now - 5000, "s1", { uri: PRIV(D1) }),
+    evLoad("e2", now - 4000, "s1", { loadId: "l1" }),
+    evLoad("e3", now - 3000, "s1", { uri: SKILL2 }),          // no evidence, earlier explicit reads are another skill
+    // s2: explicit read then a later no-evidence read of the same skill -> session_load
+    evLoad("e4", now - 2000, "s2", { uri: PRIV(D2) }),
+    // 검색 노출은 이 표에 넣지 않는다.
+    ev("e5", "search", now - 1000, "codex", { sessionId: "s1", data: { candidates: [{ uri: SKILL2 }] } }),
+  ];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  const got = (await reads(f)).map(r => [r.session_id, r.skill_id, r.digest, r.digest_source, r.reads]);
+  assert.deepEqual(got.sort(), [
+    ["s1", PRIV(D1), D1, "event", 1],
+    ["s1", SKILL2, "", null, 1],
+    ["s1", SKILL, "sha256:loaded", "event", 1],
+    ["s2", PRIV(D2), D2, "event", 1],
+  ].sort());
+  assert.deepEqual(Object.keys((await reads(f))[0]).sort(),
+    ["digest", "digest_source", "first_read_ms", "reads", "session_id", "skill_id"].sort());
+  assert.equal((await f.rows("PRAGMA table_info(session_skill_reads)")).some(c => c.name === "exposures"), false);
+});
+
+test("digest is never inferred from past reads, future loads or other documents", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  assert.equal((await ingest(f, begin, [
+    loadRow("l1", D1),
+    evLoad("e0", now - 5000, "s1"),                       // 뒤에만 증거가 있음(미래 load): 알 수 없음
+    evLoad("e1", now - 4000, "s1", { loadId: "l1" }),     // 증거: loads.manifest_digest
+    evLoad("e2", now - 3000, "s1"),                       // 같은 문서의 앞선 증거 load: session_load
+    evLoad("e6", now - 3000, "s2"),                       // 다른 세션은 증거 없음
+  ])).status, 200);
+  // 다음 배치: 앞선 배치에 증거가 있어도 이 문서에는 없으므로 알 수 없음. 단순 과거 읽음으로 채우지 않는다.
+  assert.equal((await ingest(f, begin, [evLoad("e3", now - 1000, "s1", { revision: 3 }),
+    evLoad("e4", now - 900, "s9", { revision: 3 })], { sequence: 2, from: 2, through: 3 })).status, 200);
+  // 역순 도착: 증거 load가 더 늦은 배치로 와도 이미 쌓인 읽음의 digest를 소급해 바꾸지 않는다.
+  assert.equal((await ingest(f, begin, [evLoad("e5", now - 800, "s1", { uri: PRIV(D2), revision: 4 })],
+    { sequence: 3, from: 3, through: 4 })).status, 200);
+  const got = (await reads(f)).map(r => [r.session_id, r.skill_id, r.digest, r.digest_source, r.reads]);
+  assert.deepEqual(got.sort(), [
+    ["s1", SKILL, "", null, 2],            // e0 (미래 증거만), e3 (다른 문서)
+    ["s1", SKILL, D1, "event", 2],         // e1 + e2(session_load; 행은 첫 증거 'event'를 유지)
+    ["s1", PRIV(D2), D2, "event", 1],
+    ["s2", SKILL, "", null, 1],
+    ["s9", SKILL, "", null, 1],
+  ].sort());
+});
+
+test("backfill resolves digests per document only and never from past reads or other pages", async t => {
+  const f = await fixture(t);
+  const now = Date.now();
+  const begin = await publish(f, [
+    { schemaVersion: 2, rows: [
+      row("loads", "l1", { load_id: "l1", trace_id: "t", uri: SKILL, manifest_digest: D1, resources_json: "[]" }, 0),
+      row("events", "e1", { id: "e1", session_id: "s1", kind: "load", ts: now - 3000, runtime: "codex",
+        skill_uri: SKILL, load_id: "l1", data_json: "{}" }, 0)] },
+    { schemaVersion: 2, rows: [
+      row("events", "e2", { id: "e2", session_id: "s1", kind: "load", ts: now - 1000, runtime: "codex",
+        skill_uri: SKILL, load_id: null, data_json: "{}" }, 0)] },
+  ]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  const got = (await f.rows("SELECT digest,digest_source,reads FROM session_skill_reads_backfill ORDER BY digest"))
+    .map(r => [r.digest, r.digest_source, r.reads]);
+  assert.deepEqual(got, [["", null, 1], [D1, "event", 1]]);
+});
+
+test("session_skill_reads is idempotent on re-POST and cleared by a tombstone", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const rows = [loadRow("l1", D1), evLoad("e1", Date.now(), "s1", { loadId: "l1" })];
+  const batchId = randomUUID();
+  assert.equal((await ingest(f, begin, rows, { batchId })).status, 200);
+  await ingest(f, begin, rows, { batchId });
+  assert.equal((await f.rows("SELECT reads FROM session_skill_reads"))[0].reads, 1);
+  const tombstone = (target, key, revision) => ({ entity: "tombstone", target, key, revision });
+  assert.equal((await ingest(f, begin, [], {
+    sequence: 2, from: 2, through: 3, metadataMutations: [tombstone("event", "e1", 3)],
+  })).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_skill_reads")).length, 0);
+});
+
+test("ingest derives session_facts and event_facts from decrypted content rows (approved fields only)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const rows = [
+    row2("sessions", "s1", { id: "s1", runtime: "codex", client_name: "x", started_at: now - 9000,
+      ended_at: now - 100, first_prompt: "secret prompt" }),
+    evLoad("e1", now - 5000, "s1", { uri: PRIV(D1) }),
+    ev("e2", "search", now - 4000, "codex", { sessionId: "s1" }),
+  ];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  assert.deepEqual((await f.rows("SELECT entity_key,runtime,started_ms,ended_ms,automated,facts_json FROM session_facts"))
+    .map(r => [r.entity_key, r.runtime, r.started_ms, r.ended_ms, r.automated, r.facts_json]),
+    [["s1", "codex", now - 9000, null, null, "{}"]]);
+  assert.deepEqual((await f.rows("SELECT entity_key,session_id,kind,timestamp_ms,source_key,facts_json FROM event_facts ORDER BY entity_key"))
+    .map(r => [r.entity_key, r.session_id, r.kind, r.timestamp_ms, r.source_key, r.facts_json]), [
+    ["e1", "s1", "load", now - 5000, null, "{}"], ["e2", "s1", "search", now - 4000, null, "{}"]]);
+  // 요청문은 어떤 평문 표에도 없다.
+  for (const table of ["session_facts", "event_facts", "session_skill_reads"]) {
+    assert.equal(JSON.stringify(await f.rows(`SELECT * FROM ${table}`)).includes("secret prompt"), false);
+  }
+  // 재전송과 낮은 리비전은 덮어쓰지 않는다.
+  await ingest(f, begin, rows, { batchId: randomUUID(), sequence: 2, from: 2, through: 3 }).catch(() => null);
+  assert.equal((await f.rows("SELECT * FROM event_facts")).length, 2);
+});
+
+test("backfill rebuilds session_skill_reads_backfill and session/event facts from the snapshot, idempotently", async t => {
+  const f = await fixture(t);
+  const now = Date.now();
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    row("sessions", "s1", { id: "s1", runtime: "codex", client_name: null, started_at: now - 9000, ended_at: null }, 0),
+    row("events", "e1", { id: "e1", session_id: "s1", kind: "load", ts: now, runtime: "codex",
+      skill_uri: PRIV(D1), load_id: null, data_json: "{}" }, 0),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.deepEqual((await f.rows("SELECT session_id,skill_id,digest,digest_source,first_read_ms,reads FROM session_skill_reads_backfill"))
+    .map(r => [r.session_id, r.skill_id, r.digest, r.digest_source, r.first_read_ms, r.reads]),
+    [["s1", PRIV(D1), D1, "event", now, 1]]);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1);
+  assert.equal((await f.rows("SELECT * FROM event_facts")).length, 1);
+});
+
+test("metadata mutations from a client still fill the session index columns", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const mutations = [
+    { entity: "session", key: "s1", revision: 2, facts: { runtime: "codex", startedMs: 1000,
+      endedMs: null, automated: true } },
+    { entity: "event", key: "e1", revision: 2, facts: { sessionId: "s1", kind: "search",
+      timestampMs: 1500, sourceOrder: null, recordingOrders: {}, sourceKey: null, status: "unknown",
+      inputTokens: null, outputTokens: null } },
+  ];
+  assert.equal((await ingest(f, begin, [], { metadataMutations: mutations })).status, 200);
+  assert.deepEqual((await f.rows("SELECT entity_key,automated FROM session_facts")).map(r => [r.entity_key, r.automated]), [["s1", 1]]);
+  assert.deepEqual((await f.rows("SELECT session_id,kind FROM event_facts")).map(r => [r.session_id, r.kind]), [["s1", "search"]]);
+  const plan = async sql => (await f.rows(`EXPLAIN QUERY PLAN ${sql}`)).map(r => r.detail).join("|");
+  assert.match(await plan(`SELECT entity_key FROM session_facts WHERE account_id='a' AND generation=1
+    AND device_id='d' AND source_domain='x' AND started_ms BETWEEN 0 AND 9 ORDER BY started_ms DESC LIMIT 50`),
+    /session_facts_started/);
+  assert.match(await plan(`SELECT kind,count(*) FROM event_facts WHERE account_id='a' AND generation=1
+    AND device_id='d' AND source_domain='x' AND session_id IN ('s1','s2') GROUP BY session_id,kind`),
+    /event_facts_session/);
+});
