@@ -656,3 +656,21 @@ test("metadata mutations from a client still fill the session index columns", as
     AND device_id='d' AND source_domain='x' AND session_id IN ('s1','s2') GROUP BY session_id,kind`),
     /event_facts_session/);
 });
+
+test("RECOVERY: backfill restores session index rows for retained batches that already have a skill-usage receipt", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const now = Date.now();
+  const rows = [
+    row2("sessions", "s1", { id: "s1", runtime: "codex", client_name: null, started_at: now - 9000, ended_at: null }),
+    evLoad("e1", now - 5000, "s1", { uri: PRIV(D1) }),
+  ];
+  assert.equal((await ingest(f, begin, rows)).status, 200);
+  // 0014 배포 전에 수집된 배치처럼: 스킬 집계 영수증은 있고 세션 인덱스는 비어 있다.
+  await f.rows("DELETE FROM session_facts");
+  await f.rows("DELETE FROM event_facts");
+  await f.rows("DELETE FROM session_skill_reads");
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1, "session_facts restored");
+  assert.equal((await f.rows("SELECT * FROM event_facts")).length, 1, "event_facts restored");
+});

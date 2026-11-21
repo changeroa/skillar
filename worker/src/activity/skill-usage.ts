@@ -488,13 +488,16 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
   }
   // 스냅샷 cut 이후에 이미 수신된 보관 배치를 재생한다. 보관 기간 만료·삭제로 읽을 수 없는
   // 배치는 건너뛰고 skipped에 센다.
-  const retained = z.array(z.object({ batch_id: z.string() })).parse((await env.ACTIVITY.prepare(
-    `SELECT r.batch_id AS batch_id FROM ingest_receipts r
+  // 세션 인덱스는 스킬 영수증과 별개 기준이다: 보관 배치 전부를 재생한다(키 기반 upsert라 멱등).
+  // 영수증이 있는 배치는 집계·읽기 재계산에서만 뺀다(수집 경로 증분과 이중 계산 금지).
+  const retained = z.array(z.object({ batch_id: z.string(), receipted: z.number() }))
+    .parse((await env.ACTIVITY.prepare(
+    `SELECT r.batch_id AS batch_id, EXISTS (SELECT 1 FROM skill_usage_batches b
+      WHERE b.account_id=r.account_id AND b.batch_id=r.batch_id) AS receipted FROM ingest_receipts r
     JOIN content_manifests m ON m.account_id=r.account_id AND m.generation=r.generation
       AND m.device_id=r.device_id AND m.source_domain=r.source_domain AND m.batch_id=r.batch_id
     WHERE r.account_id=? AND r.generation=? AND r.device_id=? AND r.source_domain=?
-      AND r.journal_through>? AND NOT EXISTS (SELECT 1 FROM skill_usage_batches b
-      WHERE b.account_id=r.account_id AND b.batch_id=r.batch_id)
+      AND r.journal_through>?
     ORDER BY r.journal_through`,
   ).bind(...identity, cut).all()).results);
   for (const candidate of retained) {
@@ -502,10 +505,10 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
       const document = await readBatchContent(env, principal,
         { sourceDomain: scope.sourceDomain, batchId: candidate.batch_id });
       mergedRows.push(...document.rows);
-      merge(skillUsageDeltas(document.rows));
+      if (candidate.receipted === 0) merge(skillUsageDeltas(document.rows));
     } catch (error) {
       if (!(error instanceof ContentStorageError)) throw error;
-      mergedDeltas.skipped++;
+      if (candidate.receipted === 0) mergedDeltas.skipped++;
     }
   }
   const merged = skillUsageCounts(mergedDeltas);
