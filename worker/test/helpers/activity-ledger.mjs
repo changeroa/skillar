@@ -86,7 +86,7 @@ export async function fixture(t, { seed = true } = {}) {
   }
   assert.equal(current, "", "migration must contain complete SQL statements");
   await db.batch(statements);
-  const skillUsage = (await Promise.all(["0012_skill_usage.sql", "0014_session_index.sql"].map(name =>
+  const skillUsage = (await Promise.all(["0012_skill_usage.sql", "0014_session_index.sql", "0015_session_index_batches.sql"].map(name =>
     readFile(new URL(`../../activity-migrations/${name}`, import.meta.url), "utf8")))).join("\n");
   const skillStatements = skillUsage.replace(/^--.*$/gm, "").split(";").map(statement => statement.trim())
     .filter(statement => statement.length > 0).map(statement => db.prepare(statement));

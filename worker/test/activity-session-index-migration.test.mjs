@@ -15,7 +15,7 @@ test("0014 migrates pre-existing facts rows (client-sent mutations) and keeps th
     .run(...id, "s2", 1, JSON.stringify({ runtime: "codex", startedMs: 6, endedMs: null, automated: null }), "codex", 6, null);
   db.prepare(`INSERT INTO event_facts VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
     .run(...id, "e1", 1, JSON.stringify({ sessionId: "s1", kind: "load" }), 7, null, null, "{}");
-  db.exec(await sql("0014_session_index.sql"));
+  db.exec(await sql("0014_session_index.sql", "0015_session_index_batches.sql"));
   assert.deepEqual(db.prepare("SELECT entity_key,automated FROM session_facts ORDER BY entity_key").all()
     .map(r => [r.entity_key, r.automated]), [["s1", 1], ["s2", null]]);
   assert.deepEqual(db.prepare("SELECT session_id,kind FROM event_facts").all()

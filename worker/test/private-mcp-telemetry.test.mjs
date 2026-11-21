@@ -70,7 +70,7 @@ async function fixture(t, recordActivity = true, connectionKind = "pat") {
   for (const name of ["0001_accounts.sql", "0002_activity_accounts.sql", "0003_activity_consent.sql",
     "0006_mcp_connections.sql"]) await migrate(accounts, new URL(`../../site/migrations/${name}`, import.meta.url));
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql",
-    "0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql", "0012_skill_usage.sql", "0014_session_index.sql"])
+    "0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql", "0012_skill_usage.sql", "0014_session_index.sql", "0015_session_index_batches.sql"])
     await migrate(db, new URL(`../activity-migrations/${name}`, import.meta.url));
   await accounts.prepare("INSERT INTO users VALUES ('account-a','synthetic@example.invalid','','',0,0)").run();
   await accounts.prepare("INSERT INTO accounts(account_id,user_sub) VALUES ('account-a','account-a')").run();

@@ -94,7 +94,7 @@ export async function fixture(t, { eventsMigration = true } = {}) {
   const db = await runtime.getD1Database("ACTIVITY");
   for (const name of ["0001_activity_ledger.sql", "0002_content.sql", "0003_migrations.sql",
     "0004_reports.sql", "0005_runtime.sql", "0006_dashboard_eval.sql",
-    ...(eventsMigration ? ["0007_account_events.sql"] : []), "0012_skill_usage.sql", "0014_session_index.sql"]) await migrate(db, name);
+    ...(eventsMigration ? ["0007_account_events.sql"] : []), "0012_skill_usage.sql", "0014_session_index.sql", "0015_session_index_batches.sql"]) await migrate(db, name);
   await db.batch([
     db.prepare("INSERT INTO tenant_fences VALUES ('account-a',1,'active')"),
     db.prepare("CREATE TABLE test_control(account_id TEXT PRIMARY KEY,mode TEXT)"),

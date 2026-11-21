@@ -219,6 +219,9 @@ export async function sweepSourceContent(
             env.ACTIVITY.prepare(`DELETE FROM session_skill_reads
               WHERE account_id=?1 AND generation=?2 AND device_id=?3
                 AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM session_index_batches
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
             env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
               WHERE account_id=?1 AND generation=?2 AND device_id=?3
                 AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),

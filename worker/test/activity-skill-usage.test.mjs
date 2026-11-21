@@ -657,20 +657,103 @@ test("metadata mutations from a client still fill the session index columns", as
     /event_facts_session/);
 });
 
-test("RECOVERY: backfill restores session index rows for retained batches that already have a skill-usage receipt", async t => {
+const bfReads = f => f.rows(`SELECT session_id,skill_id,digest,reads FROM session_skill_reads_backfill ORDER BY 1,2,3`);
+const recRows = now => [
+  row2("sessions", "s1", { id: "s1", runtime: "codex", client_name: null, started_at: now - 9000, ended_at: null }),
+  evLoad("e1", now - 5000, "s1", { uri: PRIV(D1) }),
+];
+const wipeIndex = async f => {
+  for (const t of ["session_facts", "event_facts", "session_skill_reads", "session_index_batches"]) await f.rows(`DELETE FROM ${t}`);
+};
+
+test("RECOVERY: backfill restores session facts and reads of retained batches that have a skill-usage receipt but predate the session index", async t => {
   const f = await fixture(t);
   const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
-  const now = Date.now();
-  const rows = [
-    row2("sessions", "s1", { id: "s1", runtime: "codex", client_name: null, started_at: now - 9000, ended_at: null }),
-    evLoad("e1", now - 5000, "s1", { uri: PRIV(D1) }),
-  ];
-  assert.equal((await ingest(f, begin, rows)).status, 200);
-  // 0014 배포 전에 수집된 배치처럼: 스킬 집계 영수증은 있고 세션 인덱스는 비어 있다.
-  await f.rows("DELETE FROM session_facts");
-  await f.rows("DELETE FROM event_facts");
-  await f.rows("DELETE FROM session_skill_reads");
-  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await ingest(f, begin, recRows(Date.now()))).status, 200);
+  await wipeIndex(f); // 0014/0015 이전에 수집된 배치: 스킬 영수증만 있다.
+  assert.equal((await f.rows("SELECT * FROM skill_usage_batches")).length, 1);
+  const run = () => f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal((await run()).status, 200);
   assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1, "session_facts restored");
   assert.equal((await f.rows("SELECT * FROM event_facts")).length, 1, "event_facts restored");
+  assert.deepEqual((await bfReads(f)).map(r => [r.session_id, r.skill_id, r.reads]), [["s1", PRIV(D1), 1]]);
+  const daily = await f.rows("SELECT SUM(reads) AS r FROM skill_daily_usage_backfill");
+  assert.equal(daily[0].r, null, "receipted batch must not be counted again in daily aggregates");
+  // 재실행은 같은 결과(멱등)
+  assert.equal((await run()).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1);
+  assert.deepEqual((await bfReads(f)).map(r => r.reads), [1]);
+});
+
+test("RECOVERY: a batch already counted by the session-index increment is not counted again by backfill", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  assert.equal((await ingest(f, begin, recRows(Date.now()))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_index_batches")).length, 1);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await bfReads(f)).length, 0, "increment owns this batch");
+  assert.deepEqual((await reads(f)).map(r => r.reads), [1]);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1);
+});
+
+test("RECOVERY boundary: re-ingesting a batch the backfill already restored does not double count", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  const batchId = "11111111-1111-4111-8111-111111111111";
+  assert.equal((await ingest(f, begin, recRows(Date.now()), { batchId })).status, 200);
+  await wipeIndex(f);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  const before = await bfReads(f);
+  await assert.rejects(ingest(f, begin, recRows(Date.now()), { batchId })); // 같은 batch 재전송은 서버가 거부(409)
+  assert.deepEqual(await bfReads(f), before);
+  assert.equal((await f.rows("SELECT * FROM session_skill_reads")).length, 0, "increment must not add to a replayed batch");
+  // 새 ingest(백필 이후)는 증분으로 들어가고 재백필이 그것을 다시 세지 않는다.
+  const now = Date.now();
+  const r9 = await ingest(f, begin, [evLoad("e9", now, "s1", { uri: PRIV(D2), revision: 3 })],
+    { sequence: 2, from: 2, through: 3 }); assert.equal(r9.status, 200, JSON.stringify(r9.body));
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.deepEqual((await reads(f)).map(r => [r.skill_id, r.reads]), [[PRIV(D2), 1]]);
+  assert.deepEqual((await bfReads(f)).map(r => [r.skill_id, r.reads]), [[PRIV(D1), 1]]);
+});
+
+test("RECOVERY boundary: partial restore reruns to the same final state", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  assert.equal((await ingest(f, begin, recRows(Date.now()))).status, 200);
+  await wipeIndex(f);
+  await f.rows("DELETE FROM session_skill_reads_backfill");
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  await f.rows("DELETE FROM event_facts"); // 일부만 남은 상태
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 1);
+  assert.equal((await f.rows("SELECT * FROM event_facts")).length, 1);
+  assert.deepEqual((await bfReads(f)).map(r => r.reads), [1]);
+});
+
+test("RECOVERY boundary: after a tombstone, replay does not resurrect the session/event index rows; read relations are rebuilt from retained content (existing rebuild design)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  assert.equal((await ingest(f, begin, recRows(Date.now()))).status, 200);
+  const tombstone = (target, key, revision) => ({ entity: "tombstone", target, key, revision });
+  assert.equal((await ingest(f, begin, [], { sequence: 2, from: 2, through: 3,
+    metadataMutations: [tombstone("event", "e1", 3), tombstone("session", "s1", 3)] })).status, 200);
+  const left = await f.rows("SELECT batch_id FROM session_index_batches");
+  assert.equal(left.length, 1, "tombstone clears earlier index receipts; only the tombstone batch's own receipt remains");
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 0, "tombstoned session stays deleted");
+  assert.equal((await f.rows("SELECT * FROM event_facts")).length, 0, "tombstoned event stays deleted");
+  assert.equal((await bfReads(f)).length, 0, "tombstoned event's read relation is not rebuilt");
+});
+
+test("RECOVERY errors: a key/storage failure aborts the backfill without writing or marking it complete (never a silent skip)", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [] }]);
+  assert.equal((await ingest(f, begin, recRows(Date.now()))).status, 200);
+  await wipeIndex(f);
+  await f.rows("DELETE FROM account_content_keys"); // 키 조회 실패: 만료/삭제가 아니라 장애로 구분되어야 한다
+  const res = await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin));
+  assert.equal(res.status, 503, JSON.stringify(await res.clone().json().catch(() => null)));
+  assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 0, "not marked complete");
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 0, "nothing partially written");
+  assert.equal((await readUsage(f, begin)).body.coverage, "pending_backfill");
 });
