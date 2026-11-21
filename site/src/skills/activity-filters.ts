@@ -26,7 +26,7 @@ export type LibraryActivity =
   | { readonly kind: "ready"; readonly bySkill: ReadonlyMap<string, SkillActivity> };
 
 export async function readLibraryActivity(
-  profiles: readonly DashboardProfile[], skills: readonly PrivateSkillSummary[], signal: AbortSignal,
+  profiles: readonly DashboardProfile[], skills: readonly PrivateSkillSummary[], signal: AbortSignal, days: 7 | 30 | 90 = 30,
 ): Promise<LibraryActivity> {
   const ready = profiles.filter(profile => profile.availability === "ready");
   if (ready.length === 0) return { kind: "unavailable", reason: "empty" };
@@ -35,7 +35,7 @@ export async function readLibraryActivity(
   const results = await Promise.all(ready.map(async profile => {
     const source: DashboardSource = { deviceId: profile.deviceId, sourceDomain: profile.sourceDomain };
     return dashboardSkillUsageResultSchema.parse(await postDashboard(dashboardPaths.skillUsage, {
-      profile: source, requestId: crypto.randomUUID(),
+      profile: source, requestId: crypto.randomUUID(), ...(days === 30 ? {} : { days }),
     }, signal));
   }));
   // 백필이 아직 끝나지 않은 출처가 섞여 있으면 집계가 과소계산되므로 필터를 열지 않는다(추정 금지).
@@ -49,6 +49,7 @@ export async function readLibraryActivity(
 /** 스킬 보관함 화면의 활동 필터 상태. 실패는 필터만 비활성으로 두고 목록은 그대로 둔다. */
 export function useLibraryActivity(
   skills: readonly PrivateSkillSummary[], enabled: boolean, signal: AbortSignal, onUnauthorized: () => void,
+  days: 7 | 30 | 90 = 30,
 ): LibraryActivity {
   const [state, setState] = useState<LibraryActivity>({ kind: "loading" });
   const ids = skills.map(skill => skill.skillId).join(",");
@@ -57,7 +58,7 @@ export function useLibraryActivity(
     let live = true;
     setState({ kind: "loading" });
     readProfiles(signal)
-      .then(data => readLibraryActivity(data.profiles, skills, signal))
+      .then(data => readLibraryActivity(data.profiles, skills, signal, days))
       .then(next => { if (live) setState(next); })
       .catch((error: unknown) => {
         if (!live || (error instanceof DOMException && error.name === "AbortError")) return;
@@ -66,6 +67,6 @@ export function useLibraryActivity(
       });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 스킬 ID 집합이 바뀔 때만 다시 읽는다.
-  }, [ids, enabled]);
+  }, [ids, enabled, days]);
   return state;
 }

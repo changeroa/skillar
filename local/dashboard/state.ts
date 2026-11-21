@@ -31,6 +31,8 @@ export type Route = {
   readonly event?: string;
   readonly format?: "formatted" | "raw"; readonly attributes?: boolean;
   readonly analysisSort?: string; readonly analysisQuery?: string; readonly facet?: string;
+  /** 호스팅 세션 목록: 기간(7|30|60|all)과 현재 쪽의 시작 커서(base64url JSON). 둘 다 새로고침·공유에서 유지된다. */
+  readonly period?: string; readonly cur?: string; readonly src?: string;
 };
 /** Shared invalidations: `seq` advances per update; `last` is present only for a session-row update. */
 export type LiveInfo = { state: LiveState; seq: number; last?: SessionListRow };
@@ -230,6 +232,9 @@ export function parseHash(hash: string): Route {
     ...(params.get("asort") ? { analysisSort: params.get("asort") ?? undefined } : {}),
     ...(params.get("aq") ? { analysisQuery: params.get("aq") ?? undefined } : {}),
     ...(params.get("facet") ? { facet: params.get("facet") ?? undefined } : {}),
+    ...(params.get("src") ? { src: params.get("src") ?? undefined } : {}),
+    ...(["7", "30", "60", "90", "all"].includes(params.get("period") ?? "") ? { period: params.get("period") ?? undefined } : {}),
+    ...(/^[A-Za-z0-9_-]{1,4096}$/.test(params.get("cur") ?? "") ? { cur: params.get("cur") ?? undefined } : {}),
     ...(sort ? { sort } : {}),
     ...(params.get("peek") ? { peek: params.get("peek") ?? undefined } : {}),
     ...(params.get("ws") ? { workspace: params.get("ws") ?? undefined } : {}),
@@ -268,6 +273,9 @@ export function buildHash(route: Route): string {
   if (route.analysisSort) parts.push(`asort=${encodeURIComponent(route.analysisSort)}`);
   if (route.analysisQuery) parts.push(`aq=${encodeURIComponent(route.analysisQuery)}`);
   if (route.facet) parts.push(`facet=${encodeURIComponent(route.facet)}`);
+  if (route.view === "sessions" && route.period && route.period !== "7") parts.push(`period=${route.period}`);
+  if (route.view === "sessions" && route.src) parts.push(`src=${encodeURIComponent(route.src)}`);
+  if (route.view === "sessions" && route.cur) parts.push(`cur=${route.cur}`);
   if ((route.view === "sessions" || route.view === "trace") && route.event) parts.push(`event=${encodeURIComponent(route.event)}`);
   if (route.format) parts.push(`format=${route.format}`);
   if (route.attributes) parts.push("attributes=1");
@@ -280,6 +288,15 @@ export function skillName(uri: string): string {
   const segments = uri.replace(/\/SKILL\.md$/i, "").split("/").filter(Boolean);
   return segments[segments.length - 1] ?? uri;
 }
+
+const PRIVATE_SKILL = /^skill(?:ar)?:\/\/private\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/;
+/** 비공개 스킬 URI는 마지막 경로가 digest라 skillName이 해시를 돌려준다. 보관함 이름을 알면 이름, 모르면 "비공개 스킬 <앞 8자>"로 보인다. */
+export function hostedSkillLabel(uri: string, names: ReadonlyMap<string, string>): string {
+  const id = PRIVATE_SKILL.exec(uri)?.[1];
+  if (id === undefined) return skillName(uri);
+  return names.get(id) ?? `비공개 스킬 ${id.slice(0, 8)}`;
+}
+export const skillKey = (uri: string) => PRIVATE_SKILL.exec(uri)?.[1] ?? uri;
 
 /** Client-side Filter predicate for one SessionRow (fixtures mode and live upserts); dow/hour use local time. */
 export function matchesFilter(row: SessionRow, filter: Filter): boolean {

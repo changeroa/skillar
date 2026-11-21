@@ -10,6 +10,7 @@ import { NoteLine, isDirty } from "./skill-notes.ts";
 import type { Version } from "./skill-state.ts";
 import type { useSkillController } from "./skill.ts";
 import { VersionDiff } from "./diff-panel.ts";
+import { SkillReadsTab } from "./skill-reads-tab.ts";
 import { DataTable, KeyValueGrid, Pill, SegmentedTabs } from "../ui/index.ts";
 import type { TableColumn } from "../ui/index.ts";
 import { UnmeasuredReads, VersionDocument, VersionFiles } from "./document.ts";
@@ -137,7 +138,7 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       { label: "현재 리비전", value: `r${detail.skill.head.revision}` },
       { label: "보관 버전 수", value: detail.versions.length },
       { label: "선택 digest", value: h("code", null, digest?.slice(0, 8)) },
-      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "비교 탭에서 버전별 읽기 지표를 확인합니다." },
+      { label: "최근 변경", value: when(detail.skill.updatedAt) }, { label: "읽기 기록", value: "읽힘 탭" },
     ] })),
     peek && detail !== null && h(KeyValueGrid, { entries: [
       { label: "스킬 ID", value: h("code", null, skillId) },
@@ -149,6 +150,8 @@ export function SkillView(controller: ReturnType<typeof useSkillController>) {
       onChange: tab => { if (workspace.view) workspace.onViewChange?.({ ...workspace.view, tab }); },
       tabs: [
         { id: "document", label: "문서", content: documentTab }, { id: "versions", label: "버전", content: versions },
+        { id: "reads", label: "읽힘", content: h(SkillReadsTab, { detail, signal, onUnauthorized, active: workspace.view?.tab === "reads", days: workspace.view?.period ?? 30,
+          ...(peek || !workspace.view ? {} : { onDays: (period: 7 | 30 | 90) => workspace.onViewChange?.({ ...workspace.view!, period }) }) }) },
         { id: "compare", label: "비교", content: h(VersionDiff, { detail, signal, onUnauthorized, active: workspace.view?.tab === "compare" }) },
         { id: "files", label: "파일", content: h(VersionFiles, versionPreview) },
       ] }),

@@ -160,3 +160,8 @@
 .consent__advanced { background: var(--surface); padding: 0 var(--s3) var(--s3); }
 .consent__advanced > summary { font-size: var(--small); }
 .consent__advanced .choice { margin-top: var(--s2); }
+
+/* 세션 화면(출처 전체): 제목 바로 아래에 도구 줄과 표가 오도록 겹친 여백을 걷어낸다. */
+.dash-workspace--tight { margin-top: 0; }
+.dash-workspace--tight .dash-embed { margin-top: 0; }
+.dash-workspace--tight .page.wrap { padding-top: 0; }

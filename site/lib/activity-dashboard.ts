@@ -8,6 +8,7 @@ import {
   dashboardSessionFilterOptionsRequestSchema, dashboardSessionFilterOptionsResultSchema,
   dashboardSessionListRequestSchema, dashboardSessionListResultSchema,
   dashboardSessionMetricsRequestSchema, dashboardSessionMetricsResultSchema,
+  dashboardSkillReadsRequestSchema, dashboardSkillReadsResultSchema,
   dashboardSkillUsageBackfillResultSchema, dashboardSkillUsageBackfillSchema,
   dashboardSkillUsageResultSchema, dashboardSkillUsageSchema,
 } from "../../shared/dist/activity-dashboard.js";
@@ -35,6 +36,8 @@ const sessionRoutes = [
     request: dashboardSessionMetricsRequestSchema, result: dashboardSessionMetricsResultSchema },
   { path: dashboardPaths.sessionsEvents, servicePath: "/v1/activity/sessions/events",
     request: dashboardSessionEventsRequestSchema, result: dashboardSessionEventsResultSchema },
+  { path: dashboardPaths.skillReads, servicePath: "/v1/activity/skills/reads",
+    request: dashboardSkillReadsRequestSchema, result: dashboardSkillReadsResultSchema },
 ] as const;
 const sessionRoute = (path: string) => sessionRoutes.find(route => route.path === path);
 
@@ -169,9 +172,10 @@ export async function dashboardRequest(
       break;
     }
     case dashboardPaths.skillUsage: {
-      dashboardSkillUsageSchema.parse(input);
+      const { days } = dashboardSkillUsageSchema.parse(input);
       const backfill = consent.backfill;
       body = {
+        ...(days === undefined ? {} : { days }),
         ...profile, generation: principal.generation, consentVersion: saved.version,
         projectId: `device:${profile.deviceId}`, rootId: null,
         range: backfill?.range ?? { fromMs: consent.grantedAtMs, toMs: 8_640_000_000_000_000 },
@@ -187,7 +191,8 @@ export async function dashboardRequest(
     case dashboardPaths.sessionsCount:
     case dashboardPaths.sessionsFilterOptions:
     case dashboardPaths.sessionsMetrics:
-    case dashboardPaths.sessionsEvents: {
+    case dashboardPaths.sessionsEvents:
+    case dashboardPaths.skillReads: {
       const route = sessionRoute(path)!;
       // 서비스는 스코프(기기·출처·세대·동의 범위)만 신뢰하는 서버 생성 값으로 받는다. requestId는 넘기지 않는다.
       const { profile: _profile, requestId: _requestId, ...filters } = route.request.parse(input) as

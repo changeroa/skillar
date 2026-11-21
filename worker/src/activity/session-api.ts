@@ -24,6 +24,9 @@ export const sessionEventsSchema = reportScopeSchema.extend({
   cursor: z.object({ timestampMs: z.number().int(), entityKey: z.string() }).optional(),
 });
 
+export const skillReadsSchema = reportScopeSchema.extend({
+  skillId: z.string().uuid(), firstReadFromMs: z.number().int().optional(),
+});
 export const SESSION_LIST_MAX_LIMIT = 100;
 export const sessionListSchema = reportScopeSchema.extend({
   /** 기간 필터는 최근 활동 시각(last_event_ms) 범위다. 세션 시작 시각이 아니다(시작은 모르는 세션이 있다). */
@@ -32,6 +35,8 @@ export const sessionListSchema = reportScopeSchema.extend({
   runtimes: z.array(z.string().min(1).max(64)).max(20).optional(),
   /** facet "검색 있음·읽기 없음": 검색 이벤트 ≥1이고 읽기 0. */
   searchWithoutRead: z.boolean().optional(),
+  /** 이 스킬(UUID)을 읽은 적이 있는 세션만. */
+  skillId: z.string().uuid().optional(),
   limit: z.number().int().min(1).max(SESSION_LIST_MAX_LIMIT).default(50),
   cursor: z.object({ lastEventMs: z.number().int(), sessionId: z.string() }).optional(),
 });
@@ -167,5 +172,39 @@ export async function readSessionEvents(env: ContentEnv, principal: IngestPrinci
     nextCursor: rows.length > request.limit && last !== undefined ?
       { timestampMs: last.timestampMs, entityKey: last.entityKey } : null,
     rowsRead: sumRows([rowsRead(result.meta)]),
+  };
+}
+
+/** 스킬 digest별 읽은 세션 수. 수집 표와 백필 표는 영수증으로 서로 다른 배치만 세므로(일별 집계와 같은 UNION ALL 의미)
+ *  먼저 (세션, digest)로 합쳐 같은 세션이 두 표에 있어도 한 번만 센다(reads는 합산, 처음 읽은 시각은 최솟값).
+ *  기간 필터는 합친 뒤의 "처음 읽은 시각"에 적용한다. skill_id는 두 URI 형태의 접두 범위로 읽는다(인덱스 범위 읽기). */
+export async function readSkillReads(env: ContentEnv, principal: IngestPrincipal, input: unknown) {
+  const request = skillReadsSchema.parse(input);
+  await authorize(env, principal, request);
+  const identity = [principal.accountId, request.generation, request.deviceId, request.sourceDomain];
+  const ranges = ["skill://private/", "skillar://private/"].map(prefix => [`${prefix}${request.skillId}/`, `${prefix}${request.skillId}0`]);
+  const part = (table: string) => `SELECT session_id, digest, first_read_ms, reads FROM ${table}
+    WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?
+      AND ((skill_id>=? AND skill_id<?) OR (skill_id>=? AND skill_id<?))`;
+  const bind = [...identity, ranges[0]![0], ranges[0]![1], ranges[1]![0], ranges[1]![1]];
+  const merged = `SELECT session_id, digest, MIN(first_read_ms) AS first_ms, SUM(reads) AS reads FROM (
+      ${part("session_skill_reads")} UNION ALL ${part("session_skill_reads_backfill")}
+    ) GROUP BY session_id, digest`;
+  const from = request.firstReadFromMs;
+  const where = from === undefined ? "" : "WHERE first_ms>=?";
+  const tail = from === undefined ? [] : [from];
+  const byDigest = await env.ACTIVITY.prepare(
+    `SELECT digest, COUNT(*) AS sessions, SUM(reads) AS reads, MIN(first_ms) AS firstReadMs, MAX(first_ms) AS lastFirstReadMs
+     FROM (${merged}) ${where} GROUP BY digest ORDER BY lastFirstReadMs DESC, digest`).bind(...bind, ...bind, ...tail).all();
+  const total = await env.ACTIVITY.prepare(
+    `SELECT COUNT(DISTINCT session_id) AS total FROM (${merged}) ${where}`).bind(...bind, ...bind, ...tail).all();
+  return {
+    schemaVersion: 1 as const,
+    rows: z.array(z.object({
+      digest: z.string(), sessions: z.number().int(), reads: z.number().int(),
+      firstReadMs: z.number().int(), lastFirstReadMs: z.number().int(),
+    })).parse(byDigest.results).map(row => ({ ...row, digest: row.digest === "" ? null : row.digest })),
+    totalSessions: z.array(z.object({ total: z.number().int() })).parse(total.results)[0]?.total ?? 0,
+    rowsRead: sumRows([rowsRead(byDigest.meta), rowsRead(total.meta)]),
   };
 }

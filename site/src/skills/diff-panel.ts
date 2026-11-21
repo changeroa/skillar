@@ -29,6 +29,7 @@ export function VersionDiff({ detail, signal, onUnauthorized, active = true }: P
   const afterDigest = detail.versions.some(v => v.digest === after) ? after : detail.skill.head.digest;
   const [comparison, setComparison] = useState<Comparison>({ kind: "idle" });
   const [retry, setRetry] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false); // 첫 프롬프트 리포트는 펼칠 때만 조회한다
   const generation = useRef(0);
   useEffect(() => {
     if (!active) return;
@@ -75,7 +76,9 @@ export function VersionDiff({ detail, signal, onUnauthorized, active = true }: P
             if (value !== undefined) setAfter(value.digest);
           } }, detail.versions.map(v => h("option", { key: v.digest, value: v.digest }, versionLabel(detail, v.digest))))),
       comparison.kind === "failed" && h("button", { className: "button secondary", type: "button", onClick: () => setRetry(value => value + 1) }, "다시 시도")),
-    h(VersionMetricsPanel, { detail, before: beforeDigest, after: afterDigest, signal, onUnauthorized, active }),
+    h("details", { className: "report-disclosure", onToggle: (event: React.SyntheticEvent<HTMLDetailsElement>) => setReportOpen(event.currentTarget.open) },
+      h("summary", null, "첫 프롬프트 리포트 (기록 동의 범위 · 펼칠 때만 조회)"),
+      h(VersionMetricsPanel, { detail, before: beforeDigest, after: afterDigest, signal, onUnauthorized, active: active && reportOpen })),
     h("p", { className: "note", role: "status", "aria-live": "polite" }, busy ? "버전 비교 중…" :
       comparison.kind === "failed" ? comparison.message :
       comparison.kind === "ready" && comparison.rows.every(row => row.kind === "same") ? "두 버전의 SKILL.md 내용이 같습니다." : ""),

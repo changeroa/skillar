@@ -5,6 +5,7 @@ import { createCloudApi } from "../../../local/dashboard/cloud";
 import type { CloudApi } from "../../../local/dashboard/cloud";
 import { App as LocalViews } from "../../../local/dashboard/main";
 import { UploadOffEmpty } from "../../../local/dashboard/views/sessions";
+import { configureHostedSources } from "../../../local/dashboard/views/hosted-sessions";
 import type { SessionUser } from "../../lib/account.ts";
 import { describeFailure, failureOf, isUnauthorized, readProfiles, readSession } from "./api";
 import type { SessionState } from "./api";
@@ -109,13 +110,40 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
   const autoSelectedKey = useRef<string | null>(null);
   useEffect(() => {
     if (profiles.status !== "ready" || devices.status !== "ready" || selected !== null) return;
-    const live = list.filter(profile => profile.availability !== "revoked");
-    if (live.length !== 1 || live[0].availability !== "ready") return;
+    // 출처 전체 보기가 기본이라 선택 단계가 없다: 보기 가능한 출처가 있으면 첫 출처를 리포트(본문·스킬 화면) 기준으로 연다.
+    // 스킬 화면은 기존대로 출처가 하나뿐일 때만 자동으로 연다. 세션 화면만 출처 전체 보기라 첫 출처를 연다.
+    const live = emptyView === "sessions" ? list.filter(profile => profile.availability === "ready") : list.filter(profile => profile.availability !== "revoked");
+    if (emptyView === "sessions" ? live.length === 0 : live.length !== 1 || live[0].availability !== "ready") return;
     const key = profileKey(live[0]);
     if (autoSelectedKey.current === key || dismissedAutoSelect.current === key) return;
     autoSelectedKey.current = key;
     onSelect(live[0], devices.data?.find(device => device.deviceId === live[0].deviceId)?.label ?? null);
   }, [profiles, devices, selected]);
+  // 세션 목록은 보기 가능한 모든 출처를 합쳐 읽는다(출처 전체 기본). 출처마다 라이브 연결 없는 읽기 전용 어댑터를 둔다.
+  const readyKeys = list.filter(profile => profile.availability === "ready").map(profileKey).join("\n");
+  useEffect(() => {
+    if (emptyView !== "sessions" || profiles.status !== "ready") return;
+    const ready = list.filter(profile => profile.availability === "ready");
+    if (ready.length === 0) { configureHostedSources(undefined); return; }
+    const apis = ready.map(profile => {
+      const label = devices.data?.find(device => device.deviceId === profile.deviceId)?.label ?? null;
+      const key = `${profile.deviceId}:${profile.sourceDomain}`.replaceAll("/", "_");
+      return { profile, key, label: label ?? `기기 ${shortId(profile.deviceId)} · ${shortId(profile.sourceDomain)}`,
+        api: createCloudApi({ deviceId: profile.deviceId, sourceDomain: profile.sourceDomain, label }, { signal, onUnauthorized }) };
+    });
+    configureHostedSources({
+      sources: apis.map(item => ({ key: item.key, label: item.label, index: item.api.sessionIndex })),
+      lastReceivedMs: ready.reduce<number | null>((latest, profile) => profile.receivedAtMs === null ? latest : Math.max(latest ?? 0, profile.receivedAtMs), null),
+      select: key => {
+        const item = apis.find(entry => entry.key === key);
+        if (item !== undefined) onSelect(item.profile, devices.data?.find(device => device.deviceId === item.profile.deviceId)?.label ?? null);
+      },
+    });
+    return () => { configureHostedSources(undefined); for (const item of apis) item.api.dispose(); };
+  }, [emptyView, profiles.status, readyKeys, devices.data]);
+  const allSources = emptyView === "sessions" && hasViewableSources; // 세션 화면: 출처 전체 보기(출처 선택 단계 없음)
+  const readyList = list.filter(profile => profile.availability === "ready");
+  const lastReceived = readyList.reduce<number | null>((latest, profile) => profile.receivedAtMs === null ? latest : Math.max(latest ?? 0, profile.receivedAtMs), null);
   const current = selected === null ? null : list.find(profile => profileKey(profile) === profileKey(selected)) ?? selected;
   const closeRecord = () => {
     dismissedAutoSelect.current = selected === null ? dismissedAutoSelect.current : profileKey(selected);
@@ -135,7 +163,7 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
     stale={hasViewableSources} />;
   return (
     <>
-      <div className="dash-account">
+      {!allSources && <div className="dash-account">
         <div className="account-user">
           <div>
             <p className="note">로그인 계정</p>
@@ -144,10 +172,10 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
           </div>
         </div>
         <form method="post" action="/auth/logout"><button className="button secondary" type="submit">로그아웃</button></form>
-      </div>
-      <div className={`dash-workspace${hasViewableSources ? "" : " dash-workspace--no-sources"}`}>
+      </div>}
+      <div className={`dash-workspace${hasViewableSources && !allSources ? "" : " dash-workspace--no-sources"}${allSources ? " dash-workspace--tight" : ""}`}>
         {selected !== null && profiles.status !== "ready" && <div className="dash-refresh">{checklist}</div>}
-        {hasViewableSources && <aside className="dash-sources" aria-label="활동 출처">
+        {hasViewableSources && !allSources && <aside className="dash-sources" aria-label="활동 출처">
           <details ref={sourcePicker} className="dash-source-picker">
             <summary ref={sourceSummary}>{selected === null ? "출처 선택" : <>출처 변경 및 상세 <code title={selected.sourceDomain}>{shortId(selected.sourceDomain)}</code></>}</summary>
             <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
@@ -160,7 +188,12 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
         <div className="dash-activity">
           {selected === null && needsSourceGuidance && checklist}
           {selected === null && !needsSourceGuidance && checklist}
-          {selected !== null && current !== null && (
+          {allSources && selected !== null && current !== null && (
+            <section className="panel snapshot" aria-label="세션 기록">
+              <div className="dash-embed"><LocalViews key={profileKey(selected)} embedded /></div>
+            </section>
+          )}
+          {!allSources && selected !== null && current !== null && (
             <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}
               commands={
                 <CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
@@ -173,6 +206,15 @@ function SignedIn({ user, signal, selected, report, failure, onSelect, onClose, 
       </div>
       <details ref={management} id="dashboard-management" className="dash-management">
         <summary>기기 및 비공개 팩 관리</summary>
+        {allSources && <>
+          <SourcesSection profiles={list} selectedKey={selected === null ? null : profileKey(selected)} busy={profiles.status === "loading"}
+            message={loadMessage(profiles, "출처를 읽는 중\u2026")} onSelect={profile => onSelect(profile, devices.data?.find(device => device.deviceId === profile.deviceId)?.label ?? null)} onReload={reload} />
+          {selected !== null && current !== null && (
+            <SnapshotSection profile={current} report={report} failure={failure} onRebuild={onRebuild} onClose={closeRecord}
+              commands={<CommandsDisclosure key={profileKey(selected)} profile={current} sourcesBusy={profiles.status === "loading"} sourcesLoad={sourcesLoad}
+                signal={signal} onRefreshSources={reloadProfiles} onUnauthorized={onUnauthorized} />}>{null}</SnapshotSection>
+          )}
+        </>}
         <DevicesSection devices={devices.data ?? []} origin={location.origin} ingestEnabled={profiles.data?.ingestEnabled ?? true}
           settled={devices.status === "ready"} message={loadMessage(devices, "기기를 읽는 중\u2026")}
           signal={signal} onChanged={reload} onUnauthorized={onUnauthorized} />

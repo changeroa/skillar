@@ -1,4 +1,4 @@
-import { readSessionCount, readSessionEvents, readSessionFilterOptions, readSessionList, readSessionMetrics } from "./session-api.ts";
+import { readSessionCount, readSessionEvents, readSessionFilterOptions, readSessionList, readSessionMetrics, readSkillReads } from "./session-api.ts";
 import { z } from "zod";
 import { deploymentOriginSchema, isDeploymentOrigin } from "../../../shared/deployment-origin.ts";
 import {
@@ -197,6 +197,9 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     }
     if (path === "/v1/activity/sessions/metrics") {
       return Response.json(await readSessionMetrics(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/skills/reads") {
+      return Response.json(await readSkillReads(env, principal, await body(request)), { headers });
     }
     if (path === "/v1/activity/sessions/events") {
       return Response.json(await readSessionEvents(env, principal, await body(request)), { headers });

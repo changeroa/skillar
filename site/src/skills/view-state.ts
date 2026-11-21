@@ -16,6 +16,8 @@ export type SkillsView = {
   readonly density: "compact" | "normal" | "spacious";
   readonly digest: string;
   readonly tab: string;
+  /** 활동 열·필터의 조회 창(KST 일자 수). */
+  readonly period: 7 | 30 | 90;
 };
 
 export function readSkillsView(href: string): SkillsView {
@@ -36,10 +38,11 @@ export function readSkillsView(href: string): SkillsView {
     readStates: url.searchParams.getAll("read"),
     agents: url.searchParams.getAll("agent"),
     days: url.searchParams.getAll("day"),
-    hidden: [...new Set(url.searchParams.getAll("hide").filter(id => ["revision", "updated", "digest"].includes(id)))],
+    hidden: [...new Set(url.searchParams.getAll("hide").filter(id => ["revision", "updated", "digest", "usage", "agents"].includes(id)))],
     density: url.searchParams.get("density") === "normal" ? "normal" : url.searchParams.get("density") === "spacious" ? "spacious" : "compact",
     digest: url.searchParams.get("version") ?? "",
-    tab: ["document", "versions", "compare", "files"].includes(tab) ? tab : defaultTab,
+    period: url.searchParams.get("period") === "7" ? 7 : url.searchParams.get("period") === "90" ? 90 : 30,
+    tab: ["document", "versions", "reads", "compare", "files"].includes(tab) ? tab : defaultTab,
   };
 }
 
@@ -55,6 +58,7 @@ export function skillsViewUrl(view: SkillsView): string {
   for (const day of view.days) query.append("day", day);
   for (const column of view.hidden) query.append("hide", column);
   query.set("density", view.density);
+  if (view.period !== 30) query.set("period", String(view.period));
   if (view.digest !== "") query.set("version", view.digest);
   if (view.selected !== null || view.tab !== "document") query.set("tab", view.tab);
   return `/skills/?${query}`;

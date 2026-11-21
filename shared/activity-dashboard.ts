@@ -15,6 +15,7 @@ export const dashboardPaths = {
   sessionsFilterOptions: "/api/dashboard/sessions/filter-options",
   sessionsMetrics: "/api/dashboard/sessions/metrics",
   sessionsEvents: "/api/dashboard/sessions/events",
+  skillReads: "/api/dashboard/skills/reads",
   reportStatus: "/api/dashboard/reports/status",
   reportResult: "/api/dashboard/reports/result",
   evalCases: "/api/dashboard/eval-cases",
@@ -55,8 +56,11 @@ export const dashboardQuerySchema = z.strictObject({
 }).readonly();
 /** 스킬 탭 활동 필터용 평문 일별 집계 조회/백필 요청. 조회 창(최근 30개 KST 일자)은 서버가
  *  KST 일자 경계로 계산한다. 백필은 관리용 1회 경로이며 최신 스냅샷 전체를 재계산한다. */
+/** 조회 창(KST 일자 수). 생략하면 30일. 집계 보존은 출처 동의의 보존 일수까지라 그보다 긴 창은 보존 밖 일자를 포함하지 못한다. */
+export const SKILL_USAGE_WINDOWS = [7, 30, 90] as const;
 export const dashboardSkillUsageSchema = z.strictObject({
   profile: dashboardSourceSchema, requestId: z.string().uuid(),
+  days: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional(),
 }).readonly();
 export const dashboardSkillUsageBackfillSchema = z.strictObject({
   profile: dashboardSourceSchema, requestId: z.string().uuid(),
@@ -92,6 +96,7 @@ const sessionFilterFields = {
   activeFromMs: timestamp.optional(), activeToMs: timestamp.optional(),
   runtimes: z.array(z.string().min(1).max(64)).max(20).optional(),
   searchWithoutRead: z.boolean().optional(),
+  skillId: z.string().uuid().optional(),
 };
 export const dashboardSessionListRequestSchema = z.strictObject({
   profile: dashboardSourceSchema, requestId: z.string().uuid(), ...sessionFilterFields,
@@ -156,6 +161,24 @@ export const dashboardSessionEventsResultSchema = z.strictObject({
     entityKey: z.string(), kind: z.string().nullable(), timestampMs: timestamp,
   }).readonly()).readonly(),
   nextCursor: z.strictObject({ timestampMs: timestamp, entityKey: z.string() }).nullable(),
+  rowsRead: rowsReadField,
+}).readonly();
+/** 스킬 digest별 읽은 세션 수(session_skill_reads 평문만 읽는다).
+ *  firstReadFromMs: "이 시각 이후 처음 읽은" 세션만 센다(저장된 값은 처음 읽은 시각과 누적 읽기 수뿐이라
+ *  "기간 내 읽기 수"는 알 수 없다). skillId는 스킬 UUID이고 두 저장 URI 형태(skill://, skillar://)를 모두 센다. */
+export const dashboardSkillReadsRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+  skillId: z.string().uuid(), firstReadFromMs: timestamp.optional(),
+}).readonly();
+export const dashboardSkillReadsResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  /** digest null = 저장된 근거가 없어 모름. 다른 digest에 합치지 않는다. */
+  rows: z.array(z.strictObject({
+    digest: z.string().nullable(), sessions: z.number().int().nonnegative(),
+    reads: z.number().int().nonnegative(), firstReadMs: timestamp, lastFirstReadMs: timestamp,
+  }).readonly()).readonly(),
+  /** 서로 다른 세션 수(한 세션이 여러 digest를 읽어도 한 번). digest별 sessions의 합과 다를 수 있다. */
+  totalSessions: z.number().int().nonnegative(),
   rowsRead: rowsReadField,
 }).readonly();
 export const dashboardReferenceSchema = z.strictObject({
