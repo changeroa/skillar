@@ -230,3 +230,21 @@ test("hostedSkillLabel shows catalog names for private skill URIs, never the tra
   assert.equal(state.skillKey(`skillar://private/${id}/`), id);
   assert.equal(state.skillKey("skill://local/root/x/SKILL.md"), "skill://local/root/x/SKILL.md");
 });
+
+test("hosted failures keep only the latest result per request kind and ignore aborted requests", async () => {
+  const state = await loadState();
+  let f = state.NO_HOSTED_FAILURES;
+  // 취소된 요청의 "실패"는 세지 않는다.
+  f = state.recordHostedFailures(f, "list", ["a", "b"], true);
+  assert.deepEqual(state.hostedFailedSources(f), []);
+  // 실제 실패(취소가 아님)는 남는다.
+  f = state.recordHostedFailures(f, "list", ["b"], false);
+  f = state.recordHostedFailures(f, "count", ["b", "c"], false);
+  assert.deepEqual(state.hostedFailedSources(f).sort(), ["b", "c"]);
+  // 같은 종류의 최신 결과가 성공이면 이전 실패는 사라진다(누적하지 않는다).
+  f = state.recordHostedFailures(f, "count", [], false);
+  assert.deepEqual(state.hostedFailedSources(f), ["b"]);
+  // 취소된 요청은 이미 있는 실패도 지우지 않는다.
+  f = state.recordHostedFailures(f, "list", [], true);
+  assert.deepEqual(state.hostedFailedSources(f), ["b"]);
+});

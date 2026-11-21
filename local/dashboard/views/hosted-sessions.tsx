@@ -16,7 +16,7 @@ import { TableFacet } from "../foundation/table/facets";
 import { TableRow, TableToolbar } from "../foundation/table/parts";
 import { tableStyles } from "../foundation/table/styles";
 import { Alert, EmptyState, StatusMessage } from "../foundation/widgets/messages";
-import { RUNTIME_LABEL, buildHash, hostedSkillLabel, skillKey, type ViewProps } from "../state";
+import { NO_HOSTED_FAILURES, RUNTIME_LABEL, buildHash, hostedFailedSources, hostedSkillLabel, recordHostedFailures, skillKey, type HostedFailureKind, type ViewProps } from "../state";
 import { kstPeriodStart } from "../time";
 import { sessionsStyles } from "./sessions/styles";
 
@@ -167,7 +167,9 @@ export function HostedSessionsView({ route, navigate }: ViewProps) {
   const setSourceKey = (key: string | null) => navigate({ ...route, view: "sessions", src: key ?? undefined, cur: undefined, peek: undefined });
   const chosen = useMemo(() => hosted?.sources.filter(s => sourceKey === null || s.key === sourceKey) ?? [], [hosted, sourceKey]);
   const index = useMemo(() => hosted === undefined || chosen.length === 0 ? undefined : createMergedSessionIndex(chosen), [hosted, chosen]);
-  const [failed, setFailed] = useState<string[]>([]);
+  const [failures, setFailures] = useState(NO_HOSTED_FAILURES);
+  const failed = hostedFailedSources(failures);
+  const recordFailed = (kind: HostedFailureKind, sources: readonly string[], aborted: boolean) => setFailures(current => recordHostedFailures(current, kind, sources, aborted));
   const labelOf = (key: string) => hosted?.sources.find(s => s.key === key)?.label ?? "알 수 없는 출처";
   const [runtimes, setRuntimes] = useState<string[]>([]);
   const [shortcut, setShortcut] = useState(false);
@@ -199,14 +201,14 @@ export function HostedSessionsView({ route, navigate }: ViewProps) {
   useEffect(() => {
     if (index === undefined) return;
     const controller = new AbortController();
-    index.filterOptions(controller.signal).then(result => { setOptions(result.runtimes.map(r => ({ ...r }))); track("filterOptions", result.rowsRead); setFailed(current => [...new Set([...current, ...result.failed.map(f => f.source)])]); }, () => undefined);
+    index.filterOptions(controller.signal).then(result => { if (controller.signal.aborted) return; setOptions(result.runtimes.map(r => ({ ...r }))); track("filterOptions", result.rowsRead); recordFailed("options", result.failed.map(f => f.source), controller.signal.aborted); }, () => undefined);
     return () => controller.abort();
   }, [index, reload]);
   useEffect(() => {
     if (index === undefined) return;
     const controller = new AbortController();
-    setTotal(undefined); setFailed([]);
-    index.count(filter, controller.signal).then(result => { setTotal(result.total); track("count", result.rowsRead); setFailed(current => [...new Set([...current, ...result.failed.map(f => f.source)])]); }, () => undefined);
+    setTotal(undefined); setFailures(current => recordHostedFailures(current, "count", [], false));
+    index.count(filter, controller.signal).then(result => { if (controller.signal.aborted) return; setTotal(result.total); track("count", result.rowsRead); recordFailed("count", result.failed.map(f => f.source), false); }, () => undefined);
     return () => controller.abort();
   }, [index, filterKey, reload]);
   useEffect(() => {
@@ -214,7 +216,8 @@ export function HostedSessionsView({ route, navigate }: ViewProps) {
     const controller = new AbortController();
     setBusy(true);
     index.list(filter, { limit: PAGE_SIZE, cursor: pages[page] ?? null }, controller.signal).then(result => {
-      setList(result); setFailed(current => [...new Set([...current, ...result.failed.map(f => f.source)])]); setError(undefined); track("list", result.rowsRead);
+      if (controller.signal.aborted) return;
+      setList(result); recordFailed("list", result.failed.map(f => f.source), false); setError(undefined); track("list", result.rowsRead);
       setPages(current => current[page + 1] !== undefined || result.nextCursor === null ? current : [...current, result.nextCursor]);
     }, (err: unknown) => {
       if (controller.signal.aborted) return;

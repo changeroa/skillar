@@ -323,3 +323,18 @@ export function matchesFilter(row: SessionRow, filter: Filter): boolean {
   }
   return true;
 }
+
+/**
+ * 호스팅 세션 목록의 "불완전 출처" 집계. 요청 종류(옵션/개수/목록)마다 가장 최근 결과의 실패 출처만 담는다.
+ * 취소된(aborted) 요청의 결과는 실패로 세지 않는다: 필터·출처 등록이 바뀌어 취소된 요청은 최신 결과가 아니고,
+ * 합치기 계층은 취소 오류도 출처별 실패로 돌려주기 때문이다. 실제 실패(취소가 아닌 거절)는 그대로 남는다.
+ */
+export type HostedFailureKind = "options" | "count" | "list";
+export type HostedFailures = Readonly<Record<HostedFailureKind, readonly string[]>>;
+export const NO_HOSTED_FAILURES: HostedFailures = { options: [], count: [], list: [] };
+export function recordHostedFailures(current: HostedFailures, kind: HostedFailureKind, sources: readonly string[], aborted: boolean): HostedFailures {
+  return aborted ? current : { ...current, [kind]: [...new Set(sources)] };
+}
+export function hostedFailedSources(failures: HostedFailures): string[] {
+  return [...new Set([...failures.options, ...failures.count, ...failures.list])];
+}
