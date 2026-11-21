@@ -216,6 +216,12 @@ export async function sweepSourceContent(
             env.ACTIVITY.prepare(`DELETE FROM skill_usage_batches
               WHERE account_id=?1 AND generation=?2 AND device_id=?3
                 AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM session_skill_reads
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
+            env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
+              WHERE account_id=?1 AND generation=?2 AND device_id=?3
+                AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
             env.ACTIVITY.prepare(`DELETE FROM skill_usage_backfills
               WHERE account_id=?1 AND generation=?2 AND device_id=?3
                 AND source_domain=?4 AND ${active}`).bind(...identityArgs(row).slice(0, 4)),
@@ -242,6 +248,13 @@ export async function sweepSourceContent(
       env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
         WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND day < ?`)
         .bind(...scope, cutoff),
+      // 세션-스킬 읽기 관계도 같은 보존 창을 따른다(처음 읽은 시각 기준, KST 일자 경계).
+      env.ACTIVITY.prepare(`DELETE FROM session_skill_reads
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND first_read_ms < ?`)
+        .bind(...scope, Date.parse(`${cutoff}T00:00:00+09:00`)),
+      env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND first_read_ms < ?`)
+        .bind(...scope, Date.parse(`${cutoff}T00:00:00+09:00`)),
     ]);
   }
   return { scanned: rows.length, deleted };

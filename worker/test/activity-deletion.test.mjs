@@ -10,7 +10,7 @@ test("remote erasure revokes access before clearing tenant data and preserves Go
   await f.seed("account-b");
   for (const account of ["account-a", "account-b"]) {
     await f.activity.prepare(`INSERT INTO session_facts
-      VALUES(?,1,'device','source','same-id',1,?,'claude',0,NULL)`)
+      VALUES(?,1,'device','source','same-id',1,?,'claude',0,NULL,NULL)`)
       .bind(account, JSON.stringify({ sentinel: `${account}-PRIVATE` })).run();
   }
   await f.bucket.put("activity/account-a/1/unreferenced", "PRIVATE_ORPHAN");
@@ -67,7 +67,7 @@ test("late PUT and restored shard data cannot survive ledger replay", async t =>
   await f.send("/test/clock", { now: later });
   await f.activity.prepare("UPDATE tenant_fences SET state='active' WHERE account_id='account-a'").run();
   await f.activity.prepare(`INSERT INTO session_facts
-    VALUES('account-a',1,'device','source','restored',1,'{"secret":"RESTORED"}','claude',0,NULL)`).run();
+    VALUES('account-a',1,'device','source','restored',1,'{"secret":"RESTORED"}','claude',0,NULL,NULL)`).run();
   await f.activity.prepare(`INSERT INTO account_content_keys
     (account_id,generation,key_version,wrapped_key_json) VALUES('account-a',1,'1',?)`)
     .bind(oldKey).run();
