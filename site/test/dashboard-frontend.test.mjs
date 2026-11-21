@@ -238,3 +238,13 @@ test("pending approval sends only the code unless the user explicitly chose uplo
   assert.deepEqual(calls[2].body, { code: "ABCD-EFGH", consent: {
     mode: "managed-content", contentKinds: [...contentKinds], serverProcessingAcknowledged: true } });
 });
+
+test("the sessions screen opens its sources without waiting for the device-name request", async () => {
+  const { devicesSettledForAutoSelect } = await import("../src/dashboard/status.ts");
+  // 출처 전체 화면: 기기 읽기가 로딩 중이든(느림/무응답), 성공이든, 실패든 기다리지 않는다.
+  for (const status of ["loading", "ready", "failed"]) assert.equal(devicesSettledForAutoSelect("sessions", status), true);
+  // 스킬 화면은 기존 동작 그대로: 기기 읽기가 성공해야 연다.
+  assert.equal(devicesSettledForAutoSelect("skills", "loading"), false);
+  assert.equal(devicesSettledForAutoSelect("skills", "ready"), true);
+  assert.equal(devicesSettledForAutoSelect("skills", "failed"), false);
+});
