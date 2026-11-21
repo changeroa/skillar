@@ -285,6 +285,37 @@ export function sessionIndexStatements(
   return statements;
 }
 
+/** 이미 수신된 보관 배치 하나를 세션 인덱스에 재생하는 원자적 커밋(백필 전용).
+ *  사실 upsert(키 기반 revision-gated, 멱등) + 세션 읽음 증분 + session_index_batches 영수증.
+ *  읽음 증분은 영수증이 없을 때만 더해지므로 같은 배치를 두 번 재생해도, 수집 경로가 이미 센 배치도
+ *  이중 계산되지 않는다. 영수증은 마지막 문장이라 앞 문장이 실패하면 함께 롤백된다. */
+export function sessionReplayStatements(
+  db: D1Database,
+  stream: StreamIdentity & { readonly batchId: string },
+  rows: readonly ContentRow[],
+): D1PreparedStatement[] {
+  const identity = [stream.accountId, stream.generation, stream.deviceId, stream.sourceDomain];
+  const statements: D1PreparedStatement[] = [];
+  for (const acc of sessionSkillReadCounts(skillUsageDeltas(rows)).values()) {
+    statements.push(db.prepare(`INSERT INTO session_skill_reads
+      (account_id,generation,device_id,source_domain,session_id,skill_id,digest,first_read_ms,reads,digest_source)
+      SELECT ?,?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM session_index_batches i
+        WHERE i.account_id=? AND i.batch_id=?)
+      ON CONFLICT(account_id,generation,device_id,source_domain,session_id,skill_id,digest)
+      DO UPDATE SET reads=reads+excluded.reads,
+        first_read_ms=MIN(first_read_ms,excluded.first_read_ms),
+        digest_source=CASE WHEN digest_source='event' OR excluded.digest_source='event' THEN 'event'
+          ELSE COALESCE(digest_source,excluded.digest_source) END`)
+      .bind(...identity, acc.sessionId, acc.skillId, acc.digest, acc.firstReadMs, acc.reads,
+        acc.digestSource, stream.accountId, stream.batchId));
+  }
+  statements.push(...sessionIndexStatements(db, { ...stream, commitId: null }, rows));
+  statements.push(db.prepare(`INSERT OR IGNORE INTO session_index_batches
+    (account_id,generation,device_id,source_domain,batch_id,applied_at) VALUES (?,?,?,?,?,?)`)
+    .bind(...identity, stream.batchId, Date.now()));
+  return statements;
+}
+
 /** 수집 커밋과 같은 트랜잭션(commitGuard)에서 증분 갱신. 멱등:
  *  (1) 같은 batch_id 재POST는 영수증 NOT EXISTS가, (2) 이미 적용된 저널 범위의 재전송(다른
  *  batch_id)은 다른 영수증의 journal_through 검사가, (3) 백필이 커버한 범위(snapshot_cut 이하)
@@ -436,9 +467,43 @@ export async function readSkillUsage(env: ContentEnv, principal: IngestPrincipal
  *  보관 기간이 지나 삭제된 배치는 재생할 수 없으므로 건너뛰고 skipped로 보고한다(없는 값을
  *  0으로 채우지 않는다). 멱등: 재실행하면 같은 입력에서 같은 행으로 교체된다(운영 실행은
  *  리드가 수행). */
+const BACKFILL_WRITE_CHUNK = 100;
+const backfillOptionsSchema = z.object({ maxBatches: z.number().int().min(1).max(1000).optional() });
+
+/** 운영 진단: 비밀 없는 단계 이름, 오류 이름(클래스), 배치 ID만 남기고 그대로 다시 던진다. */
 export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrincipal, input: unknown) {
+  const progress: { stage: string; batchId?: string } = { stage: "start" };
+  try {
+    return await runBackfillSkillUsage(env, principal, input, progress);
+  } catch (error) {
+    console.error("skill-usage backfill failed", JSON.stringify({
+      stage: progress.stage, batchId: progress.batchId ?? null,
+      error: error instanceof Error ? error.name : "unknown",
+      code: error instanceof ContentStorageError ? error.code : undefined,
+    }));
+    throw error;
+  }
+}
+
+function mergeDaily(into: SkillUsageDeltas, deltas: SkillUsageDeltas) {
+  into.uses.push(...deltas.uses);
+  into.skipped += deltas.skipped;
+  for (const [k, v] of deltas.loadDigests) into.loadDigests.set(k, v);
+  for (const [k, v] of deltas.sessionClients) {
+    if (!into.sessionClients.has(k)) into.sessionClients.set(k, v);
+  }
+}
+
+async function runBackfillSkillUsage(
+  env: ContentEnv, principal: IngestPrincipal, input: unknown,
+  progress: { stage: string; batchId?: string },
+) {
   if (!principal.scopes.includes("activity:read")) throw new ActivityLedgerError("forbidden");
-  const scope = reportScopeSchema.parse(input);
+  // maxBatches는 범위가 아니라 실행 옵션이다: 엄격한 범위 스키마에는 넣지 않고 따로 해석한다.
+  const { maxBatches: rawMax, ...rawScope } = z.record(z.string(), z.unknown()).parse(input);
+  const scope = reportScopeSchema.parse(rawScope);
+  const maxBatches = backfillOptionsSchema.parse({ maxBatches: rawMax }).maxBatches;
+  progress.stage = "scope";
   await activeFence(env.ACTIVITY, principal);
   await requireContentConsent(env.ACCOUNTS, principal, contentScope(scope, contentKinds));
   const identity = [principal.accountId, principal.generation, scope.deviceId, scope.sourceDomain];
@@ -467,16 +532,7 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
     }
   }
   const cut = begin?.cut ?? 0;
-  const statements: D1PreparedStatement[] = [
-    env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
-      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
-    env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
-      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
-  ];
-  const mergedDeltas: SkillUsageDeltas = { uses: [], sessionClients: new Map(),
-    loadDigests: new Map(), skipped: 0 };
-  const mergedRows: ContentRow[] = [];
-  const mergedReads = new Map<string, SessionSkillRead>();
+  progress.stage = "tombstones";
   // 삭제(tombstone)된 세션/이벤트는 재생으로 되살리지 않는다: 같은 revision 이하의 content 행은 걸러낸다.
   const tombstones = new Map(z.array(z.object({
     entity_type: z.string(), entity_key: z.string(), revision: z.number(),
@@ -492,34 +548,8 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
     const at = typeof key === "string" ? tombstones.get(`${type}\u0000${key}`) : undefined;
     return at === undefined || row.revision > at;
   });
-  const merge = (deltas: SkillUsageDeltas, opts = { daily: true, reads: true }) => {
-    if (opts.reads) mergeSessionSkillReads(mergedReads, sessionSkillReadCounts(deltas));
-    if (!opts.daily) return;
-    mergedDeltas.uses.push(...deltas.uses);
-    mergedDeltas.skipped += deltas.skipped;
-    for (const [k, v] of deltas.loadDigests) mergedDeltas.loadDigests.set(k, v);
-    for (const [k, v] of deltas.sessionClients) {
-      if (!mergedDeltas.sessionClients.has(k)) mergedDeltas.sessionClients.set(k, v);
-    }
-  };
-  for (let page = 0; page < (begin?.pageCount ?? 0); page++) {
-    const exported = await exportMigration(env, principal, {
-      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
-      generation: scope.generation, snapshotId: begin?.snapshotId ?? "", page,
-    });
-    if (exported.document === null || exported.migration.snapshotHash !== begin?.snapshotHash) {
-      throw new ReportError("source_gap");
-    }
-    // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
-    const pageRows = liveRows(exported.document.rows);
-    mergedRows.push(...pageRows);
-    merge(skillUsageDeltas(pageRows));
-  }
-  // 스냅샷 cut 이후에 이미 수신된 보관 배치를 재생한다. 보관 기간 만료·삭제로 읽을 수 없는
-  // 배치는 건너뛰고 skipped에 센다.
-  // 세션 인덱스(session_facts/event_facts)는 스킬 영수증과 별개 기준이다: 보관 배치 전부를 재생한다
-  // (키 기반 revision-gated upsert라 멱등). 일별 집계는 skill_usage_batches 영수증이 없는 배치만,
-  // 세션 읽음 재계산은 session_index_batches 영수증이 없는 배치만 넣는다(수집 경로 증분과 이중 계산 금지).
+  // 스냅샷 cut 이후에 이미 수신된 보관 배치 목록. 세션 인덱스는 스킬 영수증과 별개 기준이다.
+  progress.stage = "list_retained";
   const retained = z.array(z.object({
     batch_id: z.string(), skill_receipted: z.number(), index_receipted: z.number(),
   })).parse((await env.ACTIVITY.prepare(
@@ -537,33 +567,96 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
   ).bind(...identity, cut).all()).results);
   // 읽을 수 없는 배치는 원인을 구분한다. 보관 만료·삭제(content_missing/content_expired)만 skipped로
   // 세고 계속한다. 내용 불일치(content_conflict)는 unreadable로 따로 세고 계속하되 응답에 드러낸다.
-  // 키·저장소 장애(key_unavailable, 그 밖의 오류)는 조용히 건너뛰지 않는다: 아무것도 쓰기 전에
-  // 중단해 완료로 보이지 않게 하고(coverage는 그대로), 배치 ID와 오류 종류만 로그에 남긴다.
+  // 키·저장소 장애(key_unavailable, 그 밖의 오류)는 조용히 건너뛰지 않고 중단한다(완료 표식 없음).
+  let skipped = 0;
   let unreadable = 0;
-  for (const candidate of retained) {
+  const readRetained = async (batchId: string) => {
+    progress.stage = "retained_read";
+    progress.batchId = batchId;
     try {
-      const document = await readBatchContent(env, principal,
-        { sourceDomain: scope.sourceDomain, batchId: candidate.batch_id });
-      const batchRows = liveRows(document.rows);
-      mergedRows.push(...batchRows);
-      merge(skillUsageDeltas(batchRows),
-        { daily: candidate.skill_receipted === 0, reads: candidate.index_receipted === 0 });
+      return liveRows((await readBatchContent(env, principal,
+        { sourceDomain: scope.sourceDomain, batchId })).rows);
     } catch (error) {
       if (error instanceof ContentStorageError &&
           (error.code === "content_missing" || error.code === "content_expired")) {
-        mergedDeltas.skipped++;
-        continue;
+        skipped++;
+        return null;
       }
       if (error instanceof ContentStorageError && error.code === "content_conflict") {
         unreadable++;
-        continue;
+        return null;
       }
-      console.error("skill-usage backfill aborted", candidate.batch_id,
-        error instanceof Error ? error.name : "unknown");
       throw error;
     }
+  };
+  // 1) 세션 인덱스 재생: 배치마다 자기 커밋(사실 upsert + 읽음 증분 + session_index_batches 영수증)을
+  // 원자적으로 쓴다. 영수증이 있는 배치는 건너뛰므로 중단 후 재실행이 이어지고 이중 계산이 없다.
+  // maxBatches를 주면 그만큼만 재생하고 remaining을 돌려준다(완료 표식은 모두 끝난 뒤에만).
+  const dailyDeltas: SkillUsageDeltas = { uses: [], sessionClients: new Map(),
+    loadDigests: new Map(), skipped: 0 };
+  let replayed = 0;
+  let remaining = 0;
+  const dailyOnly: string[] = [];
+  for (const candidate of retained) {
+    if (candidate.index_receipted === 0) {
+      if (maxBatches !== undefined && replayed >= maxBatches) { remaining++; continue; }
+      const rows = await readRetained(candidate.batch_id);
+      if (rows === null) continue;
+      progress.stage = "index_write";
+      await env.ACTIVITY.batch(sessionReplayStatements(env.ACTIVITY, {
+        accountId: principal.accountId, generation: principal.generation,
+        deviceId: scope.deviceId, sourceDomain: scope.sourceDomain, batchId: candidate.batch_id,
+      }, rows));
+      replayed++;
+      if (candidate.skill_receipted === 0) mergeDaily(dailyDeltas, skillUsageDeltas(rows));
+    } else if (candidate.skill_receipted === 0) {
+      dailyOnly.push(candidate.batch_id);
+    }
   }
-  const merged = skillUsageCounts(mergedDeltas);
+  if (remaining > 0) {
+    return {
+      schemaVersion: 1 as const, deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
+      snapshotCut: cut, partial: true as const, replayed, remaining, skipped,
+      ...(unreadable > 0 ? { unreadable } : {}),
+    };
+  }
+  for (const batchId of dailyOnly) {
+    const rows = await readRetained(batchId);
+    if (rows !== null) mergeDaily(dailyDeltas, skillUsageDeltas(rows));
+  }
+  // 2) 스냅샷 페이지: 일별 집계/읽음 backfill 표와 사실을 다시 계산한다.
+  const mergedRows: ContentRow[] = [];
+  const mergedReads = new Map<string, SessionSkillRead>();
+  for (let page = 0; page < (begin?.pageCount ?? 0); page++) {
+    progress.stage = "snapshot_page";
+    progress.batchId = undefined;
+    const exported = await exportMigration(env, principal, {
+      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
+      generation: scope.generation, snapshotId: begin?.snapshotId ?? "", page,
+    });
+    if (exported.document === null || exported.migration.snapshotHash !== begin?.snapshotHash) {
+      throw new ReportError("source_gap");
+    }
+    // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
+    const pageRows = liveRows(exported.document.rows);
+    mergedRows.push(...pageRows);
+    const deltas = skillUsageDeltas(pageRows);
+    mergeSessionSkillReads(mergedReads, sessionSkillReadCounts(deltas));
+    mergeDaily(dailyDeltas, deltas);
+  }
+  dailyDeltas.skipped += skipped;
+  const merged = skillUsageCounts(dailyDeltas);
+  // 3) 쓰기는 고정 크기 조각으로 나눈다. 완료 표식은 맨 앞에서 지우고 맨 뒤에서만 쓰므로 중간에
+  // 실패하면 coverage가 pending_backfill로 남고 재실행이 같은 결과를 만든다(삭제 후 삽입, 사실은 upsert).
+  progress.stage = "final_write";
+  const statements: D1PreparedStatement[] = [
+    env.ACTIVITY.prepare(`DELETE FROM skill_usage_backfills
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
+    env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
+    env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
+  ];
   for (const acc of merged.values()) {
     statements.push(env.ACTIVITY.prepare(`INSERT INTO skill_daily_usage_backfill
       (account_id,generation,device_id,source_domain,day,skill_id,agent,reads,exposures)
@@ -571,7 +664,7 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
       .bind(...identity, acc.day, acc.skillUri, acc.agent, acc.reads, acc.exposures));
   }
   for (const acc of mergedReads.values()) {
-    // 문서(스냅샷 페이지·보관 배치)마다 따로 근거를 찾고 합친다. 문서 밖 근거로 digest를 채우지 않는다.
+    // 문서(스냅샷 페이지)마다 따로 근거를 찾고 합친다. 문서 밖 근거로 digest를 채우지 않는다.
     statements.push(env.ACTIVITY.prepare(`INSERT INTO session_skill_reads_backfill
       (account_id,generation,device_id,source_domain,session_id,skill_id,digest,first_read_ms,reads,digest_source)
       VALUES (?,?,?,?,?,?,?,?,?,?)`)
@@ -581,17 +674,18 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
   statements.push(...sessionIndexStatements(env.ACTIVITY,
     { accountId: principal.accountId, generation: principal.generation, deviceId: scope.deviceId,
       sourceDomain: scope.sourceDomain, commitId: null }, mergedRows));
-  const now = Date.now();
-  statements.push(env.ACTIVITY.prepare(`INSERT INTO skill_usage_backfills
+  for (let i = 0; i < statements.length; i += BACKFILL_WRITE_CHUNK) {
+    await env.ACTIVITY.batch(statements.slice(i, i + BACKFILL_WRITE_CHUNK));
+  }
+  await env.ACTIVITY.prepare(`INSERT INTO skill_usage_backfills
     (account_id,generation,device_id,source_domain,snapshot_cut,backfilled_at)
     VALUES (?,?,?,?,?,?)
     ON CONFLICT(account_id,generation,device_id,source_domain)
     DO UPDATE SET snapshot_cut=excluded.snapshot_cut,backfilled_at=excluded.backfilled_at`)
-    .bind(...identity, cut, now));
-  await env.ACTIVITY.batch(statements);
+    .bind(...identity, cut, Date.now()).run();
   return {
     schemaVersion: 1 as const, deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
-    snapshotCut: cut, rows: merged.size, skipped: mergedDeltas.skipped,
+    snapshotCut: cut, rows: merged.size, skipped,
     ...(unreadable > 0 ? { unreadable } : {}),
   };
 }
