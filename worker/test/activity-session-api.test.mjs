@@ -152,3 +152,60 @@ test("a full 100-row list page returns every session's skill chips (D1 allows 10
     assert.ok(list.body.sessions.every(s => s.skills.length === 1 && s.skills[0].reads === 1));
   }
 });
+
+test("skill reads by digest: a session in both read tables counts once, the period is the first read, other skills and scopes stay out", async t => {
+  const f = await fixture(t);
+  const ID = "00000000-0000-4000-8000-000000000001";
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", 20, "codex", { sessionId: "s1", uri: SKILL, revision: 0 }),
+    ev("e2", "load", 25, "codex", { sessionId: "s3", uri: SKILL2, revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  // 백필 뒤에 수집된 증분: s1은 두 표 모두에, s2는 수집 표에만 있다.
+  await ingest(f, begin, [
+    ev("e3", "load", 50, "codex", { sessionId: "s1", uri: SKILL }),
+    ev("e4", "load", 60, "codex", { sessionId: "s2", uri: SKILL }),
+  ]);
+  const all = await read(f, "/v1/activity/skills/reads", begin, { skillId: ID });
+  assert.equal(all.status, 200, JSON.stringify(all.body));
+  assert.equal(all.body.totalSessions, 2, "s1은 두 표에 있어도 한 세션");
+  assert.deepEqual(all.body.rows.map(r => [r.digest, r.sessions, r.reads, r.firstReadMs, r.lastFirstReadMs]), [[null, 2, 3, 20, 60]]);
+  const recent = await read(f, "/v1/activity/skills/reads", begin, { skillId: ID, firstReadFromMs: 30 });
+  assert.equal(recent.body.totalSessions, 1, "s1은 처음 읽은 시각이 기간 밖");
+  assert.deepEqual(recent.body.rows.map(r => [r.sessions, r.reads]), [[1, 1]]);
+  const other = await read(f, "/v1/activity/skills/reads", begin, { skillId: "00000000-0000-4000-8000-000000000002" });
+  assert.deepEqual([other.body.totalSessions, other.body.rows.length], [1, 1]);
+  assert.equal((await read(f, "/v1/activity/skills/reads", begin, { skillId: "not-a-uuid" })).status >= 400, true);
+  assert.equal((await f.api("/v1/activity/skills/reads", { ...scopeOf(begin), deviceId: "device-b", skillId: ID })).status, 403);
+  assert.match(await plan(f, "SELECT 1 FROM session_skill_reads WHERE account_id='a' AND generation=1 AND device_id='d' AND source_domain='s' AND skill_id>='skill://private/x/' AND skill_id<'skill://private/x0'"), /session_skill_reads_skill/);
+});
+
+test("session list/count can filter by skill: either read table, both URI forms, never another skill", async t => {
+  const f = await fixture(t);
+  const begin = await publish(f, [{ schemaVersion: 2, rows: [
+    ev("e1", "load", 20, "codex", { sessionId: "s1", uri: SKILL, revision: 0 }),
+    ev("e2", "load", 30, "codex", { sessionId: "s2", uri: SKILL2, revision: 0 }),
+    ev("e3", "search", 40, "codex", { sessionId: "s3", revision: 0 }),
+  ] }]);
+  assert.equal((await f.api("/v1/activity/skill-usage/backfill", scopeOf(begin))).status, 200);
+  await ingest(f, begin, [ev("e4", "load", 50, "codex", { sessionId: "s4", uri: SKILL })]);
+  const ID = "00000000-0000-4000-8000-000000000001";
+  const list = await read(f, "/v1/activity/sessions", begin, { skillId: ID });
+  assert.equal(list.status, 200, JSON.stringify(list.body));
+  assert.deepEqual(list.body.sessions.map(r => r.sessionId), ["s4", "s1"]);
+  assert.equal((await read(f, "/v1/activity/sessions/count", begin, { skillId: ID })).body.total, 2);
+  assert.equal((await read(f, "/v1/activity/sessions/count", begin, { skillId: "00000000-0000-4000-8000-000000000002" })).body.total, 1);
+  assert.equal((await read(f, "/v1/activity/sessions/count", begin, { skillId: "00000000-0000-4000-8000-0000000000ff" })).body.total, 0);
+  assert.equal((await read(f, "/v1/activity/sessions/count", begin, { skillId: ID, activeFromMs: 25 })).body.total, 1);
+  assert.equal((await read(f, "/v1/activity/sessions", begin, { skillId: "nope" })).status >= 400, true);
+});
+
+test("the unclassified-error log line carries only an event tag, the route and the error name", async () => {
+  // 정적 계약 검사: 로컬 워커 로그는 Miniflare 안에서 나므로 소스의 console.error 호출 형태를 고정한다.
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../src/activity/content-api.ts", import.meta.url), "utf8");
+  const calls = [...source.matchAll(/console\.(error|warn|log)\(([^;]*)\);/g)];
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][2].replace(/\s+/g, " "),
+    'JSON.stringify({ event: "activity_unclassified_error", route: url.pathname, name: error.name })');
+});

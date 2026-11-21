@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   dashboardPaths, dashboardSourceSchema, dashboardReportStatusSchema, dashboardEvalReceiptSchema,
+  dashboardSessionListResultSchema, dashboardSessionCountResultSchema, dashboardSessionFilterOptionsResultSchema,
+  dashboardSessionMetricsResultSchema, dashboardSessionEventsResultSchema,
   type DashboardSource, type DashboardReportStatus,
 } from "../../shared/activity-dashboard";
 import { eventLeaseSchema, eventPaths, replaySchema } from "../../shared/activity-events";
@@ -24,7 +26,25 @@ export type CloudApiOptions = {
   /** Enables WebSocket-first live invalidations with SSE fallback; absent keeps the snapshot-only adapter. */
   readonly live?: CloudLiveOptions;
 };
-export type CloudApi = Api & { dispose(): void; refresh(): void };
+/** 세션 화면용 평문 인덱스 읽기(리포트 작업 없이 D1 요약만). 필터의 기간은 최근 활동 시각 범위이고,
+ *  startedMs null은 "시작 시각 모름"이다(첫 이벤트 시각으로 채우지 않는다). rowsRead는 화면별 D1 읽기 행 수(개발자용). */
+export type SessionIndexFilter = {
+  readonly activeFromMs?: number; readonly activeToMs?: number;
+  readonly runtimes?: readonly string[]; readonly searchWithoutRead?: boolean; readonly skillId?: string;
+};
+export type SessionIndexList = z.infer<typeof dashboardSessionListResultSchema>;
+export type SessionIndexCount = z.infer<typeof dashboardSessionCountResultSchema>;
+export type SessionIndexFilterOptions = z.infer<typeof dashboardSessionFilterOptionsResultSchema>;
+export type SessionIndexMetrics = z.infer<typeof dashboardSessionMetricsResultSchema>;
+export type SessionIndexEvents = z.infer<typeof dashboardSessionEventsResultSchema>;
+export type SessionIndexApi = {
+  list(filter: SessionIndexFilter, page?: { limit?: number; cursor?: SessionIndexList["nextCursor"] }, signal?: AbortSignal): Promise<SessionIndexList>;
+  count(filter: SessionIndexFilter, signal?: AbortSignal): Promise<SessionIndexCount>;
+  filterOptions(signal?: AbortSignal): Promise<SessionIndexFilterOptions>;
+  metrics(sessionIds: readonly string[], signal?: AbortSignal): Promise<SessionIndexMetrics>;
+  events(sessionId: string, page?: { limit?: number; cursor?: SessionIndexEvents["nextCursor"] }, signal?: AbortSignal): Promise<SessionIndexEvents>;
+};
+export type CloudApi = Api & { dispose(): void; refresh(): void; readonly sessionIndex: SessionIndexApi };
 function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
@@ -160,9 +180,31 @@ export function createCloudApi(input: DashboardSource & { readonly label?: strin
       }
     }, extra);
   }
+  const indexFilter = (filter: SessionIndexFilter) => ({
+    ...(filter.activeFromMs === undefined ? {} : { activeFromMs: filter.activeFromMs }),
+    ...(filter.activeToMs === undefined ? {} : { activeToMs: filter.activeToMs }),
+    ...(filter.runtimes === undefined || filter.runtimes.length === 0 ? {} : { runtimes: [...filter.runtimes] }),
+    ...(filter.searchWithoutRead === true ? { searchWithoutRead: true } : {}),
+    ...(filter.skillId === undefined ? {} : { skillId: filter.skillId }),
+  });
+  const indexRead = <S extends z.ZodType>(path: string, schema: S, body: object, extra?: AbortSignal): Promise<z.infer<S>> =>
+    run(async (post) => schema.parse(await post(path, { profile: source, requestId: crypto.randomUUID(), ...body })), extra);
+  const sessionIndex: SessionIndexApi = {
+    list: (filter, page = {}, signal) => indexRead(dashboardPaths.sessions, dashboardSessionListResultSchema, {
+      ...indexFilter(filter), ...(page.limit === undefined ? {} : { limit: page.limit }),
+      ...(page.cursor == null ? {} : { cursor: page.cursor }),
+    }, signal),
+    count: (filter, signal) => indexRead(dashboardPaths.sessionsCount, dashboardSessionCountResultSchema, indexFilter(filter), signal),
+    filterOptions: (signal) => indexRead(dashboardPaths.sessionsFilterOptions, dashboardSessionFilterOptionsResultSchema, {}, signal),
+    metrics: (sessionIds, signal) => indexRead(dashboardPaths.sessionsMetrics, dashboardSessionMetricsResultSchema, { sessionIds: [...sessionIds] }, signal),
+    events: (sessionId, page = {}, signal) => indexRead(dashboardPaths.sessionsEvents, dashboardSessionEventsResultSchema, {
+      sessionId, ...(page.limit === undefined ? {} : { limit: page.limit }), ...(page.cursor == null ? {} : { cursor: page.cursor }),
+    }, signal),
+  };
   return {
     mode: "cloud",
     source: profile,
+    sessionIndex,
     sessions: async (filter) => {
       const rows = await query<SessionListRow[]>({ kind: "sessions", filter });
       snapshot = { filter, rows };

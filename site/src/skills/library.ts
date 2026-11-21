@@ -103,19 +103,19 @@ export function LibraryPanel(props: LibraryProps) {
       : "읽기 기록이 쌓이면 사용할 수 있어요.";
   const groups = [
     ...(activityMap === undefined ? [{
-      id: "read", label: "읽힘 상태 · 최근 30일 · KST", values: [],
+      id: "read", label: `읽힘 상태 · 최근 ${view.period}일 · KST`, values: [],
       disabledNote: activityNote,
     }, {
-      id: "agent", label: "읽은 에이전트 · 최근 30일 · KST", values: [],
+      id: "agent", label: `읽은 에이전트 · 최근 ${view.period}일 · KST`, values: [],
       disabledNote: activityNote,
     }] : [{
-      id: "read", label: "읽힘 상태 · 최근 30일 · KST",
+      id: "read", label: `읽힘 상태 · 최근 ${view.period}일 · KST`,
       values: READ_STATE_IDS.map(id => ({
         id, label: READ_STATE_LABEL[id],
         count: skills.filter(skill => readStateOf(activityMap.get(skill.skillId)) === id).length,
       })),
     }, {
-      id: "agent", label: "읽은 에이전트 · 최근 30일 · KST",
+      id: "agent", label: `읽은 에이전트 · 최근 ${view.period}일 · KST`,
       values: [...agentCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
         .map(([id, count]) => ({ id, label: id, count })),
     }]),
@@ -123,15 +123,28 @@ export function LibraryPanel(props: LibraryProps) {
       id, label: CHANGED_BUCKET_LABEL[id],
       count: skills.filter(skill => changedBucket(skill.updatedAt, now) === id).length })) },
   ];
-  // 오너 피드백(ts 1795084225.603299): "스킬 목록도 스킬 이름만 둬. 리비전 이런건 상세에 있어도 됨".
-  // 목록은 이름(아래 작은 글씨 설명 1줄)만, 리비전·최근 변경·digest·읽기 링크는 상세 패널에서 확인한다.
+  // 승인 제안서 3.3: 목록은 이름(+설명 한 줄)을 유지하고 "읽힘 · 노출", "읽은 에이전트", "최근 변경" 열을 더한다.
+  // (이전 오너 피드백 ts 1795084225.603299 "이름만"은 승인된 제안 ts 1795260652.308149가 대체한다.)
+  // 읽힘·노출·에이전트는 평문 일별 집계의 조회 창(period) 값이고, 집계 전이거나 읽을 수 없으면 0이 아니라 "—"다.
+  const usage = (skill: PrivateSkillSummary) => activityMap?.get(skill.skillId);
   const columns: readonly TableColumn<PrivateSkillSummary>[] = [
     { id: "name", label: "이름", hideable: false, value: skill => skill.name, render: skill => h("div", { className: "skill-table-name", title: `${skill.name}\n${skill.description}` },
       h("strong", null, skill.name), skill.description !== "" && h("span", { className: "skill-table-description" }, skill.description)) },
+    { id: "usage", label: `읽힘 · 노출 (${view.period}일)`, value: skill => usage(skill)?.reads ?? -1,
+      render: skill => activityMap === undefined ? h("span", { className: "pe-muted", title: activityNote }, "—") :
+        h("span", { className: "skill-table-usage" }, `${usage(skill)?.reads ?? 0}회 · 노출 ${usage(skill)?.exposures ?? 0}`) },
+    { id: "agents", label: "읽은 에이전트", value: skill => [...(usage(skill)?.agents.keys() ?? [])].join(","),
+      render: skill => activityMap === undefined ? h("span", { className: "pe-muted", title: activityNote }, "—") :
+        (usage(skill)?.agents.size ?? 0) === 0 ? h("span", { className: "pe-muted" }, "—") :
+          h("span", { className: "skill-table-agents" }, [...usage(skill)!.agents.keys()].map(agent => h("span", { key: agent, className: "badge" }, agent))) },
+    { id: "updated", label: "최근 변경", value: skill => skill.updatedAt, render: skill => when(skill.updatedAt) },
   ];
   return h("section", { className: "library", "aria-labelledby": "library-title" },
     h("div", { className: "library-heading" }, h("h2", { id: "library-title", tabIndex: -1 }, "스킬 보관함"),
       h("div", { className: "cluster" },
+        h("div", { className: "cluster", role: "group", "aria-label": "읽힘 조회 기간" }, ([7, 30, 90] as const).map(days =>
+          h(Button, { key: days, text: `최근 ${days}일`, variant: view.period === days ? "primary" : "outline",
+            "aria-pressed": view.period === days, onClick: () => update({ ...view, period: days }) } as never))),
         h(Button, { text: "새로고침", variant: "outline", disabled: status === "loading", onClick: onReload }),
         h(Button, { text: "새 스킬", onClick: () => {
           const title = document.getElementById("publish-title");

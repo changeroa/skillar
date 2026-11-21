@@ -273,8 +273,10 @@ body:has(.skill--full) #skills-page-title { display: -webkit-box; -webkit-line-c
   .skills-table-main .ui-table :is(th,td)[data-column="updated"],
   .skills-table-main .ui-table :is(th,td)[data-column="digest"] { display: none; }
   .skills-table-main .ui-table th[data-column="updated"], .skills-table-main .ui-table th[data-column="digest"] { display: none; }
-  .skills-table-main .ui-table th:first-child { width: 75%; }
-  .skills-table-main .ui-table th:nth-child(2) { width: 25%; }
+  .skills-table-main .ui-table :is(th,td)[data-column="agents"] { display: none; }
+  .skills-table-main .ui-table th:first-child { width: 66%; }
+  .skills-table-main .ui-table th:nth-child(2) { width: 34%; }
+  .skill-table-usage { white-space: normal; font-size: var(--small); }
   .skill-table-description { display: none !important; }
   .skill-table-mobile { display: block; color: var(--muted); font-size: var(--small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .skills-table-main .ui-table td { height: 64px; }
@@ -283,3 +285,42 @@ body:has(.skill--full) #skills-page-title { display: -webkit-box; -webkit-line-c
   .skill-summary .ui-kv, .skill--peek .skill-summary .ui-kv { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .diff-lines li { grid-template-columns: 48px 16px minmax(0,1fr); gap: var(--s1); }
 }
+
+/* 버전별 읽힘(digest 기준): 좁은 화면에서는 행을 카드로 쌓고 머리글은 한 줄로 유지한다. */
+.digest-reads { margin: var(--s3) 0; }
+.digest-reads .version-metrics__table th { white-space: nowrap; }
+.digest-reads .version-metrics__table td:nth-child(3), .digest-reads .version-metrics__table td:nth-child(4),
+.digest-reads .version-metrics__table th:nth-child(3), .digest-reads .version-metrics__table th:nth-child(4) { text-align: right; white-space: nowrap; }
+@media (max-width: 640px) {
+  .digest-reads .version-metrics__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .digest-reads .version-metrics__table, .digest-reads .version-metrics__table tbody { display: block; }
+  .digest-reads .version-metrics__table tr { display: grid; grid-template-columns: 1fr auto auto; gap: 2px var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--border); }
+  .digest-reads .version-metrics__table td { display: block; border: 0; padding: 0; text-align: left; }
+  .digest-reads .version-metrics__table td:nth-child(1) { grid-column: 1 / -1; font-weight: 600; overflow-wrap: anywhere; }
+  .digest-reads .version-metrics__table td:nth-child(2) { grid-column: 1 / -1; color: var(--muted); }
+  .digest-reads .version-metrics__table td:nth-child(2)::before { content: "최근 첫 읽음 "; }
+  .digest-reads .version-metrics__table td:nth-child(3)::after { content: "세션"; margin-left: 4px; color: var(--muted); }
+  .digest-reads .version-metrics__table td:nth-child(4)::after { content: "읽기"; margin-left: 4px; color: var(--muted); }
+}
+
+.skill-table-agents { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.skill-table-agents .badge { padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; font-size: var(--small); }
+.skill-table-usage { white-space: nowrap; }
+.report-disclosure{margin:12px 0}.report-disclosure>summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+
+@media (max-width: 640px) { .skills-table-main .ui-table th { white-space: normal; line-height: 1.25; } }
+@media (max-width: 640px) { .skills-table-main .ui-table th[data-column="usage"], .skills-table-main .ui-table th[data-column="usage"] * { overflow: visible; text-overflow: clip; white-space: normal; } }
+.skills-table-main .ui-table th[data-column="usage"], .skills-table-main .ui-table th[data-column="usage"] * { overflow: visible; text-overflow: clip; white-space: normal; }
+
+.skill-reads-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); margin: var(--s2) 0; }
+.skill-reads-stat { display: flex; flex-direction: column; gap: 2px; }
+.skill-reads-stat__value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.skill-reads-stat__label { color: var(--muted); font-size: var(--small); }
+.skill-reads-tab > .version-metrics__period { margin-top: var(--s2); }
+.digest-reads__basis { display: inline-block; margin-left: var(--s2); vertical-align: baseline; }
+.digest-reads__basis > summary { display: inline; cursor: pointer; color: var(--muted); font-size: var(--small); text-decoration: underline; }
+.digest-reads__summary { margin: var(--s2) 0; }
+.digest-reads a.button { margin-top: var(--s1); }
+.skill-reads-tab details.digest-reads__basis, .digest-reads details.digest-reads__basis { background: none; border: 0; padding: 0; min-height: 0; }
+.skill-reads-tab details.digest-reads__basis > summary, .digest-reads details.digest-reads__basis > summary { background: none; border: 0; padding: 0; min-height: 0; display: inline; width: auto; }
+.skill-reads-tab details.digest-reads__basis[open] { display: block; margin: var(--s1) 0 0; }

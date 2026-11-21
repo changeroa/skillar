@@ -10,6 +10,7 @@ import {
   type FilterKey, type LiveInfo, type Route, type View,
 } from "./state";
 import { SessionsView } from "./views/sessions";
+import { HostedSessionsView } from "./views/hosted-sessions";
 import { TraceView } from "./views/trace";
 import { DashboardView } from "./views/dashboard";
 import { LocalShell } from "./components/local-shell";
@@ -137,6 +138,8 @@ export function App({ embedded = false }: AppOptions = {}) {
   const firstRoute = useRef(true);
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live, embedded };
+  // cloud 모드의 세션 목록은 D1 평문 색인(sessionIndex)으로 그린다. 상세(trace)는 기존 리포트 경로 그대로다.
+  const hostedList = route.view === "sessions" && api.mode === "cloud" && embedded === true;
   const Header = embedded ? "div" : "header";
   const Content = embedded || route.view === "sessions" || route.view === "trace" ? "div" : "main";
   useLayoutEffect(() => {
@@ -219,7 +222,7 @@ export function App({ embedded = false }: AppOptions = {}) {
   if (live.invalidated) return <p role="status">클라우드 활동 기록을 볼 수 없습니다. 다시 로그인하거나 출처를 선택해 주세요.</p>;
   return (
     <LocalShell {...props} automation={<AutomatedToggle route={route} navigate={navigate} live={live} />}>
-      {embedded && <Header className="top local-top">
+      {embedded && !(hostedList) && <Header className="top local-top">
         <div className="wrap top__row">
           <nav className="tabs local-tabs" role="tablist" aria-label="화면 선택" onKeyDown={(event) => {
             const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="tab"]'));
@@ -256,7 +259,7 @@ export function App({ embedded = false }: AppOptions = {}) {
           </div>
         </div>
         <div className="wrap"><p className="local-location" aria-label="현재 위치">
-          <span>출처: {embedded ? "선택한 출처" : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
+          <span>출처: {embedded ? (hostedList ? "출처 전체" : "선택한 출처") : api.mode === "fixtures" ? "예시 기록" : "이 기기"}</span>
           {" · "}{VIEW_LABEL[activeTab]}{route.view === "trace" && <> › <code>{route.sessionId}</code></>}
         </p></div>
       </Header>}
@@ -268,11 +271,12 @@ export function App({ embedded = false }: AppOptions = {}) {
         <div id={embedded ? undefined : "skillar-local-panel"}>
         {(route.view === "sessions" || route.view === "trace") && (
           <div className={route.view === "trace" ? embedded ? "sessions-detail" : "pe-trace-page"
-            : api.mode === "cloud" ? "pe-sessions-region pe-cloud" : "pe-sessions-region"}>
-            {(embedded || route.view === "sessions") && <div className={route.view === "trace" ? "sessions-detail__list" : undefined}>
+            : api.mode === "cloud" && !hostedList ? "pe-sessions-region pe-cloud" : "pe-sessions-region"}>
+            {hostedList && <HostedSessionsView {...props} />}
+            {!hostedList && (embedded || route.view === "sessions") && <div className={route.view === "trace" ? "sessions-detail__list" : undefined}>
               <SessionsView {...props} detail={route.view === "trace"} onRows={setSessionRows} />
             </div>}
-            {route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
+            {!hostedList && route.view === "sessions" && route.peek && <SessionPeek {...props} rows={sessionRows} />}
             {route.view === "trace" && <TraceView {...props} key={route.sessionId} />}
           </div>
         )}

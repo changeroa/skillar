@@ -229,3 +229,36 @@ test("a labeled source posts only the strict wire profile (label is display-only
   for (const r of posted) assert.deepEqual(r.body.profile, profile);
   api.dispose();
 });
+
+test("sessionIndex reads post the strict wire, omit empty filters, and validate responses (unknown start stays null)", async () => {
+  const seen = [];
+  const replies = {
+    "/api/dashboard/sessions": { schemaVersion: 1, sessions: [{ sessionId: "s1", startedMs: null, firstEventMs: 1, lastEventMs: 2,
+      events: 1, reads: 0, searches: 1, runtime: null, skills: [] }], nextCursor: { lastEventMs: 2, sessionId: "s1" }, rowsRead: 4 },
+    "/api/dashboard/sessions/count": { schemaVersion: 1, total: 1, rowsRead: 1 },
+    "/api/dashboard/sessions/filter-options": { schemaVersion: 1, runtimes: [{ runtime: null, sessions: 1 }], rowsRead: 1 },
+    "/api/dashboard/sessions/metrics": { schemaVersion: 1, rows: [], rowsRead: 0 },
+    "/api/dashboard/sessions/events": { schemaVersion: 1, events: [], nextCursor: null, rowsRead: 0 },
+  };
+  const fetch = async (path, init) => { seen.push({ path, body: JSON.parse(init.body) }); return json(replies[path]); };
+  const api = createCloudApi(profile, { fetch, onUnauthorized() {} });
+  const list = await api.sessionIndex.list({ runtimes: [], searchWithoutRead: true }, { limit: 50 });
+  assert.equal(list.sessions[0].startedMs, null);
+  assert.deepEqual(list.nextCursor, { lastEventMs: 2, sessionId: "s1" });
+  await api.sessionIndex.count({ activeFromMs: 5 });
+  await api.sessionIndex.filterOptions();
+  await api.sessionIndex.metrics(["s1"]);
+  await api.sessionIndex.events("s1", { limit: 10, cursor: null });
+  assert.deepEqual(seen.map(r => r.path), Object.keys(replies));
+  for (const { body } of seen) {
+    assert.deepEqual(body.profile, profile);
+    assert.match(body.requestId, /^[0-9a-f-]{36}$/);
+  }
+  assert.deepEqual(seen[0].body, { ...seen[0].body, searchWithoutRead: true, limit: 50 });
+  assert.equal("runtimes" in seen[0].body, false);
+  assert.equal("cursor" in seen[4].body, false);
+  assert.equal(seen[1].body.activeFromMs, 5);
+  // 모양이 틀린 응답은 화면에 닿지 않는다.
+  const bad = createCloudApi(profile, { fetch: async () => json({ schemaVersion: 1, total: "1", rowsRead: 1 }), onUnauthorized() {} });
+  await assert.rejects(() => bad.sessionIndex.count({}));
+});

@@ -59,6 +59,9 @@ export type SkillActivity = {
   readonly read: boolean;
   readonly searched: boolean;
   readonly agents: ReadonlyMap<string, number>;
+  /** 조회 창 안의 읽힘·검색 노출 합계(서버 평문 일별 집계). 세션 집계 경로에서는 모르므로 0이다. */
+  readonly reads?: number;
+  readonly exposures?: number;
 };
 
 /** 세션 목록을 보관함 스킬별로 접는다. read는 load 관측, searched는 검색 노출만 있는 경우다. */
@@ -116,11 +119,11 @@ export type SkillUsageRow = {
 export function aggregateSkillUsage(
   rows: readonly SkillUsageRow[], skillIds: ReadonlySet<string>,
 ): ReadonlyMap<string, SkillActivity> {
-  const bySkill = new Map<string, { read: boolean; searched: boolean; agents: Map<string, number> }>();
+  const bySkill = new Map<string, { read: boolean; searched: boolean; agents: Map<string, number>; reads: number; exposures: number }>();
   const entry = (skillId: string) => {
     const existing = bySkill.get(skillId);
     if (existing !== undefined) return existing;
-    const created = { read: false, searched: false, agents: new Map<string, number>() };
+    const created = { read: false, searched: false, agents: new Map<string, number>(), reads: 0, exposures: 0 };
     bySkill.set(skillId, created);
     return created;
   };
@@ -128,6 +131,7 @@ export function aggregateSkillUsage(
     const skillId = skillIdFromUri(row.skillUri);
     if (skillId === null || !skillIds.has(skillId)) continue;
     const acc = entry(skillId);
+    acc.reads += row.reads; acc.exposures += row.exposures;
     if (row.exposures > 0) acc.searched = true;
     if (row.reads > 0) {
       acc.read = true;

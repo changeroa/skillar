@@ -43,8 +43,8 @@ export const SKILL_USAGE_WINDOW_DAYS = 30;
 export const kstDay = (ms: number): string =>
   new Date(ms + 9 * 3_600_000).toISOString().slice(0, 10);
 /** 조회 창의 첫 KST 일자: 오늘(KST)을 포함한 최근 30개 일자. */
-export const skillUsageWindowStart = (now: number): string =>
-  kstDay(now - (SKILL_USAGE_WINDOW_DAYS - 1) * 86_400_000);
+export const skillUsageWindowStart = (now: number, days: number = SKILL_USAGE_WINDOW_DAYS): string =>
+  kstDay(now - (days - 1) * 86_400_000);
 
 export type SkillUsageCount = {
   day: string; skillUri: string; agent: string; reads: number; exposures: number;
@@ -415,7 +415,9 @@ export function skillUsageTombstoneStatements(
   ];
 }
 
-export const skillUsageReadSchema = reportScopeSchema.readonly();
+export const skillUsageReadSchema = reportScopeSchema.extend({
+  days: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional(),
+}).readonly();
 
 const aggregateRowSchema = z.object({
   skillUri: z.string(), agent: z.string().nullable(),
@@ -430,7 +432,7 @@ export async function readSkillUsage(env: ContentEnv, principal: IngestPrincipal
   await activeFence(env.ACTIVITY, principal);
   await requireContentReadConsent(env.ACCOUNTS, principal, contentScope(request, contentKinds));
   const identity = [principal.accountId, request.generation, request.deviceId, request.sourceDomain];
-  const startDay = skillUsageWindowStart(Date.now());
+  const startDay = skillUsageWindowStart(Date.now(), request.days);
   const rows = z.array(aggregateRowSchema).parse((await env.ACTIVITY.prepare(
     `SELECT skill_id AS skillUri, NULLIF(agent,'') AS agent,
       SUM(reads) AS reads, SUM(exposures) AS exposures

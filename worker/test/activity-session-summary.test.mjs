@@ -104,6 +104,19 @@ test("list/count/facet/filter-options plans: summary indexes only, no table or e
     assert.doesNotMatch(cp, /SCAN session_skill_reads(_backfill)?(?! USING)/, cp);
     assert.match(cp, /SEARCH session_skill_reads(_backfill)? USING (COVERING )?INDEX sqlite_autoindex/, cp);
   }
+  // 스킬 필터: 읽기 표는 기본키 앞부분으로 찾고(SCAN 금지), 바인딩은 스킬당 8개만 늘어 한도 안이다.
+  {
+    const U = "00000000-0000-4000-8000-000000000001";
+    for (const [name, q] of [["list", sessionListSql({ skillId: U }, true)], ["count", sessionCountSql({ skillId: U })]]) {
+      const n = (q.match(/\?/g) ?? []).length;
+      const args = [...SCOPE, ...(name === "list" ? [5000, 5000, "s010"] : []), ...Array(8).fill("skill://x"), ...(name === "list" ? [100] : [])];
+      assert.equal(args.length, n, name);
+      assert.ok(n <= D1_MAX_BOUND_PARAMETERS, `${name} binds ${n}`);
+      const sp = plan(q, args);
+      assert.doesNotMatch(sp, /SCAN session_skill_reads/, `${name}: ${sp}`);
+      assert.match(sp, /SEARCH r USING (COVERING )?INDEX sqlite_autoindex/, `${name}: ${sp}`);
+    }
+  }
   // 회귀: 목록 한 쪽 최대 100행에서 한 질의의 바인딩 수가 D1 한도(100)를 넘지 않는다(운영 503).
   for (const n of [50, 100, CHIP_ID_CHUNK]) {
     for (let from = 0; from < n; from += CHIP_ID_CHUNK) {

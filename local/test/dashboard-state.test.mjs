@@ -207,3 +207,26 @@ test("usage fixtures carry null rates and unattributed counts for both stats var
   }
   assert.deepEqual(usage.statsEmpty.unattributed, { searches: 0, loads: 0 });
 });
+
+test("sessions hash keeps period, source and resume cursor; bad values are dropped", () => {
+  const route = { view: "sessions", filter: { skill: ["skill://private/00000000-0000-4000-8000-000000000001/x"] }, period: "30", src: "dev:a", cur: "abc_-123" };
+  const back = parseHash(buildHash(route));
+  assert.equal(back.period, "30"); assert.equal(back.src, "dev:a"); assert.equal(back.cur, "abc_-123");
+  assert.equal(parseHash("#/sessions?period=7").period, "7");
+  assert.equal(buildHash({ view: "sessions", filter: {}, period: "7" }), "#/sessions");
+  assert.equal(parseHash("#/sessions?period=9").period, undefined);
+  assert.equal(parseHash("#/sessions?cur=%3Cx%3E").cur, undefined);
+});
+
+test("hostedSkillLabel shows catalog names for private skill URIs, never the trailing digest", () => {
+  const id = "00000000-0000-4000-8000-000000000001";
+  const names = new Map([[id, "skillar-publish"]]);
+  const digest = "a".repeat(64);
+  assert.equal(state.hostedSkillLabel(`skill://private/${id}/${digest}/SKILL.md`, names), "skillar-publish");
+  assert.equal(state.hostedSkillLabel(`skillar://private/${id}/${digest}/SKILL.md`, names), "skillar-publish");
+  assert.equal(state.hostedSkillLabel(`skill://private/${id}/${digest}/SKILL.md`, new Map()), "비공개 스킬 00000000");
+  assert.equal(state.hostedSkillLabel("skill://local/root/git-helper/SKILL.md", names), "git-helper");
+  assert.equal(state.skillKey(`skill://private/${id}/${digest}/SKILL.md`), id);
+  assert.equal(state.skillKey(`skillar://private/${id}/`), id);
+  assert.equal(state.skillKey("skill://local/root/x/SKILL.md"), "skill://local/root/x/SKILL.md");
+});

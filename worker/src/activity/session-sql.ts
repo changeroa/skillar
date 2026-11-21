@@ -1,5 +1,5 @@
 // AGPL-3.0-only. 세션 읽기 API의 SQL 빌더(의존성 없음: 테스트가 노드에서 직접 불러 EXPLAIN을 확인한다).
-export type SessionFilter = { activeFromMs?: number; activeToMs?: number; runtimes?: string[]; searchWithoutRead?: boolean };
+export type SessionFilter = { activeFromMs?: number; activeToMs?: number; runtimes?: string[]; searchWithoutRead?: boolean; skillId?: string };
 const WHERE_SCOPE = "account_id=? AND generation=? AND device_id=? AND source_domain=?";
 export function filterSql(f: SessionFilter) {
   const clauses: string[] = [];
@@ -11,6 +11,18 @@ export function filterSql(f: SessionFilter) {
   }
   // 부분 인덱스(session_activity_search_no_read)와 같은 술어여야 플래너가 쓴다.
   if (f.searchWithoutRead === true) clauses.push("searches > 0 AND reads = 0");
+  // 스킬 필터: 세션이 이 스킬(skill:// 와 skillar:// 두 저장 URI 형태)을 읽은 적이 있는가. 수집 표와 백필 표 어느 쪽이든 된다.
+  // 두 표의 기본키 앞부분(스코프+session_id)으로 찾고 skill_id 접두 범위로 거른다.
+  if (f.skillId !== undefined) {
+    const reads = (table: string) => `EXISTS (SELECT 1 FROM ${table} r WHERE r.account_id=session_activity.account_id
+      AND r.generation=session_activity.generation AND r.device_id=session_activity.device_id
+      AND r.source_domain=session_activity.source_domain AND r.session_id=session_activity.session_id
+      AND ((r.skill_id>=? AND r.skill_id<?) OR (r.skill_id>=? AND r.skill_id<?)))`;
+    clauses.push(`(${reads("session_skill_reads")} OR ${reads("session_skill_reads_backfill")})`);
+    for (let i = 0; i < 2; i++) {
+      args.push(`skill://private/${f.skillId}/`, `skill://private/${f.skillId}0`, `skillar://private/${f.skillId}/`, `skillar://private/${f.skillId}0`);
+    }
+  }
   return { sql: clauses.length === 0 ? "" : ` AND ${clauses.join(" AND ")}`, args };
 }
 export const sessionListSql = (f: SessionFilter, withCursor: boolean) =>

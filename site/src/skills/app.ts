@@ -83,7 +83,7 @@ export function SkillsApp({ signal }: { readonly signal: AbortSignal }) {
   const reload = useCallback(() => setTick(current => current + 1), []);
   const activity = useLibraryActivity(
     catalog.catalog === null ? [] : catalog.catalog.skills,
-    phase.kind === "signed-in" && catalog.status === "ready", signal, expire,
+    phase.kind === "signed-in" && catalog.status === "ready", signal, expire, view.period,
   );
 
   useEffect(() => {

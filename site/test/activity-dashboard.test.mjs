@@ -300,11 +300,12 @@ test("session routes forward a worker-parseable scope plus only their own filter
   await f.consent();
   const cases = [
     ["/api/dashboard/sessions", "/v1/activity/sessions",
-      { searchWithoutRead: true, runtimes: ["codex"], activeFromMs: 1, limit: 20, cursor: { lastEventMs: 5, sessionId: "s1" } }],
-    ["/api/dashboard/sessions/count", "/v1/activity/sessions/count", { searchWithoutRead: true }],
+      { searchWithoutRead: true, runtimes: ["codex"], activeFromMs: 1, limit: 20, cursor: { lastEventMs: 5, sessionId: "s1" }, skillId: "00000000-0000-4000-8000-000000000001" }],
+    ["/api/dashboard/sessions/count", "/v1/activity/sessions/count", { searchWithoutRead: true, skillId: "00000000-0000-4000-8000-000000000001" }],
     ["/api/dashboard/sessions/filter-options", "/v1/activity/sessions/filter-options", {}],
     ["/api/dashboard/sessions/metrics", "/v1/activity/sessions/metrics", { sessionIds: ["s1", "s2"] }],
     ["/api/dashboard/sessions/events", "/v1/activity/sessions/events", { sessionId: "s1", limit: 10 }],
+    ["/api/dashboard/skills/reads", "/v1/activity/skills/reads", { skillId: "00000000-0000-4000-8000-000000000001", firstReadFromMs: 5 }],
   ];
   for (const [path, servicePath, extra] of cases) {
     const before = f.calls.length;
@@ -350,4 +351,12 @@ test("session route responses are validated: a well-formed list passes (unknown 
     try { status = (await ask()).status; } catch { status = "threw"; }
     assert.notEqual(status, 200, JSON.stringify(candidate).slice(0, 80));
   }
+});
+
+test("skill usage request accepts only the 7/30/90 day windows", async () => {
+  const { dashboardSkillUsageSchema } = await import("../../shared/dist/activity-dashboard.js");
+  const base = { profile, requestId: crypto.randomUUID() };
+  assert.equal(dashboardSkillUsageSchema.safeParse(base).success, true);
+  for (const days of [7, 30, 90]) assert.equal(dashboardSkillUsageSchema.safeParse({ ...base, days }).success, true);
+  for (const days of [1, 45, "30"]) assert.equal(dashboardSkillUsageSchema.safeParse({ ...base, days }).success, false);
 });
