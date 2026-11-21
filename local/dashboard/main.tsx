@@ -10,7 +10,7 @@ import {
   type FilterKey, type LiveInfo, type Route, type View,
 } from "./state";
 import { SessionsView } from "./views/sessions";
-import { HostedSessionsView } from "./views/hosted-sessions";
+import { HostedSessionsView, useHostedConfigured } from "./views/hosted-sessions";
 import { TraceView } from "./views/trace";
 import { DashboardView } from "./views/dashboard";
 import { LocalShell } from "./components/local-shell";
@@ -139,7 +139,8 @@ export function App({ embedded = false }: AppOptions = {}) {
   const activeTab: View = TAB_OF[route.view];
   const props = { route, navigate, live, embedded };
   // cloud 모드의 세션 목록은 D1 평문 색인(sessionIndex)으로 그린다. 상세(trace)는 기존 리포트 경로 그대로다.
-  const hostedList = route.view === "sessions" && api.mode === "cloud" && embedded === true;
+  const hostedConfigured = useHostedConfigured();
+  const hostedList = route.view === "sessions" && api.mode === "cloud" && embedded === true && hostedConfigured;
   const Header = embedded ? "div" : "header";
   const Content = embedded || route.view === "sessions" || route.view === "trace" ? "div" : "main";
   useLayoutEffect(() => {
