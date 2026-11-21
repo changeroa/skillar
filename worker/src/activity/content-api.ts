@@ -1,3 +1,4 @@
+import { readSessionCount, readSessionEvents, readSessionFilterOptions, readSessionList, readSessionMetrics } from "./session-api.ts";
 import { z } from "zod";
 import { deploymentOriginSchema, isDeploymentOrigin } from "../../../shared/deployment-origin.ts";
 import {
@@ -184,6 +185,21 @@ export async function activityContentRequest(request: Request, env: ReportEnv): 
     }
     if (path === "/v1/activity/skill-usage/backfill") {
       return Response.json(await backfillSkillUsage(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/sessions") {
+      return Response.json(await readSessionList(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/sessions/count") {
+      return Response.json(await readSessionCount(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/sessions/filter-options") {
+      return Response.json(await readSessionFilterOptions(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/sessions/metrics") {
+      return Response.json(await readSessionMetrics(env, principal, await body(request)), { headers });
+    }
+    if (path === "/v1/activity/sessions/events") {
+      return Response.json(await readSessionEvents(env, principal, await body(request)), { headers });
     }
     return Response.json({ error: "not_found" }, { status: 404, headers });
   } catch (error) {

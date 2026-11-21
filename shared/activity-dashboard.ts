@@ -10,6 +10,11 @@ export const dashboardPaths = {
   query: "/api/dashboard/query",
   skillUsage: "/api/dashboard/skill-usage",
   skillUsageBackfill: "/api/dashboard/skill-usage/backfill",
+  sessions: "/api/dashboard/sessions",
+  sessionsCount: "/api/dashboard/sessions/count",
+  sessionsFilterOptions: "/api/dashboard/sessions/filter-options",
+  sessionsMetrics: "/api/dashboard/sessions/metrics",
+  sessionsEvents: "/api/dashboard/sessions/events",
   reportStatus: "/api/dashboard/reports/status",
   reportResult: "/api/dashboard/reports/result",
   evalCases: "/api/dashboard/eval-cases",
@@ -82,6 +87,77 @@ export const dashboardSkillUsageBackfillResultSchema = z.union([
     skipped: z.number().int().nonnegative(), unreadable: z.number().int().positive().optional(),
   }),
 ]).readonly();
+/** 세션 화면 요청(평문 요약/인덱스만 읽는다; 브라우저는 POST만 쓴다). 기간 필터는 최근 활동 시각 범위다. */
+const sessionFilterFields = {
+  activeFromMs: timestamp.optional(), activeToMs: timestamp.optional(),
+  runtimes: z.array(z.string().min(1).max(64)).max(20).optional(),
+  searchWithoutRead: z.boolean().optional(),
+};
+export const dashboardSessionListRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(), ...sessionFilterFields,
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z.strictObject({ lastEventMs: timestamp, sessionId: z.string().min(1).max(256) }).optional(),
+}).readonly();
+export const dashboardSessionCountRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(), ...sessionFilterFields,
+}).readonly();
+export const dashboardSessionFilterOptionsRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+}).readonly();
+export const dashboardSessionMetricsRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+  sessionIds: z.array(z.string().min(1).max(256)).min(1).max(50),
+}).readonly();
+export const dashboardSessionEventsRequestSchema = z.strictObject({
+  profile: dashboardSourceSchema, requestId: z.string().uuid(),
+  sessionId: z.string().min(1).max(256), limit: z.number().int().min(1).max(500).optional(),
+  cursor: z.strictObject({ timestampMs: timestamp, entityKey: z.string() }).optional(),
+}).readonly();
+/** rowsRead: 요청이 D1에서 읽은 행 수(D1 meta.rows_read 합). 값이 없으면 null(지어내지 않는다). */
+const rowsReadField = z.number().int().nonnegative().nullable();
+export const dashboardSessionListResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  sessions: z.array(z.strictObject({
+    sessionId: z.string(),
+    /** 실제 시작 시각(session_facts에 있을 때만). 없으면 null = 알 수 없음. 처음 관측한 이벤트 시각이 아니다. */
+    startedMs: timestamp.nullable(),
+    firstEventMs: timestamp, lastEventMs: timestamp,
+    events: z.number().int().nonnegative(), reads: z.number().int().nonnegative(),
+    searches: z.number().int().nonnegative(), runtime: z.string().nullable(),
+    skills: z.array(z.strictObject({
+      skillId: z.string(), digest: z.string().nullable(), firstReadMs: timestamp,
+      reads: z.number().int().nonnegative(),
+    }).readonly()).readonly(),
+  }).readonly()).readonly(),
+  nextCursor: z.strictObject({ lastEventMs: timestamp, sessionId: z.string() }).nullable(),
+  rowsRead: rowsReadField,
+}).readonly();
+export const dashboardSessionCountResultSchema = z.strictObject({
+  schemaVersion: z.literal(1), total: z.number().int().nonnegative(), rowsRead: rowsReadField,
+}).readonly();
+export const dashboardSessionFilterOptionsResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  runtimes: z.array(z.strictObject({
+    runtime: z.string().nullable(), sessions: z.number().int().nonnegative(),
+  }).readonly()).readonly(),
+  rowsRead: rowsReadField,
+}).readonly();
+export const dashboardSessionMetricsResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  rows: z.array(z.strictObject({
+    sessionId: z.string(), events: z.number().int().nonnegative(), reads: z.number().int().nonnegative(),
+    searches: z.number().int().nonnegative(), firstEventMs: timestamp, lastEventMs: timestamp,
+  }).readonly()).readonly(),
+  rowsRead: rowsReadField,
+}).readonly();
+export const dashboardSessionEventsResultSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  events: z.array(z.strictObject({
+    entityKey: z.string(), kind: z.string().nullable(), timestampMs: timestamp,
+  }).readonly()).readonly(),
+  nextCursor: z.strictObject({ timestampMs: timestamp, entityKey: z.string() }).nullable(),
+  rowsRead: rowsReadField,
+}).readonly();
 export const dashboardReferenceSchema = z.strictObject({
   profile: dashboardSourceSchema, jobId: z.string().uuid(),
 }).readonly();
