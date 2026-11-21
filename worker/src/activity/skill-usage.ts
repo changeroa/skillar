@@ -256,10 +256,13 @@ export function sessionIndexStatements(
       db.prepare(`INSERT INTO session_facts
         (account_id,generation,device_id,source_domain,entity_key,revision,facts_json,runtime,started_ms)
         SELECT ?,?,?,?,?,?,'{}',?,? WHERE ${guard}
+        AND NOT EXISTS (SELECT 1 FROM entity_tombstones t WHERE t.account_id=? AND t.generation=? AND t.device_id=?
+          AND t.source_domain=? AND t.entity_type='session' AND t.entity_key=? AND t.revision>=?)
         ON CONFLICT(account_id,generation,device_id,source_domain,entity_key)
         DO UPDATE SET revision=excluded.revision,runtime=excluded.runtime,started_ms=excluded.started_ms
         WHERE excluded.revision>session_facts.revision`)
-        .bind(...identity, key, item.revision, ...item.values, ...guardArgs));
+        .bind(...identity, key, item.revision, ...item.values, ...guardArgs,
+          ...identity, key, item.revision));
   }
   for (const [key, item] of events) {
     statements.push(item.sql === "delete" ?
@@ -270,12 +273,14 @@ export function sessionIndexStatements(
         (account_id,generation,device_id,source_domain,entity_key,revision,facts_json,timestamp_ms,
           recording_orders_json,session_id,kind)
         SELECT ?,?,?,?,?,?,'{}',?,'{}',?,? WHERE ${guard}
+        AND NOT EXISTS (SELECT 1 FROM entity_tombstones t WHERE t.account_id=? AND t.generation=? AND t.device_id=?
+          AND t.source_domain=? AND t.entity_type='event' AND t.entity_key=? AND t.revision>=?)
         ON CONFLICT(account_id,generation,device_id,source_domain,entity_key)
         DO UPDATE SET revision=excluded.revision,timestamp_ms=excluded.timestamp_ms,
           session_id=excluded.session_id,kind=excluded.kind
         WHERE excluded.revision>event_facts.revision`)
         .bind(...identity, key, item.revision, item.values[2], item.values[0], item.values[1],
-          ...guardArgs));
+          ...guardArgs, ...identity, key, item.revision));
   }
   return statements;
 }
@@ -306,7 +311,7 @@ export function skillUsageStatements(
   for (const acc of sessionSkillReadCounts(skillUsageDeltas(rows)).values()) {
     statements.push(db.prepare(`INSERT INTO session_skill_reads
       (account_id,generation,device_id,source_domain,session_id,skill_id,digest,first_read_ms,reads,digest_source)
-      SELECT ?,?,?,?,?,?,?,?,?,? WHERE ${commitGuard} ${idempotent}
+      SELECT ?,?,?,?,?,?,?,?,?,? WHERE ${commitGuard} ${idempotent.replace('skill_usage_batches','session_index_batches')}
       ON CONFLICT(account_id,generation,device_id,source_domain,session_id,skill_id,digest)
       DO UPDATE SET reads=reads+excluded.reads,
         first_read_ms=MIN(first_read_ms,excluded.first_read_ms),
@@ -318,6 +323,10 @@ export function skillUsageStatements(
         ...identity, stream.journalThrough));
   }
   statements.push(...sessionIndexStatements(db, stream, rows));
+  statements.push(db.prepare(`INSERT OR IGNORE INTO session_index_batches
+    (account_id,generation,device_id,source_domain,batch_id,applied_at)
+    SELECT ?,?,?,?,?,? WHERE ${commitGuard}`)
+    .bind(...identity, stream.batchId, Date.now(), stream.commitId));
   for (const acc of counts.values()) {
     statements.push(db.prepare(`INSERT INTO skill_daily_usage
       (account_id,generation,device_id,source_domain,day,skill_id,agent,reads,exposures)
@@ -366,6 +375,9 @@ export function skillUsageTombstoneStatements(
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND ${commitGuard}`)
       .bind(...identity, stream.commitId),
     db.prepare(`DELETE FROM session_skill_reads_backfill
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND ${commitGuard}`)
+      .bind(...identity, stream.commitId),
+    db.prepare(`DELETE FROM session_index_batches
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND ${commitGuard}`)
       .bind(...identity, stream.commitId),
   ];
@@ -465,8 +477,24 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
     loadDigests: new Map(), skipped: 0 };
   const mergedRows: ContentRow[] = [];
   const mergedReads = new Map<string, SessionSkillRead>();
-  const merge = (deltas: SkillUsageDeltas) => {
-    mergeSessionSkillReads(mergedReads, sessionSkillReadCounts(deltas));
+  // 삭제(tombstone)된 세션/이벤트는 재생으로 되살리지 않는다: 같은 revision 이하의 content 행은 걸러낸다.
+  const tombstones = new Map(z.array(z.object({
+    entity_type: z.string(), entity_key: z.string(), revision: z.number(),
+  })).parse((await env.ACTIVITY.prepare(`SELECT entity_type,entity_key,revision FROM entity_tombstones
+    WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?
+      AND entity_type IN ('session','event')`).bind(...identity).all()).results)
+    .map(t => [`${t.entity_type}\u0000${t.entity_key}`, t.revision] as const));
+  const liveRows = (rows: readonly ContentRow[]) => tombstones.size === 0 ? rows : rows.filter(row => {
+    const type = row.table === "sessions" ? "session" : row.table === "events" ? "event" : null;
+    if (type === null) return true;
+    let key: unknown;
+    try { key = (JSON.parse(row.key) as unknown[])[0]; } catch { return true; }
+    const at = typeof key === "string" ? tombstones.get(`${type}\u0000${key}`) : undefined;
+    return at === undefined || row.revision > at;
+  });
+  const merge = (deltas: SkillUsageDeltas, opts = { daily: true, reads: true }) => {
+    if (opts.reads) mergeSessionSkillReads(mergedReads, sessionSkillReadCounts(deltas));
+    if (!opts.daily) return;
     mergedDeltas.uses.push(...deltas.uses);
     mergedDeltas.skipped += deltas.skipped;
     for (const [k, v] of deltas.loadDigests) mergedDeltas.loadDigests.set(k, v);
@@ -483,32 +511,56 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
       throw new ReportError("source_gap");
     }
     // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
-    mergedRows.push(...exported.document.rows);
-    merge(skillUsageDeltas(exported.document.rows));
+    const pageRows = liveRows(exported.document.rows);
+    mergedRows.push(...pageRows);
+    merge(skillUsageDeltas(pageRows));
   }
   // 스냅샷 cut 이후에 이미 수신된 보관 배치를 재생한다. 보관 기간 만료·삭제로 읽을 수 없는
   // 배치는 건너뛰고 skipped에 센다.
-  // 세션 인덱스는 스킬 영수증과 별개 기준이다: 보관 배치 전부를 재생한다(키 기반 upsert라 멱등).
-  // 영수증이 있는 배치는 집계·읽기 재계산에서만 뺀다(수집 경로 증분과 이중 계산 금지).
-  const retained = z.array(z.object({ batch_id: z.string(), receipted: z.number() }))
-    .parse((await env.ACTIVITY.prepare(
-    `SELECT r.batch_id AS batch_id, EXISTS (SELECT 1 FROM skill_usage_batches b
-      WHERE b.account_id=r.account_id AND b.batch_id=r.batch_id) AS receipted FROM ingest_receipts r
+  // 세션 인덱스(session_facts/event_facts)는 스킬 영수증과 별개 기준이다: 보관 배치 전부를 재생한다
+  // (키 기반 revision-gated upsert라 멱등). 일별 집계는 skill_usage_batches 영수증이 없는 배치만,
+  // 세션 읽음 재계산은 session_index_batches 영수증이 없는 배치만 넣는다(수집 경로 증분과 이중 계산 금지).
+  const retained = z.array(z.object({
+    batch_id: z.string(), skill_receipted: z.number(), index_receipted: z.number(),
+  })).parse((await env.ACTIVITY.prepare(
+    `SELECT r.batch_id AS batch_id,
+      EXISTS (SELECT 1 FROM skill_usage_batches b
+        WHERE b.account_id=r.account_id AND b.batch_id=r.batch_id) AS skill_receipted,
+      EXISTS (SELECT 1 FROM session_index_batches i
+        WHERE i.account_id=r.account_id AND i.batch_id=r.batch_id) AS index_receipted
+    FROM ingest_receipts r
     JOIN content_manifests m ON m.account_id=r.account_id AND m.generation=r.generation
       AND m.device_id=r.device_id AND m.source_domain=r.source_domain AND m.batch_id=r.batch_id
     WHERE r.account_id=? AND r.generation=? AND r.device_id=? AND r.source_domain=?
       AND r.journal_through>?
     ORDER BY r.journal_through`,
   ).bind(...identity, cut).all()).results);
+  // 읽을 수 없는 배치는 원인을 구분한다. 보관 만료·삭제(content_missing/content_expired)만 skipped로
+  // 세고 계속한다. 내용 불일치(content_conflict)는 unreadable로 따로 세고 계속하되 응답에 드러낸다.
+  // 키·저장소 장애(key_unavailable, 그 밖의 오류)는 조용히 건너뛰지 않는다: 아무것도 쓰기 전에
+  // 중단해 완료로 보이지 않게 하고(coverage는 그대로), 배치 ID와 오류 종류만 로그에 남긴다.
+  let unreadable = 0;
   for (const candidate of retained) {
     try {
       const document = await readBatchContent(env, principal,
         { sourceDomain: scope.sourceDomain, batchId: candidate.batch_id });
-      mergedRows.push(...document.rows);
-      if (candidate.receipted === 0) merge(skillUsageDeltas(document.rows));
+      const batchRows = liveRows(document.rows);
+      mergedRows.push(...batchRows);
+      merge(skillUsageDeltas(batchRows),
+        { daily: candidate.skill_receipted === 0, reads: candidate.index_receipted === 0 });
     } catch (error) {
-      if (!(error instanceof ContentStorageError)) throw error;
-      if (candidate.receipted === 0) mergedDeltas.skipped++;
+      if (error instanceof ContentStorageError &&
+          (error.code === "content_missing" || error.code === "content_expired")) {
+        mergedDeltas.skipped++;
+        continue;
+      }
+      if (error instanceof ContentStorageError && error.code === "content_conflict") {
+        unreadable++;
+        continue;
+      }
+      console.error("skill-usage backfill aborted", candidate.batch_id,
+        error instanceof Error ? error.name : "unknown");
+      throw error;
     }
   }
   const merged = skillUsageCounts(mergedDeltas);
@@ -540,5 +592,6 @@ export async function backfillSkillUsage(env: ContentEnv, principal: IngestPrinc
   return {
     schemaVersion: 1 as const, deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
     snapshotCut: cut, rows: merged.size, skipped: mergedDeltas.skipped,
+    ...(unreadable > 0 ? { unreadable } : {}),
   };
 }

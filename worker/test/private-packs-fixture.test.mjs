@@ -84,7 +84,7 @@ export async function fixture(t) {
     "0004_account_events", "0005_private_skills", "0006_mcp_connections"]) {
     await migrate(accounts, new URL(`../../site/migrations/${name}.sql`, import.meta.url));
   }
-  for (const name of ["0001_activity_ledger", "0002_content", "0009_private_packs", "0012_skill_usage", "0014_session_index"]) {
+  for (const name of ["0001_activity_ledger", "0002_content", "0009_private_packs", "0012_skill_usage", "0014_session_index", "0015_session_index_batches"]) {
     await migrate(db, new URL(`../activity-migrations/${name}.sql`, import.meta.url));
   }
   for (const account of ["account-a", "account-b"]) {
