@@ -293,11 +293,12 @@ export function sessionReplayStatements(
   db: D1Database,
   stream: StreamIdentity & { readonly batchId: string },
   rows: readonly ContentRow[],
+  readsTable: "session_skill_reads" | "session_skill_reads_backfill",
 ): D1PreparedStatement[] {
   const identity = [stream.accountId, stream.generation, stream.deviceId, stream.sourceDomain];
   const statements: D1PreparedStatement[] = [];
   for (const acc of sessionSkillReadCounts(skillUsageDeltas(rows)).values()) {
-    statements.push(db.prepare(`INSERT INTO session_skill_reads
+    statements.push(db.prepare(`INSERT INTO ${readsTable}
       (account_id,generation,device_id,source_domain,session_id,skill_id,digest,first_read_ms,reads,digest_source)
       SELECT ?,?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM session_index_batches i
         WHERE i.account_id=? AND i.batch_id=?)
@@ -589,13 +590,62 @@ async function runBackfillSkillUsage(
       throw error;
     }
   };
-  // 1) 세션 인덱스 재생: 배치마다 자기 커밋(사실 upsert + 읽음 증분 + session_index_batches 영수증)을
-  // 원자적으로 쓴다. 영수증이 있는 배치는 건너뛰므로 중단 후 재실행이 이어지고 이중 계산이 없다.
-  // maxBatches를 주면 그만큼만 재생하고 remaining을 돌려준다(완료 표식은 모두 끝난 뒤에만).
+  // 1) 세션 인덱스 재생. 재생 단위(스냅샷 페이지 하나, 보관 배치 하나)마다 자기 커밋 하나
+  // (사실 upsert + 읽음 증분 + session_index_batches 영수증, 영수증은 마지막 문장)를 원자적으로 쓴다.
+  // 영수증이 있는 단위는 재실행 때 건너뛰므로 중단 후 이어서 진행되고 이중 계산이 없다.
+  // maxBatches를 주면 재생 단위를 그만큼만 처리하고 remaining을 돌려준다. 일별 집계와 완료 표식은
+  // 모든 단위가 끝난 뒤에만 쓴다.
   const dailyDeltas: SkillUsageDeltas = { uses: [], sessionClients: new Map(),
     loadDigests: new Map(), skipped: 0 };
+  const streamId = { accountId: principal.accountId, generation: principal.generation,
+    deviceId: scope.deviceId, sourceDomain: scope.sourceDomain };
   let replayed = 0;
   let remaining = 0;
+  const pageUnit = (page: number) => `snapshot:${begin?.snapshotId ?? ""}:${page}`;
+  const doneUnits = new Set(z.array(z.object({ batch_id: z.string() })).parse(
+    (await env.ACTIVITY.prepare(`SELECT batch_id FROM session_index_batches
+      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?
+        AND batch_id LIKE 'snapshot:%'`).bind(...identity).all()).results).map(r => r.batch_id));
+  // 다른 스냅샷의 페이지 영수증과 그 읽음 표는 이번 스냅샷으로 교체한다(같은 스냅샷이면 이어서 진행).
+  const prefix = `snapshot:${begin?.snapshotId ?? ""}:`;
+  if ([...doneUnits].some(id => !id.startsWith(prefix))) {
+    progress.stage = "snapshot_reset";
+    await env.ACTIVITY.batch([
+      env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
+      env.ACTIVITY.prepare(`DELETE FROM session_index_batches
+        WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?
+          AND batch_id LIKE 'snapshot:%'`).bind(...identity),
+    ]);
+    doneUnits.clear();
+  } else if (begin === null && doneUnits.size > 0) {
+    doneUnits.clear();
+  }
+  const readPage = async (page: number) => {
+    progress.stage = "snapshot_page";
+    progress.batchId = pageUnit(page);
+    const exported = await exportMigration(env, principal, {
+      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
+      generation: scope.generation, snapshotId: begin?.snapshotId ?? "", page,
+    });
+    if (exported.document === null || exported.migration.snapshotHash !== begin?.snapshotHash) {
+      throw new ReportError("source_gap");
+    }
+    return liveRows(exported.document.rows);
+  };
+  const pageDeltas = new Map<number, SkillUsageDeltas>();
+  const batchDeltas = new Map<string, SkillUsageDeltas>();
+  const pagesNeedingDaily: number[] = [];
+  for (let page = 0; page < (begin?.pageCount ?? 0); page++) {
+    if (doneUnits.has(pageUnit(page))) { pagesNeedingDaily.push(page); continue; }
+    if (maxBatches !== undefined && replayed >= maxBatches) { remaining++; continue; }
+    const rows = await readPage(page);
+    progress.stage = "index_write";
+    await env.ACTIVITY.batch(sessionReplayStatements(env.ACTIVITY,
+      { ...streamId, batchId: pageUnit(page) }, rows, "session_skill_reads_backfill"));
+    replayed++;
+    pageDeltas.set(page, skillUsageDeltas(rows));
+  }
   const dailyOnly: string[] = [];
   for (const candidate of retained) {
     if (candidate.index_receipted === 0) {
@@ -603,12 +653,10 @@ async function runBackfillSkillUsage(
       const rows = await readRetained(candidate.batch_id);
       if (rows === null) continue;
       progress.stage = "index_write";
-      await env.ACTIVITY.batch(sessionReplayStatements(env.ACTIVITY, {
-        accountId: principal.accountId, generation: principal.generation,
-        deviceId: scope.deviceId, sourceDomain: scope.sourceDomain, batchId: candidate.batch_id,
-      }, rows));
+      await env.ACTIVITY.batch(sessionReplayStatements(env.ACTIVITY,
+        { ...streamId, batchId: candidate.batch_id }, rows, "session_skill_reads"));
       replayed++;
-      if (candidate.skill_receipted === 0) mergeDaily(dailyDeltas, skillUsageDeltas(rows));
+      if (candidate.skill_receipted === 0) batchDeltas.set(candidate.batch_id, skillUsageDeltas(rows));
     } else if (candidate.skill_receipted === 0) {
       dailyOnly.push(candidate.batch_id);
     }
@@ -620,41 +668,29 @@ async function runBackfillSkillUsage(
       ...(unreadable > 0 ? { unreadable } : {}),
     };
   }
+  // 2) 일별 집계 재계산: 이전 호출에서 이미 재생한 페이지/배치는 집계만을 위해 다시 읽는다
+  // (agent가 다른 페이지의 세션 행에 있을 수 있어 전체가 필요하다).
+  for (const page of pagesNeedingDaily) pageDeltas.set(page, skillUsageDeltas(await readPage(page)));
   for (const batchId of dailyOnly) {
     const rows = await readRetained(batchId);
-    if (rows !== null) mergeDaily(dailyDeltas, skillUsageDeltas(rows));
+    if (rows !== null) batchDeltas.set(batchId, skillUsageDeltas(rows));
   }
-  // 2) 스냅샷 페이지: 일별 집계/읽음 backfill 표와 사실을 다시 계산한다.
-  const mergedRows: ContentRow[] = [];
-  const mergedReads = new Map<string, SessionSkillRead>();
-  for (let page = 0; page < (begin?.pageCount ?? 0); page++) {
-    progress.stage = "snapshot_page";
-    progress.batchId = undefined;
-    const exported = await exportMigration(env, principal, {
-      deviceId: scope.deviceId, sourceDomain: scope.sourceDomain,
-      generation: scope.generation, snapshotId: begin?.snapshotId ?? "", page,
-    });
-    if (exported.document === null || exported.migration.snapshotHash !== begin?.snapshotHash) {
-      throw new ReportError("source_gap");
-    }
-    // 전체 페이지를 모은 뒤 접는다: 세션 행이 다른 페이지에 있어도 client_name을 찾을 수 있다.
-    const pageRows = liveRows(exported.document.rows);
-    mergedRows.push(...pageRows);
-    const deltas = skillUsageDeltas(pageRows);
-    mergeSessionSkillReads(mergedReads, sessionSkillReadCounts(deltas));
-    mergeDaily(dailyDeltas, deltas);
+  // 호출 사이에 읽은 순서와 무관하게 같은 결과가 되도록 페이지 순서, 보관 배치 목록 순서로 합친다.
+  for (const page of [...pageDeltas.keys()].sort((x, y) => x - y)) mergeDaily(dailyDeltas, pageDeltas.get(page)!);
+  for (const candidate of retained) {
+    const deltas = batchDeltas.get(candidate.batch_id);
+    if (deltas !== undefined) mergeDaily(dailyDeltas, deltas);
   }
   dailyDeltas.skipped += skipped;
   const merged = skillUsageCounts(dailyDeltas);
   // 3) 쓰기는 고정 크기 조각으로 나눈다. 완료 표식은 맨 앞에서 지우고 맨 뒤에서만 쓰므로 중간에
-  // 실패하면 coverage가 pending_backfill로 남고 재실행이 같은 결과를 만든다(삭제 후 삽입, 사실은 upsert).
+  // 실패하면 coverage가 pending_backfill로 남고 재실행이 같은 결과를 만든다(삭제 후 삽입).
   progress.stage = "final_write";
+  progress.batchId = undefined;
   const statements: D1PreparedStatement[] = [
     env.ACTIVITY.prepare(`DELETE FROM skill_usage_backfills
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
     env.ACTIVITY.prepare(`DELETE FROM skill_daily_usage_backfill
-      WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
-    env.ACTIVITY.prepare(`DELETE FROM session_skill_reads_backfill
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=?`).bind(...identity),
   ];
   for (const acc of merged.values()) {
@@ -663,17 +699,6 @@ async function runBackfillSkillUsage(
       VALUES (?,?,?,?,?,?,?,?,?)`)
       .bind(...identity, acc.day, acc.skillUri, acc.agent, acc.reads, acc.exposures));
   }
-  for (const acc of mergedReads.values()) {
-    // 문서(스냅샷 페이지)마다 따로 근거를 찾고 합친다. 문서 밖 근거로 digest를 채우지 않는다.
-    statements.push(env.ACTIVITY.prepare(`INSERT INTO session_skill_reads_backfill
-      (account_id,generation,device_id,source_domain,session_id,skill_id,digest,first_read_ms,reads,digest_source)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`)
-      .bind(...identity, acc.sessionId, acc.skillId, acc.digest, acc.firstReadMs, acc.reads,
-        acc.digestSource));
-  }
-  statements.push(...sessionIndexStatements(env.ACTIVITY,
-    { accountId: principal.accountId, generation: principal.generation, deviceId: scope.deviceId,
-      sourceDomain: scope.sourceDomain, commitId: null }, mergedRows));
   for (let i = 0; i < statements.length; i += BACKFILL_WRITE_CHUNK) {
     await env.ACTIVITY.batch(statements.slice(i, i + BACKFILL_WRITE_CHUNK));
   }

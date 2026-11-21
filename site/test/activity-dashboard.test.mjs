@@ -282,4 +282,15 @@ test("skill-usage backfill proxy validates with its own schema behind the ingest
   assert.equal((await f.request("/api/dashboard/skill-usage/backfill", {
     profile, jobId: crypto.randomUUID(),
   })).status, 400);
+  // maxBatches는 선택 실행 옵션이다: 허용하고 서비스 본문에 그대로 전달한다. 범위 밖 값은 400.
+  const limited = await f.request("/api/dashboard/skill-usage/backfill", {
+    profile, requestId: crypto.randomUUID(), maxBatches: 30,
+  });
+  assert.equal(limited.status, 404); // 모의 서비스 전달(400 invalid_request 회귀가 아님)
+  assert.equal(f.calls.at(-1).input.maxBatches, 30);
+  for (const bad of [0, 1001, 1.5, "30"]) {
+    assert.equal((await f.request("/api/dashboard/skill-usage/backfill", {
+      profile, requestId: crypto.randomUUID(), maxBatches: bad,
+    })).status, 400);
+  }
 });
