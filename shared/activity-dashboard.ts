@@ -55,6 +55,8 @@ export const dashboardSkillUsageSchema = z.strictObject({
 }).readonly();
 export const dashboardSkillUsageBackfillSchema = z.strictObject({
   profile: dashboardSourceSchema, requestId: z.string().uuid(),
+  // 큰 출처를 여러 호출로 나눠 재생하는 실행 옵션(없으면 한 번에 끝까지).
+  maxBatches: z.number().int().min(1).max(1000).optional(),
 }).readonly();
 export const dashboardSkillUsageRowSchema = z.strictObject({
   skillUri: z.string(), agent: z.string().nullable(),
@@ -66,11 +68,20 @@ export const dashboardSkillUsageResultSchema = z.strictObject({
   rows: z.array(dashboardSkillUsageRowSchema).readonly(),
 }).readonly();
 export type DashboardSkillUsageResult = z.infer<typeof dashboardSkillUsageResultSchema>;
-export const dashboardSkillUsageBackfillResultSchema = z.strictObject({
-  schemaVersion: z.literal(1), deviceId: z.string(), sourceDomain: z.string(),
-  snapshotCut: z.number().int(), rows: z.number().int().nonnegative(),
-  skipped: z.number().int().nonnegative(),
-}).readonly();
+export const dashboardSkillUsageBackfillResultSchema = z.union([
+  z.strictObject({
+    schemaVersion: z.literal(1), deviceId: z.string(), sourceDomain: z.string(),
+    snapshotCut: z.number().int(), rows: z.number().int().nonnegative(),
+    skipped: z.number().int().nonnegative(), unreadable: z.number().int().positive().optional(),
+  }),
+  // 아직 재생할 단위가 남은 중간 응답: 완료 표식은 바뀌지 않았다.
+  z.strictObject({
+    schemaVersion: z.literal(1), deviceId: z.string(), sourceDomain: z.string(),
+    snapshotCut: z.number().int(), partial: z.literal(true),
+    replayed: z.number().int().nonnegative(), remaining: z.number().int().positive(),
+    skipped: z.number().int().nonnegative(), unreadable: z.number().int().positive().optional(),
+  }),
+]).readonly();
 export const dashboardReferenceSchema = z.strictObject({
   profile: dashboardSourceSchema, jobId: z.string().uuid(),
 }).readonly();

@@ -726,17 +726,18 @@ test("RECOVERY boundary: bounded replay resumes across calls, writes per batch, 
     { sequence: 2, from: 2, through: 3 })).status, 200);
   await wipeIndex(f);
   const run = async body => { const r = await f.api("/v1/activity/skill-usage/backfill", { ...scopeOf(begin), ...body }); return { status: r.status, body: await r.json() }; };
-  const first = await run({ maxBatches: 1 });
+  const first = await run({ maxBatches: 2 }); // 스냅샷 페이지 1 + 보관 배치 1
   assert.equal(first.status, 200);
   assert.equal(first.body.partial, true);
   assert.equal(first.body.remaining, 1);
-  assert.equal((await f.rows("SELECT * FROM session_index_batches")).length, 1, "one batch committed durably");
+  assert.equal((await f.rows("SELECT * FROM session_index_batches WHERE batch_id NOT LIKE 'snapshot:%'")).length, 1, "one retained batch committed durably");
+  assert.equal((await f.rows("SELECT * FROM session_index_batches WHERE batch_id LIKE 'snapshot:%'")).length, 1, "snapshot page committed durably");
   assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 0, "not complete yet");
   assert.equal((await readUsage(f, begin)).body.coverage, "pending_backfill");
   const second = await run({});
   assert.equal(second.status, 200);
   assert.equal(second.body.partial, undefined);
-  assert.equal((await f.rows("SELECT * FROM session_index_batches")).length, 2);
+  assert.equal((await f.rows("SELECT * FROM session_index_batches")).length, 3);
   assert.equal((await f.rows("SELECT * FROM session_facts")).length, 2);
   assert.deepEqual((await bfReads(f)).map(r => [r.session_id, r.reads]), [["s1", 1], ["s2", 1]]);
   assert.equal((await readUsage(f, begin)).body.coverage, "current");
@@ -783,4 +784,32 @@ test("RECOVERY write chunks: a snapshot larger than one write chunk is written c
   assert.equal(res.status, 200, JSON.stringify(await res.clone().json().catch(() => null)));
   assert.equal((await f.rows("SELECT * FROM session_facts")).length, 270);
   assert.equal((await readUsage(f, begin)).body.coverage, "current");
+});
+
+test("RECOVERY snapshot pages: page-level resume, no double count on rerun, and a newer snapshot replaces the old pages' reads", async t => {
+  const f = await fixture(t);
+  const now = Date.now();
+  const pageRows = i => [
+    row("sessions", `p${i}`, { id: `p${i}`, runtime: "codex", client_name: null, started_at: now - i - 1, ended_at: null }, 0),
+    row("events", `pe${i}`, { id: `pe${i}`, session_id: `p${i}`, kind: "load", ts: now - i, runtime: "codex",
+      skill_uri: PRIV(D1), load_id: null, data_json: "{}" }, 0),
+  ];
+  const begin = await publish(f, [0, 1, 2].map(i => ({ schemaVersion: 2, rows: pageRows(i) })));
+  const run = async body => { const r = await f.api("/v1/activity/skill-usage/backfill", { ...scopeOf(begin), ...body }); return { status: r.status, body: await r.json() }; };
+  const a = await run({ maxBatches: 2 });
+  assert.equal(a.body.partial, true);
+  assert.equal(a.body.remaining, 1);
+  assert.equal((await f.rows("SELECT * FROM skill_usage_backfills")).length, 0);
+  const b = await run({});
+  assert.equal(b.status, 200);
+  assert.equal(b.body.partial, undefined);
+  assert.equal((await f.rows("SELECT * FROM session_facts")).length, 3);
+  assert.deepEqual((await bfReads(f)).map(r => r.reads), [1, 1, 1]);
+  assert.equal((await readUsage(f, begin)).body.coverage, "current");
+  assert.equal((await run({})).status, 200);
+  assert.deepEqual((await bfReads(f)).map(r => r.reads), [1, 1, 1], "rerun must not count pages again");
+  // 다른 스냅샷 페이지 영수증이 남아 있으면 그 읽음 표를 비우고 이번 스냅샷으로 교체한다.
+  await f.rows("UPDATE session_index_batches SET batch_id='snapshot:old-snapshot:0' WHERE batch_id LIKE 'snapshot:%' AND batch_id LIKE '%:0'");
+  assert.equal((await run({})).status, 200);
+  assert.deepEqual((await bfReads(f)).map(r => r.reads), [1, 1, 1], "replaced, not added on top");
 });

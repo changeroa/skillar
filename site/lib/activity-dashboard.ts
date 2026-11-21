@@ -164,9 +164,10 @@ export async function dashboardRequest(
       break;
     }
     case dashboardPaths.skillUsageBackfill: {
-      dashboardSkillUsageBackfillSchema.parse(input);
+      const { maxBatches } = dashboardSkillUsageBackfillSchema.parse(input);
       const backfill = consent.backfill;
       body = {
+        ...(maxBatches === undefined ? {} : { maxBatches }),
         ...profile, generation: principal.generation, consentVersion: saved.version,
         projectId: `device:${profile.deviceId}`, rootId: null,
         range: backfill?.range ?? { fromMs: consent.grantedAtMs, toMs: 8_640_000_000_000_000 },
