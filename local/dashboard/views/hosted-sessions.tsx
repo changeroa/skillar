@@ -72,6 +72,10 @@ installStyles("hosted-sessions", `
 .hs-when{display:flex;flex-direction:column;line-height:1.3}.hs-when small{color:var(--ink-3);font-size:11px}
 .hs-unknown{color:var(--ink-3)}
 .hs-c-narrow{display:none}
+.session-table .cell-hssource{width:150px;max-width:150px}
+.sessions-console[data-peek=true] .session-table .cell-hssource{width:110px;max-width:110px}
+.hs-source select{max-width:min(260px,100%);text-overflow:ellipsis}
+.hs-src{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hs-counts{font-variant-numeric:tabular-nums;white-space:nowrap}
 .hs-skills{display:flex;flex-wrap:wrap;gap:4px}
 .hs-pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:12px;font-size:12px;color:var(--ink-2)}
@@ -91,14 +95,16 @@ installStyles("hosted-sessions", `
 .hs-body-note{font-size:12px;color:var(--ink-2)}
 @media(max-width:1023px){.hs-peek{position:fixed;inset:0;z-index:60;height:100dvh;max-height:100dvh;border:0;background:var(--lf-modal,#fff)}}
 @media(max-width:640px){
+.hs-source{max-width:100%}.hs-source select{max-width:100%}
 .session-table.hs-table,.session-table.hs-table tbody,.session-table.hs-table tr,.session-table.hs-table td{display:block;width:auto!important;height:auto!important;border:0}
 .session-table.hs-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .session-table.hs-table tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;padding:10px 4px;border-bottom:1px solid var(--lf-border)}
 .session-table.hs-table td{padding:0!important;min-width:0}
 .session-table.hs-table td::before{display:none}
 .session-table.hs-table .cell-hsstart{display:none}
-.session-table.hs-table td.cell-hsruntime::before{display:inline;content:"·";margin:0 6px;color:var(--ink-3)}
-.session-table.hs-table .cell-hsactive{order:1}.session-table.hs-table .cell-hsruntime:nth-of-type(4){order:2}.session-table.hs-table .cell-hsruntime:nth-of-type(3){order:3}
+.session-table.hs-table td.cell-hsruntime::before,.session-table.hs-table td.cell-hssource::before{display:inline;content:"·";margin:0 6px;color:var(--ink-3)}
+.session-table.hs-table td.cell-hssource{max-width:42vw!important;display:flex;min-width:0}
+.session-table.hs-table .cell-hsactive{order:1}.session-table.hs-table .cell-hssource{order:2}.session-table.hs-table .cell-hsruntime:nth-of-type(3){order:3}
 .session-table.hs-table .cell-hscounts{order:4;flex:1 0 100%}.session-table.hs-table .cell-hsskills{order:5;flex:1 0 100%;display:flex!important;align-items:center;flex-wrap:wrap;gap:4px}
 .hs-chip{flex:1 0 100%;order:-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px;border:1px solid var(--line, #d0d5dd);border-radius:6px;font-size:13px}.hs-c-wide{display:none}.hs-c-narrow{display:inline;font-size:12px;color:var(--ink-2)}
 .session-table.hs-table tr{padding:8px 4px}
@@ -277,7 +283,7 @@ export function HostedSessionsView({ route, navigate }: ViewProps) {
               <th scope="col" className="cell-hsstart">시작</th>
               <th scope="col" className="cell-hsactive" aria-sort="descending">최근 활동</th>
               <th scope="col" className="cell-hsruntime">실행 환경</th>
-              <th scope="col" className="cell-hsruntime">출처</th>
+              <th scope="col" className="cell-hssource">출처</th>
               <th scope="col" className="cell-hscounts">이벤트 · 읽기 · 검색</th>
               <th scope="col" className="cell-hsskills">읽은 스킬</th>
             </tr></thead>
@@ -288,7 +294,7 @@ export function HostedSessionsView({ route, navigate }: ViewProps) {
               <td className="cell-hsactive" data-label="최근 활동"><a className="rowlink" href={buildHash({ ...route, view: "sessions", peek: peekValue(row), event: undefined })}>
                 <time dateTime={new Date(row.lastEventMs).toISOString()} title={`마지막 이벤트 ${full(row.lastEventMs)}`}>{stamp.format(row.lastEventMs)}</time></a></td>
               <td className="cell-hsruntime" data-label="실행 환경">{row.runtime === null ? <span className="hs-unknown">알 수 없음</span> : runtimeLabel(row.runtime)}</td>
-              <td className="cell-hsruntime" data-label="출처" title={labelOf(row.source)}>{labelOf(row.source)}</td>
+              <td className="cell-hssource" data-label="출처"><span className="hs-src" title={labelOf(row.source)}>{labelOf(row.source)}</span></td>
               <td className="cell-hscounts hs-counts" data-label="이벤트 · 읽기 · 검색"><span className="hs-c-wide">{row.events} · {row.reads} · {row.searches}</span><span className="hs-c-narrow">이벤트 {row.events} · 읽기 {row.reads} · 검색 {row.searches}</span></td>
               <td className="cell-hsskills" data-label="읽은 스킬">{row.skills.length === 0 ? <span className="hs-unknown" title="읽은 스킬 없음" aria-label="읽은 스킬 없음">—</span>
                 : <span className="hs-skills">{[...new Map(row.skills.map(s => [skillKey(s.skillId), s])).values()].map(s => <Tag key={skillKey(s.skillId)} text={hostedSkillLabel(s.skillId, skillNames)} />)}</span>}</td>
