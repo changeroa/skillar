@@ -1,11 +1,12 @@
 import { z } from "zod";
-import type { McpContext } from "../../../shared/mcp-auth.ts";
+import type { McpObservationContext } from "../../../shared/mcp-auth.ts";
 import { contentRowSchema } from "../../../shared/activity-content.ts";
 import type { ContentRow } from "../../../shared/activity-content.ts";
 import type { Candidate } from "../../../shared/facts/types.ts";
 import type { ContentEnv } from "../activity/content-env.ts";
 import { acceptContentBatch } from "../activity/content-service.ts";
 import { commitRuntime } from "../activity/runtime-api.ts";
+import { isOmoMcpClient } from "./observation-identity.ts";
 import {
   initializeMcpSource, mcpIngestPrincipal, mcpRecordingEnv, requireMcpRecording, uploadMcpContent,
 } from "./telemetry-source.ts";
@@ -23,7 +24,7 @@ export type McpReadObservation = {
   readonly bytes: number; readonly manifestDigest: string; readonly traceId?: string;
 };
 
-async function record(env: ContentEnv, context: McpContext, observation: {
+async function record(env: ContentEnv, context: McpObservationContext, observation: {
   readonly kind: "search" | "load" | "read_file"; readonly traceId: string | null;
   readonly skillUri: string | null; readonly data: object; readonly manifestDigest?: string;
 }) {
@@ -41,6 +42,8 @@ async function record(env: ContentEnv, context: McpContext, observation: {
       .bind(principal.accountId, principal.generation, principal.deviceId).first());
   const revision = head.journal_through + 1, sequence = head.sequence + 1;
   const id = crypto.randomUUID(), sessionId = context.principal.connectionId;
+  const { clientName, omoSessionId } = context.observationIdentity ?? {};
+  const eventRuntime = omoSessionId !== undefined || isOmoMcpClient(clientName ?? context.clientName) ? "omo" : "unknown";
   const loadId = observation.kind === "load" ? id : null;
   const row = (table: ContentRow["table"], key: string | number, values: ContentRow["values"]) =>
     contentRowSchema.parse({ table, key: JSON.stringify([key]), values, revision,
@@ -48,15 +51,17 @@ async function record(env: ContentEnv, context: McpContext, observation: {
   const rows = [
     row("recording_clock", 1, { singleton: 1, domain: sessionId, position: revision }),
     row("events", id, { id, ts: now, kind: observation.kind, source: "mcp", session_id: sessionId,
-      attribution_method: "runtime_id", attribution_reason: null, runtime: "unknown",
+      attribution_method: omoSessionId === undefined ? "runtime_id" : "vendor_meta", attribution_reason: null, runtime: eventRuntime,
       trace_id: observation.traceId, load_id: loadId, skill_uri: observation.skillUri,
       text: null, text_length: null, text_digest: null, tool_use_id: null,
       turn_key: null, call_id: null, span_id: null, source_key: id,
       recording_orders_json: JSON.stringify({ [sessionId]: revision }),
-      data_json: JSON.stringify({ ...observation.data, sourceId: sessionId }) }),
+      data_json: JSON.stringify({ ...observation.data, sourceId: sessionId,
+        ...(clientName === undefined ? {} : { clientName }),
+        ...(omoSessionId === undefined ? {} : { conversationId: omoSessionId }) }) }),
   ];
   if (head.sequence === 0) rows.push(row("sessions", sessionId, {
-    id: sessionId, runtime: "unknown", runtime_session_id: sessionId, conversation_id: null,
+    id: sessionId, runtime: eventRuntime, runtime_session_id: sessionId, conversation_id: null,
     client_name: context.clientName, cwd: null, first_prompt: null,
     started_at: now, ended_at: null, end_orders_json: "{}",
   }));
@@ -80,13 +85,13 @@ async function record(env: ContentEnv, context: McpContext, observation: {
   return true;
 }
 
-export function recordMcpSearch(env: ContentEnv, context: McpContext, observation: McpSearchObservation) {
+export function recordMcpSearch(env: ContentEnv, context: McpObservationContext, observation: McpSearchObservation) {
   return record(env, context, { kind: "search", traceId: observation.traceId, skillUri: null,
     data: observation });
 }
 
 /** Handler resolves modern app.skillar/traceId or legacy app.gisool/traceId into traceId. */
-export function recordMcpRead(env: ContentEnv, context: McpContext, observation: McpReadObservation) {
+export function recordMcpRead(env: ContentEnv, context: McpObservationContext, observation: McpReadObservation) {
   return record(env, context, { kind: observation.path === "SKILL.md" ? "load" : "read_file",
     traceId: observation.traceId ?? null, skillUri: observation.skillUri,
     manifestDigest: observation.manifestDigest, data: observation });

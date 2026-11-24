@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { call, modernClient, startDaemon, uriOf, withDaemon } from "./helpers/mcp.mjs";
+import { call, metadata, modernClient, startDaemon, uriOf, wire, withDaemon } from "./helpers/mcp.mjs";
 import { writeFixtureSkill } from "./_helpers.mjs";
 
 test("modern discovery advertises only the Skills extension, resources and search tool", () => withDaemon(async (daemon) => {
@@ -83,6 +83,30 @@ test("client and vendor metadata retain runtime attribution without transport se
   assert.equal(rows[0].runtime, "omo");
   assert.equal(rows[1].runtime, "claude-code");
   assert.equal(rows[1].tool_use_id, "tu9");
+}));
+
+test("omo requests join their exact session, not a different open session or the transport header", () => withDaemon(async daemon => {
+  const first = "01a20c03-8272-7fb9-b1df-3172507a9bbd";
+  const second = "01a20c03-8272-7fb9-b1df-3172507a9bbe";
+  const hookSession = daemon.store.upsertSession({ runtime: "omo", runtimeSessionId: first }, 1000);
+  const otherSession = daemon.store.upsertSession({ runtime: "omo", runtimeSessionId: second }, 1000);
+  const header = { "X-Skillar-Omo-Session-Id": second };
+  const read = (uri, _meta, headers = {}) => wire(daemon.port,
+    { jsonrpc: "2.0", id: 1, method: "resources/read", params: { uri, _meta } }, headers);
+
+  assert.equal((await read(uriOf("pr-review"), metadata("senpi-mcp-client", { sessionId: first }), header)).status, 200);
+  assert.equal((await read(uriOf("pr-review", "guide.md"), metadata("senpi-mcp-client"), header)).status, 200);
+  assert.equal((await read(uriOf("pr-review", "guide.md"),
+    metadata("senpi-mcp-client", { "app.skillar/omoSessionId": first }))).status, 200);
+
+  const rows = daemon.db.prepare(`SELECT e.kind, e.runtime, e.attribution_method, e.session_id, s.conversation_id
+    FROM events e JOIN sessions s ON e.session_id=s.id
+    WHERE e.kind IN ('load','read_file') ORDER BY e.rowid`).all();
+  assert.deepEqual(rows.map(row => Object.values(row)), [
+    ["load", "omo", "vendor_meta", hookSession, first],
+    ["read_file", "omo", "vendor_meta", otherSession, second],
+    ["read_file", "omo", "vendor_meta", hookSession, first],
+  ]);
 }));
 
 test("search supports offset pagination, abstention and actionable input validation", () => withDaemon(async (daemon) => {

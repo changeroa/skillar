@@ -42,6 +42,7 @@ export const metaSchema = z.object({
   }).passthrough(),
   [CLIENT_INFO_KEY]: z.object({ name: z.string(), version: z.string() }).passthrough().optional(),
   [TRACE_KEY]: z.string().max(128).optional(),
+  "app.skillar/omoSessionId": z.uuid().optional(),
   "app.gisool/traceId": z.string().max(128).optional(),
   "io.modelcontextprotocol/logLevel": z.enum(["debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"]).optional(),
   progressToken: idSchema.optional(),

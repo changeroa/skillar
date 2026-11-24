@@ -16,6 +16,7 @@ import type { McpResourceEnv } from "./contracts.ts";
 import type { McpCatalog } from "./catalog-contracts.ts";
 import { mcpSearchSchema } from "./catalog-contracts.ts";
 import { mcpBackend, mcpUri, storageUri } from "./backend.ts";
+import { observationIdentity } from "./observation-identity.ts";
 import { privatePackSearchSchema, privatePackLoadSchema } from "../../../shared/private-packs.ts";
 
 const cache = { ttlMs: 60_000, cacheScope: "private" } as const;
@@ -51,13 +52,17 @@ function skillVersions(catalog: McpCatalog) {
 }
 
 /** Fresh factory per exchange; only the native SDK parses and dispatches JSON-RPC. */
-export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext): McpServer {
+export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext, omoSessionHeader: string | null = null): McpServer {
   const backend = mcpBackend(env, context);
   const server = new McpServer({ name: "skillar", version: "0.2.0" }, {
     instructions,
     // Per-request servers have no shared change-event bus; clients refresh by request.
     capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
   });
+  // The SDK lifts modern reserved metadata out of the handler's custom _meta.
+  const identityFor = (meta: Record<string, unknown> | undefined) => observationIdentity(context, {
+    clientName: server.server.getClientVersion()?.name, meta,
+  }, omoSessionHeader);
   const revision = (catalog: McpCatalog) =>
     `${context.principal.accountId}:${context.principal.generation}:${catalog.revision}`;
   async function entry(value: { readonly uri: string; readonly version: Version }, signal: AbortSignal) {
@@ -106,7 +111,8 @@ export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext)
     const candidates = result.candidates.map(candidate => ({
       ...candidate, uri: mcpUri(candidate.uri), matched: [...candidate.matched],
     }));
-    await backend.observe("search", { ...result, candidates }, ctx.mcpReq.signal);
+    await backend.observe({ kind: "search", observation: { ...result, candidates },
+      identity: identityFor(ctx.mcpReq._meta) }, ctx.mcpReq.signal);
     const body = {
       trace_id: result.traceId,
       candidates: candidates.map(({ uri, name, description, score, rank, invocation, digest }) =>
@@ -166,10 +172,10 @@ export function createPrivateMcpServer(env: McpResourceEnv, context: McpContext)
     const extension = name.includes(".") ? name.slice(name.lastIndexOf(".") + 1).toLowerCase() : "";
     const isText = textExtensions.has(extension) &&
       bytes.length === encoded.length && bytes.every((byte, index) => byte === encoded[index]);
-    await backend.observe("read", {
+    await backend.observe({ kind: "read", observation: {
       uri: uri.href, skillUri: mcpUri(`skillar://private/${skillId}/${digest}/SKILL.md`),
       path, bytes: result.bytes, manifestDigest: digest, ...(traceId === undefined ? {} : { traceId }),
-    }, ctx.mcpReq.signal);
+    }, identity: identityFor(ctx.mcpReq._meta) }, ctx.mcpReq.signal);
     return { contents: [{ uri: uri.href, mimeType: result.mediaType,
       ...(isText ? { text } : { blob: result.body }) }], ...cache };
   });
