@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { ProtocolError, ProtocolErrorCode } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import type { McpContext } from "../../../shared/mcp-auth.ts";
+import type { McpContext, McpObservationContext } from "../../../shared/mcp-auth.ts";
 import {
   parsePrivateSkillUri, privateSkillReadSchema,
 } from "../../../shared/private-skills.ts";
@@ -72,11 +72,15 @@ export function mcpBackend(env: McpResourceEnv, context: McpContext) {
         uri: storageUri(uri),
       }));
     },
-    async observe(kind: "search" | "read", observation: McpSearchObservation | McpReadObservation,
-      signal: AbortSignal) {
+    async observe(input: {
+      readonly identity: McpObservationContext["observationIdentity"];
+    } & ({ readonly kind: "search"; readonly observation: McpSearchObservation } |
+      { readonly kind: "read"; readonly observation: McpReadObservation }), signal: AbortSignal) {
       if (!context.recordActivity) return;
+      const { identity, ...observation } = input;
       z.strictObject({ recorded: z.boolean() }).parse(await call(
-        "/v1/private-mcp/observations", signal, { context, kind, observation },
+        "/v1/private-mcp/observations", signal, { ...observation,
+          context: { ...context, observationIdentity: identity } },
       ));
     },
   };

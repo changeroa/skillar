@@ -40,7 +40,7 @@ export default {
           const context = mcpContextSchema.parse(authorized.props);
           const handler = createMcpHandler(() => {
             const verified = mcpContextSchema.parse(getMcpAuthContext()?.props);
-            return createPrivateMcpServer(current, verified);
+            return createPrivateMcpServer(current, verified, authorizedRequest.headers.get("X-Skillar-Omo-Session-Id"));
           }, {
             route: "/mcp", allowedHostnames: [new URL(current.PUBLIC_ORIGIN).hostname],
             allowedOriginHostnames: [new URL(current.PUBLIC_ORIGIN).hostname],

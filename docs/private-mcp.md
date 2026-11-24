@@ -45,6 +45,14 @@ upload local files. An unchecked connection creates no observation stream.
   true total and `trace_id` contract. Pass the returned trace identifier in
   request `_meta["app.skillar/traceId"]` when reading a resource to correlate a
   consented load with its search.
+- For omo/senpi, send the calling agent session ID as request
+  `params._meta.sessionId` along with MCP client info. Clients that can only
+  attach a session ID via transport can use `X-Skillar-Omo-Session-Id` (UUID);
+  the equivalent explicit request metadata key is `app.skillar/omoSessionId`.
+  These are attribution hints, not authorization. A consented cloud
+  observation exposes the ID as `detail.conversationId` in the existing
+  connection trace; the trace URL and connection ID do not change. Without an
+  explicit ID, the cloud record is connection-level only.
 - `skills/list`, `skills/get`, `resources/list` and `resources/read` expose
   current and explicitly pinned versions. Edits, version changes, unpinning and
   deletion are read live without restarting a daemon or redeploying the server.

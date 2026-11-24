@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from "zod";
+import { accountIdSchema, deviceIdSchema } from "../../../shared/activity-schema.ts";
 import type { ReportEnv } from "../../src/activity/report-types.ts";
 import { activityContentRequest } from "../../src/activity/content-api.ts";
+import { readBatchContent } from "../../src/activity/content-service.ts";
 import { mcpPagesBoundary } from "../../../site/lib/mcp.ts";
 import type { McpPagesEnv } from "../../../site/lib/mcp.ts";
 import { signCookie } from "../../../site/lib/auth.ts";
@@ -14,7 +16,7 @@ export { AccountHub } from "../../src/activity/account-hub.ts";
 
 type Env = ReportEnv & McpPagesEnv & McpResourceEnv & { readonly RESOURCE: Fetcher };
 const envelope = z.strictObject({
-  target: z.enum(["resource", "activity", "pages", "session", "web", "cancel"]), url: z.url(), method: z.string().default("POST"),
+  target: z.enum(["resource", "activity", "pages", "session", "web", "cancel", "observations"]), url: z.url(), method: z.string().default("POST"),
   headers: z.record(z.string(), z.string()).default({}), body: z.string().optional(),
 });
 export default {
@@ -22,6 +24,18 @@ export default {
     if (new URL(request.url).pathname !== "/__test/forward") return activityContentRequest(request, env);
     // Test-only canonical URL bridge; it is not an authentication shortcut in the resource Worker.
     const input = envelope.parse(await request.json());
+    if (input.target === "observations") {
+      const batches = z.array(z.object({ account_id: accountIdSchema, generation: z.number(),
+        device_id: deviceIdSchema, batch_id: z.string() })).parse((await env.ACTIVITY.prepare(
+        `SELECT account_id,generation,device_id,batch_id FROM ingest_receipts
+         WHERE source_domain='mcp' AND state='projected' ORDER BY sequence`,
+      ).all()).results);
+      const documents = await Promise.all(batches.map(row => readBatchContent(env, {
+        kind: "device", accountId: row.account_id, generation: row.generation,
+        shardId: "activity-00", deviceId: row.device_id, scopes: ["activity:read"],
+      }, { sourceDomain: "mcp", batchId: row.batch_id })));
+      return Response.json(documents.flatMap(document => document.rows.filter(row => row.table === "events")));
+    }
     if (input.target === "cancel") {
       const probe = z.strictObject({ token: z.string(), uri: z.string() }).parse(JSON.parse(input.body ?? "{}"));
       const entered = Promise.withResolvers<void>();

@@ -11,10 +11,13 @@ type McpBase = { ref: SessionRef; toolUseId?: string; data: Record<string, unkno
  */
 export function mcpBase(ctx: McpCallContext): McpBase {
   const meta = ctx.meta ?? {};
-  const ref: SessionRef = { runtime: runtimeFromClientName(ctx.clientName) };
+  const omoSessionId = str(meta["app.skillar/omoSessionId"]);
+  const runtime = runtimeFromClientName(ctx.clientName);
+  const ref: SessionRef = { runtime: runtime === "unknown" && omoSessionId ? "omo" : runtime };
   if (ctx.clientName) ref.clientName = ctx.clientName;
-  const runtimeSessionId = str(meta.sessionId) ?? str(meta["ai.opencode/sessionID"]);
-  const conversationId = str(meta.threadId);
+  const explicitSessionId = str(meta.sessionId) ?? (ref.runtime === "omo" ? omoSessionId : undefined);
+  const runtimeSessionId = explicitSessionId ?? str(meta["ai.opencode/sessionID"]);
+  const conversationId = (ref.runtime === "omo" ? explicitSessionId : undefined) ?? str(meta.threadId);
   if (runtimeSessionId) ref.runtimeSessionId = runtimeSessionId;
   if (conversationId) ref.conversationId = conversationId;
   const toolUseId = str(meta["claudecode/toolUseId"]);

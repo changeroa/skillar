@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
+import { z } from "zod";
 import { bearerOf, safeEqual } from "../api/security.js";
 import { createDispatcher } from "./dispatch.js";
 import { initializeResult, initializeSchema, isLegacyRequest, legacyLocalResult, negotiateVersion, toLegacyResult, toModernMessage, type ClientInfo } from "./legacy.js";
@@ -9,6 +10,7 @@ import type { ToolDeps } from "./tools.js";
 export type McpHttpDeps = ToolDeps & { token: string };
 
 const MAX_LEGACY_SESSIONS = 1024;
+const omoSessionIdSchema = z.uuid();
 
 /**
  * Dual-era MCP. Modern POSTs are self-contained. An `initialize` opens a legacy session whose only state is
@@ -31,12 +33,16 @@ export function registerMcp(app: Express, deps: McpHttpDeps): void {
     return scope && id !== undefined ? JSON.stringify([scope, id]) : undefined;
   };
   const trackedDispatch = async (message: Message, params: RequestParams, req: Request) => {
-    const key = requestKey(message, params, req);
-    if (!key) return dispatch(message, params);
+    const omoSession = omoSessionIdSchema.safeParse(req.header("X-Skillar-Omo-Session-Id"));
+    const attributedParams: RequestParams = omoSession.success
+      ? { ...params, _meta: { "app.skillar/omoSessionId": omoSession.data, ...params._meta } }
+      : params;
+    const key = requestKey(message, attributedParams, req);
+    if (!key) return dispatch(message, attributedParams);
     if (running.has(key)) throw new RpcError(-32600, "Request ID is already in flight");
     const controller = new AbortController();
     running.set(key, controller);
-    try { return await dispatch(message, params, controller.signal); }
+    try { return await dispatch(message, attributedParams, controller.signal); }
     finally { running.delete(key); }
   };
 

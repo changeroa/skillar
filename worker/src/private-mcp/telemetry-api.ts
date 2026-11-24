@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from "zod";
-import { mcpContextSchema } from "../../../shared/mcp-auth.ts";
+import { mcpObservationContextSchema } from "../../../shared/mcp-auth.ts";
 import type { PrivateSkillPrincipal } from "../../../shared/private-skills.ts";
 import { privateSkillSearchResultSchema } from "../../../shared/private-skills.ts";
 import type { PrivateSkillsEnv } from "../private-skills/contracts.ts";
@@ -12,13 +12,13 @@ import { recordMcpRead, recordMcpSearch } from "./telemetry.ts";
 export const mcpObservationPath = "/v1/private-mcp/observations";
 const observationSchema = z.discriminatedUnion("kind", [
   z.strictObject({
-    kind: z.literal("search"), context: mcpContextSchema,
+    kind: z.literal("search"), context: mcpObservationContextSchema,
     observation: privateSkillSearchResultSchema.unwrap().extend({
       total: z.number().int().nonnegative().safe(),
     }),
   }),
   z.strictObject({
-    kind: z.literal("read"), context: mcpContextSchema,
+    kind: z.literal("read"), context: mcpObservationContextSchema,
     observation: z.strictObject({
       uri: z.string().max(8192), skillUri: z.string().max(8192), path: z.string().max(512),
       bytes: z.number().int().nonnegative(), manifestDigest: z.string().regex(/^[a-f0-9]{64}$/),

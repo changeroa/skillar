@@ -22,6 +22,12 @@ export const mcpContextSchema = z.strictObject({
   recordActivity: z.boolean(),
   clientName: z.string().min(1).max(200),
 }).readonly();
+export const mcpObservationContextSchema = mcpContextSchema.unwrap().extend({
+  observationIdentity: z.strictObject({
+    clientName: z.string().min(1).max(200).optional(),
+    omoSessionId: z.string().min(1).max(200).optional(),
+  }).readonly().optional(),
+}).readonly();
 export const mcpClaimsSchema = z.strictObject({
   connectionId: mcpConnectionIdSchema,
   accountId: accountIdSchema,
@@ -54,5 +60,6 @@ export const mcpPatResponseSchema = z.strictObject({
 export type McpConnectionId = z.infer<typeof mcpConnectionIdSchema>;
 export type McpPrivatePrincipal = z.infer<typeof mcpPrivatePrincipalSchema>;
 export type McpContext = z.infer<typeof mcpContextSchema>;
+export type McpObservationContext = z.infer<typeof mcpObservationContextSchema>;
 export type McpClaims = z.infer<typeof mcpClaimsSchema>;
 export type McpConnectionSummary = z.infer<typeof mcpConnectionSummarySchema>;
