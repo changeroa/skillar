@@ -1,3 +1,4 @@
+import { hookCommand as formatHookCommand, isHookCommand } from "../runtime.js";
 import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
 import { join, delimiter } from "node:path";
 import { localServerName, REMOTE_ALREADY_REGISTERED, remoteConflictWarning, remoteEntryUrl, SKILLAR_REMOTE_MCP_URL } from "./json-config.js";
@@ -39,12 +40,12 @@ function remoteRegistered(home: string): boolean {
 
 const hasSkillarHook = (groups: unknown): boolean =>
   Array.isArray(groups) && groups.some(g => isObj(g) && Array.isArray(g.hooks) &&
-    g.hooks.some(h => isObj(h) && typeof h.command === "string" && h.command.includes("hook-post.mjs")));
+    g.hooks.some(h => isObj(h) && typeof h.command === "string" && isHookCommand(h.command)));
 
 function template(ctx: PackCtx): Obj {
   const raw = readFileSync(join(ctx.packageRoot, "packs", "claude-code", "settings.template.json"), "utf8")
     .replaceAll("{{PORT}}", String(ctx.port)).replaceAll("{{TOKEN}}", jsonEsc(ctx.token))
-    .replaceAll("{{NODE}}", jsonEsc(ctx.nodePath)).replaceAll("{{HOOK}}", jsonEsc(join(ctx.packageRoot, "packs", "hook-post.mjs")));
+    .replaceAll("{{HOOK_COMMAND}}", jsonEsc(formatHookCommand(ctx.bunPath, ctx.packageRoot, "claude-code")));
   return JSON.parse(raw) as Obj;
 }
 
@@ -97,7 +98,7 @@ export const claudeCodePack: RuntimePack = {
         const existing = (hooks[ev] as unknown[] | undefined) ?? [];
         const kept = existing.flatMap(g => {
           if (!isObj(g) || !Array.isArray(g.hooks)) return [g];
-          const hooks = g.hooks.filter(h => !(isObj(h) && typeof h.command === "string" && h.command.includes("hook-post.mjs")));
+          const hooks = g.hooks.filter(h => !(isObj(h) && typeof h.command === "string" && isHookCommand(h.command)));
           return hooks.length ? [{ ...g, hooks }] : [];
         });
         nextHooks[ev] = [...kept, ...groups];

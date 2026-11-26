@@ -19,7 +19,7 @@ const { openclawPack } = await distImport("packs/openclaw.js");
 const { parseOtlpLogs } = await distImport("ingest/otlp.js");
 const { normalizeHook } = await distImport("ingest/hooks.js");
 const put = (path, text) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, text); };
-const context = sb => ({ home: sb.home, env: sb.env, port: 8799, token: "migration-token", nodePath: process.execPath, packageRoot: packageRoot(), disableRemote: false });
+const context = sb => ({ home: sb.home, env: sb.env, port: 8799, token: "migration-token", bunPath: process.execPath, packageRoot: packageRoot(), disableRemote: false });
 
 test("upgrade reopens legacy token, config, backups and SQLite history without creating a parallel store", () => {
   const sb = makeSandbox();

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 
 const { openDb } = await distImport("store/db.js");
@@ -12,7 +12,7 @@ test("v2 tracing rows survive index migration and reopening", (t) => {
   const dir = makeTempDir();
   t.after(() => removeDir(dir));
   const path = join(dir, "v2.db");
-  const old = new DatabaseSync(path);
+  const old = new Database(path);
   old.exec(readFileSync(new URL("dist/store/schema.sql", PACKAGE_ROOT), "utf8"));
   old.exec(readFileSync(new URL("dist/store/migrations/002_tracing.sql", PACKAGE_ROOT), "utf8"));
   old.exec(`PRAGMA user_version = 2;

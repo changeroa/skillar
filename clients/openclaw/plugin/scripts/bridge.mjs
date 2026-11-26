@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, mkdir } from "node:fs/promises";
@@ -46,10 +46,10 @@ export function bridgePlan(options = {}, env = process.env) {
   const state = resolveStateDir(options, env);
   const authDir = join(state, existsSync(join(state, "gisul", "auth")) ? "gisul" : "skillar", "auth");
   const prefix = options.login
-    ? ["--yes", `--package=${remotePackage}`, "mcp-remote-client"]
-    : ["--yes", remotePackage];
+    ? ["--bun", "--package", remotePackage, "mcp-remote-client"]
+    : ["--bun", remotePackage];
   return {
-    command: "npx",
+    command: "bunx",
     args: [...prefix, target, "--transport", "http-only", "--static-oauth-client-metadata", metadata],
     env: { MCP_REMOTE_CONFIG_DIR: authDir },
   };
@@ -83,7 +83,7 @@ export async function run(options = {}) {
 if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(resolve(process.argv[1])) === self) {
   try {
     const options = parseArgs(process.argv.slice(2));
-    if (options.help) console.log("Usage: node bridge.mjs [--login] [--endpoint HTTPS_MCP_URL] [--state-dir PATH] [--dry-run]\nNo flags: serve MCP over stdio. --login: sign in and list tools. Use the same OpenClaw profile and endpoint for login and runtime.");
+    if (options.help) console.log("Usage: bun bridge.mjs [--login] [--endpoint HTTPS_MCP_URL] [--state-dir PATH] [--dry-run]\nNo flags: serve MCP over stdio. --login: sign in and list tools. Use the same OpenClaw profile and endpoint for login and runtime.");
     else process.exitCode = await run(options);
   } catch (error) { console.error(`Skillar OpenClaw: ${error.message}`); process.exitCode = 1; }
 }

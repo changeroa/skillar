@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { bearer, http, startTestServer } from "./helpers/api.mjs";
 
@@ -72,9 +72,9 @@ test("detail and list compute each registered execution scope only once per requ
   const id = f.start(1000);
   const s = f.session("single-scope", 1001);
   f.activity(s, 1010, "alpha", 0.02, "turn");
-  const prepare = DatabaseSync.prototype.prepare;
+  const prepare = Database.prototype.prepare;
   let scopeReads = 0;
-  DatabaseSync.prototype.prepare = function (sql) {
+  Database.prototype.prepare = function (sql) {
     const stmt = prepare.call(this, sql);
     if (sql.startsWith("SELECT start_event_ids_json")) {
       const get = stmt.get.bind(stmt);
@@ -95,7 +95,7 @@ test("detail and list compute each registered execution scope only once per requ
     assert.equal((await f.get(id)).usage.skills[0].costUsd, 0.05);
     assert.equal(scopeReads, 1);
   } finally {
-    DatabaseSync.prototype.prepare = prepare;
+    Database.prototype.prepare = prepare;
   }
 });
 

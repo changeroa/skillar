@@ -191,7 +191,7 @@ export function compareTableMatrix({ cases, references, colors }) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [input, output] = process.argv.slice(2);
-  if (!input || !output) throw Error("Usage: node validate-table-parity.mjs input.json output.json");
+  if (!input || !output) throw Error("Usage: bun validate-table-parity.mjs input.json output.json");
   const report = compareTableMatrix(JSON.parse(await readFile(input, "utf8")));
   await writeFile(output, JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ passed: report.passed, total: report.total,

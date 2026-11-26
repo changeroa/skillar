@@ -30,6 +30,9 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.4.5"
       - name: Restore private deployment configuration
         env:
           SKILLAR_PRODUCTION_CONFIGS: ${{ secrets.SKILLAR_PRODUCTION_CONFIGS }}
@@ -48,10 +51,10 @@ jobs:
             'worker/wrangler.mcp.production.jsonc',
           ]) writeFileSync(path, configs[path], { mode: 0o600 });
           JS
-      - run: npm ci && npm run build
+      - run: bun install --frozen-lockfile && bun run build
         working-directory: shared
       - if: inputs.target == 'pages'
-        run: npm ci
+        run: bun install --frozen-lockfile
         working-directory: local
       # Worker tests and bundles import site/lib (zod etc.), so every target
       # needs site dependencies, not only Pages.
@@ -60,13 +63,13 @@ jobs:
       # The theme build resolves the Astryx CLI from site node_modules, so it
       # must run after site npm ci (local node_modules has no CLI package).
       - if: inputs.target == 'pages'
-        run: node scripts/build-theme.mjs
+        run: bun scripts/build-theme.mjs
       - if: inputs.target == 'pages'
         run: npm test && npm run build
         working-directory: site
       # Worker tests also import server/ (MCP SDK), matching scripts/verify.mjs.
       - if: inputs.target != 'pages'
-        run: npm ci && npm run build
+        run: bun install --frozen-lockfile && bun run build
         working-directory: server
       - if: inputs.target != 'pages'
         run: npm ci && npm run typecheck && npm test

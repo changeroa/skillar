@@ -5,29 +5,29 @@ import { test } from "node:test";
 import { parse } from "yaml";
 import { verify } from "../../scripts/verify.mjs";
 
-const node = process.execPath;
+const bun = process.execPath;
 const expectedChecks = [
-  ["shared", "npm", ["ci"]],
-  ["shared", "npm", ["run", "build"]],
-  ["shared", "npm", ["test"]],
-  ["server", "npm", ["ci"]],
+  ["shared", "bun", ["install", "--frozen-lockfile"]],
+  ["shared", "bun", ["run", "build"]],
+  ["shared", "bun", ["run", "test"]],
+  ["server", "bun", ["install", "--frozen-lockfile"]],
   ["worker", "npm", ["ci"]],
-  ["local", "npm", ["ci"]],
+  ["local", "bun", ["install", "--frozen-lockfile"]],
   ["site", "npm", ["ci"]],
-  [".", node, ["scripts/build-theme.mjs"]],
-  ["server", "npm", ["run", "build"]],
-  ["server", "npm", ["test"]],
-  [".", node, ["server/bench/search.mjs", "--check"]],
-  ["server", "npm", ["run", "build:codex-plugin"]],
+  [".", bun, ["scripts/build-theme.mjs"]],
+  ["server", "bun", ["run", "build"]],
+  ["server", "bun", ["run", "test"]],
+  [".", bun, ["server/bench/search.mjs", "--check"]],
+  ["server", "bun", ["run", "build:codex-plugin"]],
   ["worker", "npm", ["run", "typecheck"]],
   ["worker", "npm", ["test"]],
   ["site", "npm", ["test"]],
   ["site", "npm", ["run", "build"]],
-  [".", node, ["scripts/check-team-plugin.mjs"]],
-  ["local", "npm", ["run", "build"]],
-  ["local", "npm", ["run", "typecheck"]],
-  ["local", "npm", ["test"]],
-  [".", node, ["local/bench/search.mjs", "--check"]],
+  [".", bun, ["scripts/check-team-plugin.mjs"]],
+  ["local", "bun", ["run", "build"]],
+  ["local", "bun", ["run", "typecheck"]],
+  ["local", "bun", ["run", "test"]],
+  [".", bun, ["local/bench/search.mjs", "--check"]],
   ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.team.jsonc", "--dry-run"]],
   ["worker", "npx", ["--no-install", "wrangler", "versions", "upload", "--dry-run"]],
   ["worker", "npx", ["--no-install", "wrangler", "deploy", "--config", "wrangler.oauth.jsonc", "--dry-run"]],
@@ -60,7 +60,7 @@ test("shared verifier stops at the first failed check", () => {
       calls += 1;
       return { status: calls === 2 ? 9 : 0 };
     },
-  }), /npm run build failed \(9\)/);
+  }), /bun run build failed \(9\)/);
   assert.equal(calls, 2);
 });
 
@@ -79,11 +79,12 @@ test("runtime workflow invokes the shared verifier for main and dev source chang
   assert.deepEqual(workflow.on.push.branches, ["main", "dev", "feat/dev-tools-mvp"]);
   for (const trigger of [workflow.on.push, workflow.on.pull_request]) assert.ok(trigger.paths.includes("scripts/**"));
   assert.equal(workflow.permissions.contents, "read");
-  const [checkout, setupNode, verifyStep] = workflow.jobs.runtime.steps;
+  const [checkout, setupNode, setupBun, verifyStep] = workflow.jobs.runtime.steps;
   assert.equal(checkout.uses, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1");
   assert.equal(setupNode.uses, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020");
   assert.equal(setupNode.with.cache, "npm");
-  assert.equal(setupNode.with["cache-dependency-path"], "shared/package-lock.json\nserver/package-lock.json\nworker/package-lock.json\nlocal/package-lock.json\nsite/package-lock.json\n");
-  assert.equal(verifyStep.run, "node scripts/verify.mjs");
-  assert.equal(workflow.jobs.runtime.steps.length, 3);
+  assert.equal(setupNode.with["cache-dependency-path"], "worker/package-lock.json\nsite/package-lock.json\n");
+  assert.equal(setupBun.uses, "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6");
+  assert.equal(verifyStep.run, "bun scripts/verify.mjs");
+  assert.equal(workflow.jobs.runtime.steps.length, 4);
 });

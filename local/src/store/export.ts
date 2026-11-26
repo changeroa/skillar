@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { DEFAULT_ROOTS, expandHome } from "../config.js";
 import { parseJson, readAliasesOverrides, storeError, writeAliasesOverrides, type StoreCtx } from "./writes.js";
 import type { Store } from "../types.js";
@@ -173,7 +173,7 @@ export function createPortable(ctx: StoreCtx): Portable {
         try {
           const snapshot = join(temporary, HISTORY_FILE);
           db.prepare("VACUUM INTO ?").run(resolve(snapshot));
-          const portable = new DatabaseSync(snapshot);
+          const portable = new Database(snapshot);
           try {
             // Source-local replay results must not enter the portable artifact,
             // including free pages. Keep the live source receipts intact.

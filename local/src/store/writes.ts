@@ -240,7 +240,7 @@ export function createWrites(ctx: StoreCtx): Writes {
     },
 
     hasSourceKey(sourceKey: string): boolean {
-      return selectSourceKey.get(sourceKey) !== undefined;
+      return selectSourceKey.get(sourceKey) !== null;
     },
 
     openSessions(runtime: RuntimeId, since: number) {

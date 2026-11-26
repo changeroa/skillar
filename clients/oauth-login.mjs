@@ -5,17 +5,17 @@ import { endpoint, gajaeTransport, omoTransport, parseArgs, remotePackage, resol
 export async function login(runtime, argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
-    console.log(`Usage: node clients/${runtime}/login.mjs [--agent-dir PATH] [--dry-run]\nConnects Skillar through browser OAuth and lists the available MCP tools. Credentials stay in this profile's skillar/auth directory.`);
+    console.log(`Usage: bun clients/${runtime}/login.mjs [--agent-dir PATH] [--dry-run]\nConnects Skillar through browser OAuth and lists the available MCP tools. Credentials stay in this profile's skillar/auth directory.`);
     return;
   }
   const agentDir = resolveAgentDir(runtime, options);
   const transport = runtime === "oh-my-openagent" ? omoTransport(agentDir) : gajaeTransport(agentDir);
   const metadata = transport.args[transport.args.indexOf("--static-oauth-client-metadata") + 1];
-  const args = ["--yes", `--package=${remotePackage}`, "mcp-remote-client", endpoint(), "--transport", "http-only", "--static-oauth-client-metadata", metadata];
-  if (options.dryRun) console.log(JSON.stringify({ command: ["npx", ...args], env: transport.env }, null, 2));
+  const args = ["--bun", "--package", remotePackage, "mcp-remote-client", endpoint(), "--transport", "http-only", "--static-oauth-client-metadata", metadata];
+  if (options.dryRun) console.log(JSON.stringify({ command: ["bunx", ...args], env: transport.env }, null, 2));
   else {
     await mkdir(transport.env.MCP_REMOTE_CONFIG_DIR, { recursive: true, mode: 0o700 });
-    const result = spawnSync("npx", args, { env: { ...process.env, ...transport.env }, stdio: "inherit", timeout: 600000 });
+    const result = spawnSync("bunx", args, { env: { ...process.env, ...transport.env }, stdio: "inherit", timeout: 600000 });
     if (result.error || result.status !== 0) throw new Error("Skillar sign-in/read check did not finish successfully; retry login before starting the runtime.");
   }
 }

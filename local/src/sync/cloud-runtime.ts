@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { MessagePort } from "node:worker_threads";
-import type { DatabaseSync } from "node:sqlite";
+import type { Database } from "bun:sqlite";
 import { z } from "zod";
 import { activeRequests } from "../request-status.js";
 import { openDb } from "../store/db.js";
@@ -28,7 +28,7 @@ export type RuntimeCapture = {
 };
 export type CaptureRuntime = () => RuntimeCapture;
 /** Called only by the daemon's main-thread RPC handler, never by the sync worker. */
-export function captureDaemonRuntime(db: DatabaseSync): RuntimeCapture {
+export function captureDaemonRuntime(db: Database): RuntimeCapture {
   const head = journalHead(db);
   return {
     sourceDomain: head.sourceDomain, sourceCut: head.cut,

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import type { DatabaseSync } from "node:sqlite";
+import type { Database } from "bun:sqlite";
 import type { Store } from "../types.js";
 import { workflowSpecSchema } from "../workflow/spec.js";
 import { CloudSyncError } from "./cloud-blobs.js";
@@ -72,13 +72,13 @@ function execute(store: Store, operation: SourceOperation): Record<string, unkno
  * commit together. An ACK lost after commit replays this receipt, not the write.
  */
 export function applySourceCommand(
-  db: DatabaseSync, store: Store, connection: CloudConnection, input: unknown,
+  db: Database, store: Store, connection: CloudConnection, input: unknown,
   now = Date.now(),
 ): CommandResult {
   const command = sourceCommandSchema.parse(input);
   if (command.accountId !== connection.accountId || command.generation !== connection.generation ||
       command.deviceId !== connection.deviceId) throw new CloudSyncError("command_identity_mismatch");
-  const binding = db.prepare("SELECT value FROM meta WHERE key='cloud.binding'").get();
+  const binding = db.prepare<{ value: unknown }, []>("SELECT value FROM meta WHERE key='cloud.binding'").get();
   if (binding?.["value"] !== connection.instanceId) throw new CloudSyncError("command_binding_mismatch");
   const hash = createHash("sha256").update(canonicalCommandPayload({
     profile: { deviceId: command.deviceId, sourceDomain: command.sourceDomain },
@@ -93,7 +93,7 @@ export function applySourceCommand(
     if (head.source_domain !== command.sourceDomain) throw new CloudSyncError("command_source_mismatch");
     const previous = db.prepare(`SELECT payload_hash,result_json FROM connector_command_receipts
       WHERE account_id=? AND generation=? AND device_id=? AND source_domain=? AND command_id=?`).get(...identity);
-    if (previous !== undefined) {
+    if (previous !== null) {
       const saved = receiptSchema.parse(previous);
       if (saved.payload_hash !== hash) throw new CloudSyncError("command_receipt_conflict");
       const result = commandResultSchema.parse(JSON.parse(saved.result_json));

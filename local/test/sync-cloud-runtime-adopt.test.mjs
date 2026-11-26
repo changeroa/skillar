@@ -60,7 +60,6 @@ function serverStub(self) {
 
 async function fixture(t, conn) {
   const home = makeTempDir();
-  t.after(() => removeDir(home));
   const source = join(home, "activity.sqlite");
   const db = openDb(source);
   addSession(db);
@@ -122,7 +121,7 @@ test("re-approval resumes the device+source runtime epoch instead of restarting 
   // and its spool rows survive untouched (no discard).
   const check = new CloudBlobs(f.spoolPath);
   assert.equal(check.acquire(), true);
-  t.after(() => check.close());
+  t.after(() => { check.close(); removeDir(f.home); });
   assert.equal(check.cursor(oldStream).ack_sequence, 2);
   assert.equal(check.runtimeStreamFor(DEVICE, f.head.sourceDomain), oldStream);
   assert.notEqual(check.cursor(orphanStream), null);
@@ -143,7 +142,7 @@ test("without a local epoch the sequence-1 restart is rejected as batch_conflict
   assert.equal(status.code, "batch_conflict");
   const spool = new CloudBlobs(f.spoolPath);
   assert.equal(spool.acquire(), true);
-  t.after(() => spool.close());
+  t.after(() => { spool.close(); removeDir(f.home); });
   const stream = runtimeStream(conn.instanceId, f.head.sourceDomain);
   assert.notEqual(spool.pending(stream), null); // exact pending batch preserved
   assert.equal(spool.cursor(stream).ack_sequence, 0);
@@ -151,10 +150,9 @@ test("without a local epoch the sequence-1 restart is rejected as batch_conflict
 
 test("runtimeStreamFor picks the furthest acked epoch and never a foreign device or source", async t => {
   const home = makeTempDir();
-  t.after(() => removeDir(home));
   const blobs = new CloudBlobs(join(home, "cloud", "spool.sqlite"));
   assert.equal(blobs.acquire(), true);
-  t.after(() => blobs.close());
+  t.after(() => { blobs.close(); removeDir(home); });
   const domain = randomUUID();
   const rt1 = runtimeStream(randomUUID(), domain);
   const rt2 = runtimeStream(randomUUID(), domain);

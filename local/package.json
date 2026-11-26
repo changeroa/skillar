@@ -11,7 +11,10 @@
   },
   "homepage": "https://github.com/changeroa/skillar/tree/main/local#readme",
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/dashboard",
+    "dist/store/**/*.sql",
+    "dist/store/task-types.json",
     "packs",
     "docs",
     "src/store/schema.sql",
@@ -26,15 +29,16 @@
     "gisool": "dist/cli/main.js"
   },
   "engines": {
-    "node": ">=24.15"
+    "bun": ">=1.4.5"
   },
   "scripts": {
-    "prebuild": "node dashboard/design/skillar-theme/build.mjs",
-    "dev:dashboard": "node dev-dashboard.mjs",
-    "build": "tsc -p tsconfig.json && node build-cloud.mjs && node build-dashboard.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p dashboard/tsconfig.json",
-    "test": "node --test \"test/**/*.test.mjs\" && node --test test/sync-performance.mjs",
-    "start": "node dist/cli/main.js serve"
+    "prebuild": "bun dashboard/design/skillar-theme/build.mjs",
+    "dev:dashboard": "bun dev-dashboard.mjs",
+    "build": "bun --bun tsc -p tsconfig.json && bun build-cloud.mjs && bun build-dashboard.mjs",
+    "build:sidecars": "bun build-sidecars.mjs",
+    "typecheck": "bun --bun tsc -p tsconfig.json --noEmit && bun --bun tsc -p dashboard/tsconfig.json",
+    "test": "bun test --isolate --parallel=2 --timeout 90000 ./test && bun test ./test/sync-performance.mjs",
+    "start": "bun dist/cli/main.js serve"
   },
   "dependencies": {
     "express": "^5.2.1",
@@ -45,6 +49,7 @@
     "@astryxdesign/core": "^0.7.16",
     "@astryxdesign/theme-neutral": "^0.7.16",
     "@stylexjs/stylex": "^0.19.2",
+    "@types/bun": "1.4.5",
     "@types/d3-sankey": "^0.12.4",
     "@types/express": "^5.0.5",
     "@types/node": "^24.3.0",

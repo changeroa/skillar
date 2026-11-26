@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 
 const { openDb } = await distImport("store/db.js");
@@ -13,7 +13,7 @@ for (const version of [3, 4, 5]) test(`v${version} execution boundaries migrate 
   const dir = makeTempDir();
   t.after(() => removeDir(dir));
   const path = join(dir, "legacy.db");
-  const old = new DatabaseSync(path);
+  const old = new Database(path);
   for (const file of ["schema.sql", "migrations/002_tracing.sql", "migrations/003_tracing_indexes.sql"]) {
     old.exec(readFileSync(new URL(`dist/store/${file}`, PACKAGE_ROOT), "utf8"));
   }

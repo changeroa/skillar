@@ -11,7 +11,7 @@ import { focusPaint } from "./table-keyboard.mjs";
 
 const [referencesPath, outputPath] = process.argv.slice(2);
 if (!referencesPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
-  throw Error("Usage: OMOWRIGHT_HELPER=... node scripts/uxb/demo-compare.mjs actual-demo-records.json output");
+  throw Error("Usage: OMOWRIGHT_HELPER=... bun scripts/uxb/demo-compare.mjs actual-demo-records.json output");
 const controlNames = ["Button", "IconButton", "Badge", "StatusBadge", "Tag", "Input",
   "SearchInput", "Select", "Checkbox", "Link", "KeyboardShortcut", "Skeleton", "CopyButton"];
 const records = z.array(z.object({

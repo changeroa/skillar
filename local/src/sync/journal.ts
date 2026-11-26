@@ -8,7 +8,7 @@ const headSchema = z.object({ cut: cutSchema, source_domain: z.string() });
 
 /** Only call outside a source transaction: a cut must never split recursive triggers. */
 export function journalHead(db: Db): { readonly cut: number; readonly sourceDomain: string } {
-  if (db.isTransaction) throw new SyncError("transaction_active");
+  if (db.inTransaction) throw new SyncError("transaction_active");
   const head = headSchema.parse(db.prepare(`SELECT source_domain,
     COALESCE((SELECT MAX(seq) FROM sync_journal), 0) AS cut FROM sync_identity`).get());
   return { cut: head.cut, sourceDomain: head.source_domain };

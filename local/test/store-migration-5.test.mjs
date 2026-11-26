@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import test from "node:test";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 
@@ -20,7 +20,7 @@ for (const version of [1, 2, 3, 4]) test(`v${version} history imports into v8 wi
   writeFileSync(join(out, "skillar-export.json"), JSON.stringify({
     version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {},
   }));
-  const old = new DatabaseSync(join(out, "history.db"));
+  const old = new Database(join(out, "history.db"));
   for (const file of migrations.slice(0, version)) old.exec(readFileSync(new URL(`dist/store/${file}`, PACKAGE_ROOT), "utf8"));
   old.exec(`PRAGMA user_version = ${version};
     INSERT INTO sessions (id,runtime,started_at) VALUES ('a','codex',100), ('b','codex',100);
@@ -43,7 +43,7 @@ for (const version of [1, 2, 3, 4]) test(`v${version} history imports into v8 wi
   round.importFrom(join(dir, "v5"), { merge: true });
   // Then both migration contracts remain usable, with no invented historical boundary evidence.
   assert.equal(roundDb.prepare("PRAGMA user_version").get().user_version, 8);
-  assert.deepEqual(round.reconcileLoads({ sessionIds: ["a"], readOnly: true }), { count: 1, uris: [URI] });
+  assert.deepEqual(round.reconcileLoads({ sessionIds: ["a"], readonly: true }), { count: 1, uris: [URI] });
   round.reconcileLoads({ eventId: "resolved" });
   const resolved = roundDb.prepare("SELECT session_id, data_json, text FROM events WHERE id='resolved'").get();
   assert.equal(resolved.session_id, "a");

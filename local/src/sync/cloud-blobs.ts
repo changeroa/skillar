@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from "node:crypto";
 import { chmodSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { z } from "zod";
 import { CLOUD_SCHEMA } from "./cloud-schema.js";
 import { acknowledgeBatch, pendingBatch } from "./outbox.js";
@@ -18,13 +18,13 @@ const leaseSchema = z.object({ owner: z.string(), epoch: z.number().int(), until
 
 /** Separate durable blob DB keeps large serialization/fsync out of source commits. */
 export class CloudBlobs {
-  readonly #db: DatabaseSync;
+  readonly #db: Database;
   readonly #owner = randomUUID();
   #epoch: number | null = null;
   constructor(path: string, readonly maxBytes = 64 * 1024 * 1024) {
     z.number().int().positive().parse(maxBytes);
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    this.#db = new DatabaseSync(path);
+    this.#db = new Database(path, { strict: true });
     chmodSync(path, 0o600);
     this.#db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
       PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON`);
@@ -36,7 +36,7 @@ export class CloudBlobs {
         PRAGMA user_version=1;
         COMMIT`);
     } else if (version !== 1) {
-      this.#db.close();
+      this.#db.close(true);
       throw new CloudSyncError("unsupported_spool_version");
     }
   }
@@ -46,7 +46,7 @@ export class CloudBlobs {
       epoch=CASE WHEN owner=? THEN epoch ELSE epoch+1 END,owner=?,until_ms=?
       WHERE id=1 AND (owner=? OR until_ms<=?) RETURNING owner,epoch,until_ms`)
       .get(this.#owner, this.#owner, now + ttlMs, this.#owner, now);
-    if (row === undefined) return false;
+    if (row === null) return false;
     this.#epoch = leaseSchema.parse(row).epoch;
     return true;
   }
@@ -84,7 +84,7 @@ export class CloudBlobs {
   put(bytes: Uint8Array): { readonly hash: string; readonly bytes: number } {
     return this.#transaction(() => {
       const hash = createHash("sha256").update(bytes).digest("hex");
-      if (this.#db.prepare("SELECT 1 FROM blobs WHERE hash=?").get(hash) !== undefined) {
+      if (this.#db.prepare("SELECT 1 FROM blobs WHERE hash=?").get(hash) !== null) {
         return { hash, bytes: bytes.byteLength };
       }
       const used = z.object({ bytes: z.number() }).parse(
@@ -98,7 +98,7 @@ export class CloudBlobs {
   get(hash: string): Uint8Array {
     digest.parse(hash);
     const row = this.#db.prepare("SELECT bytes,nbytes FROM blobs WHERE hash=?").get(hash);
-    if (row === undefined) throw new CloudSyncError("spool_blob_missing");
+    if (row === null) throw new CloudSyncError("spool_blob_missing");
     const saved = z.object({
       bytes: z.instanceof(Uint8Array), nbytes: z.number().int().nonnegative(),
     }).parse(row);
@@ -143,7 +143,7 @@ export class CloudBlobs {
   pendingPrefix(prefix: string) {
     const row = this.#db.prepare(`SELECT stream_id FROM sync_outbox
       WHERE substr(stream_id,1,length(?))=? ORDER BY rowid LIMIT 1`).get(prefix, prefix);
-    if (row === undefined) return null;
+    if (row === null) return null;
     const { stream_id: streamId } = z.object({ stream_id: z.string() }).parse(row);
     const batch = pendingBatch(this.#db, streamId);
     if (batch === null) throw new CloudSyncError("spool_sequence_gap");
@@ -156,20 +156,20 @@ export class CloudBlobs {
     const row = this.#db.prepare(`SELECT stream_id FROM sync_streams
       WHERE device_id=? AND source_domain=? AND stream_id GLOB 'cloud-live:*'
       ORDER BY ack_sequence DESC, rowid DESC LIMIT 1`).get(deviceId, sourceDomain);
-    return row === undefined ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
+    return row === null ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
   }
   runtimeStreamFor(deviceId: string, sourceDomain: string): string | null {
     const row = this.#db.prepare(`SELECT stream_id FROM sync_streams
       WHERE device_id=? AND source_domain=? AND stream_id GLOB 'cloud-runtime:*'
       ORDER BY ack_sequence DESC, rowid DESC LIMIT 1`).get(deviceId, sourceDomain);
-    return row === undefined ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
+    return row === null ? null : z.object({ stream_id: z.string() }).parse(row).stream_id;
   }
   pendingMigration(deviceId: string, sourceDomain: string) {
     const row = this.#db.prepare(`SELECT o.stream_id FROM sync_outbox o
       JOIN sync_streams s ON s.stream_id=o.stream_id
       WHERE s.device_id=? AND s.source_domain=? AND o.stream_id GLOB 'cloud-migration:*'
       ORDER BY o.rowid LIMIT 1`).get(deviceId, sourceDomain);
-    if (row === undefined) return null;
+    if (row === null) return null;
     const { stream_id: streamId } = z.object({ stream_id: z.string() }).parse(row);
     const batch = pendingBatch(this.#db, streamId);
     if (batch === null) throw new CloudSyncError("spool_sequence_gap");
@@ -179,7 +179,7 @@ export class CloudBlobs {
     return this.#db.prepare(`SELECT 1 FROM sync_streams
       WHERE source_domain=? AND stream_id GLOB 'cloud-migration:*'
         AND substr(stream_id, 0 - length(?)) = ? AND ack_sequence > 0`)
-      .get(sourceDomain, snapshotId, snapshotId) !== undefined;
+      .get(sourceDomain, snapshotId, snapshotId) !== null;
   }
   /** A staged batch that was never acked never left this device; dropping it is
    * local-only cleanup of a stale spool entry, never a server change. */
@@ -196,12 +196,12 @@ export class CloudBlobs {
   }
   cursor(streamId: string) {
     const row = this.#db.prepare("SELECT ack_sequence,ack_cut FROM sync_streams WHERE stream_id=?").get(streamId);
-    return row === undefined ? null : z.object({
+    return row === null ? null : z.object({
       ack_sequence: z.number().int().nonnegative(), ack_cut: z.number().int().nonnegative(),
     }).parse(row);
   }
   close(): void {
     this.release();
-    this.#db.close();
+    this.#db.close(true);
   }
 }

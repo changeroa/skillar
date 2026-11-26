@@ -154,7 +154,7 @@ of a failed or cancelled load. No database migration rewrites historical events.
 
 ## Testing
 
-`npm --prefix local test` runs the unit tests and `local/test/e2e/daemon.test.mjs`, which spawns `skillar serve` in
+`bun run --cwd local test` runs the unit tests and `local/test/e2e/daemon.test.mjs`, which spawns `skillar serve` in
 a throwaway HOME, drives MCP, OTLP, and hook ingest end to end, restarts the daemon, checks the `metadata` capture
 level and the 401 path, and asserts that the real runtime configs in the user's home are byte-identical before and
 after. CI runs the same commands in `.github/workflows/runtime.yml`.

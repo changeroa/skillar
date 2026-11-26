@@ -1,6 +1,6 @@
 # Read-only production canary
 
-Run `node scripts/production-canary.mjs` with Node.js 24. It needs no package
+Run `bun scripts/production-canary.mjs` with Bun 1.4.5+. It needs no package
 installation, Cloudflare credentials, publisher token or deployment step.
 The command uses the runtime's inventory parser and the modern MCP protocol.
 

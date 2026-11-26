@@ -5,7 +5,7 @@ import { applyViewport } from "./viewport.mjs";
 import { measureWidgetFocus, ownerControlHeight,focusWidgetControl } from "./widget-visual-guards.mjs";
 import { assertWidgetStates, conditionalParts } from "./widget-states.mjs";
 const output = process.argv[2];
-if (!output || !process.env.OMOWRIGHT_HELPER) throw Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs node scripts/uxb/widgets-qa.mjs evidence-directory");
+if (!output || !process.env.OMOWRIGHT_HELPER) throw Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs bun scripts/uxb/widgets-qa.mjs evidence-directory");
 const { loadOmowright } = await import(process.env.OMOWRIGHT_HELPER);
 await mkdir(`${output}/matrix`, { recursive: true });
 await mkdir(`${output}/parity`, { recursive: true });

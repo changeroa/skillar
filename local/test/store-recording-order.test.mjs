@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { readFileSync } from "node:fs";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 
@@ -158,7 +158,7 @@ test("v5 incomplete cuts stay uncertain while old rows precede new post-upgrade 
   const dir = makeTempDir();
   t.after(() => removeDir(dir));
   const path = join(dir, "old.db");
-  const old = new DatabaseSync(path);
+  const old = new Database(path);
   for (const file of ["schema.sql", "migrations/002_tracing.sql", "migrations/003_tracing_indexes.sql",
     "migrations/004_load_reconciliation.sql", "migrations/005_execution_boundaries.sql"]) {
     old.exec(readFileSync(new URL(`dist/store/${file}`, PACKAGE_ROOT), "utf8"));
@@ -216,5 +216,5 @@ test("clock exhaustion aborts INSERT OR IGNORE instead of stamping a reused orde
   // When the ordinary replay-safe ingestion statement needs another order.
   assert.throws(() => f.add("overflow"), /recording clock exhausted/);
   // Then its entire insert is rolled back, not silently stamped with the old counter.
-  assert.equal(f.db.prepare("SELECT id FROM events WHERE id = 'overflow'").get(), undefined);
+  assert.equal(f.db.prepare("SELECT id FROM events WHERE id = 'overflow'").get(), null);
 });

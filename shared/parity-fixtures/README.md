@@ -3,10 +3,10 @@
 Run from the repository root, after the local package has been built:
 
 ```sh
-node --test local/test/parity*.test.mjs
+bun test local/test/parity*.test.mjs
 ```
 
-The harness imports `local/dist` and uses `node:sqlite`, not a mock or a second
+The harness imports `local/dist` and uses `bun:sqlite`, not a mock or a second
 implementation of Store. It never builds or installs dependencies. Missing built
 modules or FTS5/trigram support fail the run rather than skip a parity assertion.
 

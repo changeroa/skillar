@@ -64,12 +64,11 @@ test("verified baseline initializes a new cursor without overwriting pending byt
 
 test("separate durable blobs enforce quota and fencing without source write locks", t => {
   const dir = makeTempDir();
-  t.after(() => removeDir(dir));
   let now = 100;
   t.mock.method(Date, "now", () => now);
   const first = new CloudBlobs(join(dir, "cloud.sqlite"), 4);
   const second = new CloudBlobs(join(dir, "cloud.sqlite"), 4);
-  t.after(() => { first.close(); second.close(); });
+  t.after(() => { first.close(); second.close(); removeDir(dir); });
   assert.equal(first.acquire(now, 10), true);
   assert.equal(second.acquire(now, 10), false);
   const blob = first.put(new Uint8Array([0, 1, 2, 3]));
@@ -85,9 +84,8 @@ test("separate durable blobs enforce quota and fencing without source write lock
 
 test("queued blob references are atomic and prevent GC until a verified ACK", t => {
   const dir = makeTempDir();
-  t.after(() => removeDir(dir));
   const blobs = new CloudBlobs(join(dir, "spool.sqlite"));
-  t.after(() => blobs.close());
+  t.after(() => { blobs.close(); removeDir(dir); });
   blobs.acquire();
   const ref = blobs.put(new Uint8Array([1, 2, 3]));
   const input = {
@@ -110,7 +108,6 @@ test("queued blob references are atomic and prevent GC until a verified ACK", t 
 
 test("SIGKILL after request commit preserves both payload and referenced blob", { timeout: 15000 }, async t => {
   const dir = makeTempDir();
-  t.after(() => removeDir(dir));
   const source = join(dir, "source.sqlite"), blobsPath = join(dir, "blobs.sqlite");
   const helper = new URL("test/helpers/sync.mjs", PACKAGE_ROOT).href;
   const blobsModule = new URL("dist/sync/cloud-blobs.js", PACKAGE_ROOT).href;

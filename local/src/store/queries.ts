@@ -1,9 +1,12 @@
 import { requestRecords, summarizeRequests, hasStatus, type RequestRecord, type RequestSummary } from "../request-status.js";
+import { distAsset, packageAsset } from "../runtime.js";
 import { existsSync, readFileSync } from "node:fs";
 import { automationOf, NO_ACTIVITY } from "./automation.js";
 import { executionEventScope } from "./execution.js";
 import { nameFromUri, parseJson, readIngestCounters, storeError, type StoreCtx } from "./writes.js";
 import type { AdoptionState, Attribution, Candidate, EventKind, Filter, FlowDto, HeatmapDto, OtelSpanRow, RuntimeId, SessionRow, SkillUri, SkillWeekDto, Store, TraceStep, TreeEvent, TreeTopologyNode, TreePaneLink } from "../types.js";
+
+const sqlRow = <T extends object>(row: T): T => Object.setPrototypeOf(row, null);
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
@@ -16,7 +19,7 @@ let rulesCache: TaskTypeRule[] | undefined;
 /** tsc does not copy JSON into dist, so the rules are read beside the compiled module first, then from src/store. */
 export function taskTypeRules(): TaskTypeRule[] {
   if (rulesCache) return rulesCache;
-  const candidates = [new URL("./task-types.json", import.meta.url), new URL("../../src/store/task-types.json", import.meta.url)];
+  const candidates = [distAsset("store", "task-types.json"), packageAsset("src", "store", "task-types.json")];
   const found = candidates.find((u) => existsSync(u));
   if (!found) throw storeError("task_types_missing", "task-types.json not found next to the store module or in src/store");
   rulesCache = JSON.parse(readFileSync(found, "utf8")) as TaskTypeRule[];
@@ -307,7 +310,7 @@ export function createQueries(ctx: StoreCtx): Queries {
             .get(id) as TreeTopologyNode | undefined;
           return tab ? [tab] : [];
         });
-        return { id: flow.id, workspaceId, label: flow.label ?? workspace.label, registered: true, tabs, panes, links };
+        return { id: flow.id, workspaceId, label: flow.label ?? workspace.label, registered: true, tabs: tabs.map(sqlRow), panes: panes.map(sqlRow), links };
       }
       const tabId = null;
       const tabs = db.prepare(`SELECT id, label, created_ms AS createdMs, closed_ms AS closedMs FROM herdr_tabs
@@ -319,7 +322,7 @@ export function createQueries(ctx: StoreCtx): Queries {
         FROM pane_sessions ps JOIN herdr_panes p ON p.id = ps.pane_id
         WHERE p.workspace_id = ? AND (? IS NULL OR p.tab_id = ?)
         ORDER BY ps.first_seen_ms, ps.agent_session_value`).all(workspaceId, tabId, tabId) as TreePaneLink[];
-      return { id: workspaceId, workspaceId, label: workspace.label, registered: false, tabs, panes, links };
+      return { id: workspaceId, workspaceId, label: workspace.label, registered: false, tabs: tabs.map(sqlRow), panes: panes.map(sqlRow), links: links.map(sqlRow) };
     },
 
     /**
@@ -373,7 +376,7 @@ export function createQueries(ctx: StoreCtx): Queries {
         const automation = automated === "include" ? {} : queries.sessionAutomation(rows.map((row) => row.id));
         for (const row of rows) {
           const isAutomated = automation[row.id] !== undefined;
-          if (automated === "include" || (automated === "only" ? isAutomated : !isAutomated)) kept.push(row);
+          if (automated === "include" || (automated === "only" ? isAutomated : !isAutomated)) kept.push(sqlRow(row));
           if (kept.length === cap) return kept;
         }
         if (rows.length < 100) return kept;

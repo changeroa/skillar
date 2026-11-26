@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { statSync } from "node:fs";
-import { backup, DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import test from "node:test";
 import { distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { activityDb } from "../../site/test/helpers/activity-db.mjs";
@@ -70,27 +70,31 @@ test("real device exchange connects without granting upload and local preparatio
   preserved.close();
 });
 
-test("backup concurrent writer restarts yield one internally consistent value and journal cut", { timeout: 15000 }, async t => {
+test("backup with an open concurrent writer yields one committed value and journal cut", { timeout: 15000 }, async t => {
   const f = await fixture(t);
   await connectCloud(f.dir, { origin: "https://skillar.sh", grant: f.issued.grant }, f.fetcher);
-  let wrote = false;
-  const prepared = await prepareCloudSnapshot(f.dir, f.source, (source, target) =>
-    backup(source, target, { rate: 1, progress: ({ remainingPages }) => {
-      if (!wrote && remainingPages > 0) {
-        wrote = true;
-        const writer = openDb(f.source);
-        writer.prepare("UPDATE sessions SET first_prompt='AFTER_BACKUP_START'").run();
-        writer.close();
-      }
-    } }));
-  assert.equal(wrote, true);
-  const frozen = new DatabaseSync(preparedPath(f.dir, prepared.snapshotId), { readOnly: true });
-  assert.equal(frozen.prepare("SELECT first_prompt FROM sessions").get().first_prompt, "AFTER_BACKUP_START");
+  // Bind first so prepare can read while the daemon-like writer holds the WAL write lock.
+  const before = await prepareCloudSnapshot(f.dir, f.source);
+  const writer = openDb(f.source);
+  t.after(() => writer.close());
+  writer.exec("BEGIN IMMEDIATE");
+  writer.prepare("UPDATE sessions SET first_prompt='AFTER_BACKUP_START'").run();
+  const prepared = await prepareCloudSnapshot(f.dir, f.source);
+  assert.equal(prepared.cut, before.cut);
+  writer.exec("COMMIT");
+  const frozen = new Database(preparedPath(f.dir, prepared.snapshotId), { readonly: true });
+  t.after(() => frozen.close());
+  assert.equal(frozen.prepare("SELECT first_prompt FROM sessions").get().first_prompt, "PRIVATE_LOCAL_FIXTURE");
   assert.equal(journalHead(frozen).cut, prepared.cut);
   const last = frozen.prepare(`SELECT row_json FROM sync_journal
     WHERE table_name='sessions' ORDER BY seq DESC LIMIT 1`).get();
-  assert.equal(JSON.parse(last.row_json).first_prompt, "AFTER_BACKUP_START");
-  frozen.close();
+  assert.equal(JSON.parse(last.row_json).first_prompt, "PRIVATE_LOCAL_FIXTURE");
+  const latest = await prepareCloudSnapshot(f.dir, f.source);
+  assert.ok(latest.cut > prepared.cut);
+  const updated = new Database(preparedPath(f.dir, latest.snapshotId), { readonly: true });
+  t.after(() => updated.close());
+  assert.equal(updated.prepare("SELECT first_prompt FROM sessions").get().first_prompt, "AFTER_BACKUP_START");
+  assert.equal(journalHead(updated).cut, latest.cut);
 });
 
 test("a fresh approved connect clears a pause left over from the previous connection", async t => {

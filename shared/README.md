@@ -6,9 +6,9 @@ upload transport, encryption implementation or production endpoint is enabled
 by this package.
 
 ```sh
-npm ci
-npm run build
-npm test
+bun install --frozen-lockfile
+bun run build
+bun run test
 ```
 
 ## Privacy contract / 개인정보 계약
@@ -174,6 +174,6 @@ Focused verification:
 
 ```sh
 cd shared
-npm run build
-node --test test/activity-content.test.mjs
+bun run build
+bun test test/activity-content.test.mjs
 ```

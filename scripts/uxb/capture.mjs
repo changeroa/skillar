@@ -9,7 +9,7 @@ import { captureClipboardState } from "./clipboard-state.mjs";
 
 const [manifestPath, outputPath] = process.argv.slice(2);
 if (!manifestPath || !outputPath || !process.env.OMOWRIGHT_HELPER)
-  throw Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs node scripts/uxb/capture.mjs manifest.json evidence-dir");
+  throw Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs bun scripts/uxb/capture.mjs manifest.json evidence-dir");
 const manifest = manifestSchema.parse(JSON.parse(await readFile(manifestPath, "utf8")));
 const output = resolve(outputPath), manifestDirectory = dirname(resolve(manifestPath));
 await mkdir(output, { recursive: true });

@@ -104,10 +104,10 @@ export function createWorkflow(ctx: StoreCtx): WorkflowStore {
       return row ? specOf(row) : undefined;
     },
 
-    // node:sqlite runs synchronously on the single JS thread, so no second request can insert between the open-flow
+    // bun:sqlite runs synchronously on the single JS thread, so no second request can insert between the open-flow
     // check and the insert: of two concurrent registrations for one workspace and tab, exactly one creates the flow.
     createFlow(input) {
-      const open = selectOpenFlow.get(input.workspaceId, input.tabId ?? "") as FlowDbRow | undefined;
+      const open = selectOpenFlow.get(input.workspaceId, input.tabId ?? "") as FlowDbRow | null;
       if (open) return { created: false, conflict: flowOf(open) };
       const id = randomUUID();
       const registeredMs = ctx.now();
@@ -119,7 +119,7 @@ export function createWorkflow(ctx: StoreCtx): WorkflowStore {
     },
 
     getFlow(id: string): FlowRow | undefined {
-      const row = selectFlow.get(id) as FlowDbRow | undefined;
+      const row = selectFlow.get(id) as FlowDbRow | null;
       return row ? flowOf(row) : undefined;
     },
 
@@ -131,10 +131,10 @@ export function createWorkflow(ctx: StoreCtx): WorkflowStore {
 
     // Re-mapping a pane to another step overwrites the mapping: the orchestrator owns the pane-to-step assignment.
     mapFlowStep(flowId: string, paneId: string, stepId: string): { created: boolean } {
-      const existing = db.prepare("SELECT step_id FROM flow_steps WHERE flow_id = ? AND pane_id = ?").get(flowId, paneId) as { step_id: string } | undefined;
+      const existing = db.prepare("SELECT step_id FROM flow_steps WHERE flow_id = ? AND pane_id = ?").get(flowId, paneId) as { step_id: string } | null;
       db.prepare(`INSERT INTO flow_steps (flow_id, pane_id, step_id, registered_ms) VALUES (?, ?, ?, ?)
         ON CONFLICT(flow_id, pane_id) DO UPDATE SET step_id = excluded.step_id`).run(flowId, paneId, stepId, ctx.now());
-      return { created: existing === undefined };
+      return { created: existing === null };
     },
 
     /**
@@ -221,7 +221,7 @@ export function createWorkflow(ctx: StoreCtx): WorkflowStore {
     },
 
     endFlow(flowId: string) {
-      const row = db.prepare("SELECT ended_ms FROM flows WHERE id = ?").get(flowId) as { ended_ms: number | null } | undefined;
+      const row = db.prepare("SELECT ended_ms FROM flows WHERE id = ?").get(flowId) as { ended_ms: number | null } | null;
       if (!row) return undefined;
       if (row.ended_ms !== null) return { endedMs: row.ended_ms, alreadyEnded: true };
       const endedMs = ctx.now();

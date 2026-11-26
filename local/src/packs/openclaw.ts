@@ -1,3 +1,4 @@
+import { cliArgv } from "../runtime.js";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { resolveSkillarHome } from "../config.js";
@@ -82,8 +83,8 @@ export const openclawPack: RuntimePack = {
     const legacy = (isRecord(cfg) && Boolean(pluginEntries(cfg)?.gisool)) || (prior !== null && /"id"\s*:\s*"gisool"/.test(prior));
     const pluginName = legacy ? "gisool" : "skillar";
     const vars = {
-      __COMMAND__: ctx.nodePath,
-      __ARGS__: [join(ctx.packageRoot, "dist", "cli", "main.js"), "mcp-stdio"],
+      __COMMAND__: ctx.bunPath,
+      __ARGS__: cliArgv("mcp-stdio", ctx.bunPath, ctx.packageRoot).slice(1),
       __SKILLAR_HOME__: skillarHome(ctx.env, ctx.home),
       __PORT__: ctx.port,
     };

@@ -11,7 +11,7 @@ const { claudeCodePack } = await distImport("packs/claude-code.js");
 const { codexPack } = await distImport("packs/codex.js");
 const packageRoot = realpathSync(fileURLToPath(PACKAGE_ROOT));
 const mkCtx = (sb, extra = {}) => ({ home: sb.home, env: { ...sb.env, PATH: join(sb.home, "emptybin") }, port: 47123, token: "tok123",
-  nodePath: realpathSync(process.execPath), packageRoot, disableRemote: false, ...extra });
+  bunPath: realpathSync(process.execPath), packageRoot, disableRemote: false, ...extra });
 const put = (p, t) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, t); };
 const fakeBin = (sb, name) => { const d = join(sb.home, "bin"); put(join(d, name), "#!/bin/sh\n"); chmodSync(join(d, name), 0o755); return d; };
 
@@ -53,8 +53,8 @@ test("claude plan keeps unrelated keys, exact blocks, idempotent, commands exist
     assert.deepEqual(out.hooks.SessionEnd[0].hooks, out.hooks.SessionStart[0].hooks);
     assert.equal(Object.keys(out.env).some(key => key.includes("BETA") || key.includes("TRACE")), false);
     const hookPath = join(packageRoot, "packs", "hook-post.mjs");
-    assert.equal(g.hooks[0].command, `"${ctx.nodePath}" "${hookPath}" claude-code`);
-    accessSync(ctx.nodePath); accessSync(hookPath);
+    assert.equal(g.hooks[0].command, `"${ctx.bunPath}" "${hookPath}" claude-code`);
+    accessSync(ctx.bunPath); accessSync(hookPath);
     put(p, plan.files[0].after);
     const again = await claudeCodePack.plan(ctx);
     assert.deepEqual(again.files, []);

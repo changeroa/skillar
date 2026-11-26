@@ -35,7 +35,7 @@ test("plan lists bundle files, absolute mcp command, notes, and commands", async
   try {
     const env = { ...sb.env };
     delete env.SKILLAR_NO_CLI;
-    const ctx = { home: sb.home, env, port: 4321, token: "t", nodePath: process.execPath, packageRoot: root.replace(/\/$/, ""), disableRemote: false };
+    const ctx = { home: sb.home, env, port: 4321, token: "t", bunPath: process.execPath, packageRoot: root.replace(/\/$/, ""), disableRemote: false };
     const plan = await openclawPack.plan(ctx);
     const rels = plan.files.map((f) => f.path.slice(join(sb.home, ".skillar", "packs", "openclaw").length + 1));
     for (const want of [".codex-plugin/plugin.json", ".mcp.json", "openclaw.plugin.json", "index.mjs", "hooks/skillar-discovery/HOOK.md", "hooks/skillar-discovery/handler.js"]) assert.ok(rels.includes(want), want);

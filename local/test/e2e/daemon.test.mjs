@@ -8,7 +8,7 @@ import { request } from "node:http";
 import { createServer } from "node:net";
 import { userInfo } from "node:os";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { fileURLToPath } from "node:url";
 import { modernClient } from "../helpers/mcp.mjs";
 import { makeSandbox, writeFixtureSkill } from "../_helpers.mjs";
@@ -286,7 +286,7 @@ test("daemon end to end: MCP, OTLP and hook ingest, dashboard API, restart, and 
 
   await daemon.stop();
   assert.equal(await portIsFree(port), true);
-  const db = new DatabaseSync(join(tokenEnv.SKILLAR_HOME, "skillar.db"), { readOnly: true });
+  const db = new Database(join(tokenEnv.SKILLAR_HOME, "skillar.db"), { readonly: true });
   try {
     assert.deepEqual(db.prepare("SELECT kind FROM events WHERE source = 'mcp' ORDER BY ts, rowid").all().map((r) => r.kind), ["skill_request", "search", "skill_request", "skill_request", "load", "skill_request", "read_file", "read_file"]);
   } finally { db.close(); }
@@ -312,7 +312,7 @@ test("captureLevel metadata stores the prompt digest without text", async (t) =>
   stream.close();
   await daemon.stop();
 
-  const db = new DatabaseSync(join(sb.env.SKILLAR_HOME, "skillar.db"), { readOnly: true });
+  const db = new Database(join(sb.env.SKILLAR_HOME, "skillar.db"), { readonly: true });
   try {
     const rows = db.prepare("SELECT text, text_digest, text_length FROM events WHERE kind = 'prompt'").all();
     assert.equal(rows.length, 1);

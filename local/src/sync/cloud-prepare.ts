@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import {
-  closeSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync,
+  closeSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync, writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { backup, DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { z } from "zod";
 import { openDb } from "../store/db.js";
 import { CloudSyncError } from "./cloud-blobs.js";
@@ -30,7 +30,7 @@ export function bindSource(path: string, connection: CloudConnection): void {
   const db = openDb(path);
   try {
     const readMarker = (key: string): unknown =>
-      db.prepare("SELECT value FROM meta WHERE key=?").get(key)?.["value"];
+      db.prepare<{ value: unknown }, [string]>("SELECT value FROM meta WHERE key=?").get(key)?.["value"];
     const instance = readMarker("cloud.binding");
     const bound = readMarker("cloud.device");
     const deviceKey = `${connection.deviceId}:${connection.generation}`;
@@ -40,7 +40,7 @@ export function bindSource(path: string, connection: CloudConnection): void {
     // but no cloud.device marker adopts the current device without forking.
     const fork = bound === undefined ? instance === undefined : bound !== deviceKey;
     if (!fork && instance === connection.instanceId && bound === deviceKey) return;
-    if (fork && db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== undefined) {
+    if (fork && db.prepare("SELECT 1 FROM sync_outbox LIMIT 1").get() !== null) {
       throw new CloudSyncError("pending_identity_change");
     }
     db.exec("BEGIN IMMEDIATE");
@@ -73,19 +73,25 @@ export function bindSource(path: string, connection: CloudConnection): void {
  * cut/lineage/id so a later browser backfill grant can bind exactly this snapshot.
  * No request serialization, token transmission or raw upload happens here.
  */
-export async function prepareCloudSnapshot(
-  home: string, sourcePath: string, backupDatabase: typeof backup = backup,
-): Promise<PreparedSnapshot> {
+function backup(source: Database, target: string): void {
+  source.exec("PRAGMA busy_timeout = 5000");
+  // Serialize one committed WAL snapshot without VACUUM renumbering implicit rowids.
+  writeFileSync(target, source.serialize(), { flag: "wx", mode: 0o600 });
+  // Only the copy changes journal mode, so it can be opened read-only without WAL files.
+  using copy = new Database(target, { create: false });
+  copy.exec("PRAGMA journal_mode = DELETE");
+}
+
+export async function prepareCloudSnapshot(home: string, sourcePath: string): Promise<PreparedSnapshot> {
   const connection = readConnection(home);
   if (connection === null) throw new CloudSyncError("not_connected");
   bindSource(sourcePath, connection);
   const snapshotId = randomUUID(), target = preparedPath(home, snapshotId);
   mkdirSync(join(cloudHome(home), "prepared"), { recursive: true, mode: 0o700 });
   const temporary = `${target}.tmp`;
-  closeSync(openSync(temporary, "wx", 0o600));
-  const source = new DatabaseSync(sourcePath, { readOnly: true });
+  const source = new Database(sourcePath, { readonly: true });
   try {
-    await backupDatabase(source, temporary);
+    backup(source, temporary);
   } catch (error) {
     if (existsSync(temporary)) unlinkSync(temporary);
     throw error;
@@ -97,7 +103,7 @@ export async function prepareCloudSnapshot(
     const fd = openSync(path, "r");
     try { fsyncSync(fd); } finally { closeSync(fd); }
   }
-  const frozen = new DatabaseSync(target, { readOnly: true });
+  const frozen = new Database(target, { readonly: true });
   let head: ReturnType<typeof journalHead>;
   try {
     head = journalHead(frozen);

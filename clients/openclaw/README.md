@@ -7,7 +7,7 @@ read-only OAuth MCP bridge. Team workflow skills remain on Skillar.
 From the repository root, for the default profile:
 
 ```sh
-node clients/openclaw/prepare-oauth.mjs --output /absolute/new/skillar-team --endpoint https://your-host.example/mcp
+bun clients/openclaw/prepare-oauth.mjs --output /absolute/new/skillar-team --endpoint https://your-host.example/mcp
 openclaw plugins install /absolute/new/skillar-team
 node "$HOME/.openclaw/extensions/skillar-openclaw/scripts/bridge.mjs" --login
 ```
@@ -18,7 +18,7 @@ configuration changes merely by checking out this client.
 For any OAuth deployment, prepare a full bundle with its endpoint:
 
 ```sh
-node clients/openclaw/prepare-oauth.mjs --output /absolute/new/skillar-other --endpoint https://other-host.example/mcp
+bun clients/openclaw/prepare-oauth.mjs --output /absolute/new/skillar-other --endpoint https://other-host.example/mcp
 openclaw plugins install /absolute/new/skillar-other
 node "$HOME/.openclaw/extensions/skillar-openclaw/scripts/bridge.mjs" --login
 ```
@@ -35,7 +35,7 @@ If the host already has a working `mcp.servers.skillar` registration, preserve i
 and prepare a loader-only bundle instead of adding the default OAuth bridge:
 
 ```sh
-node clients/openclaw/prepare-existing.mjs --output /absolute/new/skillar-existing
+bun clients/openclaw/prepare-existing.mjs --output /absolute/new/skillar-existing
 openclaw plugins install /absolute/new/skillar-existing
 openclaw mcp probe skillar --json
 ```
@@ -49,8 +49,8 @@ verification; the bundle-only live script below targets the default OAuth mode.
 Check the existing adapter's schemas as well as its tool names. Older adapters
 can expose all three names while lacking `search_skills.mode`,
 `load_skill.commit` and `read_skill_file.load_id`. In that case, build the
-current adapter with `npm --prefix server ci` and
-`npm --prefix server run build:codex-plugin`. Stage
+current adapter with `(cd server && bun install --frozen-lockfile)` and
+`bun run --cwd server build:codex-plugin`. Stage
 `clients/codex/plugin/skillar/runtime/codex.mjs` in a versioned host directory and
 test it against the existing endpoint before changing only the adapter argument
 in `mcp.servers.skillar.args`. Preserve the host's command, other arguments, cwd,
@@ -63,8 +63,8 @@ alone.
 Verification:
 
 ```sh
-node --test server/test/openclaw-client.test.mjs
-node scripts/check-openclaw-client.mjs --openclaw-root /path/to/installed/openclaw
+bun test server/test/openclaw-client.test.mjs
+bun scripts/check-openclaw-client.mjs --openclaw-root /path/to/installed/openclaw
 ```
 
 On 2026-10-01 both passed against OpenClaw `2026.7.1-2` (`0790d9f`). The native
@@ -87,7 +87,7 @@ The observed release was `20261001.19` at commit
 After installing and signing in, reproduce the bundle-only live test:
 
 ```sh
-node scripts/check-openclaw-live.mjs \
+bun scripts/check-openclaw-live.mjs \
   --openclaw-root /path/to/installed/openclaw \
   --plugin-root "$HOME/.openclaw/extensions/skillar-openclaw"
 ```

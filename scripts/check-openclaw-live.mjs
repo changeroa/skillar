@@ -10,7 +10,7 @@ import { pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--openclaw-root" || args[2] !== "--plugin-root") {
-  throw new Error("Usage: node scripts/check-openclaw-live.mjs --openclaw-root /path/to/openclaw --plugin-root /profile/extensions/skillar-openclaw");
+  throw new Error("Usage: bun scripts/check-openclaw-live.mjs --openclaw-root /path/to/openclaw --plugin-root /profile/extensions/skillar-openclaw");
 }
 const openclaw = resolve(args[1]), plugin = await realpath(resolve(args[3]));
 const workspace = await mkdtemp(join(tmpdir(), "skillar-openclaw-live-"));

@@ -7,10 +7,10 @@ never copied into the plugin or your workspace.
 
 ## Install and sign in
 
-Use Node 24+, npm/npx and OpenClaw on macOS or Linux. From the Skillar checkout:
+Use Bun 1.4.5+ and OpenClaw on macOS or Linux. From the Skillar checkout:
 
 ```sh
-node clients/openclaw/prepare-oauth.mjs --output /new/skillar-bundle --endpoint https://your-host.example/mcp
+bun clients/openclaw/prepare-oauth.mjs --output /new/skillar-bundle --endpoint https://your-host.example/mcp
 openclaw plugins install /new/skillar-bundle
 node "$HOME/.openclaw/extensions/skillar-openclaw/scripts/bridge.mjs" --login
 ```

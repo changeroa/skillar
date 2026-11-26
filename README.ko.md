@@ -9,7 +9,7 @@
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Bun-%E2%89%A51.4.5-333333" alt="Bun 1.4.5 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
 
@@ -21,12 +21,12 @@
 
 ## 빠른 시작
 
-macOS 또는 Linux · **Node.js 24.15 이상**
+macOS 또는 Linux · **Bun 1.4.5 이상**
 
-1. **설치** (Node.js 24.15 이상):
+1. **설치** (Bun 1.4.5 이상):
 
    ```sh
-   npm install -g skillar
+   bun add -g skillar
    ```
 
 2. **초기 설정** - 변경 내용을 미리 보고 적용합니다:
@@ -146,7 +146,7 @@ Worker는 `SKILLS_BUCKET`, 읽기용 `SKILLAR_BEARER_TOKEN`, 별도의 게시용
 
 ## 기여
 
-Node.js 24와 npm을 설치한 뒤 체크아웃에서 `node scripts/verify.mjs`를 실행하면 CI와 같은 잠금 의존성 설치, 빌드, 테스트, 검색·플러그인 검사, Worker dry-run을 수행한다. 배포하거나 콘텐츠를 발행하지는 않는다.
+Bun 1.4.5와 Cloudflare 도구용 Node.js 24/npm을 설치한 뒤 체크아웃에서 `bun scripts/verify.mjs`를 실행하면 CI와 같은 잠금 의존성 설치, 빌드, 테스트, 검색·플러그인 검사, Worker dry-run을 수행한다. 배포하거나 콘텐츠를 발행하지는 않는다.
 
 ## 라이선스
 

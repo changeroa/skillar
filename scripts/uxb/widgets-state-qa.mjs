@@ -8,7 +8,7 @@ import {runWidgetPaintQA} from "./widgets-paint-qa.mjs";
 import {observePaint} from "./widget-paint.mjs";
 
 const output=process.argv[2];
-if(!output||!process.env.OMOWRIGHT_HELPER)throw new Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs node scripts/uxb/widgets-state-qa.mjs evidence-directory");
+if(!output||!process.env.OMOWRIGHT_HELPER)throw new Error("Usage: OMOWRIGHT_HELPER=/path/omowright.mjs bun scripts/uxb/widgets-state-qa.mjs evidence-directory");
 const {loadOmowright}=await import(process.env.OMOWRIGHT_HELPER);
 const source=JSON.parse(await readFile(`${output}/state-sources.json`,"utf8"));
 const recorded=JSON.parse(await readFile(`${output}/real-sources.json`,"utf8"));

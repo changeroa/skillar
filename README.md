@@ -9,7 +9,7 @@
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Bun-%E2%89%A51.4.5-333333" alt="Bun 1.4.5 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/LICENSING.md"><img src="https://img.shields.io/badge/license-MIT%20%2F%20AGPL--3.0-333333" alt="MIT / AGPL-3.0 licenses"></a>
 </p>
 
@@ -23,12 +23,12 @@ Hosting the site or Workers yourself? Use the [deployment templates and private 
 
 ## Quick start
 
-macOS or Linux · **Node.js 24.15+**
+macOS or Linux · **Bun 1.4.5+**
 
-1. **Install** (Node.js 24.15 or newer):
+1. **Install** (Bun 1.4.5 or newer):
 
    ```sh
-   npm install -g skillar
+   bun add -g skillar
    ```
 
 2. **Initialize** - preview the changes, then apply them:
@@ -148,7 +148,7 @@ The Worker uses `SKILLS_BUCKET`, a reader `SKILLAR_BEARER_TOKEN`, and a separate
 
 ## Contributing
 
-With Node.js 24 and npm, run `node scripts/verify.mjs` from the checkout to perform the same locked installs, builds, tests, search and plugin checks, and Worker dry-runs as CI. It does not deploy or publish content.
+With Bun 1.4.5+ (and Node.js 24/npm for Cloudflare tooling), run `bun scripts/verify.mjs` from the checkout to perform the same locked installs, builds, tests, search and plugin checks, and Worker dry-runs as CI. It does not deploy or publish content.
 
 ## License
 

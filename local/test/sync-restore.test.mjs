@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { distImport } from "./_helpers.mjs";
 import { journalHead, logicalSnapshot, openDb, readJournal, request, spoolBatch } from "./helpers/sync.mjs";
 import {
@@ -177,8 +177,8 @@ for (const failure of ["page", "hash", "duplicate", "columns", "foreign-key", "i
     // Then the source file and fresh destination survive and the same transfer can be retried.
     assert.deepEqual(facts(f.destination), before);
     assert.deepEqual(triggers(f.destination), definitions);
-    assert.equal(f.destination.isTransaction, false);
-    assert.equal(f.destination.prepare("SELECT 1 FROM sqlite_schema WHERE name='sync_restore_state'").get(), undefined);
+    assert.equal(f.destination.inTransaction, false);
+    assert.equal(f.destination.prepare("SELECT 1 FROM sqlite_schema WHERE name='sync_restore_state'").get(), null);
     assert.deepEqual(readFileSync(f.sourcePath), sourceBytes);
     restoreSnapshot(f.destination, f.descriptor, f.pages);
     assert.equal(verify(f.destination, f.descriptor).hash, f.descriptor.hash);
@@ -227,7 +227,7 @@ test("restore refuses an existing caller transaction without rolling it back", t
   // When restore is invoked on the occupied connection.
   assert.throws(() => restoreSnapshot(f.destination, f.descriptor, f.pages), { code: "destination_busy" });
   // Then the transaction remains caller-owned.
-  assert.equal(f.destination.isTransaction, true);
+  assert.equal(f.destination.inTransaction, true);
   assert.equal(f.destination.prepare("SELECT value FROM meta WHERE key='caller'").get().value, "owned");
   f.destination.exec("ROLLBACK");
 });
@@ -235,7 +235,7 @@ test("restore refuses an existing caller transaction without rolling it back", t
 test("foreign database readers observe only a committed restore", t => {
   // Given a second connection and a transfer paused between pages.
   const f = fixture(t);
-  const reader = new DatabaseSync(f.destinationPath, { readOnly: true });
+  const reader = new Database(f.destinationPath, { readonly: true });
   t.after(() => reader.close());
   const pages = (function* () {
     for (const page of f.pages) {

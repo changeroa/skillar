@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -15,7 +15,7 @@ if (args.includes("--plugin")) {
 const dryRun = args[0] === "--dry-run";
 if (dryRun) args.shift();
 const host = args.shift() ?? "macmini";
-if (args.length || !/^[A-Za-z0-9][A-Za-z0-9._@-]*$/.test(host)) throw new Error("Usage: node clients/codex/install.mjs [--dry-run] [ssh-host]");
+if (args.length || !/^[A-Za-z0-9][A-Za-z0-9._@-]*$/.test(host)) throw new Error("Usage: bun clients/codex/install.mjs [--dry-run] [ssh-host]");
 const adapter = resolve(here, "../../server/dist/codex.js");
 await access(adapter);
 const source = await readFile(join(here, "skillar/SKILL.md"), "utf8");

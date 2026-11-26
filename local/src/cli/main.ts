@@ -1,6 +1,4 @@
-#!/usr/bin/env node
-import { realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+#!/usr/bin/env bun
 import { ensureToken, loadConfig, resolveSkillarHome } from "../config.js";
 import type { CliDeps, ExportImportApi } from "../types.js";
 import { runDoctor } from "./doctor.js";
@@ -99,6 +97,11 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
   const [command, ...rest] = argv;
   try {
     switch (command) {
+      case "hook-post": {
+        const { postHook } = await import("./hook-post.js");
+        await postHook(rest[0] ?? "unknown");
+        return 0;
+      }
       case undefined:
       case "--help":
       case "-h":
@@ -218,15 +221,7 @@ export async function runMain(argv: string[], opts: { env?: NodeJS.ProcessEnv; i
   }
 }
 
-function invokedDirectly(): boolean {
-  if (!process.argv[1]) return false;
-  try {
-    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
-  } catch {
-    return false;
-  }
-}
-
-if (invokedDirectly()) {
+if (import.meta.main) {
   process.exitCode = await runMain(process.argv.slice(2));
+  if (process.argv[2] === "hook-post") process.exit(process.exitCode);
 }

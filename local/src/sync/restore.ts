@@ -30,7 +30,7 @@ function state(db: Db) {
 }
 
 function idle(db: Db): void {
-  if (db.isTransaction) throw new RestoreError("destination_busy");
+  if (db.inTransaction) throw new RestoreError("destination_busy");
 }
 
 function pristine(db: Db): void {

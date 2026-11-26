@@ -10,7 +10,7 @@ import { type AppliedFile, WriterError, applyFiles, changedFiles, maskSecrets, r
 import { readConnection } from "../sync/cloud-connection.js";
 import { dashboardUrl } from "./open.js";
 import { connectCloudDeviceFlow } from "../sync/cloud-pending.js";
-import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, nodePath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
+import { type Io, type PlannedCommand, currentServicePlatform, daemonLogPath, bunPath, packageRoot, planService, servicePath, serviceLabel } from "./serve.js";
 
 export type InitOptions = { dryRun?: boolean; runtimes?: string[]; rollback?: boolean; all?: boolean; noService?: boolean; disableRemote?: boolean; serviceOnly?: boolean; connect?: boolean; upload?: boolean; localOnly?: boolean };
 export type InitHooks = {
@@ -119,7 +119,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
   const skillarHome = resolveSkillarHome(env);
   const { config, token, materialize } = readConfigForPlan(env);
   const mask = (t: string) => maskSecrets(t, [token]);
-  const ctx: PackCtx = { home, env, port: config.port, token, nodePath: nodePath(), packageRoot: packageRoot(), disableRemote: opts.disableRemote ?? false, mcp: "local" };
+  const ctx: PackCtx = { home, env, port: config.port, token, bunPath: bunPath(), packageRoot: packageRoot(), disableRemote: opts.disableRemote ?? false, mcp: "local" };
 
   const selected: RuntimePack[] = [];
   if (!opts.serviceOnly) {
@@ -160,7 +160,7 @@ export async function runInit(opts: InitOptions, env: NodeJS.ProcessEnv, io: Io,
     const plans = await planAll(mcp);
     serviceFile = null;
     if (!opts.noService) {
-      const svc = planService({ home, skillarHome, env, nodePath: ctx.nodePath, packageRoot: ctx.packageRoot, platform: currentServicePlatform(), uid: process.getuid?.() ?? 0 });
+      const svc = planService({ home, skillarHome, env, bunPath: ctx.bunPath, packageRoot: ctx.packageRoot, platform: currentServicePlatform(), uid: process.getuid?.() ?? 0 });
       plans.push({ id: "service", plan: { files: [svc.file], commands: svc.commands, notes: svc.notes, conflicts: [] } });
       serviceFile = svc.file.path;
     }

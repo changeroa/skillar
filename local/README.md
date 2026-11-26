@@ -3,7 +3,7 @@
 <p align="center"><a href="https://github.com/changeroa/skillar/blob/main/README.md">Project overview</a> · <a href="https://github.com/changeroa/skillar/blob/main/README.ko.md">한국어</a></p>
 <p align="center">
   <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
-  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Bun-%E2%89%A51.4.5-333333" alt="Bun 1.4.5 or newer"></a>
   <a href="https://github.com/changeroa/skillar/blob/main/local/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
 </p>
 <p align="center">
@@ -20,20 +20,20 @@ skillar is a local skill router for coding agents. One daemon on `127.0.0.1` ind
 
 ## Install
 
-Requires **Node.js 24.15+** on **macOS or Linux**.
+Requires **Bun 1.4.5+** on **macOS or Linux**.
 
 > **Existing gisool installation?** Follow the [safe migration guide](https://github.com/changeroa/skillar/blob/main/docs/migration-skillar.md) **before installing**. The packages share the `gisool` executable, so a direct global install fails with `EEXIST`. Preserve your state and perform the controlled package handoff; do not use `--force`.
 
 For a fresh installation:
 
 ```sh
-npm install -g skillar
+bun add -g skillar
 skillar init --dry-run    # review configuration and service changes
 skillar init              # connect detected runtimes and start the background service
 skillar open              # view the local dashboard
 ```
 
-The package installs `skillar` and the compatibility command `gisool`. For source installation, see [Develop](#develop).
+Use `bunx --bun skillar --help` to try it without a global install. The package installs `skillar` and the compatibility command `gisool`. For source installation, see [Develop](#develop).
 
 ## What you get
 
@@ -265,11 +265,11 @@ the separate hosted Apps flag does not apply to skillar. Client-wide experimenta
 From a repository checkout (run these at the repository root):
 
 ```sh
-npm --prefix local ci
-npm --prefix local run build
+(cd local && bun install --frozen-lockfile)
+bun run --cwd local build
 npm link ./local                     # make the built CLI available locally
-npm --prefix local run typecheck
-npm --prefix local test              # unit tests plus test/e2e, which spawns the real daemon in a sandbox HOME
+bun run --cwd local typecheck
+bun run --cwd local test              # unit tests plus test/e2e, which spawns the real daemon in a sandbox HOME
 node local/bench/search.mjs --check
 node local/bench/mcp-mutations.mjs  # each regression is injected in memory; files stay unchanged
 ```

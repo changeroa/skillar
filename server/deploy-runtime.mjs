@@ -121,7 +121,7 @@ async function main() {
   const result = await deploy(config, {
     prepare: async stage => {
       await access(join(stage, "bin/skillar"), constants.X_OK);
-      run("npm", ["ci", "--omit=dev", "--ignore-scripts"], { cwd: stage, timeout: 180000 });
+      run(process.execPath, ["install", "--frozen-lockfile", "--production", "--ignore-scripts"], { cwd: stage, timeout: 180000 });
     },
     restart,
     recoveryCheck: health,

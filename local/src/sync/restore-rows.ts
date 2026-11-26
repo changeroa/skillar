@@ -70,7 +70,7 @@ export function readRows(db: Db, cut: number, clock?: Mutation): Mutation[] {
     }
     const { columns, keys } = shape(db, table);
     const order = table === "load_candidates" ? keys.map(c => `"${c}"`).join(",") : "rowid";
-    for (const raw of db.prepare(`SELECT *, ${table === "load_candidates" ? "NULL" : "rowid"}
+    for (const raw of db.prepare<Record<string, unknown>, []>(`SELECT *, ${table === "load_candidates" ? "NULL" : "rowid"}
         AS restore_source_order FROM "${table}" ORDER BY ${order}`).all()) {
       const values = Object.fromEntries(columns.map(c => [c, scalarSchema.parse(raw[c])]));
       rows.push(mutationSchema.parse({ table, key: JSON.stringify(keys.map(k => values[k])),
@@ -124,7 +124,7 @@ export function replaceRows(db: Db, rows: readonly Mutation[]): void {
 
 export function checkDatabase(db: Db): void {
   if (db.prepare("PRAGMA foreign_key_check").all().length > 0 ||
-      db.prepare("PRAGMA integrity_check").all().some(row => row.integrity_check !== "ok")) {
+      db.prepare<{ integrity_check: string }, []>("PRAGMA integrity_check").all().some(row => row.integrity_check !== "ok")) {
     throw new RestoreError("verification_failed");
   }
 }

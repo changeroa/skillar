@@ -193,7 +193,7 @@ test("offer connect failure keeps install success; explicit --connect failure re
   }
 });
 
-test("publish approval: fresh device gets skills scopes; upgrade reuses the same device", { timeout: 30000 }, async t => {
+test("publish approval: fresh device gets skills scopes; upgrade reuses the same device", { timeout: 90000 }, async t => {
   const { ensurePrivateSkillAccess } = await distImport("skills/cloud.js");
   const approveFromLines = async (f, lines) => {
     let codeLine;
