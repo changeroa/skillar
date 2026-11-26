@@ -631,11 +631,11 @@ Reproduce with the actual pinned reference server and QA browser running:
 
 ```sh
 OMOWRIGHT_HELPER=/absolute/path/to/omowright.mjs \
-node scripts/uxb/hosted-controls.mjs \
+bun scripts/uxb/hosted-controls.mjs \
   http://localhost:5182 http://127.0.0.1:57588 /absolute/output \
   /absolute/path/to/pr-1/demo-captures/records.json \
   /absolute/path/to/pr-6/demo-reference-correction/records.json
-node --test site/test/hosted-control-style.test.mjs
+bun test site/test/hosted-control-style.test.mjs
 ```
 
 ## Independent review corrections

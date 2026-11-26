@@ -6,12 +6,12 @@ This client targets the standalone `omo` command (`omo-ai`), backed by Senpi. It
 
 Run `export SKILLAR_MCP_URL=https://your-host.example/mcp` in your shell before the installer or login command. Replace the host with your deployment and use the same value for both.
 
-With Node 24+ and OmO installed, run from this checkout:
+With Bun 1.4.5+ and OmO installed, run from this checkout:
 
 ```sh
-node clients/oh-my-openagent/install.mjs --dry-run
-node clients/oh-my-openagent/install.mjs
-node clients/oh-my-openagent/login.mjs
+bun clients/oh-my-openagent/install.mjs --dry-run
+bun clients/oh-my-openagent/install.mjs
+bun clients/oh-my-openagent/login.mjs
 omo
 ```
 

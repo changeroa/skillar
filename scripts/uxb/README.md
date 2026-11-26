@@ -26,7 +26,7 @@ not structural proxies for style parity. Original source/actual PNGs, all
 side-by-sides and raw unmasked diffs remain separate diagnostics.
 
 ```sh
-node scripts/uxb/validate-table-parity.mjs \
+bun scripts/uxb/validate-table-parity.mjs \
   /absolute/evidence/review-table-input.json \
   /absolute/evidence/review-table-results.json
 ```
@@ -72,7 +72,7 @@ included in either production build. Restart local dev after CSS asset changes.
 
 ```sh
 OMOWRIGHT_HELPER=/path/to/browser/scripts/omowright.mjs \
-  node scripts/uxb/capture.mjs manifest.json /absolute/evidence/directory
+  bun scripts/uxb/capture.mjs manifest.json /absolute/evidence/directory
 ```
 
 The supplied browser adapter attaches to Chrome on port 9333. It creates one
@@ -170,7 +170,7 @@ are reported explicitly, not renamed identical.
 
 ```sh
 OMOWRIGHT_HELPER=/path/to/browser/scripts/omowright.mjs \
-  node scripts/uxb/demo-compare.mjs /absolute/demo-captures/records.json /absolute/demo-comparisons
+  bun scripts/uxb/demo-compare.mjs /absolute/demo-captures/records.json /absolute/demo-comparisons
 ```
 
 This separate runner consumes actual source PNGs and recorded styles from
@@ -207,10 +207,10 @@ remain named separately. Product variants, not host CSS overrides, match
 header/table Tag and compact/regular Select.
 
 ```sh
-node scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8
-node scripts/uxb/keyboard.mjs site-gallery-url local-gallery-url keyboard-evidence
-node scripts/uxb/screens.mjs matrix-config.json screen-evidence
-node scripts/uxb/screens.mjs matrix-config.json screen-evidence summary
+bun scripts/uxb/compare.mjs captures/results.json upstream site,local diffs 8
+bun scripts/uxb/keyboard.mjs site-gallery-url local-gallery-url keyboard-evidence
+bun scripts/uxb/screens.mjs matrix-config.json screen-evidence
+bun scripts/uxb/screens.mjs matrix-config.json screen-evidence summary
 ```
 
 These commands use the same `OMOWRIGHT_HELPER` environment variable. Screen
@@ -240,9 +240,9 @@ silently omitted during validation.
 With the production local/hosted surface harness running on 5184:
 
 ```sh
-node scripts/uxb/local-full-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
-node scripts/uxb/local-nonready-style.mjs "$PR7_EVIDENCE"
-node scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
+bun scripts/uxb/local-full-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
+bun scripts/uxb/local-nonready-style.mjs "$PR7_EVIDENCE"
+bun scripts/uxb/local-interaction-style.mjs "$PR7_EVIDENCE" "$PR6_DEMO_CONTROLS"
 ```
 
 These commands require `OMOWRIGHT_HELPER` and the source records/real-surface
@@ -277,7 +277,7 @@ the selected indicator uses the real selected-state background and shadow.
 checks source root/descendant recipes, writes an external review draft and
 exits 42. It never certifies or rewrites the committed inventory.
 
-`node scripts/uxb/local-disabled-style.mjs "$PR7_EVIDENCE"` compares both native
+`bun scripts/uxb/local-disabled-style.mjs "$PR7_EVIDENCE"` compares both native
 renderers against the four real Demo disabled outline pagination captures.
 Border, background and opacity come from that live control. Text-button padding
 is a labelled pinned-MIT supplement; the absolute 32/44px owner target remains.
@@ -291,7 +291,7 @@ owner-contract correction requires review of its inventory diff and a complete
 mutation rerun, not accepting a smaller discovered set.
 
 With the development galleries on site 5183/local 5184, run
-`node scripts/uxb/local-json-primitives.mjs "$PR7_EVIDENCE"` for all four JSON
+`bun scripts/uxb/local-json-primitives.mjs "$PR7_EVIDENCE"` for all four JSON
 primitive types. Its fixture uses the actual `JsonViewer`; release-build tests
 must continue proving gallery fixtures are absent from shipped artifacts.
 Both development galleries expose the shared `?traces=1&primitives=1` specimen.

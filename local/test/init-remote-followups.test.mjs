@@ -9,7 +9,7 @@ const { omoPack } = await distImport("packs/omo.js");
 const { geminiPack } = await distImport("packs/gemini.js");
 const { cursorPack } = await distImport("packs/cursor.js");
 const { claudeCodePack } = await distImport("packs/claude-code.js");
-const { planService, nodePath, packageRoot, writeConfigPort } = await distImport("cli/serve.js");
+const { planService, bunPath, packageRoot, writeConfigPort } = await distImport("cli/serve.js");
 
 const root = fileURLToPath(PACKAGE_ROOT).replace(/\/$/, "");
 const HOSTED = "https://skillar.sh/mcp";
@@ -22,7 +22,7 @@ function ctxFor(sb, overrides = {}) {
     env: sb.env,
     port: 8799,
     token: TOKEN,
-    nodePath: "/usr/local/bin/node",
+    bunPath: "/usr/local/bin/node",
     packageRoot: root,
     disableRemote: false,
     ...overrides,
@@ -163,14 +163,14 @@ test("claude-code: without a remote registration the mcp add step is still plann
 
 test("systemd unit passes HOME and SKILLAR_HOME to the daemon", () => {
   const home = "/tmp/skillar user home";
-  const plan = planService({ home, skillarHome: join(home, ".skillar"), env: { SKILLAR_NO_CLI: "1" }, nodePath: nodePath(), packageRoot: packageRoot(), platform: "linux", uid: 1000 });
+  const plan = planService({ home, skillarHome: join(home, ".skillar"), env: { SKILLAR_NO_CLI: "1" }, bunPath: bunPath(), packageRoot: packageRoot(), platform: "linux", uid: 1000 });
   assert.ok(plan.file.after.includes(`Environment="HOME=${home}"`), plan.file.after);
   assert.ok(plan.file.after.includes(`Environment="SKILLAR_HOME=${join(home, ".skillar")}"`), plan.file.after);
 });
 
 test("launchd plist passes HOME and SKILLAR_HOME to the daemon", () => {
   const home = "/tmp/skillar user home";
-  const plan = planService({ home, skillarHome: join(home, ".skillar"), env: { SKILLAR_NO_CLI: "1" }, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
+  const plan = planService({ home, skillarHome: join(home, ".skillar"), env: { SKILLAR_NO_CLI: "1" }, bunPath: bunPath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
   assert.ok(plan.file.after.includes("<key>HOME</key>"), plan.file.after);
   assert.ok(plan.file.after.includes(`<string>${home}</string>`), plan.file.after);
   assert.ok(plan.file.after.includes("<key>SKILLAR_HOME</key>"), plan.file.after);

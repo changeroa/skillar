@@ -1,4 +1,24 @@
-# Upgrade from gisool / gisul to Skillar 0.2.0
+# Skillar upgrades
+
+## Switch a Node install to Bun
+
+`skillar` (local daemon) and `skillar-mcp` (separate stdio/SSH server) now require
+Bun 1.4.5 or later. Keep your configuration, tokens, and SQLite files in place.
+For an existing local service, stop it through its service manager and take a
+backup of the state directory before replacing the package. Remove the old
+npm-global package to avoid PATH shadowing, then run `bun add -g skillar`.
+Review `skillar init --dry-run`, then run `skillar init` to refresh the service
+and hook command paths. Check `skillar doctor` before returning to normal use.
+
+For `skillar-mcp`, install Bun on the SSH destination, not just the client, and
+replace the old npm-global package with `bun add -g skillar-mcp`. A checkout-based
+SSH install still uses `server/bin/skillar`; its compatibility alias `gisul`
+also invokes Bun. If the host starts the server through a service, check that
+service's PATH includes Bun. No SQLite schema conversion is required.
+
+## Historical gisool / gisul 0.2.0 handoff
+
+The npm commands below refer to the old, pinned Node release only.
 
 The server repository is `changeroa/skillar`; the catalog is `changeroa/iyen-skills`.
 The public local CLI package is `skillar@0.2.0`, with primary executable `skillar`.

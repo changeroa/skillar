@@ -3,6 +3,10 @@
 [Upgrade and compatibility notes](../docs/migration-skillar.md).
 Tiny MCP server for serving personal `SKILL.md` directories from a local machine over stdio, SSH, or Streamable HTTP.
 
+Requires Bun 1.4.5+ on the host, including hosts reached over SSH. Install with
+`bun add -g skillar-mcp` or run `bunx --bun skillar-mcp`. This is a breaking change
+for Node-only installs; see the linked migration guide before upgrading a host.
+
 ## Layout
 
 ```text

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { journalHead, openDb, request, seedAll, spoolBatch } from "./helpers/sync.mjs";
 
@@ -23,7 +23,7 @@ test("v8 portable history preserves existing import semantics without adopting s
   const before = journalHead(destination);
   sourceStore.exportTo(join(dir, "export"), { withHistory: true });
   const historyPath = join(dir, "export", "history.db");
-  const exported = new DatabaseSync(historyPath, { readOnly: true });
+  const exported = new Database(historyPath, { readonly: true });
   try {
     assert.equal(exported.prepare("SELECT COUNT(*) n FROM connector_command_receipts").get().n, 0);
     assert.equal(readFileSync(historyPath).includes(Buffer.from("RECEIPT_ONLY_SENTINEL")), false);

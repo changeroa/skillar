@@ -57,14 +57,14 @@ test("packed CLI, cloud wire and private search execute without an unpublished s
   });
   assert.deepEqual(JSON.parse(status.stdout), { connected: false, deviceId: null, commandsEnabled: false, progress: null });
   const wire = await exec(process.execPath, ["--input-type=module", "-e", `
-    const {DatabaseSync}=await import("node:sqlite");
+    const {Database}=await import("bun:sqlite");
     const {readFileSync}=await import("node:fs");
     const {createSearchIndex}=await import("./dist/search/index.js");
     const fields=await import("./dist/catalog/fields.js");
     const parsed=fields.splitSkillMarkdown("---\\nname: package-fixture\\ndescription: Synthetic package\\naliases_ko: [자료]\\n---\\nBody");
     const metadata=fields.extractFields(parsed.frontmatter,parsed.body);
     if(!metadata)throw new Error("packed catalog parser failed");
-    const db=new DatabaseSync(":memory:");
+    const db=new Database(":memory:");
     db.exec(readFileSync("./src/store/schema.sql","utf8"));
     const index=createSearchIndex(db);
     index.rebuild([{...metadata,uri:"skill://local/fixture/SKILL.md",rootId:"fixture",dir:"fixture",

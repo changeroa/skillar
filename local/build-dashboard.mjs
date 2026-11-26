@@ -51,6 +51,7 @@ for (const [source, name] of [
 await copyFile(new URL("NOTICE", root), new URL("NOTICE", out));
 // tsc does not copy non-TS assets; the store reads schema.sql and migrations/*.sql next to db.js.
 await mkdir(new URL("dist/store/migrations/", root), { recursive: true });
+await copyFile(new URL("src/store/task-types.json", root), new URL("dist/store/task-types.json", root));
 await copyFile(new URL("src/store/schema.sql", root), new URL("dist/store/schema.sql", root));
 for (const name of await readdir(new URL("src/store/migrations/", root))) {
   if (name.endsWith(".sql")) await copyFile(new URL(`src/store/migrations/${name}`, root), new URL(`dist/store/migrations/${name}`, root));

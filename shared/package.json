@@ -5,9 +5,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test test/*.test.mjs"
+    "build": "bun --bun tsc -p tsconfig.json",
+    "typecheck": "bun --bun tsc -p tsconfig.json --noEmit",
+    "test": "bun test --timeout 30000 ./test"
   },
   "dependencies": { "yaml": "^2.9.1", "zod": "^4.1.11" },
   "devDependencies": { "typescript": "^5.9.3" }

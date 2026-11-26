@@ -6,7 +6,7 @@ import { distImport } from "./_helpers.mjs";
 import { cliSandbox, runCli, snapshotTree, writeStub } from "./helpers/cli.mjs";
 
 const { runInit } = await distImport("cli/init.js");
-const { planService, nodePath, packageRoot } = await distImport("cli/serve.js");
+const { planService, bunPath, packageRoot } = await distImport("cli/serve.js");
 const { runMain } = await distImport("cli/main.js");
 const { unifiedDiff } = await distImport("cli/config-writer.js");
 
@@ -150,14 +150,15 @@ test("init --disable-remote --dry-run shows the planned Codex disable edit", asy
 test("init on win32 exits unsupported_platform", async (t) => {
   const sb = cliSandbox();
   t.after(sb.cleanup);
-  const stub = `data:text/javascript,${encodeURIComponent('Object.defineProperty(process, "platform", { value: "win32" });')}`;
-  const r = await runCli(["init", "--dry-run"], sb.env, { nodeArgs: ["--import", stub] });
+  const stub = join(sb.home, "win32-preload.mjs");
+  writeFileSync(stub, 'Object.defineProperty(process, "platform", { value: "win32" });');
+  const r = await runCli(["init", "--dry-run"], sb.env, { nodeArgs: ["--preload", stub] });
   assert.equal(r.code, 1, r.output);
   assert.match(r.stderr, /unsupported_platform/);
 });
 
 test("the planned LaunchAgent plist runs absolute paths that exist", () => {
-  const plan = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: { SKILLAR_NO_CLI: "1" }, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
+  const plan = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: { SKILLAR_NO_CLI: "1" }, bunPath: bunPath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
   assert.equal(plan.file.path, "/tmp/h/Library/LaunchAgents/dev.skillar.daemon.plist");
   const args = [...plan.file.after.match(/<key>ProgramArguments<\/key>\s*<array>([\s\S]*?)<\/array>/)[1].matchAll(/<string>([^<]*)<\/string>/g)].map((m) => m[1]);
   assert.equal(args.length, 3);
@@ -170,7 +171,7 @@ test("the planned LaunchAgent plist runs absolute paths that exist", () => {
   assert.match(plan.file.after, /<key>KeepAlive<\/key>\s*<true\/>/);
   assert.match(plan.file.after, /<string>\/tmp\/h\/\.skillar\/logs\/daemon\.log<\/string>/);
   assert.deepEqual(plan.commands, [], "SKILLAR_NO_CLI plans no launchctl call");
-  const live = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: {}, nodePath: nodePath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
+  const live = planService({ home: "/tmp/h", skillarHome: "/tmp/h/.skillar", env: {}, bunPath: bunPath(), packageRoot: packageRoot(), platform: "darwin", uid: 501 });
   assert.deepEqual(live.commands.map((c) => c.argv), [["launchctl", "bootstrap", "gui/501", plan.file.path]]);
 });
 

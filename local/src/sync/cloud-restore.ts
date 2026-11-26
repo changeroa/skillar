@@ -21,7 +21,7 @@ const asMutation = (row: ContentRow): Mutation => mutationSchema.parse({ ...row,
 const asContent = ({ beforeValues: _before, ...row }: Mutation): ContentRow => row;
 
 async function verifyDataset(db: Db, rows: readonly ContentRow[], cut: number) {
-  const saved = db.prepare("SELECT clock_json FROM sync_restore_state WHERE singleton=1").get();
+  const saved = db.prepare<{ clock_json: unknown }, []>("SELECT clock_json FROM sync_restore_state WHERE singleton=1").get();
   const clock = mutationSchema.parse(JSON.parse(String(saved?.["clock_json"])));
   const actual = await summarizeSnapshot(readRows(db, cut, clock).map(asContent));
   const expected = await summarizeSnapshot(rows.map(row => ({ ...row, revision: cut })));
@@ -106,7 +106,9 @@ export async function restoreCloud(
     }
     const result = verify(db, { sourceDomain: reference.sourceDomain, cut: currentCut });
     db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    db.close();
+    // Publish a standalone image; macOS SQLite can retain its WAL/SHM after close.
+    db.exec("PRAGMA journal_mode = DELETE");
+    db.close(true);
     db = undefined;
     const fd = openSync(temporary, "r");
     try { fsyncSync(fd); } finally { closeSync(fd); }

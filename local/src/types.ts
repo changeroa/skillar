@@ -151,13 +151,13 @@ export type PackPlan = { mcp?: McpOutcome; files: PackPlanFile[]; commands: { ar
   notes: string[]; conflicts: { path: string; code: string; detail: string }[] };
 /** Where a runtime's skillar MCP entry ends up. "kept_local" is never reported as connected. */
 export type McpOutcome = { state: "hosted" | "already_hosted" | "kept_local"; reason?: string };
-export type PackCtx = { home: string; env: NodeJS.ProcessEnv; port: number; token: string; nodePath: string; packageRoot: string; disableRemote: boolean;
+export type PackCtx = { home: string; env: NodeJS.ProcessEnv; port: number; token: string; bunPath: string; packageRoot: string; disableRemote: boolean;
   /** "hosted" = connected mode: register https://skillar.sh/mcp instead of the local daemon entry. Planning in this mode never registers the local entry first. */
   mcp?: "local" | "hosted" };
 export interface RuntimePack { id: RuntimeId; detect(ctx: { home: string; env: NodeJS.ProcessEnv }): Promise<{ installed: boolean; evidence: string[]; remoteSkillarRegistered: boolean }>;
   plan(ctx: PackCtx): Promise<PackPlan>;
   doctorChecks(ctx: { home: string; env: NodeJS.ProcessEnv; port: number }): Promise<{ name: string; ok: boolean; detail: string }[]> }
-// nodePath = realpath(process.execPath) captured at init; packageRoot = realpath of the installed local/ package; every planned command uses absolute paths
+// bunPath = realpath(process.execPath) captured at init; packageRoot = realpath of the installed local/ package; every planned command uses absolute paths
 export type CliDeps = { config: SkillarConfig; home: string; skillarHome: string; env: NodeJS.ProcessEnv; openStore(): Store };
 export type ExportImportApi = { runExport(dir: string, opts: { withHistory: boolean }, deps: CliDeps): Promise<number>;
   runImport(dir: string, opts: { dryRun: boolean }, deps: CliDeps): Promise<number> };

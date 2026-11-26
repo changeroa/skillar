@@ -4,16 +4,18 @@
   "license": "AGPL-3.0-only",
   "private": false,
   "type": "module",
+  "engines": { "bun": ">=1.4.5" },
+  "files": ["dist", "bin", "ops", "README.md"],
   "bin": {
     "skillar-mcp": "./dist/index.js",
     "gisul": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "build:codex-plugin": "node build-codex-plugin.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "node dist/index.js",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "build": "bun --bun tsc -p tsconfig.json",
+    "build:codex-plugin": "bun build-codex-plugin.mjs",
+    "typecheck": "bun --bun tsc -p tsconfig.json --noEmit",
+    "start": "bun dist/index.js",
+    "test": "bun test --timeout 30000 ./test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",

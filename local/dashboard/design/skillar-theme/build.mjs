@@ -28,7 +28,7 @@ if (!cli) {
     console.log("skillar-theme: @astryxdesign/cli not resolvable here; using existing dist/theme.css (packed layout)");
     process.exit(0);
   }
-  console.error("skillar-theme: @astryxdesign/cli not found — run npm ci in site (or local) first");
+  console.error("skillar-theme: @astryxdesign/cli not found — run bun install in site first");
   process.exit(1);
 }
 

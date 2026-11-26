@@ -1,3 +1,4 @@
+import { hookCommand as formatHookCommand, isHookCommand } from "../runtime.js";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { McpOutcome, PackCtx, PackPlan, RuntimePack } from "../types.js";
@@ -16,14 +17,14 @@ function localMcpUrl(port: number): string {
 }
 
 function hookCommand(ctx: PackCtx): string {
-  return `"${ctx.nodePath}" "${join(ctx.packageRoot, "packs", "hook-post.mjs")}" gemini`;
+  return formatHookCommand(ctx.bunPath, ctx.packageRoot, "gemini");
 }
 
 function isOurHookGroup(group: unknown): boolean {
   return (
     isObject(group) &&
     Array.isArray(group.hooks) &&
-    group.hooks.some((h: unknown) => isObject(h) && typeof h.command === "string" && h.command.endsWith('hook-post.mjs" gemini'))
+    group.hooks.some((h: unknown) => isObject(h) && typeof h.command === "string" && isHookCommand(h.command) && h.command.endsWith(" gemini"))
   );
 }
 

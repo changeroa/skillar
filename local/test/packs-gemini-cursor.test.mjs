@@ -15,7 +15,7 @@ function ctxFor(sb, overrides = {}) {
     env: sb.env,
     port: 8799,
     token: "t".repeat(64),
-    nodePath: "/usr/local/bin/node",
+    bunPath: "/usr/local/bin/node",
     packageRoot,
     disableRemote: false,
     ...overrides,

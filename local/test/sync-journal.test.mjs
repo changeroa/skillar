@@ -110,7 +110,7 @@ test("rollback, ignored replay, savepoint rollback and REPLACE have transactiona
   db.exec("UPDATE sqlite_sequence SET seq=9007199254740991 WHERE name='sync_journal'");
   assert.throws(() => db.exec("INSERT OR IGNORE INTO sessions(id,runtime,started_at) VALUES ('overflow','codex',1)"),
     /sync journal exhausted/);
-  assert.equal(db.prepare("SELECT id FROM sessions WHERE id='overflow'").get(), undefined);
+  assert.equal(db.prepare("SELECT id FROM sessions WHERE id='overflow'").get(), null);
 });
 
 test("every target UPDATE and later-created AFTER trigger publish the final stored image", t => {
@@ -187,7 +187,7 @@ test("logical snapshot pins journal cut and every row while a WAL writer mutates
   const facts = items => items.map(({ revision, ...r }) => r)
     .sort((a, b) => `${a.table}:${a.key}`.localeCompare(`${b.table}:${b.key}`));
   assert.deepEqual(facts([...merged.values()]), facts(expected), "full values, not just IDs/counts");
-  assert.equal(reader.isTransaction, false);
+  assert.equal(reader.inTransaction, false);
 });
 
 test("snapshot bounds, early close and deadline errors release the pinned reader", t => {
@@ -196,14 +196,14 @@ test("snapshot bounds, early close and deadline errors release the pinned reader
   addSession(db);
   const iterator = logicalSnapshot(db, { maxRecords: 1 });
   iterator.next();
-  assert.equal(db.isTransaction, true);
+  assert.equal(db.inTransaction, true);
   iterator.return();
-  assert.equal(db.isTransaction, false);
+  assert.equal(db.inTransaction, false);
   assert.throws(() => [...logicalSnapshot(db, { maxBytes: 10 })], { code: "record_too_large" });
-  assert.equal(db.isTransaction, false);
+  assert.equal(db.inTransaction, false);
   const now = t.mock.method(performance, "now");
   now.mock.mockImplementationOnce(() => 0);
   now.mock.mockImplementation(() => 100);
   assert.throws(() => [...logicalSnapshot(db, { maxDurationMs: 1 })], { code: "snapshot_expired" });
-  assert.equal(db.isTransaction, false);
+  assert.equal(db.inTransaction, false);
 });

@@ -136,7 +136,7 @@ for (const runtime of ["omo", "gajae"]) {
 }
 
 function ctxFor(sb, extra = {}) {
-  return { home: sb.home, env: sb.env, port: 8799, token: TOKEN, nodePath: process.execPath, packageRoot, disableRemote: false, ...extra };
+  return { home: sb.home, env: sb.env, port: 8799, token: TOKEN, bunPath: process.execPath, packageRoot, disableRemote: false, ...extra };
 }
 
 test("omo pack plan: mcp.json + extension files, merges existing, disables remote skillar", async () => {

@@ -53,8 +53,8 @@ export function omoTransport(agentDir, env = process.env) {
 function oauthBridgeTransport(agentDir, metadata, env) {
   return {
     type: "stdio",
-    command: "npx",
-    args: ["--yes", remotePackage, endpoint(env), "--transport", "http-only", "--static-oauth-client-metadata", metadata],
+    command: "bunx",
+    args: ["--bun", remotePackage, endpoint(env), "--transport", "http-only", "--static-oauth-client-metadata", metadata],
     env: { MCP_REMOTE_CONFIG_DIR: join(agentDir, existsSync(join(agentDir, "gisul", "auth")) ? "gisul" : "skillar", "auth") },
     // GJC's ordinary startup only keeps slow registrations connecting in the
     // background when they declare a positive timeout. Login is done beforehand.

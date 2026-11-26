@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -13,7 +13,7 @@ export async function install(options = {}) {
   const command = ["plugin", "install", join(here, "plugin"), "--user"];
   const summary = planSummary("gajae-code", agentDir, files, {
     plugin: { command: ["gjc", ...command], env: { GJC_CODING_AGENT_DIR: agentDir } },
-    authentication: `Run node clients/gajae-code/login.mjs --agent-dir ${JSON.stringify(agentDir)} before starting a new GJC session.`,
+    authentication: `Run bun clients/gajae-code/login.mjs --agent-dir ${JSON.stringify(agentDir)} before starting a new GJC session.`,
     dryRun: !!options.dryRun,
   });
   if (options.dryRun) return summary;
@@ -36,7 +36,7 @@ export async function install(options = {}) {
     }
   }
   // GJC owns bundle validation, registry writes, hashes, and collision handling.
-  // Its stdio bundle policy does not support an OAuth npx bridge on macOS, so
+  // Its stdio bundle policy does not support an OAuth bunx bridge on macOS, so
   // the MCP uses the native loose config; the bundle owns only prompt surfaces.
   if (!installed) {
     const result = spawnSync("gjc", command, { env, stdio: "inherit", timeout: 120000 });
@@ -51,7 +51,7 @@ export async function install(options = {}) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const options = parseArgs(process.argv.slice(2));
-    if (options.help) console.log("Usage: node clients/gajae-code/install.mjs [--agent-dir PATH] [--dry-run]\nInstalls the GJC prompt bundle and OAuth MCP bridge registration. Requires gjc and Node/npm. Existing conflicting registrations are preserved.");
+    if (options.help) console.log("Usage: bun clients/gajae-code/install.mjs [--agent-dir PATH] [--dry-run]\nInstalls the GJC prompt bundle and OAuth MCP bridge registration. Requires gjc and Bun. Existing conflicting registrations are preserved.");
     else console.log(JSON.stringify(await install(options), null, 2));
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

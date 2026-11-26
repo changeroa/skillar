@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import test from "node:test";
 import {
   buildSearchCore, normalize, ftsTokens, ftsMatchExpression, ftsFields, ftsHits,
@@ -13,7 +13,7 @@ test("portable core preserves independently derived field-weight scores and rank
   const entries = data.entries.map(e => ({
     description: "", examples: [], aliasesKo: [], invocation: "automatic", bodyHead: "", digest: "pin", ...e,
   }));
-  const db = new DatabaseSync(":memory:");
+  const db = new Database(":memory:");
   t.after(() => db.close());
   db.exec(FTS_SCHEMA);
   const texts = new Map();

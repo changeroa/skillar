@@ -1,6 +1,7 @@
 import { existsSync, watch } from "node:fs";
 import type { FSWatcher } from "node:fs";
 import { join } from "node:path";
+import { distAsset, standalone } from "../runtime.js";
 import { Worker } from "node:worker_threads";
 import { cloudHome } from "./cloud-connection.js";
 import { cloudProgressSchema } from "./cloud.js";
@@ -30,7 +31,7 @@ export function startCloudSync(
       return;
     }
     if (worker !== undefined) { worker.postMessage("wake"); return; }
-    const started = new Worker(new URL("./cloud-worker.js", import.meta.url), {
+    const started = new Worker(standalone ? distAsset("sync", "cloud-worker.js") : new URL("./cloud-worker.js", import.meta.url), {
       workerData: { home, source, captureRuntime: captureRuntime !== undefined, applyCommands: applyCommand !== undefined },
     });
     worker = started;

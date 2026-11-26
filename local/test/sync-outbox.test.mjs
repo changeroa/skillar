@@ -213,19 +213,11 @@ test("standalone consent boundary agrees with shared P1 parsing and authorizatio
       scope],
   ];
   const sharedUrl = new URL("../shared/activity-consent.ts", PACKAGE_ROOT).href;
-  const code = `import {registerHooks} from "node:module";
-    registerHooks({resolve(specifier,context,next){
-      if(context.parentURL===${JSON.stringify(sharedUrl)} &&
-          specifier.startsWith("./") && specifier.endsWith(".js")) {
-        return next(specifier.slice(0,-3)+".ts",context);
-      }
-      return next(specifier,context);
-    }});
-    const {consentSchema,authorizeUpload}=await import(${JSON.stringify(sharedUrl)});
+  const code = `const {consentSchema,authorizeUpload}=await import(${JSON.stringify(sharedUrl)});
     const vectors=${JSON.stringify(vectors)};
     console.log(JSON.stringify(vectors.map(([c,s])=>{try {authorizeUpload(consentSchema.parse(c),s);return "ok"}
       catch(e){return e.code??"invalid"}})));`;
-  const child = spawn(process.execPath, ["--experimental-transform-types", "--input-type=module", "-e", code],
+  const child = spawn(process.execPath, ["--input-type=module", "-e", code],
     { stdio: ["ignore", "pipe", "inherit"] });
   let stdout = "";
   child.stdout.setEncoding("utf8");

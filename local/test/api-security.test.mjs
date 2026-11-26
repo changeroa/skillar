@@ -181,7 +181,7 @@ test("a second server on the same port fails with port_in_use", async () => {
   }
 });
 
-test("the CLI exits 1 with port_in_use when the port is taken", { skip: !existsSync(new URL("dist/cli/main.js", PACKAGE_ROOT)) }, async () => {
+test("the CLI exits 1 with port_in_use when the port is taken", async () => {
   const sandbox = makeSandbox();
   try {
     const child = spawn(process.execPath, [fileURLToPath(new URL("dist/cli/main.js", PACKAGE_ROOT)), "serve", "--port", String(s.port)], { env: sandbox.env, stdio: ["ignore", "pipe", "pipe"] });

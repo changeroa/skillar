@@ -1,8 +1,9 @@
+import { isHookCommand } from "../runtime.js";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { createConnection } from "node:net";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { createCatalog } from "../catalog/index.js";
 import { loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
 import { PACKS } from "../packs/registry.js";
@@ -99,7 +100,7 @@ function skillarHookTimeouts(cfg: Obj | undefined, unitSeconds: number): { event
   const out: { event: string; seconds: number }[] = [];
   const hooks = cfg && isObj(cfg.hooks) ? cfg.hooks : {};
   const visit = (event: string, h: unknown) => {
-    if (!isObj(h) || typeof h.command !== "string" || !h.command.includes("hook-post.mjs")) return;
+    if (!isObj(h) || typeof h.command !== "string" || !isHookCommand(h.command)) return;
     if (typeof h.timeout === "number") out.push({ event, seconds: h.timeout * unitSeconds });
     if (Array.isArray(h.hooks)) for (const inner of h.hooks) visit(event, inner);
   };
@@ -201,7 +202,7 @@ async function catalogChecks(config: SkillarConfig, skillarHome: string): Promis
       checks.push({ name: "index_freshness", status: "warn", code: "index_missing", detail: `${path} not created yet; start the daemon` });
       return { checks, families };
     }
-    const db = new DatabaseSync(path, { readOnly: true });
+    const db = new Database(path, { readonly: true });
     try {
       const rows = db.prepare("SELECT uri, manifest_digest FROM skills WHERE removed_at IS NULL").all() as { uri: string; manifest_digest: string }[];
       const indexed = new Map(rows.map((r) => [r.uri, r.manifest_digest]));

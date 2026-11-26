@@ -27,7 +27,7 @@ The direct Worker supports MCP `2026-07-28` with `server/discover`, per-request 
 Install the production client over HTTPS:
 
 ```sh
-node clients/codex/install.mjs --plugin --http-url https://deployment-8.example.test/mcp --bearer-token-file "$HOME/.config/gisul-worker-dev-tools/mcp-bearer"
+bun clients/codex/install.mjs --plugin --http-url https://deployment-8.example.test/mcp --bearer-token-file "$HOME/.config/gisul-worker-dev-tools/mcp-bearer"
 ```
 
 Reader credentials expose search, load and verified file reads. A write credential additionally exposes create_skill, update_skill and get_skill_write_status. Content changes go through `changeroa/iyen-skills` main and its gated `publish-r2.yml` GitHub Actions workflow on Ubuntu. Neither serving nor publishing requires the Mac mini. The Mac mini is only used as an authenticated Wrangler deployment workstation. Its old Node service is retained separately for rollback and is not in the production request path.
@@ -60,9 +60,9 @@ The GitHub Actions publisher must use one fixed production concurrency group wit
 Verify `wrangler whoami`, the configured account, the existing Worker deployment, and the private bucket. Build and test both packages from the repository root before compiling the Worker:
 
 ```sh
-npm --prefix server ci
-npm --prefix server run build
-npm --prefix server test
+(cd server && bun install --frozen-lockfile)
+bun run --cwd server build
+bun run --cwd server test
 npm --prefix worker ci
 npm --prefix worker run typecheck
 npm --prefix worker test

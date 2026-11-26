@@ -1,35 +1,36 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
+import { distAsset } from "../runtime.js";
 import { SkillarStartupError } from "../version.js";
 import { installJournalTriggers } from "../sync/triggers.js";
 
-export type Db = DatabaseSync;
+export type Db = Database;
 
 export const SCHEMA_VERSION = 8;
 
 /** migrations[i] upgrades user_version i -> i + 1. */
 function migrations(): string[] {
   return [
-    readFileSync(new URL("./schema.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/002_tracing.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/003_tracing_indexes.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/004_load_reconciliation.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/005_execution_boundaries.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/006_recording_order.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/007_sync.sql", import.meta.url), "utf8"),
-    readFileSync(new URL("./migrations/008_connector_commands.sql", import.meta.url), "utf8"),
+    readFileSync(distAsset("store", "schema.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/002_tracing.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/003_tracing_indexes.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/004_load_reconciliation.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/005_execution_boundaries.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/006_recording_order.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/007_sync.sql"), "utf8"),
+    readFileSync(distAsset("store", "migrations/008_connector_commands.sql"), "utf8"),
   ];
 }
 
-function userVersion(db: DatabaseSync): number {
+function userVersion(db: Database): number {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number } | undefined;
   return row?.user_version ?? 0;
 }
 
-export function openDb(path: string): DatabaseSync {
+export function openDb(path: string): Database {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-  const db = new DatabaseSync(path);
+  const db = new Database(path, { strict: true });
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
@@ -44,7 +45,7 @@ export function openDb(path: string): DatabaseSync {
  * Codex OTel rows carried only conversation_id while its MCP rows carried runtime_session_id) into the earliest row.
  * Idempotent: a database without such pairs is left unchanged.
  */
-export function mergeSplitSessions(db: DatabaseSync): number {
+export function mergeSplitSessions(db: Database): number {
   const pairs = db.prepare(`SELECT d.id AS dup, (
       SELECT k.id FROM sessions k WHERE k.runtime = d.runtime AND k.id <> d.id
         AND (k.runtime_session_id IN (d.runtime_session_id, d.conversation_id) OR k.conversation_id IN (d.runtime_session_id, d.conversation_id))
@@ -90,7 +91,7 @@ export function mergeSplitSessions(db: DatabaseSync): number {
   return merges.length;
 }
 
-export function migrate(db: DatabaseSync): void {
+export function migrate(db: Database): void {
   const steps = migrations();
   let version = userVersion(db);
   while (version < steps.length) {
@@ -113,8 +114,8 @@ export function migrate(db: DatabaseSync): void {
  * Proves FTS5 with the trigram tokenizer works and matches Korean substrings.
  * Uses a TEMP table on the given connection (or a fresh in-memory DB) and drops it afterwards.
  */
-export function selfCheck(db?: Pick<DatabaseSync, "exec" | "prepare">): void {
-  const conn = db ?? new DatabaseSync(":memory:");
+export function selfCheck(db?: Pick<Database, "exec" | "prepare">): void {
+  const conn = db ?? new Database(":memory:", { strict: true });
   let ok = false;
   let detail = "";
   try {
@@ -132,7 +133,7 @@ export function selfCheck(db?: Pick<DatabaseSync, "exec" | "prepare">): void {
     } catch {
       // Cleanup failure is irrelevant once the outcome is known; the original failure is reported below.
     }
-    if (!db) (conn as DatabaseSync).close();
+    if (!db) (conn as Database).close();
   }
   if (!ok) throw new SkillarStartupError("fts5_trigram_unavailable", detail);
 }

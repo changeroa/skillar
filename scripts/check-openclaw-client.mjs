@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
-if (args.length !== 2 || args[0] !== "--openclaw-root") throw new Error("Usage: node scripts/check-openclaw-client.mjs --openclaw-root /path/to/installed/openclaw");
+if (args.length !== 2 || args[0] !== "--openclaw-root") throw new Error("Usage: bun scripts/check-openclaw-client.mjs --openclaw-root /path/to/installed/openclaw");
 const runtime = resolve(args[1]);
 const bundle = fileURLToPath(new URL("../clients/openclaw/plugin/", import.meta.url));
 const root = await realpath(await mkdtemp(join(tmpdir(), "skillar-openclaw-native-")));

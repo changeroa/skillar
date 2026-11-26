@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { test } from "node:test";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { NOW, openStore } from "./helpers/store.mjs";
@@ -15,7 +15,7 @@ const count = (db, table) => db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).ge
 
 /** A database as skillar 0.1.0 wrote it: schema.sql alone, user_version 1, no tracing columns. */
 function makeV1Db(path) {
-  const db = new DatabaseSync(path);
+  const db = new Database(path);
   db.exec("PRAGMA foreign_keys = ON");
   db.exec(V1_SCHEMA);
   db.prepare("INSERT INTO sessions (id, runtime, runtime_session_id, started_at, first_prompt) VALUES ('s1', 'claude-code', 'rs-1', 100, 'hello')").run();
@@ -201,7 +201,7 @@ test("export then import into a fresh store preserves the rows of every table mi
     seedTracingRows(a.db, sid);
     const out = join(base, "out");
     a.store.exportTo(out, { withHistory: true });
-    const exported = new DatabaseSync(join(out, "history.db"));
+    const exported = new Database(join(out, "history.db"));
     assert.equal(exported.prepare("PRAGMA user_version").get().user_version, 8);
     exported.close();
 

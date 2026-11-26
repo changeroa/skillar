@@ -111,22 +111,22 @@ export function spoolBatch(db: Db, request: SpoolRequest): OutboxBatch | null {
 
 /** Only the oldest unacknowledged batch is eligible for sending. */
 export function pendingBatch(db: Db, streamId: string): OutboxBatch | null {
-  if (db.isTransaction) throw new SyncError("transaction_active");
+  if (db.inTransaction) throw new SyncError("transaction_active");
   const row = db.prepare(`SELECT o.* FROM sync_outbox o JOIN sync_streams s USING(stream_id)
     WHERE o.stream_id=? AND o.sequence=s.ack_sequence+1`).get(streamId);
-  return row === undefined ? null : storedBatch.parse(row);
+  return row === null ? null : storedBatch.parse(row);
 }
 
 /** ACK means an externally verified durable receipt; there is no sender in P4. */
 export function acknowledgeBatch(db: Db, receipt: {
   readonly streamId: string; readonly sequence: number; readonly payloadHash: string;
 }, assertLease?: () => void): void {
-  if (db.isTransaction) throw new SyncError("transaction_active");
+  if (db.inTransaction) throw new SyncError("transaction_active");
   db.exec("BEGIN IMMEDIATE");
   try {
     assertLease?.();
     const raw = db.prepare("SELECT * FROM sync_streams WHERE stream_id=?").get(receipt.streamId);
-    if (raw === undefined) throw new SyncError("ack_out_of_order");
+    if (raw === null) throw new SyncError("ack_out_of_order");
     const stream = streamSchema.parse(raw);
     if (receipt.sequence === stream.ack_sequence && receipt.payloadHash === stream.ack_hash) {
       db.exec("COMMIT");

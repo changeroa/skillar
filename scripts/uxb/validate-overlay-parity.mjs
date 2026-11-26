@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-if (!process.argv[2]) throw Error("Usage: node validate-overlay-parity.mjs evidence-directory");
+if (!process.argv[2]) throw Error("Usage: bun validate-overlay-parity.mjs evidence-directory");
 const root = resolve(process.argv[2]);
 const states = {
   "Dialog": [

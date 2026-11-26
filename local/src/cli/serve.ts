@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { cliArgv, packageRoot, packageVersion } from "../runtime.js";
+export { packageRoot, packageVersion };
 import { dbPath, loadConfig, resolveSkillarHome, resolveHome } from "../config.js";
 import { startServer } from "../server.js";
 import { openDb } from "../store/db.js";
@@ -18,18 +19,10 @@ export const processIo: Io = { out: (t) => process.stdout.write(t), err: (t) => 
 
 export const SERVICE_LABEL = "dev.skillar.daemon";
 
-export function packageRoot(): string {
-  return realpathSync(fileURLToPath(new URL("../../", import.meta.url)));
-}
-
-export function nodePath(): string {
+export function bunPath(): string {
   return realpathSync(process.execPath);
 }
 
-export function packageVersion(): string {
-  const pkg = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8")) as { version: string };
-  return pkg.version;
-}
 
 export function makeCliDeps(env: NodeJS.ProcessEnv): CliDeps {
   const config = loadConfig(env);
@@ -60,7 +53,7 @@ export function writeConfigPort(skillarHome: string, port: number): void {
 
 export type PlannedCommand = PackPlan["commands"][number] & { allowFailure?: boolean };
 export type ServicePlatform = "darwin" | "linux";
-export type ServiceCtx = { home: string; skillarHome: string; env: NodeJS.ProcessEnv; nodePath: string; packageRoot: string; platform: ServicePlatform; uid: number };
+export type ServiceCtx = { home: string; skillarHome: string; env: NodeJS.ProcessEnv; bunPath: string; packageRoot: string; platform: ServicePlatform; uid: number };
 export type ServicePlan = { file: PackPlanFile; commands: PlannedCommand[]; notes: string[] };
 
 const xml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -84,7 +77,7 @@ export function daemonLogPath(skillarHome: string): string {
 
 function plist(ctx: ServiceCtx): string {
   const log = xml(daemonLogPath(ctx.skillarHome));
-  const args = [ctx.nodePath, join(ctx.packageRoot, "dist", "cli", "main.js"), "serve"].map((a) => `    <string>${xml(a)}</string>`).join("\n");
+  const args = cliArgv("serve", ctx.bunPath, ctx.packageRoot).map((a) => `    <string>${xml(a)}</string>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -121,7 +114,7 @@ function unit(ctx: ServiceCtx): string {
 Description=skillar local skill router
 
 [Service]
-ExecStart=${unitQuote(ctx.nodePath)} ${unitQuote(join(ctx.packageRoot, "dist", "cli", "main.js"))} serve
+ExecStart=${cliArgv("serve", ctx.bunPath, ctx.packageRoot).map(unitQuote).join(" ")}
 Environment=${unitQuote(`HOME=${ctx.home}`)}
 Environment=${unitQuote(`SKILLAR_HOME=${ctx.skillarHome}`)}
 Restart=always

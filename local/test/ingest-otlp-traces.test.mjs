@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import test from "node:test";
 import { distImport } from "./_helpers.mjs";
 import { bearer, http, jsonHeaders, startTestServer } from "./helpers/api.mjs";
@@ -162,7 +162,7 @@ async function withDaemon(run) {
         return stats.json.ingest;
       },
       spans() {
-        const db = new DatabaseSync(join(s.skillarHome, "skillar.db"));
+        const db = new Database(join(s.skillarHome, "skillar.db"));
         try {
           db.exec("PRAGMA busy_timeout = 5000");
           return spanRows(db);

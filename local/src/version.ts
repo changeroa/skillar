@@ -7,12 +7,11 @@ export class SkillarStartupError extends Error {
   }
 }
 
-export const MIN_NODE: readonly [number, number] = [24, 15];
+export const MIN_BUN = "1.4.5";
 
-export function assertNodeVersion(version: string = process.versions.node): void {
-  const [major = 0, minor = 0] = version.split(".").map((part) => Number.parseInt(part, 10));
-  if (major < MIN_NODE[0] || (major === MIN_NODE[0] && minor < MIN_NODE[1])) {
-    throw new SkillarStartupError("node_too_old", `skillar needs Node >= ${MIN_NODE.join(".")}, found ${version}`);
+export function assertBunVersion(version = Bun.version): void {
+  if (!Bun.semver.satisfies(version, `>=${MIN_BUN}`)) {
+    throw new SkillarStartupError("bun_too_old", `skillar needs Bun >= ${MIN_BUN}, found ${version}`);
   }
 }
 

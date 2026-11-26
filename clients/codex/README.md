@@ -43,8 +43,8 @@ directory. On machines outside the Homebrew/Linux standard paths, adjust PATH.
 For updates to an existing personal-marketplace installation:
 
 ```bash
-node clients/codex/install.mjs --plugin --dry-run macmini
-node clients/codex/install.mjs --plugin macmini
+bun clients/codex/install.mjs --plugin --dry-run macmini
+bun clients/codex/install.mjs --plugin macmini
 ```
 
 The installer discovers the source through `codex plugin list`, rebuilds the
@@ -61,10 +61,10 @@ For a Cloudflare Worker HTTPS endpoint, keep the bearer credential in an absolut
 local file outside the plugin and repository (owner-readable only):
 
 ```sh
-node clients/codex/install.mjs --plugin --dry-run \
+bun clients/codex/install.mjs --plugin --dry-run \
   --http-url https://deployment-7.example.test/mcp \
   --bearer-token-file /absolute/private/path/skillar-token
-node clients/codex/install.mjs --plugin \
+bun clients/codex/install.mjs --plugin \
   --http-url https://deployment-7.example.test/mcp \
   --bearer-token-file /absolute/private/path/skillar-token
 ```
@@ -109,8 +109,8 @@ cd server
 npm ci
 npm run build
 cd ..
-node clients/codex/install.mjs --dry-run macmini
-node clients/codex/install.mjs macmini
+bun clients/codex/install.mjs --dry-run macmini
+bun clients/codex/install.mjs macmini
 ```
 
 The installer registers a local adapter with `codex mcp add` and installs only the

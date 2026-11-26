@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import type { DatabaseSync } from "node:sqlite";
+import type { Database } from "bun:sqlite";
 import type { CatalogDelta, SearchIndex, SearchMode, SearchOutcome, SkillEntry, SkillUri } from "../types.js";
 import { FtsIndex } from "./fts.js";
 import { DEFAULT_THRESHOLD } from "./fusion.js";
@@ -11,11 +11,11 @@ export { SEARCH_TOOL_GUIDANCE, ABSTAIN_HINTS } from "./guidance.js";
 export { normalize, terms } from "./lexical.js";
 export { ftsTokens } from "./fts.js";
 
-export function createSearchIndex(db: DatabaseSync): SearchIndex {
+export function createSearchIndex(db: Database): SearchIndex {
   const entries = new Map<SkillUri, SkillEntry>();
   const fts = new FtsIndex(db);
   let search = buildSearchCore([], fts);
-  const thresholdStmt = db.prepare("SELECT value FROM meta WHERE key = 'search_threshold'");
+  const thresholdStmt = db.prepare<{ value: unknown }, []>("SELECT value FROM meta WHERE key = 'search_threshold'");
 
   const threshold = () => {
     const row = thresholdStmt.get();

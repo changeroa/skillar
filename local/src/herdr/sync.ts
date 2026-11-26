@@ -48,7 +48,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
   const upsertReported = db.prepare(`INSERT INTO pane_sessions
     (pane_id, agent, source, agent_session_value, first_seen_ms, last_seen_ms) VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(pane_id, agent_session_value) DO UPDATE SET agent = excluded.agent, source = excluded.source, last_seen_ms = excluded.last_seen_ms`);
-  const linkPending = db.prepare(`UPDATE pane_sessions SET session_id = (
+  const linkPending = db.prepare<{ pane_id: string; session_id: string | null; source: string }, import("bun:sqlite").SQLQueryBindings[]>(`UPDATE pane_sessions SET session_id = (
     SELECT id FROM (
       SELECT id, started_at FROM sessions
         WHERE runtime = CASE pane_sessions.agent WHEN 'claude' THEN 'claude-code' ELSE pane_sessions.agent END
@@ -65,7 +65,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
   const clearPane = db.prepare(`DELETE FROM pane_sessions WHERE pane_id = ? AND source = 'inferred:cwd_time'
     AND session_id IN (SELECT id FROM sessions WHERE ended_at IS NULL)`);
   const clearSession = db.prepare("DELETE FROM pane_sessions WHERE session_id = ? AND source = 'inferred:cwd_time'");
-  const previousLinks = db.prepare("SELECT pane_id, agent, first_seen_ms FROM pane_sessions WHERE session_id = ? AND source = 'inferred:cwd_time'");
+  const previousLinks = db.prepare<{ pane_id: string; first_seen_ms: number }, import("bun:sqlite").SQLQueryBindings[]>("SELECT pane_id, agent, first_seen_ms FROM pane_sessions WHERE session_id = ? AND source = 'inferred:cwd_time'");
   const endPaneSessions = db.prepare(`UPDATE sessions SET ended_at = MAX(started_at, ?) WHERE ended_at IS NULL
     AND id IN (SELECT session_id FROM pane_sessions WHERE pane_id = ?)`);
   const endPrevious = db.prepare(`UPDATE sessions SET ended_at = ? WHERE id <> ? AND started_at < ?
@@ -73,16 +73,16 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
   const infer = db.prepare(`INSERT INTO pane_sessions
     (pane_id, agent, source, agent_session_value, session_id, first_seen_ms, last_seen_ms)
     VALUES (?, ?, 'inferred:cwd_time', ?, ?, ?, ?)`);
-  const inferSessions = db.prepare(`SELECT DISTINCT s.id, s.started_at FROM herdr_panes p CROSS JOIN sessions s
+  const inferSessions = db.prepare<{ id: string; started_at: number }, import("bun:sqlite").SQLQueryBindings[]>(`SELECT DISTINCT s.id, s.started_at FROM herdr_panes p CROSS JOIN sessions s
     WHERE (p.closed_ms IS NULL OR p.last_seen_ms >= ?) AND p.cwd IS NOT NULL AND p.cwd <> ''
       AND s.cwd = p.cwd AND s.started_at >= p.created_ms AND s.started_at <= COALESCE(p.closed_ms, ?)
       AND NOT EXISTS (SELECT 1 FROM pane_sessions ps WHERE ps.session_id = s.id)`);
-  const revisitSessions = db.prepare(`SELECT DISTINCT s.id, s.started_at FROM herdr_panes p CROSS JOIN sessions s
+  const revisitSessions = db.prepare<{ id: string; started_at: number }, import("bun:sqlite").SQLQueryBindings[]>(`SELECT DISTINCT s.id, s.started_at FROM herdr_panes p CROSS JOIN sessions s
     WHERE p.cwd = ? AND (p.closed_ms IS NULL OR p.last_seen_ms >= ?)
       AND s.cwd = p.cwd AND s.ended_at IS NULL AND s.started_at >= p.created_ms AND s.started_at <= COALESCE(p.closed_ms, ?)`);
-  const touchedSession = db.prepare("SELECT id, started_at, ended_at FROM sessions WHERE id = ?");
+  const touchedSession = db.prepare<{ id: string; started_at: number; ended_at: number | null }, import("bun:sqlite").SQLQueryBindings[]>("SELECT id, started_at, ended_at FROM sessions WHERE id = ?");
   const hasLink = db.prepare("SELECT 1 FROM pane_sessions WHERE session_id = ? LIMIT 1");
-  const candidates = db.prepare(`SELECT p.id, p.agent, s.runtime,
+  const candidates = db.prepare<{ id: string; agent: string | null; runtime: string; available: number }, import("bun:sqlite").SQLQueryBindings[]>(`SELECT p.id, p.agent, s.runtime,
       NOT EXISTS (SELECT 1 FROM pane_sessions ps LEFT JOIN sessions reported ON reported.id = ps.session_id
         WHERE ps.pane_id = p.id AND ps.source <> 'inferred:cwd_time'
           AND (ps.session_id IS NULL OR (reported.started_at <= s.started_at
@@ -154,7 +154,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
       for (const w of snapshot.workspaces) upsertWorkspace.run(w.workspace_id, w.label ?? null, w.created_ms ?? now);
       for (const t of snapshot.tabs) upsertTab.run(t.tab_id, t.workspace_id, t.label ?? null, t.created_ms ?? now);
       for (const p of snapshot.panes) {
-        const previousPane = db.prepare("SELECT agent, cwd, created_ms, closed_ms FROM herdr_panes WHERE id = ?").get(p.pane_id);
+        const previousPane = db.prepare<{ agent: string | null; cwd: string | null; closed_ms: number | null }, import("bun:sqlite").SQLQueryBindings[]>("SELECT agent, cwd, created_ms, closed_ms FROM herdr_panes WHERE id = ?").get(p.pane_id);
         const agent = p.agent_session?.agent ?? p.agent ?? null;
         if (!previousPane || previousPane.agent !== agent || previousPane.cwd !== (p.cwd ?? null) || previousPane.closed_ms !== null) {
           if (typeof previousPane?.cwd === "string" && previousPane.cwd !== "") changedCwds.add(previousPane.cwd);
@@ -180,7 +180,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
       ] as const) {
         const live = new Set(ids);
         const close = db.prepare(`UPDATE ${table} SET closed_ms = ? WHERE id = ? AND closed_ms IS NULL`);
-        for (const row of db.prepare(`SELECT id FROM ${table} WHERE closed_ms IS NULL`).all()) {
+        for (const row of db.prepare<{ id: string }, []>(`SELECT id FROM ${table} WHERE closed_ms IS NULL`).all()) {
           if (typeof row.id === "string" && !live.has(row.id)) close.run(now, row.id);
         }
       }
@@ -263,7 +263,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
         switch (event) {
           case "workspace_closed":
             if (workspace) {
-              for (const row of db.prepare("SELECT id FROM herdr_panes WHERE workspace_id = ?").all(workspace)) {
+              for (const row of db.prepare<{ id: string }, import("bun:sqlite").SQLQueryBindings[]>("SELECT id FROM herdr_panes WHERE workspace_id = ?").all(workspace)) {
                 if (typeof row.id === "string") unsubscribePane(row.id);
               }
               db.prepare("UPDATE herdr_workspaces SET closed_ms = ? WHERE id = ?").run(now, workspace);
@@ -273,7 +273,7 @@ export function startHerdrSync(db: Db, opts: { readonly env?: NodeJS.ProcessEnv;
             break;
           case "tab_closed":
             if (tab) {
-              for (const row of db.prepare("SELECT id FROM herdr_panes WHERE tab_id = ?").all(tab)) {
+              for (const row of db.prepare<{ id: string }, import("bun:sqlite").SQLQueryBindings[]>("SELECT id FROM herdr_panes WHERE tab_id = ?").all(tab)) {
                 if (typeof row.id === "string") unsubscribePane(row.id);
               }
               db.prepare("UPDATE herdr_tabs SET closed_ms = ? WHERE id = ?").run(now, tab);

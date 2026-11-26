@@ -1,4 +1,4 @@
-import type { DatabaseSync, StatementSync } from "node:sqlite";
+import type { Database, Statement } from "bun:sqlite";
 import type { SkillEntry, SkillUri } from "../types.js";
 import { normalize } from "./lexical.js";
 import { FTS_INSERT, FTS_DELETE, FTS_SEARCH, ftsFields, ftsTokens, ftsMatchExpression, ftsHits } from "../../../shared/dist/private-search.js";
@@ -7,12 +7,12 @@ export { FTS_MIN_CHARS, ftsTokens, ftsMatchExpression } from "../../../shared/di
 export type { FtsHit } from "../../../shared/dist/private-search.js";
 
 export class FtsIndex {
-  private readonly insertStmt: StatementSync;
-  private readonly deleteStmt: StatementSync;
-  private readonly searchStmt: StatementSync;
+  private readonly insertStmt: Statement;
+  private readonly deleteStmt: Statement;
+  private readonly searchStmt: Statement<{ uri: unknown; score: unknown }, [string, number]>;
   private readonly texts = new Map<SkillUri, string>();
 
-  constructor(private readonly db: DatabaseSync) {
+  constructor(private readonly db: Database) {
     this.insertStmt = db.prepare(FTS_INSERT);
     this.deleteStmt = db.prepare(FTS_DELETE);
     // bm25 weights follow column order: uri, name, description, when_to_use, examples, aliases_ko, body_head.

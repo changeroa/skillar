@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +17,7 @@ export async function prepareOAuth(output, endpoint) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.length !== 4 || args[0] !== "--output" || args[2] !== "--endpoint") throw new Error("Usage: node prepare-oauth.mjs --output /new/bundle --endpoint https://host/mcp");
+    if (args.length !== 4 || args[0] !== "--output" || args[2] !== "--endpoint") throw new Error("Usage: bun prepare-oauth.mjs --output /new/bundle --endpoint https://host/mcp");
     console.log(JSON.stringify(await prepareOAuth(args[1], args[3]), null, 2));
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

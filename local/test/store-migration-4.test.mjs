@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import test from "node:test";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 import { event, openStore } from "./helpers/store.mjs";
@@ -17,7 +17,7 @@ test("v1 out-of-order history reconstructs candidates after all imported events 
   mkdirSync(join(dir, "export"));
   const out = join(dir, "export");
   writeFileSync(join(out, "skillar-export.json"), JSON.stringify({ version: 1, config: {}, roots: [], evalCases: [], aliasesOverrides: {} }));
-  const old = new DatabaseSync(join(out, "history.db"));
+  const old = new Database(join(out, "history.db"));
   old.exec(readFileSync(new URL("dist/store/schema.sql", PACKAGE_ROOT), "utf8"));
   old.exec(`INSERT INTO sessions (id,runtime,started_at) VALUES ('a','codex',${T - 1000000}), ('b','codex',${T - 1000000});
     INSERT INTO events (id,ts,kind,source,session_id,attribution_method,attribution_reason,runtime,skill_uri)
@@ -40,7 +40,7 @@ test("v3 retained URI proof survives upgrade, reopen, export and import with reb
   const dir = makeTempDir();
   t.after(() => removeDir(dir));
   const path = join(dir, "v3.db");
-  const old = new DatabaseSync(path);
+  const old = new Database(path);
   for (const file of ["schema.sql", "migrations/002_tracing.sql", "migrations/003_tracing_indexes.sql"]) {
     old.exec(readFileSync(new URL(`dist/store/${file}`, PACKAGE_ROOT), "utf8"));
   }

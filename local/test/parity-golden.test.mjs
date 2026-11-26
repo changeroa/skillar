@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { test } from "node:test";
 import { PACKAGE_ROOT, distImport, makeTempDir, removeDir } from "./_helpers.mjs";
 
@@ -56,7 +56,7 @@ for (const version of [1, 2, 3, 4, 5, 6]) {
     const dir = makeTempDir("skillar-parity-migration-");
     t.after(() => removeDir(dir));
     const path = join(dir, "legacy.db");
-    const old = new DatabaseSync(path);
+    const old = new Database(path);
     try {
       old.exec("PRAGMA foreign_keys=ON");
       for (let step = 1; step <= version; step++) {
@@ -187,7 +187,7 @@ test("parity 006: equal timestamps use source recording cuts, not UUID order or 
   assert.throws(() => f.db.exec("UPDATE recording_clock SET position=0"), /moved backwards/);
   f.db.exec("UPDATE recording_clock SET position=9007199254740991");
   assert.throws(() => f.add({ id: "overflow", ts: recording.end }), /recording clock exhausted/);
-  assert.equal(f.db.prepare("SELECT id FROM events WHERE id='overflow'").get(), undefined);
+  assert.equal(f.db.prepare("SELECT id FROM events WHERE id='overflow'").get(), null);
 });
 
 for (const collision of [false, true]) {

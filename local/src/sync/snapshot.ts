@@ -28,7 +28,7 @@ export type SnapshotChunk = {
 export function* logicalSnapshot(db: Db, options: ChunkLimits & {
   readonly maxDurationMs?: number;
 } = {}): Generator<SnapshotChunk> {
-  if (db.isTransaction) throw new SyncError("transaction_active");
+  if (db.inTransaction) throw new SyncError("transaction_active");
   const limits = chunkLimits({
     maxRecords: options.maxRecords, maxBytes: options.maxBytes,
   });

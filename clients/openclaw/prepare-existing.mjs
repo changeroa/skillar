@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Prepare a loader-only bundle for hosts that already register mcp.servers.skillar.
 // No OpenClaw config or credentials are read or changed by this build step.
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -52,7 +52,7 @@ registered MCP server separately if you intend to change it.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== "--output") throw new Error("Usage: node clients/openclaw/prepare-existing.mjs --output /new/bundle-directory");
+    if (args.length !== 2 || args[0] !== "--output") throw new Error("Usage: bun clients/openclaw/prepare-existing.mjs --output /new/bundle-directory");
     console.log(JSON.stringify(await prepareExisting(args[1]), null, 2));
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

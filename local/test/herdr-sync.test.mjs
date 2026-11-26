@@ -136,7 +136,7 @@ async function fakeHerdr(t, snapshot) {
 async function follower(t, fake) {
   const db = openDb(":memory:");
   const changes = new EventEmitter();
-  db.function("herdr_test_change", () => { changes.emit("change"); return 0; });
+  db.function("herdr_test_change", () => { queueMicrotask(() => changes.emit("change")); return 0; });
   for (const table of ["herdr_workspaces", "herdr_tabs", "herdr_panes", "pane_sessions"]) {
     for (const op of ["INSERT", "UPDATE"]) db.exec(`CREATE TEMP TRIGGER ${table}_${op} AFTER ${op} ON ${table} BEGIN SELECT herdr_test_change(); END`);
   }
@@ -238,7 +238,7 @@ test("discovery recovers when herdr appears after startup and resolves a new soc
   const { server, db, logs, messages } = await followedServer(t, fake, dir);
   assert.equal((await http(server.port, { path: "/healthz" })).status, 200);
   assert.equal(fake.requests.length, 0);
-  assert.match(messages.find((message) => message.startsWith("herdr failure:")), /ENOENT/);
+  assert.match(messages.find((message) => message.startsWith("herdr failure:")), /ENOENT|Executable not found/);
   // When discovery becomes available without restarting the daemon.
   const executable = join(dir, "herdr");
   writeFileSync(executable, `#!/bin/sh\nprintf 'socket: ${fake.path}\\n'\n`, { mode: 0o700 });
@@ -705,7 +705,7 @@ test("discovery rejections log the actual command or protocol cause", async (t) 
   });
   t.after(() => client.close());
   await failed;
-  assert.match(messages[0], /ENOENT/);
+  assert.match(messages[0], /ENOENT|Executable not found/);
   writeFileSync(join(dir, "herdr"), "#!/bin/sh\nprintf 'status: running\\n'\n", { mode: 0o700 });
   // When a retry rejects a malformed discovery reply.
   await signal(events, "log", (message) => message.includes("no socket: line"), () => t.mock.timers.tick(1_000));

@@ -1,5 +1,5 @@
 import { beginRequest } from "../ingest/request-recorder.js";
-import { readFileSync } from "node:fs";
+export { packageVersion } from "../runtime.js";
 import { z } from "zod";
 import { errorEvent, searchEvent, type McpCallContext } from "../ingest/mcp-recorder.js";
 import { ingest, type IngestDeps } from "../ingest/pipeline.js";
@@ -19,11 +19,6 @@ export type ToolDeps = {
   store: Pick<Store, "putLoad">;
   ingest: IngestDeps;
 };
-
-export function packageVersion(): string {
-  const value: unknown = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
-  return z.object({ version: z.string() }).parse(value).version;
-}
 
 export const searchSchema = z.object({
   query: z.string().max(2048).optional(),

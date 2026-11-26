@@ -31,6 +31,7 @@ export function sandboxEnv(home, base = process.env) {
   const env = { ...base };
   for (const key of UNSET) delete env[key];
   for (const key of Object.keys(env)) if (key.startsWith("OPENCLAW_")) delete env[key];
+  env.BUN_RUNTIME_TRANSPILER_CACHE_PATH = "0";
   env.HOME = home;
   env.SKILLAR_HOME = join(home, ".skillar");
   env.SKILLAR_NO_CLI = "1";

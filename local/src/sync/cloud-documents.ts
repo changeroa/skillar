@@ -31,7 +31,7 @@ export function snapshotRecords(db: Db, cut: number): Mutation[] {
     if (db.prepare(`SELECT 1 FROM "${table}" WHERE ${length}>? LIMIT 1`).get(MAX_CONTENT_BYTES)) {
       throw new CloudSyncError("snapshot_pressure");
     }
-    const cursor = db.prepare(`SELECT *,${table === "load_candidates" ? "NULL" : "rowid"}
+    const cursor = db.prepare<Record<string, unknown>, []>(`SELECT *,${table === "load_candidates" ? "NULL" : "rowid"}
       AS cloud_source_order FROM "${table}" ORDER BY ${order}`).iterate();
     for (const raw of cursor) {
       const values = Object.fromEntries(columns.map(name => [name, scalarSchema.parse(raw[name])]));

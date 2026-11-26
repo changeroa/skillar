@@ -41,7 +41,7 @@ test("prepared OAuth bundle uses the selected endpoint for both login and runtim
   const runtime = JSON.parse(runtimeResult.stdout);
   const login = JSON.parse(loginResult.stdout);
   assert.equal(runtime.args[2], "https://deployment-1.example.test/mcp");
-  assert.equal(login.args[3], runtime.args[2]);
+  assert.equal(login.args[4], runtime.args[2]);
   assert.equal(runtime.env.MCP_REMOTE_CONFIG_DIR, join(root, "skillar/auth"));
   assert.deepEqual(runtime.env, login.env);
   await assert.rejects(prepareOAuth(output, "https://deployment-1.example.test/mcp"), { code: "EEXIST" });
@@ -80,7 +80,7 @@ test("bundle declares only its loader, bootstrap hook and read-only OAuth bridge
   const login = bridgePlan({ stateDir: "/profile with spaces", login: true }, { SKILLAR_MCP_URL: "https://fixture.example/mcp" });
   assert.equal(normal.env.MCP_REMOTE_CONFIG_DIR, "/profile with spaces/skillar/auth");
   assert.deepEqual(normal.env, login.env);
-  assert.deepEqual(normal.args.slice(2), login.args.slice(3));
+  assert.deepEqual(normal.args.slice(2), login.args.slice(4));
   assert.equal(JSON.parse(normal.args.at(-1)).scope, "skills:read");
   assert.ok(normal.args.includes("mcp-remote@0.14.3"));
   assert.equal(parseArgs(["--login", "--dry-run"]).login, true);
@@ -126,7 +126,7 @@ test("dry run creates no auth state; subprocess keeps stdout protocol-clean and 
   await assert.rejects(access(state), { code: "ENOENT" });
   const bin = join(root, "bin");
   await mkdir(bin);
-  const npx = join(bin, "npx");
+  const npx = join(bin, "bunx");
   await writeFile(npx, `#!${process.execPath}\nprocess.stderr.write('fixture bridge diagnostic\\n');\nprocess.stdin.pipe(process.stdout);\nprocess.stdin.on('end', () => { process.exitCode = Number(process.env.SKILLAR_TEST_EXIT || 0); });\n`);
   await chmod(npx, 0o700);
   const input = '{"jsonrpc":"2.0","id":1,"method":"initialize"}\n';

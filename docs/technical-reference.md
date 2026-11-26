@@ -40,10 +40,10 @@ Git is the source of truth. The Worker reads a verified release from R2; the Cod
 
 ### Verify the checkout
 
-Use Node.js 24 and npm, then run:
+Install Bun 1.4.5+ and Node.js 24/npm (for Cloudflare tooling), then run:
 
 ```sh
-node scripts/verify.mjs
+bun scripts/verify.mjs
 ```
 
 The command resolves paths from its own checkout, not the caller's working
@@ -59,7 +59,7 @@ No live endpoint, Cloudflare login, deployment or content publication is require
 cd server
 npm install
 npm run build
-node dist/index.js --http
+bun dist/index.js --http
 ```
 
 Default HTTP endpoint:
@@ -77,8 +77,8 @@ Default skill roots:
 ### Worker
 
 ```bash
-npm --prefix server ci
-npm --prefix server run build
+(cd server && bun install --frozen-lockfile)
+bun run --cwd server build
 npm --prefix worker ci
 npm --prefix worker run typecheck
 npm --prefix worker test
@@ -96,7 +96,7 @@ The server and Worker implement the [SEP-2640 Skills Extension](https://github.c
 - every skill file readable through the standard `resources/read` resource primitive
 - `resources/directory/read` for scoped directory navigation (declared via `directoryRead: true`)
 - URIs carry the file path explicitly: `skill://<authority>/<source>/<skill-name>/SKILL.md`
-- skills need `name` and `description` frontmatter with `name` matching the directory name; nested skills get their own entries; each skill is limited to 512 files and 16 MiB total. The Worker rejects invalid release manifests; the Node server logs and skips invalid local skills.
+- skills need `name` and `description` frontmatter with `name` matching the directory name; nested skills get their own entries; each skill is limited to 512 files and 16 MiB total. The Worker rejects invalid release manifests; the Bun server logs and skips invalid local skills.
 
 The Node server also retains the older `skills_list` / `skills_get` / `resources_read` tools as a compatibility layer.
 

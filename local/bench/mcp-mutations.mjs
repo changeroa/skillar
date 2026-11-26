@@ -1,7 +1,10 @@
 // Each mutation changes one compiled behavior only in memory. Source and dist stay untouched.
-// Run after npm run build. A mutant counts only if its selected test fails an assertion,
+// Run after bun run build. A mutant counts only if its selected test fails an assertion,
 // not if loading, syntax, timing or the test process fails.
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -60,37 +63,38 @@ const mutations = [
 const selected = process.argv[2] ? mutations.filter(([name]) => name.includes(process.argv[2])) : mutations;
 if (!selected.length) throw new Error("No mutation matched");
 let killed = 0;
-for (const [name, file, from, to, testFile, pattern] of selected) {
-  const target = new URL(`../dist/${file}`, import.meta.url).href;
-  const loader = `
-    import { registerHooks } from "node:module";
-    registerHooks({ load(url, context, next) {
-      const loaded = next(url, context);
-      if (url !== ${JSON.stringify(target)}) return loaded;
-      const source = String(loaded.source);
-      const from = ${JSON.stringify(from)};
-      if (!source.includes(from)) throw new Error("MUTATION_TARGET_MISSING");
-      process.stderr.write("MUTATION_APPLIED\\n");
-      return { ...loaded, source: source.replaceAll(from, ${JSON.stringify(to)}) };
-    } });`;
-  const hook = "data:text/javascript;base64," + Buffer.from(loader).toString("base64");
-  const child = spawn(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=10000", `--test-name-pattern=${pattern}`, `test/${testFile}.test.mjs`], {
-    cwd: root, env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${hook}` },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  let text = "";
-  child.stdout.on("data", (chunk) => { text += chunk; });
-  child.stderr.on("data", (chunk) => { text += chunk; });
-  const code = await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("close", resolve);
-  });
-  if (code !== 0 && /MUTATION_APPLIED/.test(text) && /ERR_ASSERTION/.test(text) && !/SyntaxError|MUTATION_TARGET_MISSING|testTimeoutFailure/.test(text)) {
-    killed++;
-    console.log(`KILLED ${name}: ${testFile} / ${pattern}`);
-  } else {
-    console.error(`FAILED mutation check ${name} (exit ${code})\n${text}`);
-    process.exitCode = 1;
+const temp = mkdtempSync(join(tmpdir(), "skillar-mutations-"));
+try {
+  for (const [name, file, from, to, testFile, pattern] of selected) {
+    const target = fileURLToPath(new URL(`../dist/${file}`, import.meta.url));
+    const hook = join(temp, "mutation.mjs");
+    const filter = new RegExp(`^${RegExp.escape(target)}$`);
+    writeFileSync(hook, `Bun.plugin({ name: "skillar mutation", setup(build) {
+      build.onLoad({ filter: new RegExp(${JSON.stringify(filter.source)}) }, ({ path }) => {
+        const source = require("node:fs").readFileSync(path, "utf8");
+        const from = ${JSON.stringify(from)};
+        if (!source.includes(from)) throw new Error("MUTATION_TARGET_MISSING");
+        process.stderr.write("MUTATION_APPLIED\\n");
+        return { contents: source.replaceAll(from, ${JSON.stringify(to)}), loader: "js" };
+      });
+    } });`);
+    const child = spawn(process.execPath, ["test", "--preload", hook, "--timeout", "10000", "-t", pattern, `./test/${testFile}.test.mjs`], {
+      cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"],
+    });
+    let text = "";
+    child.stdout.on("data", (chunk) => { text += chunk; });
+    child.stderr.on("data", (chunk) => { text += chunk; });
+    const code = await new Promise((resolve, reject) => {
+      child.once("error", reject);
+      child.once("close", resolve);
+    });
+    if (code !== 0 && /MUTATION_APPLIED/.test(text) && /ERR_ASSERTION/.test(text) && !/SyntaxError|MUTATION_TARGET_MISSING|testTimeoutFailure/.test(text)) {
+      killed++;
+      console.log(`KILLED ${name}: ${testFile} / ${pattern}`);
+    } else {
+      console.error(`FAILED mutation check ${name} (exit ${code})\n${text}`);
+      process.exitCode = 1;
+    }
   }
-}
+} finally { rmSync(temp, { recursive: true, force: true }); }
 console.log(`MUTATIONS ${killed}/${selected.length} killed by assertions`);

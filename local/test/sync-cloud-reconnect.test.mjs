@@ -26,7 +26,6 @@ const connection = instanceId => ({
 
 test("re-approval with a new instance resumes the existing epoch and drops the stale staged baseline", async t => {
   const home = makeTempDir();
-  t.after(() => removeDir(home));
   const source = join(home, "activity.sqlite");
   const oldConn = connection(randomUUID()), newConn = connection(randomUUID());
   // Given a store bound by the previous connection (the original install).
@@ -68,7 +67,7 @@ test("re-approval with a new instance resumes the existing epoch and drops the s
   assert.equal(status.acknowledgedCut, head.cut);
   const check = new CloudBlobs(spool);
   assert.equal(check.acquire(), true);
-  t.after(() => check.close());
+  t.after(() => { check.close(); removeDir(home); });
   assert.equal(check.pendingMigration(DEVICE, head.sourceDomain), null);
   assert.equal(check.liveStreamFor(DEVICE, head.sourceDomain),
     liveStream(oldConn.instanceId, head.sourceDomain));
@@ -77,7 +76,6 @@ test("re-approval with a new instance resumes the existing epoch and drops the s
 
 test("stale-baseline cleanup preserves every other stream and picks the furthest acked epoch", async t => {
   const home = makeTempDir();
-  t.after(() => removeDir(home));
   const source = join(home, "activity.sqlite");
   const oldConn = connection(randomUUID()), newConn = connection(randomUUID());
   let db = openDb(source);
@@ -121,7 +119,7 @@ test("stale-baseline cleanup preserves every other stream and picks the furthest
   assert.equal(status.phase, "caught-up");
   const check = new CloudBlobs(spool);
   assert.equal(check.acquire(), true);
-  t.after(() => check.close());
+  t.after(() => { check.close(); removeDir(home); });
   // The stale initial is gone; everything else survives untouched.
   assert.equal(check.pendingMigration(DEVICE, head.sourceDomain), null);
   assert.notEqual(check.cursor(live1), null);
@@ -135,11 +133,10 @@ test("stale-baseline cleanup preserves every other stream and picks the furthest
 
 test("backfillAcked follows the source across connection instances", t => {
   const home = makeTempDir();
-  t.after(() => removeDir(home));
   const spool = join(home, "cloud", "spool.sqlite");
   const blobs = new CloudBlobs(spool);
   assert.equal(blobs.acquire(), true);
-  t.after(() => blobs.close());
+  t.after(() => { blobs.close(); removeDir(home); });
   const domain = randomUUID(), snapshotId = randomUUID();
   assert.equal(blobs.backfillAcked(domain, snapshotId), false);
   blobs.initialize({

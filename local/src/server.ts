@@ -25,7 +25,7 @@ import { applySourceCommand } from "./sync/command-apply.js";
 import { sourceCommandsEnabled } from "./sync/command-control.js";
 import { readConnection } from "./sync/cloud-connection.js";
 import type { SkillarConfig, SessionRow, Store } from "./types.js";
-import { assertNodeVersion, assertPlatform, SkillarStartupError } from "./version.js";
+import { assertBunVersion, assertPlatform, SkillarStartupError } from "./version.js";
 
 export type ServerDeps = {
   skillarHome?: string;
@@ -72,7 +72,7 @@ function listen(server: Server, port: number): Promise<number> {
 }
 
 export async function startServer(config: SkillarConfig, deps: ServerDeps = {}): Promise<RunningServer> {
-  assertNodeVersion();
+  assertBunVersion();
   assertPlatform();
   const skillarHome = deps.skillarHome ?? resolveSkillarHome(process.env);
   if (deps.skillarHome === undefined) ensureSkillarHome(process.env);

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -18,7 +18,7 @@ const run = (command, args, options = {}) => {
 const git = (...args) => run("git", args, { stdio: "pipe" });
 if (git("status", "--porcelain")) throw new Error("Commit or preserve local changes before deploying; the deployed commit must identify the complete source");
 const commit = git("rev-parse", "HEAD");
-for (const args of [["ci"], ["run", "build"], ["test"]]) run("npm", args, { cwd: join(repo, "server") });
+for (const args of [["install", "--frozen-lockfile"], ["run", "build"], ["run", "test"]]) run(process.execPath, args, { cwd: join(repo, "server") });
 if (git("status", "--porcelain") || git("rev-parse", "HEAD") !== commit) throw new Error("Source changed during validation; rerun from a clean commit");
 
 const sshArgs = ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host];
@@ -45,7 +45,7 @@ try {
   remote(`mkdir -p ${quote(stage)}`);
   run("rsync", ["-a", "--delete", "-e", "ssh -o BatchMode=yes -o ConnectTimeout=10", `${payload}/`, `${host}:${stage}/`]);
   const config = Buffer.from(JSON.stringify({ root, stage, label, id })).toString("base64");
-  console.log(remote(`export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin; node ${quote(`${stage}/deploy-runtime.mjs`)} ${quote(config)}`));
+  console.log(remote(`export PATH="$HOME/.bun/bin":/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin; bun ${quote(`${stage}/deploy-runtime.mjs`)} ${quote(config)}`));
 } catch (error) {
   // A lost SSH response does not imply a failed deployment. Do not blindly retry.
   console.error(`Inspect ${host}:${root}/.deploy/${id}.json and ${root}/.deploy/lock before retrying.`);

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import type { Db } from "../store/db.js";
 import { CloudSyncError } from "./cloud-blobs.js";
 import type { CloudBlobs } from "./cloud-blobs.js";
@@ -63,7 +63,7 @@ export async function stageBaseline(
         prepared.expiresAtMs <= Date.now()) throw new CloudSyncError("prepared_snapshot_mismatch");
     snapshotId = prepared.snapshotId;
     cut = prepared.cut;
-    const frozen = new DatabaseSync(preparedPath(home, snapshotId), { readOnly: true });
+    const frozen = new Database(preparedPath(home, snapshotId), { readonly: true });
     try {
       const frozenHead = journalHead(frozen);
       if (frozenHead.cut !== cut || frozenHead.sourceDomain !== head.sourceDomain) {

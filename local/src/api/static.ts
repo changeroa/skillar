@@ -1,11 +1,11 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { distAsset, standalone } from "../runtime.js";
 import express, { type Express, type Request, type Response } from "express";
 import { DASH_COOKIE, dashCookieValue, deny, safeEqual } from "./security.js";
 
 export function defaultDashboardDir(): string {
-  return fileURLToPath(new URL("../dashboard/", import.meta.url));
+  return distAsset("dashboard");
 }
 
 /**
@@ -26,10 +26,22 @@ export function registerStatic(app: Express, opts: { token: string; dir?: string
       return res.redirect(302, "/");
     }
     const index = join(dir, "index.html");
-    if (!existsSync(index)) return deny(res, 503, "dashboard_not_built", { hint: "run npm run build in the skillar package" });
+    if (!existsSync(index)) return deny(res, 503, "dashboard_not_built", { hint: "run bun run build in the skillar package" });
     res.setHeader("Cache-Control", "no-store");
+    if (standalone && opts.dir === undefined) return res.type("html").send(readFileSync(index));
     res.sendFile(index);
   });
 
+  if (standalone && opts.dir === undefined) {
+    // Express's send/sendFile attempts to open real file descriptors; embedded assets have none.
+    app.get("/assets/:file", (req, res) => {
+      const name = req.params.file;
+      if (!/^[\w-]+\.(?:js|css|svg|woff2)$/.test(name)) return res.sendStatus(404);
+      const asset = join(dir, "assets", name);
+      if (!existsSync(asset)) return res.sendStatus(404);
+      return res.type(name).send(readFileSync(asset));
+    });
+    return;
+  }
   app.use("/assets", express.static(join(dir, "assets"), { index: false, fallthrough: false }));
 }

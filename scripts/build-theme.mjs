@@ -4,7 +4,7 @@
 // required (fail instead of falling back to an existing dist) for CI.
 // Everything that compiles or tests the dashboard — site test/build, local
 // typecheck/build/test — needs the theme dist first, so CI runs this after
-// npm ci and before any of those steps.
+// dependency installation and before any of those steps.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 

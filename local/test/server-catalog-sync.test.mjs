@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { distImport, makeSandbox, writeFixtureSkill } from "./_helpers.mjs";
 
 const { startServer } = await distImport("server.js");
@@ -18,7 +18,7 @@ test("restarting without a root marks that root's skills removed", async () => {
     await first.close();
     const second = await startServer({ ...base, roots: [{ id: "a", path: a }] }, { skillarHome, handleSignals: false });
     await second.close();
-    const db = new DatabaseSync(join(skillarHome, "skillar.db"), { readOnly: true });
+    const db = new Database(join(skillarHome, "skillar.db"), { readonly: true });
     const rows = db.prepare("SELECT uri, removed_at IS NOT NULL AS removed FROM skills ORDER BY uri").all().map((r) => [r.uri, r.removed]);
     db.close();
     assert.deepEqual(rows, [["skill://local/a/keep-me/SKILL.md", 0], ["skill://local/b/drop-me/SKILL.md", 1]]);

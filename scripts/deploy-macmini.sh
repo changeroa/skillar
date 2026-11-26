@@ -1,3 +1,3 @@
 #!/bin/sh
 set -eu
-exec node "$(dirname "$0")/deploy-macmini.mjs" "$@"
+exec bun "$(dirname "$0")/deploy-macmini.mjs" "$@"

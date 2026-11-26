@@ -1,3 +1,4 @@
+import { hookCommand as formatHookCommand, isHookCommand } from "../runtime.js";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { McpOutcome, PackCtx, PackPlan, RuntimePack } from "../types.js";
@@ -13,11 +14,11 @@ function localMcpUrl(port: number): string {
 }
 
 function hookCommand(ctx: PackCtx): string {
-  return `"${ctx.nodePath}" "${join(ctx.packageRoot, "packs", "hook-post.mjs")}" cursor`;
+  return formatHookCommand(ctx.bunPath, ctx.packageRoot, "cursor");
 }
 
 function isOurHook(entry: unknown): boolean {
-  return isObject(entry) && typeof entry.command === "string" && entry.command.endsWith('hook-post.mjs" cursor');
+  return isObject(entry) && typeof entry.command === "string" && isHookCommand(entry.command) && entry.command.endsWith(" cursor");
 }
 
 export const cursorPack: RuntimePack = {

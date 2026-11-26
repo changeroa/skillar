@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
+export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
 script_path=$0
 while [ -L "$script_path" ]; do
   script_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")" && pwd)
@@ -8,4 +8,4 @@ while [ -L "$script_path" ]; do
   case "$script_path" in /*) ;; *) script_path=$script_dir/$script_path ;; esac
 done
 script_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")" && pwd)
-exec node "$script_dir/../dist/index.js" "$@"
+exec bun "$script_dir/../dist/index.js" "$@"
