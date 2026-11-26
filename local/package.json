@@ -1,6 +1,6 @@
 {
   "name": "skillar",
-  "version": "0.3.5",
+  "version": "0.4.0",
   "private": false,
   "description": "Local skill router for coding agents: search your skills, trace how agents use them, and see the flow.",
   "license": "MIT",
